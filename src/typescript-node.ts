@@ -50,6 +50,8 @@ export function register (opts?: Options) {
 
   const maps: { [fileName: string]: string } = {}
   const files: { [fileName: string]: boolean } = {}
+  const versions: { [fileName: string]: number } = {}
+  const snapshots: { [fileName: string]: TS.IScriptSnapshot } = {}
 
   // Enable compiler overrides.
   options.compiler = options.compiler || 'typescript'
@@ -71,8 +73,12 @@ export function register (opts?: Options) {
 
   const serviceHost: TS.LanguageServiceHost = {
     getScriptFileNames: () => config.fileNames.concat(Object.keys(files)),
-    getScriptVersion: (fileName) => 'node',
+    getScriptVersion: (fileName) => String(versions[fileName] || 'node'),
     getScriptSnapshot (fileName): TS.IScriptSnapshot {
+      if (snapshots[fileName]) {
+        return snapshots[fileName]
+      }
+
       try {
         return ts.ScriptSnapshot.fromString(readFileSync(fileName, 'utf-8'))
       } catch (e) {
@@ -89,19 +95,14 @@ export function register (opts?: Options) {
   const service = ts.createLanguageService(serviceHost, registry)
   const hasSourceMap = config.options.sourceMap
 
-  const retrieveSourceMap = sourceMapSupport.retrieveSourceMap
-
   // Install source map support and read from cache.
   sourceMapSupport.install({
-    handleUncaughtExceptions: false,
-    retrieveSourceMap (filename: string) {
-      var map = maps && maps[filename]
+    retrieveSourceMap (fileName: string) {
+      var map = maps && maps[fileName]
 
       if (map) {
         return <sourceMapSupport.UrlAndMap> { map, url: null }
       }
-
-      return retrieveSourceMap(filename)
     }
   })
 
@@ -113,7 +114,10 @@ export function register (opts?: Options) {
 
     // Cache source maps where provided.
     if (hasSourceMap) {
-      maps[output.outputFiles[0].name] = output.outputFiles[0].text
+      const sourceText = service.getSourceFile(fileName).text
+      const sourceMapText = output.outputFiles[0].text
+
+      maps[fileName] = getSourceMap(sourceMapText, fileName, sourceText)
     }
 
     // Log all diagnostics before exiting the program.
@@ -135,12 +139,18 @@ export function register (opts?: Options) {
     require.extensions[extension] = loader
   })
 
-  return {
-    registry,
-    ts,
-    config,
-    options
+  function compileInline (fileName: string, code: string) {
+    if (!versions[fileName]) {
+      versions[fileName] = 0
+    }
+
+    versions[fileName]++
+    snapshots[fileName] = ts.ScriptSnapshot.fromString(code)
+
+    return compile(fileName)
   }
+
+  return compileInline
 }
 
 /**
@@ -174,7 +184,7 @@ export function formatDiagnostic (diagnostic: TS.Diagnostic, ts: typeof TS, cwd:
  * Create a "TypeScript" error.
  */
 export function createError (diagnostics: TS.Diagnostic[], ts: typeof TS): Error {
-  const message = ['Unable to compile TypeScript:']
+  const message = ['Unable to compile TypeScript']
     .concat(diagnostics.map((d) => formatDiagnostic(d, ts)))
     .join(EOL)
 
@@ -184,14 +194,12 @@ export function createError (diagnostics: TS.Diagnostic[], ts: typeof TS): Error
 }
 
 /**
- * Generate an base 64 inline source map.
+ * Sanitize the source map content.
  */
-export function getInlineSourceMap (map: string, fileName: string, code: string): string {
+export function getSourceMap (map: string, fileName: string, code: string): string {
   var sourceMap = JSON.parse(map)
   sourceMap.file = fileName
   sourceMap.sources = [fileName]
   sourceMap.sourcesContent = [code]
-  delete sourceMap.sourceRoot
-  const inlineSourceMap = new Buffer(JSON.stringify(sourceMap)).toString('base64')
-  return 'data:application/json;base64,' + inlineSourceMap
+  return JSON.stringify(sourceMap)
 }

@@ -7,7 +7,7 @@ import { readFileSync } from 'fs'
 import Module = require('module')
 import extend = require('xtend')
 import { runInThisContext } from 'vm'
-import { register, createError, getInlineSourceMap, getDiagnostics } from '../typescript-node'
+import { register } from '../typescript-node'
 
 var program = new Command('ts-node')
 var pkg = require('../../package.json')
@@ -32,15 +32,13 @@ const eval = opts.eval
 const code: string = eval == null ? print : eval
 
 // Register returns environment options, helps creating a new language service.
-const compiler = register(opts)
+const compileInline = register(opts)
 
 // Defer creation of eval services.
 let files: { [filename: string]: { text: string, version: number } }
 let service: LanguageService
 
 if (typeof code === 'string') {
-  createService()
-
   global.__filename = EVAL_FILENAME
   global.__dirname = cwd
 
@@ -96,7 +94,6 @@ if (typeof code === 'string') {
 
     Module.runMain()
   } else {
-    createService()
     startRepl()
   }
 }
@@ -104,67 +101,10 @@ if (typeof code === 'string') {
 /**
  * Evaluate the code snippet.
  */
-function _eval (text: string, filename: string) {
-  if (!files[filename]) {
-    files[filename] = { version: 0, text: '' }
-  }
-
-  const file = files[filename]
-
-  file.text = text
-  file.version++
-
-  const output = service.getEmitOutput(filename)
-  const diagnostics = getDiagnostics(service, filename, compiler.options)
-
-  if (diagnostics.length) {
-    throw createError(diagnostics, compiler.ts)
-  }
-
-  const result = output.outputFiles[1].text
-  const sourceMap = output.outputFiles[0].text
-
-  const code = result.replace(
-    '//# sourceMappingURL=' + filename.replace(/\.ts$/, '.js.map'),
-    '//# sourceMappingURL=' + getInlineSourceMap(sourceMap, filename, text)
-  )
-
-  return runInThisContext(result, filename)
-}
-
-/**
- * Create an inline eval service on demand.
- */
-function createService () {
-  const { ts, registry, config } = compiler
-
-  // Initialize files object.
-  files = {}
-
-  // Create language services for `eval`.
-  service = ts.createLanguageService(<LanguageServiceHost> {
-    getScriptFileNames: () => {
-      return config.fileNames.concat(Object.keys(files))
-    },
-    getScriptVersion: (fileName) => files[fileName] && files[fileName].version.toString(),
-    getScriptSnapshot (fileName) {
-      const file = files[fileName]
-
-      if (file) {
-        return ts.ScriptSnapshot.fromString(file.text)
-      }
-
-      try {
-        return ts.ScriptSnapshot.fromString(readFileSync(fileName, 'utf-8'))
-      } catch (e) {
-        return
-      }
-    },
-    getCurrentDirectory: () => cwd,
-    getScriptIsOpen: () => true,
-    getCompilationSettings: () => extend(config.options, { sourceMap: true }),
-    getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(options)
-  }, registry)
+function _eval (code: string, filename: string) {
+  // Adding `;` before the code is jank, but avoids issues with source map
+  // columns becoming negative.
+  return runInThisContext(compileInline(filename, ';' + code), filename)
 }
 
 /**
