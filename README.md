@@ -49,7 +49,7 @@ You can set options by passing them in before the script.
 ts-node --compiler ntypescript --configFile tsconfig.json --ignoreWarnings 2304 hello-world.ts
 ```
 
-* **compiler** Use a custom, require-able TypeScript compiler compatible with `typescript@>=1.5-alpha`
+* **compiler** Use a custom, require-able TypeScript compiler compatible with `typescript@>=1.5.0-alpha`
 * **configFile** Manually set the location of the `tsconfig.json` file
 * **ignoreWarnings** Set an array of TypeScript diagnostic codes to ignore
 
