@@ -53,6 +53,11 @@ ts-node --compiler ntypescript --configFile tsconfig.json --ignoreWarnings 2304 
 * **configFile** Manually set the location of the `tsconfig.json` file
 * **ignoreWarnings** Set an array of TypeScript diagnostic codes to ignore
 
+## Issues
+
+* REPL currently does not work over each execution [#1](https://github.com/blakeembrey/typescript-node/issues/1)
+* Code coverage information does not work [#2](https://github.com/blakeembrey/typescript-node/issues/2)
+
 ## License
 
 MIT
