@@ -1,0 +1,68 @@
+{
+  "name": "typescript-node",
+  "version": "0.0.0",
+  "description": "Feature complete TypeScript environment for node",
+  "main": "dist/typescript-node.js",
+  "bin": {
+    "ts-node": "bin.js"
+  },
+  "files": [
+    "dist/",
+    "typescript-node.d.ts",
+    "bin.js",
+    "register.js",
+    "LICENSE"
+  ],
+  "scripts": {
+    "lint": "# TODO",
+    "build": "npm run build-ts",
+    "build-ts": "rm -rf dist && tsc",
+    "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
+    "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- dist/**/*.spec.js -R spec --bail",
+    "test": "npm run build && npm run lint && npm run test-cov",
+    "prepublish": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/blakeembrey/typescript-node.git"
+  },
+  "typescript": {
+    "definition": "typescript-node.d.ts"
+  },
+  "keywords": [
+    "typescript",
+    "node",
+    "runtime",
+    "environment",
+    "ts",
+    "compiler"
+  ],
+  "author": {
+    "name": "Blake Embrey",
+    "email": "hello@blakeembrey.com",
+    "url": "http://blakeembrey.me"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/blakeembrey/typescript-node/issues"
+  },
+  "homepage": "https://github.com/blakeembrey/typescript-node",
+  "devDependencies": {
+    "chai": "^3.0.0",
+    "istanbul": "^0.3.17",
+    "mocha": "^2.1.0",
+    "ntypescript": "^1.201507091536.1",
+    "pre-commit": "^1.0.6",
+    "typescript": "^1.5.0-beta"
+  },
+  "peerDependencies": {
+    "typescript": "^1.5.0-alpha"
+  },
+  "dependencies": {
+    "arrify": "^1.0.0",
+    "commander": "^2.8.1",
+    "source-map-support": "^0.3.2",
+    "tsconfig": "^1.0.1",
+    "xtend": "^4.0.0"
+  }
+}

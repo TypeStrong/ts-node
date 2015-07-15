@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "outDir": "dist",
+    "module": "commonjs",
+    "declaration": true,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "sourceMap": true
+  },
+  "files": [
+    "src/typescript-node.ts",
+    "src/typescript-node.spec.ts",
+    "src/bin/ts-node.ts",
+    "typings/tsd.d.ts",
+    "src/typings/node.d.ts",
+    "src/typings/xtend.d.ts",
+    "src/typings/arrify.d.ts"
+  ]
+}
