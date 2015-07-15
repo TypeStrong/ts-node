@@ -10,7 +10,7 @@
 ## Installation
 
 ```
-npm install typescript-node --save
+npm install -g typescript-node
 ```
 
 ## Features
