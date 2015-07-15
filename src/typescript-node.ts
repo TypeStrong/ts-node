@@ -1,6 +1,6 @@
 import * as TS from 'typescript'
 import * as tsconfig from 'tsconfig'
-import { resolve } from 'path'
+import { resolve, relative } from 'path'
 import * as fs from 'fs'
 import { EOL } from 'os'
 import sourceMapSupport = require('source-map-support')
@@ -158,16 +158,16 @@ export function getDiagnostics (service: TS.LanguageService, fileName: string, o
 /**
  * Format a diagnostic object into a string.
  */
-export function formatDiagnostic (diagnostic: TS.Diagnostic, ts: typeof TS): string {
+export function formatDiagnostic (diagnostic: TS.Diagnostic, ts: typeof TS, cwd: string = '.'): string {
   const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
 
   if (diagnostic.file) {
     const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start)
 
-    return `TS${diagnostic.code} (${line + 1},${character + 1}): ${message}`
+    return `${relative(cwd, diagnostic.file.fileName)} (${line + 1},${character + 1}): ${message} (${diagnostic.code})`
   }
 
-  return message
+  return `${message} (${diagnostic.code})`
 }
 
 /**
