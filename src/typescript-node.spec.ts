@@ -47,7 +47,7 @@ describe('ts-node', function () {
 
   it('should be able to ignore errors', function (done) {
     exec(`node ${BIN_PATH} --ignoreWarnings 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
-      expect(err.message).to.contain('TypeError: foo.toUpperCase is not a function')
+      expect(err.message).to.match(/TypeError: (?:undefined|foo\.toUpperCase) is not a function/)
 
       return done()
     })
