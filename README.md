@@ -37,6 +37,12 @@ ts-node -e 'console.log("Hello, world!")'
 ts-node -p '"Hello, world!"'
 ```
 
+**With Mocha**
+
+```
+mocha test.ts --require typescript-node/register
+```
+
 ### Loading `tsconfig.json`
 
 **Typescript Node** automatically loads `tsconfig.json` options and files from the current directory using [tsconfig](https://github.com/TypeStrong/tsconfig).
