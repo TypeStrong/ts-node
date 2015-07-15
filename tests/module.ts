@@ -1,3 +1,3 @@
-export function example (foo: string): boolean {
-  return true
+export function example (foo: string) {
+  return foo.toUpperCase()
 }
