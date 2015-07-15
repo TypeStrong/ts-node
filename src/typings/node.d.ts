@@ -7,6 +7,7 @@ declare module NodeJS {
 declare module 'module' {
   class Module {
     static runMain (): void
+    static wrap (code: string): string
     static _nodeModulePaths (path: string): string[]
 
     constructor (filename: string)

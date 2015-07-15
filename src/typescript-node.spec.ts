@@ -38,7 +38,7 @@ describe('ts-node', function () {
   })
 
   it('should throw errors', function (done) {
-    exec(`node ${BIN_PATH} -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err, stdout) {
+    exec(`node ${BIN_PATH} -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
       expect(err.message).to.contain('[eval].ts (1,59): Argument of type \'number\' is not assignable to parameter of type \'string\'. (2345)')
 
       return done()
@@ -46,7 +46,7 @@ describe('ts-node', function () {
   })
 
   it('should be able to ignore errors', function (done) {
-    exec(`node ${BIN_PATH} --ignoreWarnings 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err, stdout) {
+    exec(`node ${BIN_PATH} --ignoreWarnings 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
       expect(err.message).to.contain('TypeError: foo.toUpperCase is not a function')
 
       return done()
@@ -54,7 +54,19 @@ describe('ts-node', function () {
   })
 
   it('should work with source maps', function (done) {
-    exec(`node ${BIN_PATH} tests/throw`, function (err, stdout) {
+    exec(`node ${BIN_PATH} tests/throw`, function (err) {
+      expect(err.message).to.contain([
+        '  bar () { throw new Error(\'this is a demo\') }',
+        '                 ^',
+        'Error: this is a demo'
+      ].join('\n'))
+
+      return done()
+    })
+  })
+
+  it('eval should work with source maps', function (done) {
+    exec(`node ${BIN_PATH} -p "import './tests/throw'"`, function (err) {
       expect(err.message).to.contain([
         '  bar () { throw new Error(\'this is a demo\') }',
         '                 ^',

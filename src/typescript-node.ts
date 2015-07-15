@@ -139,7 +139,7 @@ export function register (opts?: Options) {
     require.extensions[extension] = loader
   })
 
-  function compileInline (fileName: string, code: string) {
+  function compileInline (code: string, fileName: string) {
     if (!versions[fileName]) {
       versions[fileName] = 0
     }

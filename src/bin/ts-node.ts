@@ -27,12 +27,10 @@ const EVAL_FILENAME = '[eval].ts'
 
 const cwd = process.cwd()
 const opts = program.opts()
-const print = opts.print
-const eval = opts.eval
-const code: string = eval == null ? print : eval
+const code: string = opts.eval == null ? opts.print : opts.eval
 
 // Register returns environment options, helps creating a new language service.
-const compileInline = register(opts)
+const compiler = register(opts)
 
 // Defer creation of eval services.
 let files: { [filename: string]: { text: string, version: number } }
@@ -52,7 +50,7 @@ if (typeof code === 'string') {
 
   var result = _eval(code, global.__filename)
 
-  if (print != null) {
+  if (opts.print != null) {
     var output = typeof result === 'string' ? result : inspect(result)
     process.stdout.write(output + '\n')
   }
@@ -102,7 +100,9 @@ if (typeof code === 'string') {
  * Evaluate the code snippet.
  */
 function _eval (code: string, filename: string) {
-  return runInThisContext(compileInline(filename, code), filename)
+  // Use `eval` for source maps to output properly, which use V8s error
+  // frame `isEval` method to decide if it should offset the column by -62.
+  return (0,eval)(compiler(code, filename))
 }
 
 /**
