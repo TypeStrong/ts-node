@@ -102,9 +102,7 @@ if (typeof code === 'string') {
  * Evaluate the code snippet.
  */
 function _eval (code: string, filename: string) {
-  // Adding `;` before the code is jank, but avoids issues with source map
-  // columns becoming negative.
-  return runInThisContext(compileInline(filename, ';' + code), filename)
+  return runInThisContext(compileInline(filename, code), filename)
 }
 
 /**
