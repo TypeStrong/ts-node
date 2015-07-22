@@ -13,6 +13,8 @@
 npm install -g typescript-node
 ```
 
+TypeScript is defined as a `peerDependency`. You may have to install it alongside `typescript-node`.
+
 ## Features
 
 * Execute TypeScript with node
@@ -43,6 +45,15 @@ ts-node -p '"Hello, world!"'
 mocha test.ts --require typescript-node/register
 ```
 
+### Using TypeScript With Node Programmatically
+
+```js
+require('typescript-node').register({ /* options */ })
+
+// Or using the shortcut file.
+require('typescript-node/register')
+```
+
 ### Loading `tsconfig.json`
 
 **Typescript Node** automatically loads `tsconfig.json` options and files from the current directory using [tsconfig](https://github.com/TypeStrong/tsconfig).
@@ -62,7 +73,7 @@ ts-node --compiler ntypescript --configFile tsconfig.json --ignoreWarnings 2304 
 ## Issues
 
 * REPL currently does not work over each execution [#1](https://github.com/blakeembrey/typescript-node/issues/1)
-* Code coverage information does not work [#2](https://github.com/blakeembrey/typescript-node/issues/2)
+* Code coverage information does not work with istanbul [#2](https://github.com/blakeembrey/typescript-node/issues/2)
 
 ## License
 
