@@ -14,9 +14,9 @@ var pkg = require('../../package.json')
 
 program.option('-e, --eval [code]', 'Evaluate code')
 program.option('-p, --print [code]', 'Evaluate code and print result')
-program.option('--compiler [name]', 'Specify a custom TypeScript compiler')
-program.option('--ignoreWarnings [codes]', 'Specify a custom TypeScript compiler', list)
-program.option('--configFile [path]', 'Specify a custom TypeScript compiler')
+program.option('-c, --compiler [name]', 'Specify a custom TypeScript compiler')
+program.option('-i, --ignoreWarnings [codes]', 'Ignore TypeScript warnings by code', list)
+program.option('-f, --configFile [path]', 'Specify the path to `tsconfig.json`')
 
 program.version(pkg.version)
 program.usage('[options] [ -e script | script.js ] [arguments]')
