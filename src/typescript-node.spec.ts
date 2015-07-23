@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { exec } from 'child_process'
 import { join } from 'path'
-import { register } from './typescript-node'
+import { register, VERSION } from './typescript-node'
 
 const BIN_PATH = join(__dirname, '../dist/bin/ts-node')
 
@@ -9,6 +9,10 @@ const compiler = register()
 
 describe('ts-node', function () {
   this.timeout(5000)
+
+  it('should export the correct version', function () {
+    expect(VERSION).to.equal(require('../package.json').version)
+  })
 
   it('should execute cli', function (done) {
     exec(`node ${BIN_PATH} tests/hello-world`, function (err, stdout) {

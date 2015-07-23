@@ -8,6 +8,11 @@ import extend = require('xtend')
 import arrify = require('arrify')
 
 /**
+ * Export the current version.
+ */
+export const VERSION = '0.0.6'
+
+/**
  * Extensions to compile using TypeScript.
  */
 export const EXTENSIONS = ['.ts', '.tsx']
