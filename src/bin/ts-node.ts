@@ -7,10 +7,9 @@ import { readFileSync } from 'fs'
 import Module = require('module')
 import extend = require('xtend')
 import { runInThisContext } from 'vm'
-import { register } from '../typescript-node'
+import { register, VERSION } from '../typescript-node'
 
-var program = new Command('ts-node')
-var pkg = require('../../package.json')
+const program = new Command('ts-node')
 
 program.option('-e, --eval [code]', 'Evaluate code')
 program.option('-p, --print [code]', 'Evaluate code and print result')
@@ -18,7 +17,7 @@ program.option('-c, --compiler [name]', 'Specify a custom TypeScript compiler')
 program.option('-i, --ignoreWarnings [codes]', 'Ignore TypeScript warnings by code', list)
 program.option('-f, --configFile [path]', 'Specify the path to `tsconfig.json`')
 
-program.version(pkg.version)
+program.version(VERSION)
 program.usage('[options] [ -e script | script.js ] [arguments]')
 program.parse(process.argv)
 
