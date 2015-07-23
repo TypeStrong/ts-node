@@ -102,7 +102,7 @@ if (typeof code === 'string') {
 function _eval (code: string, filename: string) {
   // Use `eval` for source maps to output properly, which use V8s error
   // frame `isEval` method to decide if it should offset the column by -62.
-  return (0,eval)(compiler(code, filename))
+  return (0,eval)(compiler(filename, code))
 }
 
 /**
