@@ -1,14 +1,11 @@
 import * as TS from 'typescript'
 import * as tsconfig from 'tsconfig'
 import { resolve, relative } from 'path'
-import * as fs from 'fs'
+import { readFileSync } from 'fs'
 import { EOL } from 'os'
 import sourceMapSupport = require('source-map-support')
 import extend = require('xtend')
 import arrify = require('arrify')
-
-const cwd = process.cwd()
-const readFileSync = fs.readFileSync
 
 /**
  * Extensions to compile using TypeScript.
@@ -46,6 +43,7 @@ function readConfig (fileName: string, ts: typeof TS) {
  * Register TypeScript compiler.
  */
 export function register (opts?: Options) {
+  const cwd = process.cwd()
   const options = extend(opts)
 
   const maps: { [fileName: string]: string } = {}
