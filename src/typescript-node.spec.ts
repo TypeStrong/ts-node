@@ -60,6 +60,7 @@ describe('ts-node', function () {
   it('should work with source maps', function (done) {
     exec(`node ${BIN_PATH} tests/throw`, function (err) {
       expect(err.message).to.contain([
+        `${join(__dirname, '../tests/throw.ts')}:3`,
         '  bar () { throw new Error(\'this is a demo\') }',
         '                 ^',
         'Error: this is a demo'
@@ -72,6 +73,7 @@ describe('ts-node', function () {
   it('eval should work with source maps', function (done) {
     exec(`node ${BIN_PATH} -p "import './tests/throw'"`, function (err) {
       expect(err.message).to.contain([
+        `${join(__dirname, '../tests/throw.ts')}:3`,
         '  bar () { throw new Error(\'this is a demo\') }',
         '                 ^',
         'Error: this is a demo'

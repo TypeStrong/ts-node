@@ -38,7 +38,11 @@ function readConfig (fileName: string, ts: typeof TS) {
   config.compilerOptions = extend({
     target: 'es5'
   }, config.compilerOptions, {
-    module: 'commonjs'
+    module: 'commonjs',
+    sourceMap: true,
+    inlineSourceMap: false,
+    inlineSources: true,
+    declaration: false
   })
 
   return ts.parseConfigFile(config, ts.sys, fileName)
@@ -96,7 +100,6 @@ export function register (opts?: Options) {
 
   const registry = ts.createDocumentRegistry()
   const service = ts.createLanguageService(serviceHost, registry)
-  const hasSourceMap = config.options.sourceMap
 
   // Install source map support and read from cache.
   sourceMapSupport.install({
@@ -113,15 +116,12 @@ export function register (opts?: Options) {
     files[fileName] = true
 
     const output = service.getEmitOutput(fileName)
-    const result = output.outputFiles[hasSourceMap ? 1 : 0].text
+    const result = output.outputFiles[1].text
+    const sourceMap = output.outputFiles[0].text
+    const sourceText = service.getSourceFile(fileName).text
 
-    // Cache source maps where provided.
-    if (hasSourceMap) {
-      const sourceText = service.getSourceFile(fileName).text
-      const sourceMapText = output.outputFiles[0].text
-
-      maps[fileName] = getSourceMap(sourceMapText, fileName, sourceText)
-    }
+    // Cache source maps in memory.
+    maps[fileName] = getSourceMap(sourceMap, fileName, sourceText)
 
     // Log all diagnostics before exiting the program.
     const diagnostics = getDiagnostics(service, fileName, options)
