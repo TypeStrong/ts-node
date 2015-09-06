@@ -32,9 +32,6 @@
     "type": "git",
     "url": "git://github.com/blakeembrey/typescript-node.git"
   },
-  "typescript": {
-    "definition": "typescript-node.d.ts"
-  },
   "keywords": [
     "typescript",
     "node",
@@ -60,9 +57,6 @@
     "ntypescript": "^1.201507091536.1",
     "pre-commit": "^1.0.10",
     "typescript": "^1.5.3"
-  },
-  "peerDependencies": {
-    "typescript": "^1.5.0"
   },
   "dependencies": {
     "arrify": "^1.0.0",

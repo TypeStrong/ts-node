@@ -5,22 +5,23 @@
 [![Build status][travis-image]][travis-url]
 [![Test coverage][coveralls-image]][coveralls-url]
 
-> TypeScript execution environment for node.
+> TypeScript execution environment for node. **Works with `typescript@>=1.5`**.
 
 ## Installation
 
-```
+```sh
 npm install -g typescript-node
-```
 
-TypeScript is defined as a `peerDependency`. You may have to install it alongside `typescript-node`.
+# Make sure you install your TypeScript-compatible compiler.
+npm install -g typescript
+```
 
 ## Features
 
 * Execute TypeScript with node
 * Interactive REPL
 * Execute (and print) TypeScript inline
-* Supports Source Maps
+* Supports source maps
 * Supports `tsconfig.json`
 
 ## Usage
@@ -42,7 +43,13 @@ ts-node -p '"Hello, world!"'
 **With Mocha**
 
 ```
-mocha test.ts --require typescript-node/register
+mocha test.ts --require typescript-node/register src/**/*.spec.ts
+```
+
+**With Tape:**
+
+```
+ts-node tape src/**/*.spec.ts
 ```
 
 ### Using TypeScript With Node Programmatically
@@ -72,7 +79,7 @@ ts-node --compiler ntypescript --configFile tsconfig.json --ignoreWarnings 2304 
 
 ## Issues
 
-* REPL currently does not work over each execution [#1](https://github.com/blakeembrey/typescript-node/issues/1)
+* REPL is not working over each execution [#1](https://github.com/blakeembrey/typescript-node/issues/1)
 * Code coverage information does not work with istanbul [#2](https://github.com/blakeembrey/typescript-node/issues/2)
 
 ## License
