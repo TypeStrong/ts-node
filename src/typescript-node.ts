@@ -10,7 +10,7 @@ import arrify = require('arrify')
 /**
  * Export the current version.
  */
-export const VERSION = '0.0.7'
+export const VERSION = '0.0.8'
 
 /**
  * Extensions to compile using TypeScript.
