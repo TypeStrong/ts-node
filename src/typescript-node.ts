@@ -1,7 +1,7 @@
 import * as TS from 'typescript'
 import * as tsconfig from 'tsconfig'
 import { resolve, relative } from 'path'
-import { readFileSync } from 'fs'
+import { readFileSync, statSync } from 'fs'
 import { EOL } from 'os'
 import sourceMapSupport = require('source-map-support')
 import extend = require('xtend')
@@ -80,7 +80,9 @@ export function register (opts?: Options) {
 
   const serviceHost: TS.LanguageServiceHost = {
     getScriptFileNames: () => config.fileNames.concat(Object.keys(files)),
-    getScriptVersion: (fileName) => String(versions[fileName] || 'node'),
+    getScriptVersion: (fileName) => {
+      return String(versions[fileName] || statSync(fileName).mtime.getTime())
+    },
     getScriptSnapshot (fileName): TS.IScriptSnapshot {
       if (snapshots[fileName]) {
         return snapshots[fileName]
