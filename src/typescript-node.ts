@@ -1,6 +1,6 @@
 import * as TS from 'typescript'
 import * as tsconfig from 'tsconfig'
-import { resolve, relative } from 'path'
+import { resolve, relative, extname, basename } from 'path'
 import { readFileSync, statSync } from 'fs'
 import { EOL } from 'os'
 import sourceMapSupport = require('source-map-support')
@@ -41,7 +41,7 @@ function readConfig (fileName: string, ts: typeof TS) {
     module: 'commonjs',
     sourceMap: true,
     inlineSourceMap: false,
-    inlineSources: true,
+    inlineSources: false,
     declaration: false
   })
 
@@ -55,7 +55,6 @@ export function register (opts?: Options) {
   const cwd = process.cwd()
   const options = extend(opts)
 
-  const maps: { [fileName: string]: string } = {}
   const files: { [fileName: string]: boolean } = {}
   const versions: { [fileName: string]: number } = {}
   const snapshots: { [fileName: string]: TS.IScriptSnapshot } = {}
@@ -94,8 +93,8 @@ export function register (opts?: Options) {
         return
       }
     },
+    getNewLine: () => EOL,
     getCurrentDirectory: () => cwd,
-    getScriptIsOpen: () => true,
     getCompilationSettings: () => config.options,
     getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(config.options)
   }
@@ -105,25 +104,31 @@ export function register (opts?: Options) {
 
   // Install source map support and read from cache.
   sourceMapSupport.install({
-    retrieveSourceMap (fileName: string) {
-      var map = maps && maps[fileName]
-
-      if (map) {
-        return <sourceMapSupport.UrlAndMap> { map, url: null }
+    retrieveFile (fileName) {
+      if (files[fileName]) {
+        return getFile(fileName)
       }
     }
   })
 
-  function compile (fileName: string) {
-    files[fileName] = true
-
+  function getFile (fileName: string) {
     const output = service.getEmitOutput(fileName)
     const result = output.outputFiles[1].text
-    const sourceMap = output.outputFiles[0].text
     const sourceText = service.getSourceFile(fileName).text
+    const sourceMapText = output.outputFiles[0].text
+    const sourceMapFileName = output.outputFiles[0].name
+    const sourceMap = getSourceMap(sourceMapText, fileName, sourceText)
+    const base64SourceMapText = new Buffer(sourceMap).toString('base64')
 
-    // Cache source maps in memory.
-    maps[fileName] = getSourceMap(sourceMap, fileName, sourceText)
+    return result
+      .replace(
+        '//# sourceMappingURL=' + basename(sourceMapFileName),
+        `//# sourceMappingURL=data:application/json;base64,${base64SourceMapText}`
+      )
+  }
+
+  function compile (fileName: string) {
+    files[fileName] = true
 
     // Log all diagnostics before exiting the program.
     const diagnostics = getDiagnostics(service, fileName, options)
@@ -132,7 +137,7 @@ export function register (opts?: Options) {
       throw createError(diagnostics, ts)
     }
 
-    return result
+    return getFile(fileName)
   }
 
   function loader (m: any, fileName: string) {
@@ -206,5 +211,6 @@ export function getSourceMap (map: string, fileName: string, code: string): stri
   sourceMap.file = fileName
   sourceMap.sources = [fileName]
   sourceMap.sourcesContent = [code]
+  delete sourceMap.sourceRoot
   return JSON.stringify(sourceMap)
 }
