@@ -15,6 +15,9 @@
     "typings/tsd.d.ts",
     "src/typings/node.d.ts",
     "src/typings/xtend.d.ts",
-    "src/typings/arrify.d.ts"
+    "src/typings/arrify.d.ts",
+    "src/typings/tsconfig.d.ts",
+    "src/typings/make-error.d.ts",
+    "node_modules/typescript/bin/typescript.d.ts"
   ]
 }

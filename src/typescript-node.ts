@@ -1,8 +1,9 @@
 import * as TS from 'typescript'
-import * as tsconfig from 'tsconfig'
-import { resolve, relative, extname, basename } from 'path'
+import tsconfig = require('tsconfig')
+import { resolve, relative, extname, basename, isAbsolute } from 'path'
 import { readFileSync, statSync } from 'fs'
 import { EOL } from 'os'
+import { BaseError } from 'make-error'
 import sourceMapSupport = require('source-map-support')
 import extend = require('xtend')
 import arrify = require('arrify')
@@ -74,7 +75,7 @@ export function register (opts?: Options) {
   const config = readConfig(options.configFile, ts)
 
   if (config.errors.length) {
-    throw createError(config.errors, ts)
+    throw new TypeScriptError(config.errors, ts)
   }
 
   const serviceHost: TS.LanguageServiceHost = {
@@ -89,9 +90,7 @@ export function register (opts?: Options) {
 
       try {
         return ts.ScriptSnapshot.fromString(readFileSync(fileName, 'utf-8'))
-      } catch (e) {
-        return
-      }
+      } catch (e) {}
     },
     getNewLine: () => EOL,
     getCurrentDirectory: () => cwd,
@@ -99,8 +98,7 @@ export function register (opts?: Options) {
     getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(config.options)
   }
 
-  const registry = ts.createDocumentRegistry()
-  const service = ts.createLanguageService(serviceHost, registry)
+  const service = ts.createLanguageService(serviceHost)
 
   // Install source map support and read from cache.
   sourceMapSupport.install({
@@ -130,14 +128,15 @@ export function register (opts?: Options) {
   function compile (fileName: string) {
     files[fileName] = true
 
-    // Log all diagnostics before exiting the program.
+    // Retrieve contents before checking diagnostics.
+    const contents = getFile(fileName)
     const diagnostics = getDiagnostics(service, fileName, options)
 
     if (diagnostics.length) {
-      throw createError(diagnostics, ts)
+      throw new TypeScriptError(diagnostics, ts)
     }
 
-    return getFile(fileName)
+    return contents
   }
 
   function loader (m: any, fileName: string) {
@@ -191,19 +190,6 @@ export function formatDiagnostic (diagnostic: TS.Diagnostic, ts: typeof TS, cwd:
 }
 
 /**
- * Create a "TypeScript" error.
- */
-export function createError (diagnostics: TS.Diagnostic[], ts: typeof TS): Error {
-  const message = ['Unable to compile TypeScript']
-    .concat(diagnostics.map((d) => formatDiagnostic(d, ts)))
-    .join(EOL)
-
-  const err = new Error(message)
-  err.name = 'TypeScriptError'
-  return err
-}
-
-/**
  * Sanitize the source map content.
  */
 export function getSourceMap (map: string, fileName: string, code: string): string {
@@ -213,4 +199,23 @@ export function getSourceMap (map: string, fileName: string, code: string): stri
   sourceMap.sourcesContent = [code]
   delete sourceMap.sourceRoot
   return JSON.stringify(sourceMap)
+}
+
+/**
+ * Extend errors with TypeScript error instances.
+ */
+export class TypeScriptError extends BaseError {
+
+  name = 'TypeScriptError'
+
+  message: string
+  diagnosticMessages: string[]
+
+  constructor (public diagnostics: TS.Diagnostic[], ts: typeof TS) {
+    super()
+
+    this.diagnosticMessages = diagnostics.map(d => formatDiagnostic(d, ts))
+    this.message = ['Unable to compile TypeScript'].concat(this.diagnosticMessages).join(EOL)
+  }
+
 }

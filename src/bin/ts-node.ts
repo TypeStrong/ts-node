@@ -1,12 +1,10 @@
 import { resolve } from 'path'
 import { start } from 'repl'
 import { inspect } from 'util'
-import { LanguageService, LanguageServiceHost } from 'typescript'
 import { readFileSync } from 'fs'
 import Module = require('module')
 import extend = require('xtend')
 import minimist = require('minimist')
-import { runInThisContext } from 'vm'
 import { register, VERSION } from '../typescript-node'
 
 // TypeScript files must always end with `.ts`.
@@ -37,9 +35,6 @@ const argv = <Argv> <any> minimist(process.argv.slice(2), {
   }
 })
 
-const cwd = process.cwd()
-const code: string = argv.eval == null ? argv.print : argv.eval
-
 if (argv.version) {
   console.log(VERSION)
   process.exit(0)
@@ -60,16 +55,14 @@ if (argv.help) {
   process.exit(0)
 }
 
-// Register returns environment options, helps creating a new language service.
 const compiler = register({
   compiler: argv.compiler,
   ignoreWarnings: list(argv.ignoreWarnings),
   configFile: argv.compiler
 })
 
-// Defer creation of eval services.
-let files: { [filename: string]: { text: string, version: number } }
-let service: LanguageService
+const cwd = process.cwd()
+const code = argv.eval == null ? argv.print : argv.eval
 
 if (typeof code === 'string') {
   global.__filename = EVAL_FILENAME
