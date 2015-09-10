@@ -1,35 +1,71 @@
 import { resolve } from 'path'
-import { Command } from 'commander'
 import { start } from 'repl'
 import { inspect } from 'util'
 import { LanguageService, LanguageServiceHost } from 'typescript'
 import { readFileSync } from 'fs'
 import Module = require('module')
 import extend = require('xtend')
+import minimist = require('minimist')
 import { runInThisContext } from 'vm'
 import { register, VERSION } from '../typescript-node'
-
-const program = new Command('ts-node')
-
-program.option('-e, --eval [code]', 'Evaluate code')
-program.option('-p, --print [code]', 'Evaluate code and print result')
-program.option('-c, --compiler [name]', 'Specify a custom TypeScript compiler')
-program.option('-i, --ignoreWarnings [codes]', 'Ignore TypeScript warnings by code', list)
-program.option('-f, --configFile [path]', 'Specify the path to `tsconfig.json`')
-
-program.version(VERSION)
-program.usage('[options] [ -e script | script.js ] [arguments]')
-program.parse(process.argv)
 
 // TypeScript files must always end with `.ts`.
 const EVAL_FILENAME = '[eval].ts'
 
+interface Argv {
+  eval?: string
+  print?: string
+  version?: boolean
+  help?: boolean
+  compiler: string
+  configFile: string
+  ignoreWarnings: string
+  _: string[]
+}
+
+const argv = <Argv> <any> minimist(process.argv.slice(2), {
+  stopEarly: true,
+  string: ['eval', 'print', 'compiler', 'configFile', 'ignoreWarnings'],
+  boolean: ['help', 'version'],
+  alias: {
+    v: ['version'],
+    e: ['eval'],
+    p: ['print'],
+    c: ['compiler'],
+    f: ['configFile'],
+    i: ['ignoreWarnings']
+  }
+})
+
 const cwd = process.cwd()
-const opts = program.opts()
-const code: string = opts.eval == null ? opts.print : opts.eval
+const code: string = argv.eval == null ? argv.print : argv.eval
+
+if (argv.version) {
+  console.log(VERSION)
+  process.exit(0)
+}
+
+if (argv.help) {
+  console.log(`
+  Usage: ts-node [options] [ -e script | script.ts ] [arguments]
+
+  Options:
+
+    -e, --eval [code]             Evaluate code
+    -p, --print [code]            Evaluate code and print result
+    -c, --compiler [name]         Specify a custom TypeScript compiler
+    -i, --ignoreWarnings [codes]  Ignore TypeScript warnings by code
+    -f, --configFile [path]       Specify the path to \`tsconfig.json\`
+`)
+  process.exit(0)
+}
 
 // Register returns environment options, helps creating a new language service.
-const compiler = register(opts)
+const compiler = register({
+  compiler: argv.compiler,
+  ignoreWarnings: list(argv.ignoreWarnings),
+  configFile: argv.compiler
+})
 
 // Defer creation of eval services.
 let files: { [filename: string]: { text: string, version: number } }
@@ -49,46 +85,18 @@ if (typeof code === 'string') {
 
   var result = _eval(code, global.__filename)
 
-  if (opts.print != null) {
+  if (argv.print != null) {
     var output = typeof result === 'string' ? result : inspect(result)
     process.stdout.write(output + '\n')
   }
 } else {
-  if (program.args.length) {
-    let index = 2
-    let skip = false
+  if (argv._.length) {
+    const args = argv._.slice()
 
-    // Skip over TS configuration options.
-    for (; index < process.argv.length; index++) {
-      if (skip) {
-        skip = false
-        continue
-      }
-
-      const arg = process.argv[index]
-
-      // Break on unknown argument value.
-      if (arg.charAt(0) === '-') {
-        const value = opts[arg.substr(2)]
-
-        if (value && value !== true) {
-          skip = true
-        }
-
-        continue
-      }
-
-      break
-    }
-
-    const args = process.argv.slice(index)
-
-    // Make the filename absolute.
     args[0] = resolve(args[0])
 
     process.argv = ['node'].concat(args)
     process.execArgv.unshift(__filename)
-
     Module.runMain()
   } else {
     startRepl()
@@ -137,5 +145,5 @@ function replEval (code: string, context: any, filename: string, callback: (err:
  * Split a string of values into an array.
  */
 function list (value: string) {
-  return value.split(/ *, */)
+  return String(value).split(/ *, */)
 }

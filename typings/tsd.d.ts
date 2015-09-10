@@ -4,4 +4,4 @@
 /// <reference path="../node_modules/typescript/bin/typescript.d.ts" />
 /// <reference path="../node_modules/tsconfig/tsconfig.d.ts" />
 /// <reference path="source-map-support/source-map-support.d.ts" />
-/// <reference path="commander/commander.d.ts" />
+/// <reference path="minimist/minimist.d.ts" />

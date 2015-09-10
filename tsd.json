@@ -17,8 +17,8 @@
     "source-map-support/source-map-support.d.ts": {
       "commit": "f999dcd9543265848a33fa3bb8379bf0393d33c8"
     },
-    "commander/commander.d.ts": {
-      "commit": "f999dcd9543265848a33fa3bb8379bf0393d33c8"
+    "minimist/minimist.d.ts": {
+      "commit": "b3aeee64552e324581fdbe0926f4a96e981e451b"
     }
   }
 }

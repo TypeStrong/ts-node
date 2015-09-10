@@ -60,7 +60,7 @@
   },
   "dependencies": {
     "arrify": "^1.0.0",
-    "commander": "^2.8.1",
+    "minimist": "^1.2.0",
     "source-map-support": "^0.3.2",
     "tsconfig": "^1.0.1",
     "xtend": "^4.0.0"
