@@ -27,6 +27,8 @@ export interface Options {
   configFile?: string
   ignoreWarnings?: string[]
   isEval?: boolean
+  getFile?: (fileName: string) => string
+  getVersion?: (fileName: string) => string
 }
 
 /**
@@ -56,16 +58,12 @@ function readConfig (fileName: string, ts: typeof TS) {
  */
 export function register (opts?: Options) {
   const cwd = process.cwd()
-  const options = extend(opts)
+  const options = extend({ getFile, getVersion, isEval: false }, opts)
 
   const files: { [fileName: string]: boolean } = {}
-  const versions: { [fileName: string]: number } = {}
-  const snapshots: { [fileName: string]: TS.IScriptSnapshot } = {}
 
   // Enable compiler overrides.
   options.compiler = options.compiler || 'typescript'
-
-  // Ensure `ignoreWarnings` is always an array.
   options.ignoreWarnings = arrify(options.ignoreWarnings)
 
   // Resolve configuration file options.
@@ -84,17 +82,11 @@ export function register (opts?: Options) {
 
   const serviceHost: TS.LanguageServiceHost = {
     getScriptFileNames: () => config.fileNames.concat(Object.keys(files)),
-    getScriptVersion: (fileName) => {
-      return String(versions[fileName] || statSync(fileName).mtime.getTime())
-    },
+    getScriptVersion: options.getVersion,
     getScriptSnapshot (fileName): TS.IScriptSnapshot {
-      if (snapshots[fileName]) {
-        return snapshots[fileName]
-      }
+      const contents = options.getFile(fileName)
 
-      try {
-        return ts.ScriptSnapshot.fromString(readFileSync(fileName, 'utf-8'))
-      } catch (e) {}
+      return contents ? ts.ScriptSnapshot.fromString(contents) : undefined
     },
     getNewLine: () => EOL,
     getCurrentDirectory: () => cwd,
@@ -108,12 +100,12 @@ export function register (opts?: Options) {
   sourceMapSupport.install({
     retrieveFile (fileName) {
       if (files[fileName]) {
-        return getFile(fileName)
+        return getOutput(fileName)
       }
     }
   })
 
-  function getFile (fileName: string) {
+  function getOutput (fileName: string) {
     const output = service.getEmitOutput(fileName)
     const result = output.outputFiles[1].text
     const sourceText = service.getSourceFile(fileName).text
@@ -130,10 +122,10 @@ export function register (opts?: Options) {
   }
 
   function compile (fileName: string) {
+    // Add to the `files` object before compiling - otherwise our file will
+    // not found (unless it's in our `tsconfig.json` file).
     files[fileName] = true
 
-    // Retrieve contents before checking diagnostics.
-    const contents = getFile(fileName)
     const diagnostics = getDiagnostics(service, fileName, options)
 
     if (diagnostics.length) {
@@ -147,7 +139,7 @@ export function register (opts?: Options) {
       process.exit(1)
     }
 
-    return contents
+    return getOutput(fileName)
   }
 
   function loader (m: any, fileName: string) {
@@ -159,18 +151,23 @@ export function register (opts?: Options) {
     require.extensions[extension] = loader
   })
 
-  function compileInline (fileName: string, code: string) {
-    if (!versions[fileName]) {
-      versions[fileName] = 0
-    }
+  return compile
+}
 
-    versions[fileName]++
-    snapshots[fileName] = ts.ScriptSnapshot.fromString(code)
+/**
+ * Get the file version using the mod time.
+ */
+export function getVersion (fileName: string): string {
+  return String(statSync(fileName).mtime.getTime())
+}
 
-    return compile(fileName)
-  }
-
-  return compileInline
+/**
+ * Get the file from the file system.
+ */
+export function getFile (fileName: string): string {
+  try {
+    return readFileSync(fileName, 'utf8')
+  } catch (err) {}
 }
 
 /**

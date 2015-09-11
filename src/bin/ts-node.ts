@@ -5,7 +5,7 @@ import { readFileSync } from 'fs'
 import Module = require('module')
 import extend = require('xtend')
 import minimist = require('minimist')
-import { register, VERSION, TypeScriptError } from '../typescript-node'
+import { register, VERSION, TypeScriptError, getFile, getVersion } from '../typescript-node'
 
 interface Argv {
   eval?: string
@@ -57,16 +57,21 @@ const code = argv.eval == null ? argv.print : argv.eval
 const isEval = typeof code === 'string' || argv._.length === 0
 
 // Register the TypeScript compiler instance.
-const compiler = register({
+const compile = register({
+  getFile: isEval ? getFileEval : getFile,
+  getVersion: isEval ? getVersionEval : getVersion,
   compiler: argv.compiler,
   ignoreWarnings: list(argv.ignoreWarnings),
-  configFile: argv.compiler,
+  configFile: argv.configFile,
   isEval: isEval
 })
 
 // TypeScript files must always end with `.ts`.
 const EVAL_FILENAME = '[eval].ts'
 const EVAL_PATH = join(cwd, EVAL_FILENAME)
+
+// Store eval contents for in-memory lookups.
+const evalFile = { text: '', version: 0 }
 
 if (typeof code === 'string') {
   global.__filename = EVAL_FILENAME
@@ -83,7 +88,7 @@ if (typeof code === 'string') {
   let result: any
 
   try {
-    result = _eval(code, EVAL_PATH)
+    result = _eval(code)
   } catch (err) {
     if (err instanceof TypeScriptError) {
       console.error(err.message)
@@ -113,10 +118,14 @@ if (typeof code === 'string') {
 /**
  * Evaluate the code snippet.
  */
-function _eval (code: string, filename: string) {
+function _eval (code: string) {
+  // Increment eval constants for the compiler to pick up changes.
+  evalFile.text = code
+  evalFile.version++
+
   // Use `eval` for source maps to output properly, which use V8s error
   // frame `isEval` method to decide if it should offset the column by -62.
-  return (0,eval)(compiler(filename, code))
+  return (0,eval)(compile(EVAL_PATH))
 }
 
 /**
@@ -140,7 +149,7 @@ function replEval (code: string, context: any, filename: string, callback: (err:
   let result: any
 
   try {
-    result = _eval(code, EVAL_PATH)
+    result = _eval(code)
   } catch (e) {
     if (e instanceof TypeScriptError) {
       err = e.message
@@ -157,4 +166,18 @@ function replEval (code: string, context: any, filename: string, callback: (err:
  */
 function list (value: string) {
   return String(value).split(/ *, */)
+}
+
+/**
+ * Get the file text, checking for eval first.
+ */
+function getFileEval (fileName: string) {
+  return fileName === EVAL_PATH ? evalFile.text : getFile(fileName)
+}
+
+/**
+ * Get the file version, checking for eval first.
+ */
+function getVersionEval (fileName: string) {
+  return fileName === EVAL_PATH ? String(evalFile.version) : getVersion(fileName)
 }
