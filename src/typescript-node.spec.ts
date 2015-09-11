@@ -1,11 +1,12 @@
 import { expect } from 'chai'
 import { exec } from 'child_process'
 import { join } from 'path'
+import proxyquire = require('proxyquire')
 import { register, VERSION } from './typescript-node'
 
-const BIN_PATH = join(__dirname, '../dist/bin/ts-node')
+register()
 
-const compiler = register()
+const BIN_PATH = join(__dirname, '../dist/bin/ts-node')
 
 describe('ts-node', function () {
   this.timeout(5000)
@@ -84,14 +85,22 @@ describe('ts-node', function () {
   })
 
   it('should be able to require typescript', function () {
-    var m = require('../tests/module')
+    const m = require('../tests/module')
 
     expect(m.example('foo')).to.equal('FOO')
   })
 
   it('should compile through js and ts', function () {
-    var m = require('../tests/complex')
+    const m = require('../tests/complex')
 
     expect(m.example()).to.equal('example')
+  })
+
+  it('should work with proxyquire', function () {
+    const m = proxyquire('../tests/complex', {
+      './example': 'hello'
+    })
+
+    expect(m.example()).to.equal('hello')
   })
 })

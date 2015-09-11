@@ -56,6 +56,7 @@
     "mocha": "^2.1.0",
     "ntypescript": "^1.201507091536.1",
     "pre-commit": "^1.0.10",
+    "proxyquire": "^1.7.2",
     "typescript": "^1.6.0-beta"
   },
   "dependencies": {

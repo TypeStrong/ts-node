@@ -22,6 +22,9 @@
     },
     "chalk/chalk.d.ts": {
       "commit": "a461a243e2e09b213bc49d12650f80d81047576d"
+    },
+    "proxyquire/proxyquire.d.ts": {
+      "commit": "a461a243e2e09b213bc49d12650f80d81047576d"
     }
   }
 }
