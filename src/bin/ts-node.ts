@@ -1,4 +1,4 @@
-import { resolve } from 'path'
+import { join } from 'path'
 import { start } from 'repl'
 import { inspect } from 'util'
 import { readFileSync } from 'fs'
@@ -6,9 +6,6 @@ import Module = require('module')
 import extend = require('xtend')
 import minimist = require('minimist')
 import { register, VERSION } from '../typescript-node'
-
-// TypeScript files must always end with `.ts`.
-const EVAL_FILENAME = '[eval].ts'
 
 interface Argv {
   eval?: string
@@ -64,6 +61,10 @@ const compiler = register({
 const cwd = process.cwd()
 const code = argv.eval == null ? argv.print : argv.eval
 
+// TypeScript files must always end with `.ts`.
+const EVAL_FILENAME = '[eval].ts'
+const EVAL_PATH = join(cwd, EVAL_FILENAME)
+
 if (typeof code === 'string') {
   global.__filename = EVAL_FILENAME
   global.__dirname = cwd
@@ -76,7 +77,7 @@ if (typeof code === 'string') {
   global.module = module
   global.require = module.require.bind(module)
 
-  var result = _eval(code, global.__filename)
+  var result = _eval(code, EVAL_PATH)
 
   if (argv.print != null) {
     var output = typeof result === 'string' ? result : inspect(result)
@@ -86,7 +87,7 @@ if (typeof code === 'string') {
   if (argv._.length) {
     const args = argv._.slice()
 
-    args[0] = resolve(args[0])
+    args[0] = join(cwd, args[0])
 
     process.argv = ['node'].concat(args)
     process.execArgv.unshift(__filename)
@@ -126,7 +127,7 @@ function replEval (code: string, context: any, filename: string, callback: (err:
   let result: any
 
   try {
-    result = _eval(code, EVAL_FILENAME)
+    result = _eval(code, EVAL_PATH)
   } catch (e) {
     err = e
   }

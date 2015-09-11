@@ -18,6 +18,6 @@
     "src/typings/arrify.d.ts",
     "src/typings/tsconfig.d.ts",
     "src/typings/make-error.d.ts",
-    "node_modules/typescript/bin/typescript.d.ts"
+    "node_modules/typescript/lib/typescript.d.ts"
   ]
 }
