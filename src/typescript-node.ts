@@ -192,7 +192,7 @@ export function formatDiagnostic (diagnostic: TS.Diagnostic, ts: typeof TS, cwd:
     const path = relative(cwd, diagnostic.file.fileName)
     const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start)
 
-    return `${chalk.gray(`${path} (${line + 1},${character + 1}):`)} ${message} (${diagnostic.code})`
+    return `${path} (${line + 1},${character + 1}): ${message} (${diagnostic.code})`
   }
 
   return `${message} (${diagnostic.code})`
@@ -202,8 +202,15 @@ export function formatDiagnostic (diagnostic: TS.Diagnostic, ts: typeof TS, cwd:
  * Format diagnostics into friendlier errors.
  */
 function formatDiagnostics (diagnostics: TS.Diagnostic[], ts: typeof TS) {
-  return chalk.red('⨯ Unable to compile TypeScript') +
-    EOL + EOL + diagnostics.map(d => formatDiagnostic(d, ts)).join(EOL)
+  const boundary = chalk.grey('----------------------------------')
+
+  return [
+    boundary,
+    chalk.red.bold('⨯ Unable to compile TypeScript'),
+    '',
+    diagnostics.map(d => formatDiagnostic(d, ts)).join(EOL),
+    boundary
+  ].join(EOL)
 }
 
 /**
