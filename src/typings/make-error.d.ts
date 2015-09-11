@@ -3,5 +3,7 @@ declare module 'make-error' {
     message: string
     name: string
     stack: string
+
+    constructor (message: string)
   }
 }

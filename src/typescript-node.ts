@@ -7,6 +7,7 @@ import { BaseError } from 'make-error'
 import sourceMapSupport = require('source-map-support')
 import extend = require('xtend')
 import arrify = require('arrify')
+import chalk = require('chalk')
 
 /**
  * Export the current version.
@@ -25,6 +26,7 @@ export interface Options {
   compiler?: string
   configFile?: string
   ignoreWarnings?: string[]
+  isRepl?: boolean
 }
 
 /**
@@ -74,8 +76,10 @@ export function register (opts?: Options) {
   const ts: typeof TS = require(options.compiler)
   const config = readConfig(options.configFile, ts)
 
+  // Render the configuration errors and exit the script.
   if (config.errors.length) {
-    throw new TypeScriptError(config.errors, ts)
+    console.error(formatDiagnostics(config.errors, ts))
+    process.exit(1)
   }
 
   const serviceHost: TS.LanguageServiceHost = {
@@ -133,7 +137,14 @@ export function register (opts?: Options) {
     const diagnostics = getDiagnostics(service, fileName, options)
 
     if (diagnostics.length) {
-      throw new TypeScriptError(diagnostics, ts)
+      const message = formatDiagnostics(diagnostics, ts)
+
+      if (opts.isRepl) {
+        throw new TypeScriptError(message)
+      }
+
+      console.error(message)
+      process.exit(1)
     }
 
     return contents
@@ -181,12 +192,21 @@ export function formatDiagnostic (diagnostic: TS.Diagnostic, ts: typeof TS, cwd:
   const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
 
   if (diagnostic.file) {
+    const path = relative(cwd, diagnostic.file.fileName)
     const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start)
 
-    return `${relative(cwd, diagnostic.file.fileName)} (${line + 1},${character + 1}): ${message} (${diagnostic.code})`
+    return `${chalk.gray(`${path} (${line + 1},${character + 1}):`)} ${message} (${diagnostic.code})`
   }
 
   return `${message} (${diagnostic.code})`
+}
+
+/**
+ * Format diagnostics into friendlier errors.
+ */
+function formatDiagnostics (diagnostics: TS.Diagnostic[], ts: typeof TS) {
+  return chalk.red('⨯ Unable to compile TypeScript') +
+    EOL + EOL + diagnostics.map(d => formatDiagnostic(d, ts)).join(EOL)
 }
 
 /**
@@ -207,15 +227,5 @@ export function getSourceMap (map: string, fileName: string, code: string): stri
 export class TypeScriptError extends BaseError {
 
   name = 'TypeScriptError'
-
-  message: string
-  diagnosticMessages: string[]
-
-  constructor (public diagnostics: TS.Diagnostic[], ts: typeof TS) {
-    super()
-
-    this.diagnosticMessages = diagnostics.map(d => formatDiagnostic(d, ts))
-    this.message = ['Unable to compile TypeScript'].concat(this.diagnosticMessages).join(EOL)
-  }
 
 }

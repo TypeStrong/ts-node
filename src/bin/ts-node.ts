@@ -5,7 +5,7 @@ import { readFileSync } from 'fs'
 import Module = require('module')
 import extend = require('xtend')
 import minimist = require('minimist')
-import { register, VERSION } from '../typescript-node'
+import { register, VERSION, TypeScriptError } from '../typescript-node'
 
 interface Argv {
   eval?: string
@@ -52,14 +52,16 @@ if (argv.help) {
   process.exit(0)
 }
 
+const cwd = process.cwd()
+const code = argv.eval == null ? argv.print : argv.eval
+
+// Register the TypeScript compiler instance.
 const compiler = register({
   compiler: argv.compiler,
   ignoreWarnings: list(argv.ignoreWarnings),
-  configFile: argv.compiler
+  configFile: argv.compiler,
+  isRepl: typeof code === 'string' || argv._.length === 0
 })
-
-const cwd = process.cwd()
-const code = argv.eval == null ? argv.print : argv.eval
 
 // TypeScript files must always end with `.ts`.
 const EVAL_FILENAME = '[eval].ts'
@@ -77,11 +79,21 @@ if (typeof code === 'string') {
   global.module = module
   global.require = module.require.bind(module)
 
-  var result = _eval(code, EVAL_PATH)
+  let result: any
+
+  try {
+    result = _eval(code, EVAL_PATH)
+  } catch (err) {
+    if (err instanceof TypeScriptError) {
+      console.error(err.message)
+      process.exit(1)
+    }
+
+    throw err
+  }
 
   if (argv.print != null) {
-    var output = typeof result === 'string' ? result : inspect(result)
-    process.stdout.write(output + '\n')
+    console.log(typeof result === 'string' ? result : inspect(result))
   }
 } else {
   if (argv._.length) {
@@ -129,7 +141,11 @@ function replEval (code: string, context: any, filename: string, callback: (err:
   try {
     result = _eval(code, EVAL_PATH)
   } catch (e) {
-    err = e
+    if (e instanceof TypeScriptError) {
+      err = e.message
+    } else {
+      err = e
+    }
   }
 
   callback(err, result)

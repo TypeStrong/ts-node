@@ -19,6 +19,9 @@
     },
     "minimist/minimist.d.ts": {
       "commit": "b3aeee64552e324581fdbe0926f4a96e981e451b"
+    },
+    "chalk/chalk.d.ts": {
+      "commit": "a461a243e2e09b213bc49d12650f80d81047576d"
     }
   }
 }
