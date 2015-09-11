@@ -54,13 +54,14 @@ if (argv.help) {
 
 const cwd = process.cwd()
 const code = argv.eval == null ? argv.print : argv.eval
+const isEval = typeof code === 'string' || argv._.length === 0
 
 // Register the TypeScript compiler instance.
 const compiler = register({
   compiler: argv.compiler,
   ignoreWarnings: list(argv.ignoreWarnings),
   configFile: argv.compiler,
-  isRepl: typeof code === 'string' || argv._.length === 0
+  isEval: isEval
 })
 
 // TypeScript files must always end with `.ts`.

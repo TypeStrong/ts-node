@@ -26,7 +26,7 @@ export interface Options {
   compiler?: string
   configFile?: string
   ignoreWarnings?: string[]
-  isRepl?: boolean
+  isEval?: boolean
 }
 
 /**
@@ -139,7 +139,7 @@ export function register (opts?: Options) {
     if (diagnostics.length) {
       const message = formatDiagnostics(diagnostics, ts)
 
-      if (opts.isRepl) {
+      if (opts.isEval) {
         throw new TypeScriptError(message)
       }
 
