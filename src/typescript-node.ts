@@ -27,6 +27,7 @@ export interface Options {
   configFile?: string
   ignoreWarnings?: string[]
   isEval?: boolean
+  ignoreAll?: boolean
   getFile?: (fileName: string) => string
   getVersion?: (fileName: string) => string
 }
@@ -58,7 +59,7 @@ function readConfig (fileName: string, ts: typeof TS) {
  */
 export function register (opts?: Options) {
   const cwd = process.cwd()
-  const options = extend({ getFile, getVersion, isEval: false }, opts)
+  const options = extend({ getFile, getVersion }, opts)
 
   const files: { [fileName: string]: boolean } = {}
 
@@ -75,7 +76,7 @@ export function register (opts?: Options) {
   const config = readConfig(options.configFile, ts)
 
   // Render the configuration errors and exit the script.
-  if (config.errors.length) {
+  if (!options.ignoreAll && config.errors.length) {
     console.error(formatDiagnostics(config.errors, ts))
     process.exit(1)
   }
@@ -128,10 +129,10 @@ export function register (opts?: Options) {
 
     const diagnostics = getDiagnostics(service, fileName, options)
 
-    if (diagnostics.length) {
+    if (!options.ignoreAll && diagnostics.length) {
       const message = formatDiagnostics(diagnostics, ts)
 
-      if (opts.isEval) {
+      if (options.isEval) {
         throw new TypeScriptError(message)
       }
 

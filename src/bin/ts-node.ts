@@ -17,20 +17,22 @@ interface Argv {
   compiler: string
   configFile: string
   ignoreWarnings: string
+  ignoreAll: boolean
   _: string[]
 }
 
 const argv = <Argv> <any> minimist(process.argv.slice(2), {
   stopEarly: true,
   string: ['eval', 'print', 'compiler', 'configFile', 'ignoreWarnings'],
-  boolean: ['help', 'version'],
+  boolean: ['help', 'version', 'ignoreAll'],
   alias: {
     v: ['version'],
     e: ['eval'],
     p: ['print'],
     c: ['compiler'],
     f: ['configFile'],
-    i: ['ignoreWarnings']
+    i: ['ignoreWarnings'],
+    a: ['ignoreAll']
   }
 })
 
@@ -48,8 +50,9 @@ if (argv.help) {
     -e, --eval [code]             Evaluate code
     -p, --print [code]            Evaluate code and print result
     -c, --compiler [name]         Specify a custom TypeScript compiler
-    -i, --ignoreWarnings [codes]  Ignore TypeScript warnings by code
     -f, --configFile [path]       Specify the path to \`tsconfig.json\`
+    -i, --ignoreWarnings [codes]  Ignore TypeScript warnings by diagnostic code
+    -a, --ignoreAll               Ignore every TypeScript warning
 `)
   process.exit(0)
 }
@@ -65,6 +68,7 @@ const compile = register({
   compiler: argv.compiler,
   ignoreWarnings: list(argv.ignoreWarnings),
   configFile: argv.configFile,
+  ignoreAll: argv.ignoreAll,
   isEval: isEval
 })
 
