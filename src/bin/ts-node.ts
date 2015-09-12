@@ -5,6 +5,7 @@ import { readFileSync } from 'fs'
 import Module = require('module')
 import extend = require('xtend')
 import minimist = require('minimist')
+import { diffLines } from 'diff'
 import { register, VERSION, TypeScriptError, getFile, getVersion } from '../typescript-node'
 
 interface Argv {
@@ -71,7 +72,7 @@ const EVAL_FILENAME = '[eval].ts'
 const EVAL_PATH = join(cwd, EVAL_FILENAME)
 
 // Store eval contents for in-memory lookups.
-const evalFile = { text: '', version: 0 }
+const evalFile = { input: '', output: '', version: 0 }
 
 if (typeof code === 'string') {
   global.__filename = EVAL_FILENAME
@@ -119,13 +120,47 @@ if (typeof code === 'string') {
  * Evaluate the code snippet.
  */
 function _eval (code: string) {
+  const undo = evalFile.input
+  const isCompletion = !/\n$/.test(code)
+
   // Increment eval constants for the compiler to pick up changes.
-  evalFile.text = code
+  evalFile.input += code
   evalFile.version++
 
-  // Use `eval` for source maps to output properly, which use V8s error
-  // frame `isEval` method to decide if it should offset the column by -62.
-  return (0,eval)(compile(EVAL_PATH))
+  let output: string
+  let result: any
+
+  // Compile changes within a `try..catch` to undo changes on compilation error.
+  try {
+    output = compile(EVAL_PATH)
+  } catch (error) {
+    evalFile.input = undo
+
+    throw error
+  }
+
+  // Use `diff` to check for new JavaScript to execute.
+  const changes = diffLines(evalFile.output, output)
+
+  // Revert the code if running in "completion" environment. Updated the output
+  // to diff against future executions when evaling code.
+  if (isCompletion) {
+    evalFile.input = undo
+  } else {
+    evalFile.output = output
+  }
+
+  // Iterate over the diff and evaluate `added` lines. The only removed lines
+  // should be the source map and lines that stay the same are ignored.
+  for (const change of changes) {
+    if (change.added) {
+      // Use `eval` for source maps to output properly, which use V8s error
+      // frame `isEval` method to decide if it should offset the column by -62.
+      result = (0,eval)(change.value)
+    }
+  }
+
+  return result
 }
 
 /**
@@ -144,9 +179,15 @@ function startRepl () {
 /**
  * Eval code from the REPL.
  */
-function replEval (code: string, context: any, filename: string, callback: (err: Error, result: any) => any) {
+function replEval (code: string, context: any, filename: string, callback: (err?: Error, result?: any) => any) {
   let err: Error
   let result: any
+
+  // TODO: Figure out how to handle completion here.
+  if (code === '.scope') {
+    callback()
+    return
+  }
 
   try {
     result = _eval(code)
@@ -172,7 +213,7 @@ function list (value: string) {
  * Get the file text, checking for eval first.
  */
 function getFileEval (fileName: string) {
-  return fileName === EVAL_PATH ? evalFile.text : getFile(fileName)
+  return fileName === EVAL_PATH ? evalFile.input : getFile(fileName)
 }
 
 /**

@@ -5,3 +5,4 @@
 /// <reference path="minimist/minimist.d.ts" />
 /// <reference path="chalk/chalk.d.ts" />
 /// <reference path="proxyquire/proxyquire.d.ts" />
+/// <reference path="diff/diff.d.ts" />
