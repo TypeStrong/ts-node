@@ -6,6 +6,7 @@ import Module = require('module')
 import extend = require('xtend')
 import minimist = require('minimist')
 import { diffLines } from 'diff'
+import { createScript } from 'vm'
 import { register, VERSION, TypeScriptError, getFile, getVersion } from '../typescript-node'
 
 interface Argv {
@@ -89,7 +90,7 @@ if (typeof code === 'string') {
   let result: any
 
   try {
-    result = _eval(code)
+    result = _eval(code, global)
   } catch (err) {
     if (err instanceof TypeScriptError) {
       console.error(err.message)
@@ -119,7 +120,7 @@ if (typeof code === 'string') {
 /**
  * Evaluate the code snippet.
  */
-function _eval (code: string) {
+function _eval (code: string, context: any) {
   const undo = evalFile.input
   const isCompletion = !/\n$/.test(code)
 
@@ -154,9 +155,9 @@ function _eval (code: string) {
   // should be the source map and lines that stay the same are ignored.
   for (const change of changes) {
     if (change.added) {
-      // Use `eval` for source maps to output properly, which use V8s error
-      // frame `isEval` method to decide if it should offset the column by -62.
-      result = (0,eval)(change.value)
+      const script = createScript(change.value, EVAL_FILENAME)
+
+      result = script.runInNewContext(context)
     }
   }
 
@@ -167,12 +168,19 @@ function _eval (code: string) {
  * Start a CLI REPL.
  */
 function startRepl () {
-  return start({
+  const repl = start({
     prompt: '> ',
     input: process.stdin,
     output: process.stdout,
     eval: replEval,
-    useGlobal: true
+    useGlobal: false
+  })
+
+  // Reset eval file information when repl is reset.
+  repl.on('reset', () => {
+    evalFile.input = ''
+    evalFile.output = ''
+    evalFile.version = 0
   })
 }
 
@@ -190,7 +198,7 @@ function replEval (code: string, context: any, filename: string, callback: (err?
   }
 
   try {
-    result = _eval(code)
+    result = _eval(code, context)
   } catch (e) {
     if (e instanceof TypeScriptError) {
       err = e.message
