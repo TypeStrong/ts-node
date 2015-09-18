@@ -1,6 +1,6 @@
 {
   "name": "typescript-node",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "preferGlobal": true,
   "description": "TypeScript execution environment for node",
   "main": "dist/typescript-node.js",
