@@ -105,7 +105,7 @@ describe('ts-node', function () {
   })
 
   it('should ignore all warnings', function (done) {
-    exec(`node ${BIN_PATH} -a -p "x"`, function (err) {
+    exec(`node ${BIN_PATH} -d -p "x"`, function (err) {
       expect(err.message).to.contain('ReferenceError: x is not defined')
 
       return done()

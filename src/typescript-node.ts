@@ -24,10 +24,10 @@ export const EXTENSIONS = ['.ts', '.tsx']
  */
 export interface Options {
   compiler?: string
-  configFile?: string
+  project?: string
   ignoreWarnings?: string[]
   isEval?: boolean
-  ignoreAll?: boolean
+  disableWarnings?: boolean
   getFile?: (fileName: string) => string
   getVersion?: (fileName: string) => string
 }
@@ -35,7 +35,9 @@ export interface Options {
 /**
  * Load TypeScript configuration.
  */
-function readConfig (fileName: string, ts: typeof TS) {
+function readConfig (cwd: string, ts: typeof TS) {
+  const fileName = tsconfig.resolveSync(cwd)
+
   const config = fileName ? tsconfig.readFileSync(fileName) : {
     files: [],
     compilerOptions: {}
@@ -67,16 +69,11 @@ export function register (opts?: Options) {
   options.compiler = options.compiler || 'typescript'
   options.ignoreWarnings = arrify(options.ignoreWarnings)
 
-  // Resolve configuration file options.
-  options.configFile = options.configFile ?
-    resolve(cwd, options.configFile) :
-    tsconfig.resolveSync(cwd)
-
   const ts: typeof TS = require(options.compiler)
-  const config = readConfig(options.configFile, ts)
+  const config = readConfig(options.project || cwd, ts)
 
   // Render the configuration errors and exit the script.
-  if (!options.ignoreAll && config.errors.length) {
+  if (!options.disableWarnings && config.errors.length) {
     console.error(formatDiagnostics(config.errors, ts))
     process.exit(1)
   }
@@ -129,7 +126,7 @@ export function register (opts?: Options) {
 
     const diagnostics = getDiagnostics(service, fileName, options)
 
-    if (!options.ignoreAll && diagnostics.length) {
+    if (!options.disableWarnings && diagnostics.length) {
       const message = formatDiagnostics(diagnostics, ts)
 
       if (options.isEval) {

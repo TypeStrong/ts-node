@@ -14,25 +14,24 @@ interface Argv {
   print?: string
   version?: boolean
   help?: boolean
-  compiler: string
-  configFile: string
-  ignoreWarnings: string
-  ignoreAll: boolean
+  compiler?: string
+  project?: string
+  ignoreWarnings?: string | string[]
+  disableWarnings?: boolean
   _: string[]
 }
 
 const argv = <Argv> <any> minimist(process.argv.slice(2), {
   stopEarly: true,
-  string: ['eval', 'print', 'compiler', 'configFile', 'ignoreWarnings'],
-  boolean: ['help', 'version', 'ignoreAll'],
+  string: ['eval', 'print', 'compiler', 'project', 'ignoreWarnings'],
+  boolean: ['help', 'version', 'disableWarnings'],
   alias: {
     v: ['version'],
     e: ['eval'],
     p: ['print'],
     c: ['compiler'],
-    f: ['configFile'],
     i: ['ignoreWarnings'],
-    a: ['ignoreAll']
+    d: ['disableWarnings']
   }
 })
 
@@ -43,16 +42,16 @@ if (argv.version) {
 
 if (argv.help) {
   console.log(`
-  Usage: ts-node [options] [ -e script | script.ts ] [arguments]
+Usage: ts-node [options] [ -e script | script.ts ] [arguments]
 
-  Options:
+Options:
 
-    -e, --eval [code]             Evaluate code
-    -p, --print [code]            Evaluate code and print result
-    -c, --compiler [name]         Specify a custom TypeScript compiler
-    -f, --configFile [path]       Specify the path to \`tsconfig.json\`
-    -i, --ignoreWarnings [codes]  Ignore TypeScript warnings by diagnostic code
-    -a, --ignoreAll               Ignore every TypeScript warning
+  -e, --eval [code]             Evaluate code
+  -p, --print [code]            Evaluate code and print result
+  -c, --compiler [name]         Specify a custom TypeScript compiler
+  -i, --ignoreWarnings [codes]  Ignore TypeScript warnings by diagnostic code
+  -d, --disableWarnings         Ignore every TypeScript warning
+  --project [path]              Specify the path to the TypeScript project
 `)
   process.exit(0)
 }
@@ -67,8 +66,8 @@ const compile = register({
   getVersion: isEval ? getVersionEval : getVersion,
   compiler: argv.compiler,
   ignoreWarnings: list(argv.ignoreWarnings),
-  configFile: argv.configFile,
-  ignoreAll: argv.ignoreAll,
+  project: argv.project,
+  disableWarnings: argv.disableWarnings,
   isEval: isEval
 })
 
@@ -217,7 +216,7 @@ function replEval (code: string, context: any, filename: string, callback: (err?
 /**
  * Split a string of values into an array.
  */
-function list (value: string) {
+function list (value: string | string[]) {
   return String(value).split(/ *, */)
 }
 

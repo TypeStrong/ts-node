@@ -70,12 +70,13 @@ require('typescript-node/register')
 You can set options by passing them in before the script.
 
 ```sh
-ts-node --compiler ntypescript --configFile tsconfig.json --ignoreWarnings 2304 hello-world.ts
+ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.ts
 ```
 
-* **compiler** Use a custom, require-able TypeScript compiler compatible with `typescript@>=1.5.0-alpha`
-* **configFile** Manually set the location of the `tsconfig.json` file
-* **ignoreWarnings** Set an array of TypeScript diagnostic codes to ignore
+* **project** Location to resolve `tsconfig.json` from.
+* **compiler** Use a custom, require-able TypeScript compiler compatible with `typescript@>=1.5.0-alpha`.
+* **ignoreWarnings** Set an array of TypeScript diagnostic codes to ignore.
+* **disableWarnings** Ignore all TypeScript errors.
 
 ## License
 
