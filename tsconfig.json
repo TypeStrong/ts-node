@@ -9,8 +9,8 @@
     "sourceMap": true
   },
   "files": [
-    "src/typescript-node.ts",
-    "src/typescript-node.spec.ts",
+    "src/ts-node.ts",
+    "src/ts-node.spec.ts",
     "src/bin/ts-node.ts",
     "typings/tsd.d.ts",
     "src/typings/node.d.ts",

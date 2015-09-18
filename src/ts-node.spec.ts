@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { exec } from 'child_process'
 import { join } from 'path'
 import proxyquire = require('proxyquire')
-import { register, VERSION } from './typescript-node'
+import { register, VERSION } from './ts-node'
 
 register()
 

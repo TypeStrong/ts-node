@@ -10,7 +10,7 @@
 ## Installation
 
 ```sh
-npm install -g typescript-node
+npm install -g ts-node
 
 # Make sure you install your TypeScript-compatible compiler.
 npm install -g typescript
@@ -43,7 +43,7 @@ ts-node -p '"Hello, world!"'
 **With Mocha**
 
 ```
-mocha test.ts --require typescript-node/register src/**/*.spec.ts
+mocha test.ts --require ts-node/register src/**/*.spec.ts
 ```
 
 **With Tape:**
@@ -55,10 +55,10 @@ ts-node tape src/**/*.spec.ts
 ### Using TypeScript With Node Programmatically
 
 ```js
-require('typescript-node').register({ /* options */ })
+require('ts-node').register({ /* options */ })
 
 // Or using the shortcut file.
-require('typescript-node/register')
+require('ts-node/register')
 ```
 
 ### Loading `tsconfig.json`
@@ -82,11 +82,11 @@ ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.t
 
 MIT
 
-[npm-image]: https://img.shields.io/npm/v/typescript-node.svg?style=flat
-[npm-url]: https://npmjs.org/package/typescript-node
-[downloads-image]: https://img.shields.io/npm/dm/typescript-node.svg?style=flat
-[downloads-url]: https://npmjs.org/package/typescript-node
-[travis-image]: https://img.shields.io/travis/blakeembrey/typescript-node.svg?style=flat
-[travis-url]: https://travis-ci.org/blakeembrey/typescript-node
-[coveralls-image]: https://img.shields.io/coveralls/blakeembrey/typescript-node.svg?style=flat
-[coveralls-url]: https://coveralls.io/r/blakeembrey/typescript-node?branch=master
+[npm-image]: https://img.shields.io/npm/v/ts-node.svg?style=flat
+[npm-url]: https://npmjs.org/package/ts-node
+[downloads-image]: https://img.shields.io/npm/dm/ts-node.svg?style=flat
+[downloads-url]: https://npmjs.org/package/ts-node
+[travis-image]: https://img.shields.io/travis/blakeembrey/ts-node.svg?style=flat
+[travis-url]: https://travis-ci.org/blakeembrey/ts-node
+[coveralls-image]: https://img.shields.io/coveralls/blakeembrey/ts-node.svg?style=flat
+[coveralls-url]: https://coveralls.io/r/blakeembrey/ts-node?branch=master

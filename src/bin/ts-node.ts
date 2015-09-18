@@ -7,7 +7,7 @@ import extend = require('xtend')
 import minimist = require('minimist')
 import { diffLines } from 'diff'
 import { createScript } from 'vm'
-import { register, VERSION, TypeScriptError, getFile, getVersion } from '../typescript-node'
+import { register, VERSION, TypeScriptError, getFile, getVersion } from '../ts-node'
 
 interface Argv {
   eval?: string
