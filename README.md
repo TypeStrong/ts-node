@@ -1,5 +1,7 @@
 # TypeScript Node
 
+**DEPRECATED: Use [ts-node](https://www.npmjs.com/package/ts-node) instead.**
+
 [![NPM version][npm-image]][npm-url]
 [![NPM downloads][downloads-image]][downloads-url]
 [![Build status][travis-image]][travis-url]
