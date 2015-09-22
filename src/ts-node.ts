@@ -152,10 +152,10 @@ export function register (opts?: Options) {
     addFileName(fileName)
 
     const info = service.getQuickInfoAtPosition(fileName, position)
-    const name = ts.displayPartsToString(info.displayParts || [])
-    const comment = ts.displayPartsToString(info.documentation || [])
+    const name = ts.displayPartsToString(info ? info.displayParts : [])
+    const comment = ts.displayPartsToString(info ? info.documentation : [])
 
-    return chalk.bold(name) + (comment ? EOL + comment : '')
+    return chalk.bold(name) + (comment ? `\n${comment}` : '')
   }
 
   // Attach the loader to each defined extension.

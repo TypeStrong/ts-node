@@ -189,6 +189,11 @@ function startRepl () {
   ;(<any> repl).defineCommand('type', {
     help: 'Check the type of a TypeScript identifier',
     action: function (identifier: string) {
+      if (!identifier) {
+        ;(<any> repl).displayPrompt()
+        return
+      }
+
       const undo = evalFile.input
 
       evalFile.input += identifier
