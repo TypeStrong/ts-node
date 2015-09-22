@@ -61,7 +61,7 @@ const code = argv.eval == null ? argv.print : argv.eval
 const isEval = typeof code === 'string' || argv._.length === 0
 
 // Register the TypeScript compiler instance.
-const compile = register({
+const service = register({
   getFile: isEval ? getFileEval : getFile,
   getVersion: isEval ? getVersionEval : getVersion,
   compiler: argv.compiler,
@@ -136,7 +136,7 @@ function _eval (code: string, context: any) {
 
   // Compile changes within a `try..catch` to undo changes on compilation error.
   try {
-    output = compile(EVAL_PATH)
+    output = service.compile(EVAL_PATH)
   } catch (error) {
     evalFile.input = undo
 
@@ -184,6 +184,23 @@ function startRepl () {
     evalFile.input = ''
     evalFile.output = ''
     evalFile.version = 0
+  })
+
+  ;(<any> repl).defineCommand('type', {
+    help: 'Check the type of a TypeScript identifier',
+    action: function (identifier: string) {
+      const undo = evalFile.input
+
+      evalFile.input += identifier
+      evalFile.version++
+
+      const info = service.getTypeInfo(EVAL_PATH, evalFile.input.length)
+
+      ;(<any> repl).outputStream.write(`${info}\n`)
+      ;(<any> repl).displayPrompt()
+
+      evalFile.input = undo
+    }
   })
 }
 

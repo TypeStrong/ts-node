@@ -144,12 +144,20 @@ export function register (opts?: Options) {
     return m._compile(compile(fileName), fileName)
   }
 
+  function getTypeInfo (fileName: string, position: number) {
+    const info = service.getQuickInfoAtPosition(fileName, position)
+    const name = ts.displayPartsToString(info.displayParts || [])
+    const comment = ts.displayPartsToString(info.documentation || [])
+
+    return chalk.bold(name) + (comment ? EOL + comment : '')
+  }
+
   // Attach the loader to each defined extension.
   EXTENSIONS.forEach(function (extension) {
     require.extensions[extension] = loader
   })
 
-  return compile
+  return { compile, getTypeInfo }
 }
 
 /**
