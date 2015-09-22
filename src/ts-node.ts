@@ -12,7 +12,7 @@ import chalk = require('chalk')
 /**
  * Export the current version.
  */
-export const VERSION = '0.2.2'
+export const VERSION = '0.2.3'
 
 /**
  * Extensions to compile using TypeScript.
