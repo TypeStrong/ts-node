@@ -119,10 +119,14 @@ export function register (opts?: Options) {
       )
   }
 
-  function compile (fileName: string) {
+  function addFileName (fileName: string) {
     // Add to the `files` object before compiling - otherwise our file will
     // not found (unless it's in our `tsconfig.json` file).
     files[fileName] = true
+  }
+
+  function compile (fileName: string) {
+    addFileName(fileName)
 
     const diagnostics = getDiagnostics(service, fileName, options)
 
@@ -145,6 +149,8 @@ export function register (opts?: Options) {
   }
 
   function getTypeInfo (fileName: string, position: number) {
+    addFileName(fileName)
+
     const info = service.getQuickInfoAtPosition(fileName, position)
     const name = ts.displayPartsToString(info.displayParts || [])
     const comment = ts.displayPartsToString(info.documentation || [])
