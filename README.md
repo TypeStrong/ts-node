@@ -12,15 +12,17 @@
 ```sh
 npm install -g ts-node
 
-# Make sure you install your TypeScript-compatible compiler.
+# Install a TypeScript compiler (requires `typescript` by default).
 npm install -g typescript
 ```
 
 ## Features
 
-* Execute TypeScript with node
+![TypeScript REPL](https://github.com/blakeembrey/ts-node/raw/master/screenshot.png)
+
+* Execute TypeScript files with node
 * Interactive REPL
-* Execute (and print) TypeScript inline
+* Execute (and print) TypeScript through the CLI
 * Supports source maps
 * Supports `tsconfig.json`
 
@@ -30,40 +32,31 @@ npm install -g typescript
 # Execute a script as you world normally with `node`.
 ts-node script.ts
 
-# Start a TypeScript REPL
+# Start the TypeScript REPL.
 ts-node
 
-# Execute code snippets with TypeScript
+# Execute code snippets with TypeScript.
 ts-node -e 'console.log("Hello, world!")'
 
-# Execute and print code snippets with TypeScript
+# Execute and print code snippets with TypeScript.
 ts-node -p '"Hello, world!"'
 ```
 
-**With Mocha**
+**Mocha:**
 
 ```
 mocha test.ts --require ts-node/register src/**/*.spec.ts
 ```
 
-**With Tape:**
+**Tape:**
 
 ```
 ts-node tape src/**/*.spec.ts
 ```
 
-### Using TypeScript With Node Programmatically
-
-```js
-require('ts-node').register({ /* options */ })
-
-// Or using the shortcut file.
-require('ts-node/register')
-```
-
 ### Loading `tsconfig.json`
 
-**Typescript Node** automatically loads `tsconfig.json` options and files from the current directory using [tsconfig](https://github.com/TypeStrong/tsconfig).
+**Typescript Node** automatically loads `tsconfig.json` options and referenced files from the current directory using [tsconfig](https://github.com/TypeStrong/tsconfig).
 
 ### Configuration Options
 
@@ -77,6 +70,15 @@ ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.t
 * **compiler** Use a custom, require-able TypeScript compiler compatible with `typescript@>=1.5.0-alpha`.
 * **ignoreWarnings** Set an array of TypeScript diagnostic codes to ignore.
 * **disableWarnings** Ignore all TypeScript errors.
+
+### Programmatic Usage
+
+```js
+require('ts-node').register({ /* options */ })
+
+// Or using the shortcut file.
+require('ts-node/register')
+```
 
 ## License
 
