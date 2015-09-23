@@ -18,7 +18,7 @@ npm install -g typescript
 
 ## Features
 
-![TypeScript REPL](https://github.com/blakeembrey/ts-node/raw/master/screenshot.png)
+![TypeScript REPL](https://github.com/TypeStrong/ts-node/raw/master/screenshot.png)
 
 * Execute TypeScript files with node
 * Interactive REPL
@@ -88,7 +88,7 @@ MIT
 [npm-url]: https://npmjs.org/package/ts-node
 [downloads-image]: https://img.shields.io/npm/dm/ts-node.svg?style=flat
 [downloads-url]: https://npmjs.org/package/ts-node
-[travis-image]: https://img.shields.io/travis/blakeembrey/ts-node.svg?style=flat
-[travis-url]: https://travis-ci.org/blakeembrey/ts-node
-[coveralls-image]: https://img.shields.io/coveralls/blakeembrey/ts-node.svg?style=flat
-[coveralls-url]: https://coveralls.io/r/blakeembrey/ts-node?branch=master
+[travis-image]: https://img.shields.io/travis/TypeStrong/ts-node.svg?style=flat
+[travis-url]: https://travis-ci.org/TypeStrong/ts-node
+[coveralls-image]: https://img.shields.io/coveralls/TypeStrong/ts-node.svg?style=flat
+[coveralls-url]: https://coveralls.io/r/TypeStrong/ts-node?branch=master

@@ -29,7 +29,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/blakeembrey/ts-node.git"
+    "url": "git://github.com/TypeStrong/ts-node.git"
   },
   "keywords": [
     "typescript",
@@ -46,9 +46,9 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/blakeembrey/ts-node/issues"
+    "url": "https://github.com/TypeStrong/ts-node/issues"
   },
-  "homepage": "https://github.com/blakeembrey/ts-node",
+  "homepage": "https://github.com/TypeStrong/ts-node",
   "devDependencies": {
     "chai": "^3.0.0",
     "istanbul": "^0.3.17",
