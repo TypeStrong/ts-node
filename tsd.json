@@ -28,6 +28,9 @@
     },
     "diff/diff.d.ts": {
       "commit": "7a3ca1f0b8a0960af9fc1838f3234cc9d6ce0645"
+    },
+    "es6-promise/es6-promise.d.ts": {
+      "commit": "68548c2daab053869f323d475419c693478bbb73"
     }
   }
 }

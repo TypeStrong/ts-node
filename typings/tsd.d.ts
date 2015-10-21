@@ -6,3 +6,4 @@
 /// <reference path="chalk/chalk.d.ts" />
 /// <reference path="proxyquire/proxyquire.d.ts" />
 /// <reference path="diff/diff.d.ts" />
+/// <reference path="es6-promise/es6-promise.d.ts" />
