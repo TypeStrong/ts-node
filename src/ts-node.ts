@@ -44,9 +44,9 @@ function readConfig (cwd: string, ts: typeof TS) {
   }
 
   config.compilerOptions = extend({
-    target: 'es5'
+    target: 'es5',
+    module: 'commonjs'
   }, config.compilerOptions, {
-    module: 'commonjs',
     sourceMap: true,
     inlineSourceMap: false,
     inlineSources: false,
