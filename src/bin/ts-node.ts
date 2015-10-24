@@ -96,7 +96,7 @@ if (typeof code === 'string') {
     result = _eval(code, global)
   } catch (err) {
     if (err instanceof TypeScriptError) {
-      console.error(err.message)
+      console.error(err.formatMessage())
       process.exit(1)
     }
 
@@ -226,7 +226,7 @@ function replEval (code: string, context: any, filename: string, callback: (err?
     result = _eval(code, context)
   } catch (e) {
     if (e instanceof TypeScriptError) {
-      err = e.message
+      err = e.formatMessage()
     } else {
       err = e
     }

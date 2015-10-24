@@ -25,7 +25,7 @@ export const EXTENSIONS = ['.ts', '.tsx']
 export interface Options {
   compiler?: string
   project?: string
-  ignoreWarnings?: string[]
+  ignoreWarnings?: Array<number | string>
   isEval?: boolean
   disableWarnings?: boolean
   getFile?: (fileName: string) => string
@@ -67,14 +67,16 @@ export function register (opts?: Options) {
 
   // Enable compiler overrides.
   options.compiler = options.compiler || 'typescript'
-  options.ignoreWarnings = arrify(options.ignoreWarnings)
+  options.ignoreWarnings = arrify(options.ignoreWarnings).map(Number)
 
   const ts: typeof TS = require(options.compiler)
   const config = readConfig(options.project || cwd, ts)
 
   // Render the configuration errors and exit the script.
   if (!options.disableWarnings && config.errors.length) {
-    console.error(formatDiagnostics(config.errors, ts))
+    const error = new TypeScriptError(formatDiagnostics(config.errors, ts))
+
+    console.error(error.formatMessage())
     process.exit(1)
   }
 
@@ -105,6 +107,11 @@ export function register (opts?: Options) {
 
   function getOutput (fileName: string) {
     const output = service.getEmitOutput(fileName)
+
+    if (output.emitSkipped) {
+      throw new TypeScriptError(`${relative(cwd, fileName)}: Emit skipped`)
+    }
+
     const result = output.outputFiles[1].text
     const sourceText = service.getSourceFile(fileName).text
     const sourceMapText = output.outputFiles[0].text
@@ -126,22 +133,18 @@ export function register (opts?: Options) {
   }
 
   function compile (fileName: string) {
-    addFileName(fileName)
-
-    const diagnostics = getDiagnostics(service, fileName, options)
-
-    if (!options.disableWarnings && diagnostics.length) {
-      const message = formatDiagnostics(diagnostics, ts)
-
-      if (options.isEval) {
-        throw new TypeScriptError(message)
+    try {
+      addFileName(fileName)
+      validateDiagnostics(service, fileName, options, ts)
+      return getOutput(fileName)
+    } catch (error) {
+      if (error.name === 'TypeScriptError' && !options.isEval) {
+        console.error(error.formatMessage())
+        process.exit(1)
       }
 
-      console.error(message)
-      process.exit(1)
+      throw error
     }
-
-    return getOutput(fileName)
   }
 
   function loader (m: any, fileName: string) {
@@ -185,13 +188,23 @@ export function getFile (fileName: string): string {
 /**
  * Get file diagnostics from a TypeScript language service.
  */
-export function getDiagnostics (service: TS.LanguageService, fileName: string, options: Options) {
-  return service.getCompilerOptionsDiagnostics()
-    .concat(service.getSyntacticDiagnostics(fileName))
-    .concat(service.getSemanticDiagnostics(fileName))
+export function validateDiagnostics (service: TS.LanguageService, fileName: string, options: Options, ts: typeof TS) {
+  const program = service.getProgram()
+
+  const diagnostics = program.getGlobalDiagnostics()
+    .concat(program.getOptionsDiagnostics())
+    .concat(program.getSemanticDiagnostics())
+    .concat(program.getSyntacticDiagnostics())
+    .concat(program.getDeclarationDiagnostics())
     .filter(function (diagnostic) {
-      return options.ignoreWarnings.indexOf(String(diagnostic.code)) === -1
+      return options.ignoreWarnings.indexOf(diagnostic.code) === -1
     })
+
+  if (!options.disableWarnings && diagnostics.length) {
+    const message = formatDiagnostics(diagnostics, ts)
+
+    throw new TypeScriptError(message)
+  }
 }
 
 /**
@@ -214,15 +227,7 @@ export function formatDiagnostic (diagnostic: TS.Diagnostic, ts: typeof TS, cwd:
  * Format diagnostics into friendlier errors.
  */
 function formatDiagnostics (diagnostics: TS.Diagnostic[], ts: typeof TS) {
-  const boundary = chalk.grey('----------------------------------')
-
-  return [
-    boundary,
-    chalk.red.bold('⨯ Unable to compile TypeScript'),
-    '',
-    diagnostics.map(d => formatDiagnostic(d, ts)).join(EOL),
-    boundary
-  ].join(EOL)
+  return diagnostics.map(d => formatDiagnostic(d, ts)).join(EOL)
 }
 
 /**
@@ -243,5 +248,17 @@ export function getSourceMap (map: string, fileName: string, code: string): stri
 export class TypeScriptError extends BaseError {
 
   name = 'TypeScriptError'
+
+  formatMessage () {
+    const boundary = chalk.grey('----------------------------------')
+
+    return [
+      boundary,
+      chalk.red.bold('⨯ Unable to compile TypeScript'),
+      '',
+      this.message,
+      boundary
+    ].join(EOL)
+  }
 
 }
