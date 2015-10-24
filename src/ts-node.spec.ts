@@ -9,7 +9,7 @@ register()
 const BIN_PATH = join(__dirname, '../dist/bin/ts-node')
 
 describe('ts-node', function () {
-  this.timeout(5000)
+  this.timeout(10000)
 
   it('should export the correct version', function () {
     expect(VERSION).to.equal(require('../package.json').version)
