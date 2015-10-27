@@ -38,7 +38,7 @@ export interface Options {
 function readConfig (cwd: string, ts: typeof TS) {
   const fileName = tsconfig.resolveSync(cwd)
 
-  const config = fileName ? tsconfig.readFileSync(fileName) : {
+  const config = fileName ? tsconfig.readFileSync(fileName, { filterDefinitions: true }) : {
     files: [],
     compilerOptions: {}
   }
