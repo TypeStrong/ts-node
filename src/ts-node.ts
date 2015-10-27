@@ -189,13 +189,7 @@ export function getFile (fileName: string): string {
  * Get file diagnostics from a TypeScript language service.
  */
 export function validateDiagnostics (service: TS.LanguageService, fileName: string, options: Options, ts: typeof TS) {
-  const program = service.getProgram()
-
-  const diagnostics = program.getGlobalDiagnostics()
-    .concat(program.getOptionsDiagnostics())
-    .concat(program.getSemanticDiagnostics())
-    .concat(program.getSyntacticDiagnostics())
-    .concat(program.getDeclarationDiagnostics())
+  const diagnostics = ts.getPreEmitDiagnostics(service.getProgram())
     .filter(function (diagnostic) {
       return options.ignoreWarnings.indexOf(diagnostic.code) === -1
     })
