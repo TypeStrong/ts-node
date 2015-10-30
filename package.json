@@ -2,7 +2,7 @@
   "name": "ts-node",
   "version": "0.4.0",
   "preferGlobal": true,
-  "description": "TypeScript execution environment for node",
+  "description": "TypeScript execution environment and REPL for node",
   "main": "dist/ts-node.js",
   "bin": {
     "ts-node": "bin.js"

@@ -5,7 +5,7 @@
 [![Build status][travis-image]][travis-url]
 [![Test coverage][coveralls-image]][coveralls-url]
 
-> TypeScript execution environment for node. **Works with `typescript@>=1.5`**.
+> TypeScript execution environment and REPL for node. **Works with `typescript@>=1.5`**.
 
 ## Installation
 
@@ -23,8 +23,8 @@ npm install -g typescript
 * Execute TypeScript files with node
 * Interactive REPL
 * Execute (and print) TypeScript through the CLI
-* Supports source maps
-* Supports `tsconfig.json`
+* Uses source maps
+* Loads from `tsconfig.json`
 
 ## Usage
 
@@ -32,7 +32,7 @@ npm install -g typescript
 # Execute a script as you world normally with `node`.
 ts-node script.ts
 
-# Start the TypeScript REPL.
+# Starts the TypeScript REPL.
 ts-node
 
 # Execute code snippets with TypeScript.
