@@ -51,7 +51,7 @@ mocha test.ts --require ts-node/register src/**/*.spec.ts
 **Tape:**
 
 ```
-ts-node tape src/**/*.spec.ts
+ts-node node_modules/tape/bin/tape src/**/*.spec.ts
 ```
 
 ### Loading `tsconfig.json`
