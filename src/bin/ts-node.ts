@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { join } from 'path'
 import { start } from 'repl'
 import { inspect } from 'util'
