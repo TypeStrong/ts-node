@@ -7,7 +7,7 @@
     "minimist": "https://raw.githubusercontent.com/typings/typed-minimist/00d73ec84bd64f30afff738aa2fc96c79c1ab1b1/typings.json",
     "proxyquire": "https://raw.githubusercontent.com/typings/typed-proxyquire/e94c99bbac8d350e28edd70471d9460a5534927b/typings.json",
     "source-map-support": "https://raw.githubusercontent.com/typings/typed-source-map-support/900ed4180a22285bce4bbabc0760427e71a59eca/typings.json",
-    "tsconfig": "npm:tsconfig/package.json",
+    "tsconfig": "npm:tsconfig",
     "typescript": "npm:typescript/lib/typescript.d.ts",
     "xtend": "https://raw.githubusercontent.com/typings/typed-xtend/63cccadf3295b3c15561ee45617ac006edcca9e0/typings.json"
   },
