@@ -1,4 +1,3 @@
-import * as TS from 'typescript'
 import tsconfig = require('tsconfig')
 import { resolve, relative, extname, basename, isAbsolute } from 'path'
 import { readFileSync, statSync } from 'fs'
@@ -8,6 +7,41 @@ import sourceMapSupport = require('source-map-support')
 import extend = require('xtend')
 import arrify = require('arrify')
 import chalk = require('chalk')
+
+/**
+ * Common TypeScript interfaces between versions.
+ */
+export interface TS_Common {
+  sys: any
+  service: any
+  ScriptSnapshot: {
+    fromString (value: string): any
+  }
+  displayPartsToString (parts: any): string
+  createLanguageService (serviceHost: any): any
+  getDefaultLibFilePath (options: any): string
+  getPreEmitDiagnostics (program: any): any[]
+  flattenDiagnosticMessageText (diagnostic: any, newLine: string): string
+}
+
+/**
+ * The TypeScript 1.7+ interface.
+ */
+export interface TS_1_7ish extends TS_Common {
+  parseJsonConfigFileContent (config: any, host: any, fileName: string): any
+}
+
+/**
+ * TypeScript 1.5+ interface.
+ */
+export interface TS_1_5ish extends TS_Common {
+  parseConfigFile (config: any, host: any, fileName: string): any
+}
+
+/**
+ * TypeScript compatible compilers.
+ */
+export type TSish = TS_1_5ish | TS_1_7ish
 
 /**
  * Export the current version.
@@ -35,7 +69,7 @@ export interface Options {
 /**
  * Load TypeScript configuration.
  */
-function readConfig (cwd: string, ts: typeof TS) {
+function readConfig (cwd: string, ts: TSish) {
   const fileName = tsconfig.resolveSync(cwd)
 
   const config = fileName ? tsconfig.readFileSync(fileName, { filterDefinitions: true }) : {
@@ -53,7 +87,11 @@ function readConfig (cwd: string, ts: typeof TS) {
     declaration: false
   })
 
-  return ts.parseConfigFile(config, ts.sys, fileName)
+  if (typeof (<TS_1_5ish> ts).parseConfigFile === 'function') {
+    return (<TS_1_5ish> ts).parseConfigFile(config, ts.sys, fileName)
+  }
+
+  return (<TS_1_7ish> ts).parseJsonConfigFileContent(config, ts.sys, fileName)
 }
 
 /**
@@ -69,7 +107,7 @@ export function register (opts?: Options) {
   options.compiler = options.compiler || 'typescript'
   options.ignoreWarnings = arrify(options.ignoreWarnings).map(Number)
 
-  const ts: typeof TS = require(options.compiler)
+  const ts: TSish = require(options.compiler)
   const config = readConfig(options.project || cwd, ts)
 
   // Render the configuration errors and exit the script.
@@ -80,10 +118,10 @@ export function register (opts?: Options) {
     process.exit(1)
   }
 
-  const serviceHost: TS.LanguageServiceHost = {
+  const serviceHost = {
     getScriptFileNames: () => config.fileNames.concat(Object.keys(files)),
     getScriptVersion: options.getVersion,
-    getScriptSnapshot (fileName): TS.IScriptSnapshot {
+    getScriptSnapshot (fileName: string) {
       const contents = options.getFile(fileName)
 
       return contents ? ts.ScriptSnapshot.fromString(contents) : undefined
@@ -91,7 +129,7 @@ export function register (opts?: Options) {
     getNewLine: () => EOL,
     getCurrentDirectory: () => cwd,
     getCompilationSettings: () => config.options,
-    getDefaultLibFileName: (options) => ts.getDefaultLibFilePath(config.options)
+    getDefaultLibFileName: (options: any) => ts.getDefaultLibFilePath(config.options)
   }
 
   const service = ts.createLanguageService(serviceHost)
@@ -188,7 +226,7 @@ export function getFile (fileName: string): string {
 /**
  * Get file diagnostics from a TypeScript language service.
  */
-export function validateDiagnostics (service: TS.LanguageService, fileName: string, options: Options, ts: typeof TS) {
+export function validateDiagnostics (service: any, fileName: string, options: Options, ts: TSish) {
   const diagnostics = ts.getPreEmitDiagnostics(service.getProgram())
     .filter(function (diagnostic) {
       return options.ignoreWarnings.indexOf(diagnostic.code) === -1
@@ -204,7 +242,7 @@ export function validateDiagnostics (service: TS.LanguageService, fileName: stri
 /**
  * Format a diagnostic object into a string.
  */
-export function formatDiagnostic (diagnostic: TS.Diagnostic, ts: typeof TS, cwd: string = '.'): string {
+export function formatDiagnostic (diagnostic: any, ts: TSish, cwd: string = '.'): string {
   const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
 
   if (diagnostic.file) {
@@ -220,7 +258,7 @@ export function formatDiagnostic (diagnostic: TS.Diagnostic, ts: typeof TS, cwd:
 /**
  * Format diagnostics into friendlier errors.
  */
-function formatDiagnostics (diagnostics: TS.Diagnostic[], ts: typeof TS) {
+function formatDiagnostics (diagnostics: any[], ts: TSish) {
   return diagnostics.map(d => formatDiagnostic(d, ts)).join(EOL)
 }
 
