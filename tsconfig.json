@@ -6,18 +6,13 @@
     "declaration": true,
     "noImplicitAny": true,
     "removeComments": true,
+    "moduleResolution": "classic",
     "sourceMap": true
   },
   "files": [
     "src/ts-node.ts",
     "src/ts-node.spec.ts",
     "src/bin/ts-node.ts",
-    "typings/tsd.d.ts",
-    "src/typings/node.d.ts",
-    "src/typings/xtend.d.ts",
-    "src/typings/arrify.d.ts",
-    "src/typings/make-error.d.ts",
-    "src/typings/pinkie-promise.d.ts",
-    "node_modules/typescript/lib/typescript.d.ts"
+    "typings/main.d.ts"
   ]
 }
