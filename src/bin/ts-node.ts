@@ -26,14 +26,15 @@ interface Argv {
 const argv = <Argv> <any> minimist(process.argv.slice(2), {
   stopEarly: true,
   string: ['eval', 'print', 'compiler', 'project', 'ignoreWarnings'],
-  boolean: ['help', 'version', 'disableWarnings'],
+  boolean: ['help', 'version', 'disableWarnings', 'noProject'],
   alias: {
     v: ['version'],
     e: ['eval'],
     p: ['print'],
     c: ['compiler'],
-    i: ['ignoreWarnings'],
-    d: ['disableWarnings']
+    i: ['ignoreWarnings', 'ignore-warnings'],
+    d: ['disableWarnings', 'disable-warnings'],
+    n: ['noProject', 'no-project']
   }
 })
 
@@ -53,6 +54,7 @@ Options:
   -c, --compiler [name]         Specify a custom TypeScript compiler
   -i, --ignoreWarnings [codes]  Ignore TypeScript warnings by diagnostic code
   -d, --disableWarnings         Ignore every TypeScript warning
+  -n, --noProject               Ignore the "tsconfig.json" project file
   --project [path]              Specify the path to the TypeScript project
 `)
   process.exit(0)

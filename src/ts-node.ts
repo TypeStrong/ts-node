@@ -58,6 +58,7 @@ export const EXTENSIONS = ['.ts', '.tsx']
  */
 export interface Options {
   compiler?: string
+  noProject?: boolean
   project?: string
   ignoreWarnings?: Array<number | string>
   isEval?: boolean
@@ -69,8 +70,9 @@ export interface Options {
 /**
  * Load TypeScript configuration.
  */
-function readConfig (cwd: string, ts: TSish) {
-  const fileName = tsconfig.resolveSync(cwd)
+function readConfig (options: Options, cwd: string, ts: TSish) {
+  const { project, noProject } = options
+  const fileName = noProject ? undefined : tsconfig.resolveSync(project || cwd)
 
   const config = fileName ? tsconfig.readFileSync(fileName, { filterDefinitions: true }) : {
     files: [],
@@ -81,6 +83,7 @@ function readConfig (cwd: string, ts: TSish) {
     target: 'es5',
     module: 'commonjs'
   }, config.compilerOptions, {
+    rootDir: cwd,
     sourceMap: true,
     inlineSourceMap: false,
     inlineSources: false,
@@ -99,7 +102,7 @@ function readConfig (cwd: string, ts: TSish) {
  */
 export function register (opts?: Options) {
   const cwd = process.cwd()
-  const options = extend({ getFile, getVersion }, opts)
+  const options = extend({ getFile, getVersion, project: cwd }, opts)
 
   const files: { [fileName: string]: boolean } = {}
 
@@ -108,7 +111,7 @@ export function register (opts?: Options) {
   options.ignoreWarnings = arrify(options.ignoreWarnings).map(Number)
 
   const ts: TSish = require(options.compiler)
-  const config = readConfig(options.project || cwd, ts)
+  const config = readConfig(options, cwd, ts)
 
   // Render the configuration errors and exit the script.
   if (!options.disableWarnings && config.errors.length) {
