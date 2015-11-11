@@ -19,7 +19,8 @@
     "build-ts": "rm -rf dist && tsc",
     "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
     "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- dist/**/*.spec.js -R spec --bail",
-    "test": "npm run build && npm run lint && npm run test-cov",
+    "test": "npm run build && npm run test-ci",
+    "test-ci": "npm run lint && npm run test-cov",
     "bump-version": "FILE=\"src/ts-node.ts\"; if [ \"$(git status --porcelain | grep \"^ M \"$FILE)\" = \"\" ]; then VERSION=$(node -p \"require('./package.json').version\") && sed \"s/VERSION = '\\([0-9]*\\.[0-9]*\\.[0-9]*\\)'/VERSION = '\"$VERSION\"'/\" $FILE > .tmp.ts && mv .tmp.ts $FILE && git add $FILE; fi",
     "prepublish": "typings install && npm run build"
   },
