@@ -199,7 +199,7 @@ export function register (opts?: Options) {
     const name = ts.displayPartsToString(info ? info.displayParts : [])
     const comment = ts.displayPartsToString(info ? info.documentation : [])
 
-    return chalk.bold(name) + (comment ? `\n${comment}` : '')
+    return chalk.bold(name) + (comment ? `${EOL}${comment}` : '')
   }
 
   // Attach the loader to each defined extension.
