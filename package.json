@@ -14,7 +14,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "lint": "# TODO",
+    "lint": "tslint src/**/*.ts",
     "build": "npm run build-ts",
     "build-ts": "rm -rf dist && tsc",
     "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
@@ -56,6 +56,7 @@
     "ntypescript": "^1.201507091536.1",
     "pre-commit": "^1.0.10",
     "proxyquire": "^1.7.2",
+    "tslint": "^2.5.1",
     "typescript": "^1.6.2",
     "typings": "0.0.11"
   },
