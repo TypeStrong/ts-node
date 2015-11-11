@@ -9,7 +9,7 @@ before_script:
   - npm install $TYPESCRIPT
 
 env:
-  - TYPESCRIPT=typescript
+  - TYPESCRIPT=typescript@1.6
   - TYPESCRIPT=typescript@next
 
 node_js:
