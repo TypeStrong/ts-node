@@ -127,7 +127,7 @@ export function register (opts?: Options) {
     getScriptSnapshot (fileName: string) {
       const contents = options.getFile(fileName)
 
-      return contents ? ts.ScriptSnapshot.fromString(contents) : undefined
+      return contents == null ? undefined : ts.ScriptSnapshot.fromString(contents)
     },
     getNewLine: () => EOL,
     getCurrentDirectory: () => cwd,
