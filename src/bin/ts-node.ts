@@ -20,6 +20,7 @@ interface Argv {
   project?: string
   ignoreWarnings?: string | string[]
   disableWarnings?: boolean
+  noProject?: boolean
   _: string[]
 }
 
@@ -72,6 +73,7 @@ const service = register({
   ignoreWarnings: list(argv.ignoreWarnings),
   project: argv.project,
   disableWarnings: argv.disableWarnings,
+  noProject: argv.noProject,
   isEval: isEval
 })
 
