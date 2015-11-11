@@ -3,9 +3,7 @@
 import { join } from 'path'
 import { start } from 'repl'
 import { inspect } from 'util'
-import { readFileSync } from 'fs'
 import Module = require('module')
-import extend = require('xtend')
 import minimist = require('minimist')
 import { diffLines } from 'diff'
 import { createScript } from 'vm'

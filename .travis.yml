@@ -5,16 +5,18 @@ notifications:
     on_success: never
     on_failure: change
 
-before_script:
-  - npm install $TYPESCRIPT
+before_script: npm install $TYPESCRIPT
+
+script: npm run test-ci
 
 env:
-  - TYPESCRIPT=typescript
+  - TYPESCRIPT=typescript@1.6
   - TYPESCRIPT=typescript@next
 
 node_js:
   - "0.12"
   - "iojs"
   - "4"
+  - "stable"
 
 after_script: "npm install coveralls@2 && cat ./coverage/lcov.info | coveralls"

@@ -121,18 +121,23 @@ export function register (opts?: Options) {
     process.exit(1)
   }
 
+  const defaultLib = ts.getDefaultLibFilePath(config.options)
+
+  // Add the default lib to the files object, TypeScript 1.8 (next) is failing on this check.
+  files[defaultLib] = true
+
   const serviceHost = {
     getScriptFileNames: () => config.fileNames.concat(Object.keys(files)),
     getScriptVersion: options.getVersion,
     getScriptSnapshot (fileName: string) {
       const contents = options.getFile(fileName)
 
-      return contents ? ts.ScriptSnapshot.fromString(contents) : undefined
+      return contents == null ? undefined : ts.ScriptSnapshot.fromString(contents)
     },
     getNewLine: () => EOL,
     getCurrentDirectory: () => cwd,
     getCompilationSettings: () => config.options,
-    getDefaultLibFileName: (options: any) => ts.getDefaultLibFilePath(config.options)
+    getDefaultLibFileName: (options: any) => defaultLib
   }
 
   const service = ts.createLanguageService(serviceHost)
@@ -199,7 +204,7 @@ export function register (opts?: Options) {
     const name = ts.displayPartsToString(info ? info.displayParts : [])
     const comment = ts.displayPartsToString(info ? info.documentation : [])
 
-    return chalk.bold(name) + (comment ? `\n${comment}` : '')
+    return chalk.bold(name) + (comment ? `${EOL}${comment}` : '')
   }
 
   // Attach the loader to each defined extension.

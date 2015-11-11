@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "sourceMap": true
+  },
+  "files": [
+    "../typings/ambient/main/node.d.ts"
+  ]
+}
