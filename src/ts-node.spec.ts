@@ -117,5 +117,18 @@ describe('ts-node', function () {
 
       expect(m.example()).to.equal('hello')
     })
+
+    it('should use source maps', function (done) {
+      try {
+        require('../tests/throw')
+      } catch (error) {
+        expect(error.stack).to.contain([
+          'Error: this is a demo',
+          `    at Foo.bar (${join(__dirname, '../tests/throw.ts')}:3:18)`
+        ].join('\n'))
+
+        done()
+      }
+    })
   })
 })

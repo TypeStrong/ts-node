@@ -7,7 +7,7 @@ import Module = require('module')
 import minimist = require('minimist')
 import { diffLines } from 'diff'
 import { createScript } from 'vm'
-import { register, VERSION, TypeScriptError, getFile, getVersion } from '../ts-node'
+import { register, VERSION, getFile, getVersion, TSError } from '../ts-node'
 
 interface Argv {
   eval?: string
@@ -98,13 +98,13 @@ if (typeof code === 'string') {
 
   try {
     result = _eval(code, global)
-  } catch (err) {
-    if (err instanceof TypeScriptError) {
-      console.error(err.formatMessage())
+  } catch (error) {
+    if (error instanceof TSError) {
+      console.error(error.print())
       process.exit(1)
     }
 
-    throw err
+    throw error
   }
 
   if (argv.print != null) {
@@ -136,9 +136,8 @@ function _eval (code: string, context: any) {
   evalFile.version++
 
   let output: string
-  let result: any
 
-  // Compile changes within a `try..catch` to undo changes on compilation error.
+  // Undo on TypeScript compilation errors.
   try {
     output = service.compile(EVAL_PATH)
   } catch (error) {
@@ -157,6 +156,8 @@ function _eval (code: string, context: any) {
   } else {
     evalFile.output = output
   }
+
+  let result: any
 
   // Iterate over the diff and evaluate `added` lines. The only removed lines
   // should be the source map and lines that stay the same are ignored.
@@ -228,11 +229,11 @@ function replEval (code: string, context: any, filename: string, callback: (err?
 
   try {
     result = _eval(code, context)
-  } catch (e) {
-    if (e instanceof TypeScriptError) {
-      err = e.formatMessage()
+  } catch (error) {
+    if (error instanceof TSError) {
+      err = error.print()
     } else {
-      err = e
+      err = error
     }
   }
 
