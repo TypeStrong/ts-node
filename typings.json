@@ -1,20 +1,20 @@
 {
   "dependencies": {
-    "arrify": "https://raw.githubusercontent.com/typings/typed-arrify/32383d5fd3e6a8614abb6dba254a3aab07cd7424/typings.json",
-    "chalk": "https://raw.githubusercontent.com/typings/typed-chalk/377de52aeac245226394c41fa6adcd31dbd17d51/typings.json",
-    "diff": "https://raw.githubusercontent.com/typings/typed-diff/9b748f41b48c9ddcca5c2a135edd57df25d578cd/typings.json",
-    "make-error": "https://raw.githubusercontent.com/typings/typed-make-error/5a653400e91cf7046512544b7ed2ebab702b0183/typings.json",
-    "minimist": "https://raw.githubusercontent.com/typings/typed-minimist/00d73ec84bd64f30afff738aa2fc96c79c1ab1b1/typings.json",
-    "proxyquire": "https://raw.githubusercontent.com/typings/typed-proxyquire/e94c99bbac8d350e28edd70471d9460a5534927b/typings.json",
-    "source-map-support": "https://raw.githubusercontent.com/typings/typed-source-map-support/900ed4180a22285bce4bbabc0760427e71a59eca/typings.json",
+    "arrify": "github:typings/typed-arrify#32383d5fd3e6a8614abb6dba254a3aab07cd7424",
+    "chalk": "github:typings/typed-chalk#377de52aeac245226394c41fa6adcd31dbd17d51",
+    "diff": "github:typings/typed-diff#9b748f41b48c9ddcca5c2a135edd57df25d578cd",
+    "make-error": "github:typings/typed-make-error#5a653400e91cf7046512544b7ed2ebab702b0183",
+    "minimist": "github:typings/typed-minimist#00d73ec84bd64f30afff738aa2fc96c79c1ab1b1",
+    "proxyquire": "github:typings/typed-proxyquire#e94c99bbac8d350e28edd70471d9460a5534927b",
+    "source-map-support": "github:typings/typed-source-map-support#900ed4180a22285bce4bbabc0760427e71a59eca",
     "tsconfig": "npm:tsconfig",
     "typescript": "npm:typescript/lib/typescript.d.ts",
-    "xtend": "https://raw.githubusercontent.com/typings/typed-xtend/63cccadf3295b3c15561ee45617ac006edcca9e0/typings.json"
+    "xtend": "github:typings/typed-xtend#63cccadf3295b3c15561ee45617ac006edcca9e0"
   },
   "ambientDependencies": {
-    "chai": "https://raw.githubusercontent.com/borisyankov/DefinitelyTyped/b37afda34daa6186c3f143609555fcd6d70b249f/chai/chai.d.ts",
-    "mocha": "https://raw.githubusercontent.com/borisyankov/DefinitelyTyped/b37afda34daa6186c3f143609555fcd6d70b249f/mocha/mocha.d.ts",
-    "node": "https://raw.githubusercontent.com/borisyankov/DefinitelyTyped/b37afda34daa6186c3f143609555fcd6d70b249f/node/node.d.ts",
+    "chai": "github:borisyankov/DefinitelyTyped/chai/chai.d.ts#b37afda34daa6186c3f143609555fcd6d70b249f",
+    "mocha": "github:borisyankov/DefinitelyTyped/mocha/mocha.d.ts#b37afda34daa6186c3f143609555fcd6d70b249f",
+    "node": "github:borisyankov/DefinitelyTyped/node/node.d.ts#b37afda34daa6186c3f143609555fcd6d70b249f",
     "node-extended": "file:custom_typings/node.d.ts"
   }
 }
