@@ -52,7 +52,7 @@
   "homepage": "https://github.com/TypeStrong/ts-node",
   "devDependencies": {
     "chai": "^3.0.0",
-    "istanbul": "^0.3.17",
+    "istanbul": "^0.4.0",
     "mocha": "^2.1.0",
     "ntypescript": "^1.201507091536.1",
     "pre-commit": "^1.0.10",
