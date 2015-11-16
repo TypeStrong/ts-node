@@ -121,11 +121,6 @@ export function register (opts?: Options) {
     process.exit(1)
   }
 
-  const defaultLib = ts.getDefaultLibFilePath(config.options)
-
-  // Add the default lib to the files object, TypeScript 1.8 (next) is failing on this check.
-  files[defaultLib] = true
-
   const serviceHost = {
     getScriptFileNames: () => config.fileNames.concat(Object.keys(files)),
     getScriptVersion: options.getVersion,
@@ -137,7 +132,7 @@ export function register (opts?: Options) {
     getNewLine: () => EOL,
     getCurrentDirectory: () => cwd,
     getCompilationSettings: () => config.options,
-    getDefaultLibFileName: (options: any) => defaultLib
+    getDefaultLibFileName: (options: any) => ts.getDefaultLibFilePath(config.options)
   }
 
   const service = ts.createLanguageService(serviceHost)
