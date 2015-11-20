@@ -79,15 +79,15 @@ function readConfig (options: Options, cwd: string, ts: TSish) {
     compilerOptions: {}
   }
 
-  config.compilerOptions = extend({
-    target: 'es5',
-    module: 'commonjs'
-  }, config.compilerOptions, {
+  config.compilerOptions = extend(config.compilerOptions, {
     rootDir: cwd,
     sourceMap: true,
     inlineSourceMap: false,
     inlineSources: false,
     declaration: false
+  }, {
+    target: 'es5',
+    module: 'commonjs'
   })
 
   if (typeof (<TS_1_5ish> ts).parseConfigFile === 'function') {
