@@ -18,8 +18,6 @@ npm install -g typescript
 
 ## Features
 
-![TypeScript REPL](https://github.com/TypeStrong/ts-node/raw/master/screenshot.png)
-
 * Execute TypeScript files with node
 * Interactive REPL
 * Execute (and print) TypeScript through the CLI
@@ -42,17 +40,19 @@ ts-node -e 'console.log("Hello, world!")'
 ts-node -p '"Hello, world!"'
 ```
 
-**Mocha:**
+### Mocha
 
 ```
 mocha test.ts --require ts-node/register src/**/*.spec.ts
 ```
 
-**Tape:**
+### Tape
 
 ```
 ts-node node_modules/tape/bin/tape src/**/*.spec.ts
 ```
+
+![TypeScript REPL](https://github.com/TypeStrong/ts-node/raw/master/screenshot.png)
 
 ### Loading `tsconfig.json`
 
