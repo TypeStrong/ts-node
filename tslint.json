@@ -55,7 +55,7 @@
     "no-use-before-declare": true,
     "no-var-keyword": true,
     "no-var-requires": false,
-    "object-literal-sort-keys": true,
+    "object-literal-sort-keys": false,
     "one-line": [
       true,
       "check-open-brace",
@@ -71,13 +71,7 @@
     "radix": true,
     "semicolon": false,
     "switch-default": true,
-    "trailing-comma": [
-      true,
-      {
-        "multiline": "always",
-        "singleline": "never"
-      }
-    ],
+    "trailing-comma": false,
     "triple-equals": [
       true,
       "allow-null-check"
