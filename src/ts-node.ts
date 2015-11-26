@@ -98,13 +98,22 @@ function readConfig (options: Options, cwd: string, ts: TSish) {
 }
 
 /**
+ * Track the project information.
+ */
+interface Project {
+  files: { [fileName: string]: boolean }
+  versions: { [fileName: string]: string }
+  version: number
+}
+
+/**
  * Register TypeScript compiler.
  */
 export function register (opts?: Options) {
   const cwd = process.cwd()
   const options = extend({ getFile, getVersion, project: cwd }, opts)
 
-  const files: { [fileName: string]: boolean } = {}
+  const project: Project = { version: 0, files: {}, versions: {} }
 
   // Enable compiler overrides.
   options.compiler = options.compiler || 'typescript'
@@ -123,12 +132,13 @@ export function register (opts?: Options) {
 
   // Add all files into the file hash.
   for (const fileName of config.fileNames) {
-    files[fileName] = true
+    project.files[fileName] = true
   }
 
   const serviceHost = {
-    getScriptFileNames: () => Object.keys(files),
-    getScriptVersion: options.getVersion,
+    getScriptFileNames: () => Object.keys(project.files),
+    getProjectVersion: () => String(project.version),
+    getScriptVersion: (fileName: string) => incrementFile(fileName),
     getScriptSnapshot (fileName: string) {
       const contents = options.getFile(fileName)
 
@@ -144,33 +154,35 @@ export function register (opts?: Options) {
 
   // Install source map support and read from cache.
   sourceMapSupport.install({
-    retrieveSourceMap (fileName) {
-      if (files[fileName]) {
-        return {
-          url: fileName,
-          map: retrieveSourceMap(fileName)
-        }
+    retrieveFile (fileName) {
+      if (project.files[fileName]) {
+        return getOutput(fileName)
       }
     }
   })
 
-  function retrieveSourceMap (fileName: string) {
-    const output = service.getEmitOutput(fileName)
-    const sourceText = service.getSourceFile(fileName).text
-    const sourceMap = output.outputFiles[0].text
+  function incrementAndAddFile (fileName: string) {
+    // Add files to the hash before compilation.
+    project.files[fileName] = true
 
-    return getSourceMap(sourceMap, fileName, sourceText)
+    const currentVersion = project.versions[fileName]
+    const newVersion = incrementFile(fileName)
+
+    // Increment the project version for file changes.
+    if (currentVersion !== newVersion) {
+      project.version++
+    }
+
+    return newVersion
   }
 
-  function addFileName (fileName: string) {
-    // Add to the `files` object before compiling - otherwise our file will
-    // not found (unless it's in our `tsconfig.json` file).
-    files[fileName] = true
+  function incrementFile (fileName: string) {
+    const version = options.getVersion(fileName)
+    project.versions[fileName] = version
+    return version
   }
 
-  function compile (fileName: string) {
-    addFileName(fileName)
-
+  function getOutput (fileName: string) {
     const output = service.getEmitOutput(fileName)
     const diagnostics = getDiagnostics(service, fileName, options, ts)
 
@@ -187,15 +199,34 @@ export function register (opts?: Options) {
       }
     }
 
-    return output.outputFiles[1].text
+    const result = output.outputFiles[1].text
+    const sourceText = service.getSourceFile(fileName).text
+    const sourceMapText = output.outputFiles[0].text
+    const sourceMapFileName = output.outputFiles[0].name
+    const sourceMap = getSourceMap(sourceMapText, fileName, sourceText)
+    const base64SourceMapText = new Buffer(sourceMap).toString('base64')
+
+    return result
+      .replace(
+        '//# sourceMappingURL=' + basename(sourceMapFileName),
+        `//# sourceMappingURL=data:application/json;base64,${base64SourceMapText}`
+      )
+  }
+
+  function compile (fileName: string) {
+    incrementAndAddFile(fileName)
+
+    return getOutput(fileName)
   }
 
   function loader (m: any, fileName: string) {
-    return m._compile(compile(fileName), fileName)
+    incrementAndAddFile(fileName)
+
+    return m._compile(getOutput(fileName), fileName)
   }
 
   function getTypeInfo (fileName: string, position: number) {
-    addFileName(fileName)
+    incrementAndAddFile(fileName)
 
     const info = service.getQuickInfoAtPosition(fileName, position)
     const name = ts.displayPartsToString(info ? info.displayParts : [])
