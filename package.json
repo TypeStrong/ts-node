@@ -67,7 +67,7 @@
     "diff": "^2.1.1",
     "make-error": "^1.0.2",
     "minimist": "^1.2.0",
-    "source-map-support": "^0.3.2",
+    "source-map-support": "^0.4.0",
     "tsconfig": "^2.1.1",
     "xtend": "^4.0.0"
   }
