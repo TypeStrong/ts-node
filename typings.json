@@ -12,9 +12,11 @@
     "xtend": "github:typings/typed-xtend#63cccadf3295b3c15561ee45617ac006edcca9e0"
   },
   "ambientDependencies": {
-    "chai": "github:borisyankov/DefinitelyTyped/chai/chai.d.ts#b37afda34daa6186c3f143609555fcd6d70b249f",
-    "mocha": "github:borisyankov/DefinitelyTyped/mocha/mocha.d.ts#b37afda34daa6186c3f143609555fcd6d70b249f",
     "node": "github:borisyankov/DefinitelyTyped/node/node.d.ts#b37afda34daa6186c3f143609555fcd6d70b249f",
     "node-extended": "file:custom_typings/node.d.ts"
+  },
+  "ambientDevDependencies": {
+    "chai": "github:borisyankov/DefinitelyTyped/chai/chai.d.ts#b37afda34daa6186c3f143609555fcd6d70b249",
+    "mocha": "github:borisyankov/DefinitelyTyped/mocha/mocha.d.ts#b37afda34daa6186c3f143609555fcd6d70b249f"
   }
 }
