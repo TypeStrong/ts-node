@@ -46,7 +46,7 @@ export type TSish = TS_1_5ish | TS_1_7ish
 /**
  * Export the current version.
  */
-export const VERSION = '0.5.4'
+export const VERSION = '0.5.5'
 
 /**
  * Extensions to compile using TypeScript.
