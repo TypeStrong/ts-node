@@ -1,5 +1,5 @@
 import tsconfig = require('tsconfig')
-import { resolve, relative, extname, basename, isAbsolute } from 'path'
+import { relative, basename } from 'path'
 import { readFileSync, statSync } from 'fs'
 import { EOL } from 'os'
 import sourceMapSupport = require('source-map-support')
@@ -11,7 +11,7 @@ import { BaseError } from 'make-error'
 /**
  * Common TypeScript interfaces between versions.
  */
-export interface TS_Common {
+export interface TSCommon {
   sys: any
   service: any
   ScriptSnapshot: {
@@ -27,21 +27,21 @@ export interface TS_Common {
 /**
  * The TypeScript 1.7+ interface.
  */
-export interface TS_1_7ish extends TS_Common {
+export interface TS17ish extends TSCommon {
   parseJsonConfigFileContent (config: any, host: any, fileName: string): any
 }
 
 /**
  * TypeScript 1.5+ interface.
  */
-export interface TS_1_5ish extends TS_Common {
+export interface TS15ish extends TSCommon {
   parseConfigFile (config: any, host: any, fileName: string): any
 }
 
 /**
  * TypeScript compatible compilers.
  */
-export type TSish = TS_1_5ish | TS_1_7ish
+export type TSish = TS15ish | TS17ish
 
 /**
  * Export the current version.
@@ -79,22 +79,26 @@ function readConfig (options: Options, cwd: string, ts: TSish) {
     compilerOptions: {}
   }
 
-  config.compilerOptions = extend({
-    target: 'es5',
-    module: 'commonjs'
-  }, config.compilerOptions, {
-    rootDir: cwd,
-    sourceMap: true,
-    inlineSourceMap: false,
-    inlineSources: false,
-    declaration: false
-  })
+  config.compilerOptions = extend(
+    {
+      target: 'es5',
+      module: 'commonjs'
+    },
+    config.compilerOptions,
+    {
+      rootDir: cwd,
+      sourceMap: true,
+      inlineSourceMap: false,
+      inlineSources: false,
+      declaration: false
+    }
+  )
 
-  if (typeof (<TS_1_5ish> ts).parseConfigFile === 'function') {
-    return (<TS_1_5ish> ts).parseConfigFile(config, ts.sys, fileName)
+  if (typeof (<TS15ish> ts).parseConfigFile === 'function') {
+    return (<TS15ish> ts).parseConfigFile(config, ts.sys, fileName)
   }
 
-  return (<TS_1_7ish> ts).parseJsonConfigFileContent(config, ts.sys, fileName)
+  return (<TS17ish> ts).parseJsonConfigFileContent(config, ts.sys, fileName)
 }
 
 /**
@@ -256,7 +260,9 @@ export function getVersion (fileName: string): string {
 export function getFile (fileName: string): string {
   try {
     return readFileSync(fileName, 'utf8')
-  } catch (err) {}
+  } catch (error) {
+    return
+  }
 }
 
 /**
@@ -311,7 +317,7 @@ export function printDiagnostics (diagnostics: string[]) {
  * Sanitize the source map content.
  */
 function getSourceMap (map: string, fileName: string, code: string): string {
-  var sourceMap = JSON.parse(map)
+  const sourceMap = JSON.parse(map)
   sourceMap.file = fileName
   sourceMap.sources = [fileName]
   sourceMap.sourcesContent = [code]
@@ -325,9 +331,11 @@ function getSourceMap (map: string, fileName: string, code: string): string {
 export class TSError extends BaseError {
 
   name = 'TSError'
+  diagnostics: string[]
 
-  constructor (public diagnostics: string[]) {
+  constructor (diagnostics: string[]) {
     super('Unable to compile TypeScript')
+    this.diagnostics = diagnostics
   }
 
   print () {
