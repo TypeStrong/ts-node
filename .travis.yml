@@ -13,6 +13,7 @@ script:
   - npm run test-cov
 
 env:
+  - TYPESCRIPT=typescript@1.5
   - TYPESCRIPT=typescript@1.6
   - TYPESCRIPT=typescript@1.7
   - TYPESCRIPT=typescript@next
