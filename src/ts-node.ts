@@ -111,12 +111,24 @@ interface Project {
 }
 
 /**
+ * Default register options.
+ */
+const DEFAULT_OPTIONS: Options = {
+  getFile,
+  getVersion,
+  disableWarnings: process.env.TS_NODE_DISABLE_WARNINGS,
+  compiler: process.env.TS_NODE_COMPILER,
+  project: process.env.TS_NODE_PROJECT,
+  noProject: process.env.TS_NODE_NO_PROJECT,
+  ignoreWarnings: process.env.TS_NODE_IGNORE_WARNINGS
+}
+
+/**
  * Register TypeScript compiler.
  */
 export function register (opts?: Options) {
   const cwd = process.cwd()
-  const options = extend({ getFile, getVersion, project: cwd }, opts)
-
+  const options = extend(DEFAULT_OPTIONS, { project: cwd }, opts)
   const project: Project = { version: 0, files: {}, versions: {} }
 
   // Enable compiler overrides.

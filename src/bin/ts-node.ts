@@ -31,6 +31,7 @@ const argv = minimist<Argv>(process.argv.slice(2), {
     v: ['version'],
     e: ['eval'],
     p: ['print'],
+    P: ['project'],
     c: ['compiler'],
     i: ['ignoreWarnings', 'ignore-warnings'],
     d: ['disableWarnings', 'disable-warnings'],
@@ -55,7 +56,7 @@ Options:
   -i, --ignoreWarnings [codes]  Ignore TypeScript warnings by diagnostic code
   -d, --disableWarnings         Ignore every TypeScript warning
   -n, --noProject               Ignore the "tsconfig.json" project file
-  --project [path]              Specify the path to the TypeScript project
+  -P, --project [path]          Specify the path to the TypeScript project
 `)
   process.exit(0)
 }
