@@ -57,7 +57,7 @@
     "pre-commit": "^1.0.10",
     "proxyquire": "^1.7.2",
     "tslint": "^3.2.1",
-    "typescript": "^1.6.2",
+    "typescript": "^1.8.5",
     "typings": "^0.6.8"
   },
   "dependencies": {
