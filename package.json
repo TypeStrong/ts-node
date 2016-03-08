@@ -58,7 +58,7 @@
     "proxyquire": "^1.7.2",
     "tslint": "^3.2.1",
     "typescript": "^1.6.2",
-    "typings": "^0.6.8"
+    "typings": "^0.7.1"
   },
   "dependencies": {
     "arrify": "^1.0.0",
