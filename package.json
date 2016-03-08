@@ -53,7 +53,7 @@
     "chai": "^3.0.0",
     "istanbul": "^0.4.0",
     "mocha": "^2.1.0",
-    "ntypescript": "^1.201507091536.1",
+    "ntypescript": "^1.201603012306.1",
     "pre-commit": "^1.0.10",
     "proxyquire": "^1.7.2",
     "tslint": "^3.2.1",
