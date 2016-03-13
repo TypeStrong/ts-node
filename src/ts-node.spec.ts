@@ -93,6 +93,33 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    it('should pipe into `ts-node` and evaluate', function (done) {
+      exec(`echo "console.log('hello')" | ${BIN_EXEC}`, function (err, stdout) {
+        expect(err).to.not.exist
+        expect(stdout).to.equal('hello\n')
+
+        return done()
+      })
+    })
+
+    it('should pipe into `ts-node`', function (done) {
+      exec(`echo "true" | ${BIN_EXEC} -p`, function (err, stdout) {
+        expect(err).to.not.exist
+        expect(stdout).to.equal('true\n')
+
+        return done()
+      })
+    })
+
+    it('should pipe into an eval script', function (done) {
+      exec(`echo "true" | ${BIN_EXEC} -p '(process.stdin as any).isTTY'`, function (err, stdout) {
+        expect(err).to.not.exist
+        expect(stdout).to.equal('undefined\n')
+
+        return done()
+      })
+    })
   })
 
   describe('register', function () {
