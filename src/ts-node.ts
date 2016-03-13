@@ -1,47 +1,39 @@
-import tsconfig = require('tsconfig')
-import { relative, basename } from 'path'
+import { relative, basename, resolve, dirname } from 'path'
 import { readFileSync, statSync } from 'fs'
 import { EOL } from 'os'
 import sourceMapSupport = require('source-map-support')
 import extend = require('xtend')
 import arrify = require('arrify')
-import chalk = require('chalk')
 import { BaseError } from 'make-error'
+import * as TS from 'typescript'
 
 /**
  * Common TypeScript interfaces between versions.
  */
 export interface TSCommon {
   sys: any
-  service: any
-  ScriptSnapshot: {
-    fromString (value: string): any
+  ScriptSnapshot: typeof TS.ScriptSnapshot
+  displayPartsToString: typeof TS.displayPartsToString
+  createLanguageService: typeof TS.createLanguageService
+  getDefaultLibFilePath: typeof TS.getDefaultLibFilePath
+  getPreEmitDiagnostics: typeof TS.getPreEmitDiagnostics
+  flattenDiagnosticMessageText: typeof TS.flattenDiagnosticMessageText
+
+  // TypeScript 1.5+, 1.7+ added `fileExists` parameter.
+  findConfigFile (path: string, fileExists?: (path: string) => boolean): string
+
+  // TypeScript 1.5+, 1.7+ added `readFile` parameter.
+  readConfigFile (path: string, readFile?: (path: string) => string): {
+    config?: any
+    error?: TS.Diagnostic
   }
-  displayPartsToString (parts: any): string
-  createLanguageService (serviceHost: any): any
-  getDefaultLibFilePath (options: any): string
-  getPreEmitDiagnostics (program: any): any[]
-  flattenDiagnosticMessageText (diagnostic: any, newLine: string): string
-}
 
-/**
- * The TypeScript 1.7+ interface.
- */
-export interface TS17ish extends TSCommon {
-  parseJsonConfigFileContent (config: any, host: any, fileName: string): any
-}
+  // TypeScript 1.7+.
+  parseJsonConfigFileContent? (json: any, host: any, basePath: string, existingOptions: any, configFileName: string): any
 
-/**
- * TypeScript 1.5+ interface.
- */
-export interface TS15ish extends TSCommon {
-  parseConfigFile (config: any, host: any, fileName: string): any
+  // TypeScript 1.5+.
+  parseConfigFile? (json: any, host: any, basePath: string): any
 }
-
-/**
- * TypeScript compatible compilers.
- */
-export type TSish = TS15ish | TS17ish
 
 /**
  * Export the current version.
@@ -61,7 +53,6 @@ export interface Options {
   noProject?: boolean
   project?: string
   ignoreWarnings?: Array<number | string>
-  isEval?: boolean
   disableWarnings?: boolean
   getFile?: (fileName: string) => string
   getVersion?: (fileName: string) => string
@@ -70,35 +61,44 @@ export interface Options {
 /**
  * Load TypeScript configuration.
  */
-function readConfig (options: Options, cwd: string, ts: TSish) {
+function readConfig (options: Options, cwd: string, ts: TSCommon) {
   const { project, noProject } = options
-  const fileName = noProject ? undefined : tsconfig.resolveSync(project || cwd)
+  const fileName = noProject ? undefined : resolve(ts.findConfigFile(project || cwd, ts.sys.fileExists))
 
-  const config = fileName ? tsconfig.readFileSync(fileName, { filterDefinitions: true }) : {
-    files: [],
-    compilerOptions: {}
+  const result = fileName ? ts.readConfigFile(fileName, ts.sys.readFile) : {
+    config: {
+      files: [],
+      compilerOptions: {}
+    }
   }
 
-  config.compilerOptions = extend(
+  if (result.error) {
+    throw new TSError([formatDiagnostic(result.error, ts)])
+  }
+
+  result.config.compilerOptions = extend(
     {
       target: 'es5',
       module: 'commonjs'
     },
-    config.compilerOptions,
+    result.config.compilerOptions,
     {
-      rootDir: cwd,
       sourceMap: true,
       inlineSourceMap: false,
       inlineSources: false,
-      declaration: false
+      declaration: false,
+      noEmit: false
     }
   )
 
-  if (typeof (<TS15ish> ts).parseConfigFile === 'function') {
-    return (<TS15ish> ts).parseConfigFile(config, ts.sys, fileName)
+  // Resolve before getting `dirname` to work around Microsoft/TypeScript#2965
+  const basePath = dirname(resolve(fileName))
+
+  if (typeof ts.parseConfigFile === 'function') {
+    return ts.parseConfigFile(result.config, ts.sys, basePath)
   }
 
-  return (<TS17ish> ts).parseJsonConfigFileContent(config, ts.sys, fileName)
+  return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, fileName)
 }
 
 /**
@@ -123,15 +123,12 @@ export function register (opts?: Options) {
   options.compiler = options.compiler || 'typescript'
   options.ignoreWarnings = arrify(options.ignoreWarnings).map(Number)
 
-  const ts: TSish = require(options.compiler)
+  const ts: typeof TS = require(options.compiler)
   const config = readConfig(options, cwd, ts)
 
   // Render the configuration errors and exit the script.
   if (!options.disableWarnings && config.errors.length) {
-    const diagnostics = config.errors.map((d: any) => formatDiagnostic(d, ts))
-
-    console.error(printDiagnostics(diagnostics))
-    process.exit(1)
+    throw new TSError(config.errors.map((d: any) => formatDiagnostic(d, ts)))
   }
 
   // Add all files into the file hash.
@@ -195,12 +192,7 @@ export function register (opts?: Options) {
     }
 
     if (diagnostics.length) {
-      if (options.isEval) {
-        throw new TSError(diagnostics)
-      } else {
-        console.error(printDiagnostics(diagnostics))
-        process.exit(1)
-      }
+      throw new TSError(diagnostics)
     }
 
     const result = output.outputFiles[1].text
@@ -236,7 +228,7 @@ export function register (opts?: Options) {
     const name = ts.displayPartsToString(info ? info.displayParts : [])
     const comment = ts.displayPartsToString(info ? info.documentation : [])
 
-    return chalk.bold(name) + (comment ? `${EOL}${comment}` : '')
+    return { name, comment }
   }
 
   // Attach the loader to each defined extension.
@@ -268,7 +260,7 @@ export function getFile (fileName: string): string {
 /**
  * Get file diagnostics from a TypeScript language service.
  */
-function getDiagnostics (service: any, fileName: string, options: Options, ts: TSish) {
+function getDiagnostics (service: any, fileName: string, options: Options, ts: TSCommon) {
   if (options.disableWarnings) {
     return []
   }
@@ -285,7 +277,7 @@ function getDiagnostics (service: any, fileName: string, options: Options, ts: T
 /**
  * Format a diagnostic object into a string.
  */
-function formatDiagnostic (diagnostic: any, ts: TSish, cwd: string = '.'): string {
+function formatDiagnostic (diagnostic: any, ts: TSCommon, cwd: string = '.'): string {
   const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
 
   if (diagnostic.file) {
@@ -296,21 +288,6 @@ function formatDiagnostic (diagnostic: any, ts: TSish, cwd: string = '.'): strin
   }
 
   return `${message} (${diagnostic.code})`
-}
-
-/**
- * Format diagnostics into friendlier errors.
- */
-export function printDiagnostics (diagnostics: string[]) {
-  const boundary = chalk.grey('----------------------------------')
-
-  return [
-    boundary,
-    chalk.red.bold('⨯ Unable to compile TypeScript'),
-    '',
-    diagnostics.join(EOL),
-    boundary
-  ].join(EOL)
 }
 
 /**
@@ -334,12 +311,8 @@ export class TSError extends BaseError {
   diagnostics: string[]
 
   constructor (diagnostics: string[]) {
-    super('Unable to compile TypeScript')
+    super(`⨯ Unable to compile TypeScript\n${diagnostics.join('\n')}`)
     this.diagnostics = diagnostics
-  }
-
-  print () {
-    return printDiagnostics(this.diagnostics)
   }
 
 }

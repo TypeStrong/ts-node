@@ -1,22 +1,20 @@
 {
   "dependencies": {
-    "arrify": "github:typings/typed-arrify#32383d5fd3e6a8614abb6dba254a3aab07cd7424",
-    "chalk": "github:typings/typed-chalk#377de52aeac245226394c41fa6adcd31dbd17d51",
-    "diff": "github:typings/typed-diff#9b748f41b48c9ddcca5c2a135edd57df25d578cd",
-    "make-error": "github:typings/typed-make-error#5a653400e91cf7046512544b7ed2ebab702b0183",
-    "minimist": "github:typings/typed-minimist#00d73ec84bd64f30afff738aa2fc96c79c1ab1b1",
-    "proxyquire": "github:typings/typed-proxyquire#e94c99bbac8d350e28edd70471d9460a5534927b",
-    "source-map-support": "github:typings/typed-source-map-support#900ed4180a22285bce4bbabc0760427e71a59eca",
-    "tsconfig": "npm:tsconfig",
-    "typescript": "npm:typescript/lib/typescript.d.ts",
-    "xtend": "github:typings/typed-xtend#63cccadf3295b3c15561ee45617ac006edcca9e0"
+    "arrify": "registry:npm/arrify#1.0.0+20160211003958",
+    "chalk": "registry:npm/chalk#1.0.0+20160211003958",
+    "diff": "registry:npm/diff#2.0.0+20160211003958",
+    "make-error": "registry:npm/make-error#1.0.0+20160211003958",
+    "minimist": "registry:npm/minimist#1.0.0+20160229232932",
+    "proxyquire": "registry:npm/proxyquire#1.0.0+20160211003958",
+    "source-map-support": "registry:npm/source-map-support#0.3.0+20160211003958",
+    "xtend": "registry:npm/xtend#4.0.0+20160211003958"
   },
   "ambientDependencies": {
     "node": "github:borisyankov/DefinitelyTyped/node/node.d.ts#b37afda34daa6186c3f143609555fcd6d70b249f",
     "node-extended": "file:custom_typings/node.d.ts"
   },
   "ambientDevDependencies": {
-    "chai": "github:borisyankov/DefinitelyTyped/chai/chai.d.ts#b37afda34daa6186c3f143609555fcd6d70b249",
-    "mocha": "github:borisyankov/DefinitelyTyped/mocha/mocha.d.ts#b37afda34daa6186c3f143609555fcd6d70b249f"
+    "chai": "registry:dt/chai#3.4.0+20160216071402",
+    "mocha": "registry:dt/mocha#2.2.5+20151023103246"
   }
 }

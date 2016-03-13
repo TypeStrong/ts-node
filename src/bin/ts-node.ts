@@ -5,6 +5,7 @@ import { start } from 'repl'
 import { inspect } from 'util'
 import Module = require('module')
 import minimist = require('minimist')
+import chalk = require('chalk')
 import { diffLines } from 'diff'
 import { createScript } from 'vm'
 import { register, VERSION, getFile, getVersion, TSError } from '../ts-node'
@@ -22,7 +23,7 @@ interface Argv {
   _: string[]
 }
 
-const argv = <Argv> <any> minimist(process.argv.slice(2), {
+const argv = minimist<Argv>(process.argv.slice(2), {
   stopEarly: true,
   string: ['eval', 'print', 'compiler', 'project', 'ignoreWarnings'],
   boolean: ['help', 'version', 'disableWarnings', 'noProject'],
@@ -71,8 +72,7 @@ const service = register({
   ignoreWarnings: list(argv.ignoreWarnings),
   project: argv.project,
   disableWarnings: argv.disableWarnings,
-  noProject: argv.noProject,
-  isEval: isEval
+  noProject: argv.noProject
 })
 
 // TypeScript files must always end with `.ts`.
@@ -100,8 +100,7 @@ if (typeof code === 'string') {
     result = _eval(code, global)
   } catch (error) {
     if (error instanceof TSError) {
-      console.error(error.print())
-      process.exit(1)
+      printAndExit(error)
     }
 
     throw error
@@ -122,6 +121,32 @@ if (typeof code === 'string') {
   } else {
     startRepl()
   }
+}
+
+const _emit = process.emit
+
+process.emit = function (type, error) {
+  // Print the error message when no other listeners are present.
+  if (type === 'uncaughtException' && error instanceof TSError && process.listeners(type).length === 0) {
+    return printAndExit(error)
+  }
+
+  return _emit.apply(this, arguments)
+}
+
+/**
+ * Stringify the `TSError` instance.
+ */
+function print (error: TSError) {
+  return chalk.bold(`${chalk.red('⨯')} Unable to compile TypeScript`) + `\n${error.diagnostics.join('\n')}`
+}
+
+/**
+ * Print the error and exit.
+ */
+function printAndExit (error: TSError) {
+  console.error(print(error))
+  process.exit(1)
 }
 
 /**
@@ -204,9 +229,9 @@ function startRepl () {
       evalFile.input += identifier
       evalFile.version++
 
-      const info = service.getTypeInfo(EVAL_PATH, evalFile.input.length)
+      const { name, comment } = service.getTypeInfo(EVAL_PATH, evalFile.input.length)
 
-      ;(<any> repl).outputStream.write(`${info}\n`)
+      ;(<any> repl).outputStream.write(`${chalk.bold(name)}\n${comment ? `${comment}\n` : ''}`)
       ;(<any> repl).displayPrompt()
 
       evalFile.input = undo
@@ -218,7 +243,7 @@ function startRepl () {
  * Eval code from the REPL.
  */
 function replEval (code: string, context: any, filename: string, callback: (err?: Error, result?: any) => any) {
-  let err: Error
+  let err: any
   let result: any
 
   // TODO: Figure out how to handle completion here.
@@ -231,7 +256,7 @@ function replEval (code: string, context: any, filename: string, callback: (err?
     result = _eval(code, context)
   } catch (error) {
     if (error instanceof TSError) {
-      err = error.print()
+      err = print(error)
     } else {
       err = error
     }
