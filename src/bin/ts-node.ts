@@ -61,9 +61,25 @@ Options:
   process.exit(0)
 }
 
+/**
+ * Override `process.emit` for clearer compiler errors.
+ */
+const _emit = process.emit
+
+process.emit = function (type, error) {
+  // Print the error message when no other listeners are present.
+  if (type === 'uncaughtException' && error instanceof TSError && process.listeners(type).length === 0) {
+    return printAndExit(error)
+  }
+
+  return _emit.apply(this, arguments)
+}
+
 const cwd = process.cwd()
 const code = argv.eval == null ? argv.print : argv.eval
-const isEval = typeof code === 'string' || argv._.length === 0
+const isEvalScript = typeof argv.eval === 'string' || !!argv.print // Minimist struggles with empty strings.
+const isEval = isEvalScript || argv._.length === 0
+const isPrinted = argv.print != null
 
 // Register the TypeScript compiler instance.
 const service = register({
@@ -83,7 +99,31 @@ const EVAL_PATH = join(cwd, EVAL_FILENAME)
 // Store eval contents for in-memory lookups.
 const evalFile = { input: '', output: '', version: 0 }
 
-if (typeof code === 'string') {
+if (isEvalScript) {
+  evalAndExit(code, isPrinted)
+} else {
+  if (argv._.length) {
+    const args = argv._.slice()
+    args[0] = join(cwd, args[0])
+    process.argv = ['node'].concat(args)
+    process.execArgv.unshift(__filename)
+    Module.runMain()
+  } else {
+    // Piping of execution _only_ occurs when no other script is specified.
+    if ((process.stdin as any).isTTY) {
+      startRepl()
+    } else {
+      let code = ''
+      process.stdin.on('data', (chunk: Buffer) => code += chunk)
+      process.stdin.on('end', () => evalAndExit(code, isPrinted))
+    }
+  }
+}
+
+/**
+ * Evaluate a script.
+ */
+function evalAndExit (code: string, isPrinted: boolean) {
   global.__filename = EVAL_FILENAME
   global.__dirname = cwd
 
@@ -107,32 +147,11 @@ if (typeof code === 'string') {
     throw error
   }
 
-  if (argv.print != null) {
+  if (isPrinted) {
     console.log(typeof result === 'string' ? result : inspect(result))
   }
-} else {
-  if (argv._.length) {
-    const args = argv._.slice()
 
-    args[0] = join(cwd, args[0])
-
-    process.argv = ['node'].concat(args)
-    process.execArgv.unshift(__filename)
-    Module.runMain()
-  } else {
-    startRepl()
-  }
-}
-
-const _emit = process.emit
-
-process.emit = function (type, error) {
-  // Print the error message when no other listeners are present.
-  if (type === 'uncaughtException' && error instanceof TSError && process.listeners(type).length === 0) {
-    return printAndExit(error)
-  }
-
-  return _emit.apply(this, arguments)
+  process.exit(0)
 }
 
 /**
@@ -217,11 +236,11 @@ function startRepl () {
     evalFile.version = 0
   })
 
-  ;(<any> repl).defineCommand('type', {
+  ;(repl as any).defineCommand('type', {
     help: 'Check the type of a TypeScript identifier',
     action: function (identifier: string) {
       if (!identifier) {
-        ;(<any> repl).displayPrompt()
+        ;(repl as any).displayPrompt()
         return
       }
 
@@ -232,8 +251,8 @@ function startRepl () {
 
       const { name, comment } = service.getTypeInfo(EVAL_PATH, evalFile.input.length)
 
-      ;(<any> repl).outputStream.write(`${chalk.bold(name)}\n${comment ? `${comment}\n` : ''}`)
-      ;(<any> repl).displayPrompt()
+      ;(repl as any).outputStream.write(`${chalk.bold(name)}\n${comment ? `${comment}\n` : ''}`)
+      ;(repl as any).displayPrompt()
 
       evalFile.input = undo
     }
