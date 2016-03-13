@@ -115,7 +115,17 @@ interface Project {
  */
 export function register (opts?: Options) {
   const cwd = process.cwd()
-  const options = extend({ getFile, getVersion, project: cwd }, opts)
+
+  const defaultOptions = {
+    getFile,
+    getVersion,
+    project: cwd,
+    disableWarnings: process.env.TSNODE_DISABLEWARNINGS,
+    compiler: process.env.TSNODE_COMPILER,
+    noProject: process.env.TSNODE_NOPROJECT,
+    isEval: process.env.TSNODE_ISEVAL
+  }
+  const options = extend(defaultOptions, opts)
 
   const project: Project = { version: 0, files: {}, versions: {} }
 
