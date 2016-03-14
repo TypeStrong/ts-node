@@ -7,6 +7,8 @@ import arrify = require('arrify')
 import { BaseError } from 'make-error'
 import * as TS from 'typescript'
 
+const pkg = require('../package.json')
+
 /**
  * Common TypeScript interfaces between versions.
  */
@@ -38,7 +40,7 @@ export interface TSCommon {
 /**
  * Export the current version.
  */
-export const VERSION = '0.5.5'
+export const VERSION = pkg.version
 
 /**
  * Extensions to compile using TypeScript.
