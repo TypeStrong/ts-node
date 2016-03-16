@@ -65,7 +65,7 @@ export interface Options {
  */
 function readConfig (options: Options, cwd: string, ts: TSCommon) {
   const { project, noProject } = options
-  const fileName = noProject ? undefined : resolve(ts.findConfigFile(project || cwd, ts.sys.fileExists))
+  const fileName = noProject ? undefined : ts.findConfigFile(project || cwd, ts.sys.fileExists)
 
   const result = fileName ? ts.readConfigFile(fileName, ts.sys.readFile) : {
     config: {
@@ -94,7 +94,7 @@ function readConfig (options: Options, cwd: string, ts: TSCommon) {
   )
 
   // Resolve before getting `dirname` to work around Microsoft/TypeScript#2965
-  const basePath = dirname(resolve(fileName))
+  const basePath = fileName ? dirname(resolve(fileName)) : cwd
 
   if (typeof ts.parseConfigFile === 'function') {
     return ts.parseConfigFile(result.config, ts.sys, basePath)
