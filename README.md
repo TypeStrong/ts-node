@@ -33,30 +33,40 @@ ts-node script.ts
 # Starts the TypeScript REPL.
 ts-node
 
-# Execute code snippets with TypeScript.
+# Execute code with TypeScript.
 ts-node -e 'console.log("Hello, world!")'
 
-# Execute and print code snippets with TypeScript.
+# Execute, and print, code with TypeScript.
 ts-node -p '"Hello, world!"'
+
+# Pipe scripts to execute with TypeScript.
+echo "console.log('Hello, world!')" | ts-node
 ```
+
+![TypeScript REPL](https://github.com/TypeStrong/ts-node/raw/master/screenshot.png)
 
 ### Mocha
 
-```
+```sh
 mocha test.ts --require ts-node/register src/**/*.spec.ts
 ```
 
 ### Tape
 
-```
+```sh
 ts-node node_modules/tape/bin/tape src/**/*.spec.ts
 ```
 
-![TypeScript REPL](https://github.com/TypeStrong/ts-node/raw/master/screenshot.png)
+### Gulp
+
+```sh
+# Just create a `gulpfile.ts` and run `gulp`.
+gulp
+```
 
 ### Loading `tsconfig.json`
 
-**Typescript Node** automatically loads `tsconfig.json` options and referenced files from the current directory using [tsconfig](https://github.com/TypeStrong/tsconfig).
+**Typescript Node** uses `tsconfig.json` automatically, use `-n` to skip loading `tsconfig.json`.
 
 ### Configuration Options
 
@@ -66,11 +76,11 @@ You can set options by passing them in before the script.
 ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.ts
 ```
 
-* **project** Location to resolve `tsconfig.json` from (also `process.env.TS_NODE_PROJECT`)
-* **noProject** Disable loading `tsconfig.json` (also `process.env.TS_NODE_NO_PROJECT`)
-* **compiler** Use a custom, require-able TypeScript compiler compatible with `typescript@>=1.5.0-alpha` (also `process.env.TS_NODE_COMPILER`)
-* **ignoreWarnings** Set an array of TypeScript diagnostic codes to ignore (also `process.env.TS_NODE_IGNORE_WARNINGS`)
-* **disableWarnings** Ignore all TypeScript errors (also `process.env.TS_NODE_DISABLE_WARNINGS`)
+* **--project, -P** Location to resolve `tsconfig.json` from (also `process.env.TS_NODE_PROJECT`)
+* **--noProject, -n** Disable loading `tsconfig.json` (also `process.env.TS_NODE_NO_PROJECT`)
+* **--compiler, -c** Use a custom, require-able TypeScript compiler compatible with `typescript@>=1.5.0-alpha` (also `process.env.TS_NODE_COMPILER`)
+* **--ignoreWarnings, -i** Set an array of TypeScript diagnostic codes to ignore (also `process.env.TS_NODE_IGNORE_WARNINGS`)
+* **--disableWarnings, -d** Ignore all TypeScript errors (also `process.env.TS_NODE_DISABLE_WARNINGS`)
 
 ### Programmatic Usage
 
