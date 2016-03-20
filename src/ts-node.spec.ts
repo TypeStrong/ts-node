@@ -1,11 +1,12 @@
 import { expect } from 'chai'
 import { exec } from 'child_process'
-import { join } from 'path'
+import { join, normalize } from 'path'
 import proxyquire = require('proxyquire')
 import { register, VERSION } from './ts-node'
 
 const cwd = join(__dirname, '../src')
-const BIN_EXEC = `node ${join(__dirname, '../dist/bin/ts-node')} --project "${cwd}"`
+const EXEC_PATH = join(__dirname, '../dist/bin/ts-node')
+const BIN_EXEC = `node ${EXEC_PATH} --project "${cwd}"`
 
 describe('ts-node', function () {
   this.timeout(10000)
@@ -63,7 +64,7 @@ describe('ts-node', function () {
     it('should work with source maps', function (done) {
       exec(`${BIN_EXEC} tests/throw`, function (err) {
         expect(err.message).to.contain([
-          `${join(__dirname, '../tests/throw.ts')}:3`,
+          `${normalize('../../tests/throw.ts')}:3`,
           '  bar () { throw new Error(\'this is a demo\') }',
           '                 ^',
           'Error: this is a demo'
@@ -76,7 +77,7 @@ describe('ts-node', function () {
     it('eval should work with source maps', function (done) {
       exec(`${BIN_EXEC} -p "import './tests/throw'"`, function (err) {
         expect(err.message).to.contain([
-          `${join(__dirname, '../tests/throw.ts')}:3`,
+          `${normalize('../../tests/throw.ts')}:3`,
           '  bar () { throw new Error(\'this is a demo\') }',
           '                 ^',
           'Error: this is a demo'
@@ -151,7 +152,7 @@ describe('ts-node', function () {
       } catch (error) {
         expect(error.stack).to.contain([
           'Error: this is a demo',
-          `    at Foo.bar (${join(__dirname, '../tests/throw.ts')}:3:18)`
+          `    at Foo.bar (${normalize('../../tests/throw.ts')}:3:18)`
         ].join('\n'))
 
         done()

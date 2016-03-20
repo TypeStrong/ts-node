@@ -1,4 +1,4 @@
-import { relative, basename, resolve, dirname } from 'path'
+import { relative, resolve, dirname } from 'path'
 import { readFileSync, statSync } from 'fs'
 import { EOL } from 'os'
 import sourceMapSupport = require('source-map-support')
@@ -85,9 +85,9 @@ function readConfig (options: Options, cwd: string, ts: TSCommon) {
     },
     result.config.compilerOptions,
     {
-      sourceMap: true,
-      inlineSourceMap: false,
-      inlineSources: false,
+      sourceMap: false,
+      inlineSourceMap: true,
+      inlineSources: true,
       declaration: false,
       noEmit: false
     }
@@ -209,18 +209,7 @@ export function register (opts?: Options) {
       throw new TSError(diagnostics)
     }
 
-    const result = output.outputFiles[1].text
-    const sourceText = service.getSourceFile(fileName).text
-    const sourceMapText = output.outputFiles[0].text
-    const sourceMapFileName = output.outputFiles[0].name
-    const sourceMap = getSourceMap(sourceMapText, fileName, sourceText)
-    const base64SourceMapText = new Buffer(sourceMap).toString('base64')
-
-    return result
-      .replace(
-        '//# sourceMappingURL=' + basename(sourceMapFileName),
-        `//# sourceMappingURL=data:application/json;base64,${base64SourceMapText}`
-      )
+    return output.outputFiles[0].text
   }
 
   function compile (fileName: string) {
@@ -302,18 +291,6 @@ function formatDiagnostic (diagnostic: any, ts: TSCommon, cwd: string = '.'): st
   }
 
   return `${message} (${diagnostic.code})`
-}
-
-/**
- * Sanitize the source map content.
- */
-function getSourceMap (map: string, fileName: string, code: string): string {
-  const sourceMap = JSON.parse(map)
-  sourceMap.file = fileName
-  sourceMap.sources = [fileName]
-  sourceMap.sourcesContent = [code]
-  delete sourceMap.sourceRoot
-  return JSON.stringify(sourceMap)
 }
 
 /**
