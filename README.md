@@ -48,7 +48,7 @@ echo "console.log('Hello, world!')" | ts-node
 ### Mocha
 
 ```sh
-mocha test.ts --require ts-node/register src/**/*.spec.ts
+mocha --require ts-node/register <files or file-globs>...
 ```
 
 ### Tape
