@@ -54,7 +54,7 @@ mocha --require ts-node/register <files or file-globs>...
 ### Tape
 
 ```sh
-ts-node node_modules/tape/bin/tape src/**/*.spec.ts
+ts-node node_modules/tape/bin/tape <files or file-globs>...
 ```
 
 ### Gulp
