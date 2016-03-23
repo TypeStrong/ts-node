@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { join } from 'path'
+import { join, resolve } from 'path'
 import { start } from 'repl'
 import { inspect } from 'util'
 import Module = require('module')
@@ -104,7 +104,7 @@ if (isEvalScript) {
 } else {
   if (argv._.length) {
     const args = argv._.slice()
-    args[0] = join(cwd, args[0])
+    args[0] = resolve(cwd, args[0])
     process.argv = ['node'].concat(args)
     process.execArgv.unshift(__filename)
     Module.runMain()
