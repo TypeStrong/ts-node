@@ -25,6 +25,15 @@ describe('ts-node', function () {
       })
     })
 
+    it('should execute cli with absolute path', function (done) {
+      exec(`${BIN_EXEC} "${join(cwd, '../tests/hello-world')}"`, function (err, stdout) {
+        expect(err).to.not.exist
+        expect(stdout).to.equal('Hello, world!\n')
+
+        return done()
+      })
+    })
+
     it('should print scripts', function (done) {
       exec(`${BIN_EXEC} -p "import { example } from './tests/complex/index';example()"`, function (err, stdout) {
         expect(err).to.not.exist
