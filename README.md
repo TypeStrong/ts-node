@@ -48,13 +48,13 @@ echo "console.log('Hello, world!')" | ts-node
 ### Mocha
 
 ```sh
-mocha --require ts-node/register <files or file-globs>...
+mocha --require ts-node/register [...args]
 ```
 
 ### Tape
 
 ```sh
-ts-node node_modules/tape/bin/tape <files or file-globs>...
+ts-node node_modules/tape/bin/tape [...args]
 ```
 
 ### Gulp
