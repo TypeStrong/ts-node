@@ -66,10 +66,10 @@ Options:
  */
 const _emit = process.emit
 
-process.emit = function (type, error) {
+process.emit = function (type, error): boolean {
   // Print the error message when no other listeners are present.
   if (type === 'uncaughtException' && error instanceof TSError && process.listeners(type).length === 0) {
-    return printAndExit(error)
+    printAndExit(error)
   }
 
   return _emit.apply(this, arguments)
