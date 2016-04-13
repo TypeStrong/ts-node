@@ -4,7 +4,7 @@ import { join, normalize } from 'path'
 import proxyquire = require('proxyquire')
 import { register, VERSION } from './ts-node'
 
-const cwd = join(__dirname, '../src')
+const cwd = join(__dirname, '../tests')
 const EXEC_PATH = join(__dirname, '../dist/bin/ts-node')
 const BIN_EXEC = `node ${EXEC_PATH} --project "${cwd}"`
 

@@ -169,12 +169,13 @@ export function register (opts?: Options) {
 
   // Install source map support and read from cache.
   sourceMapSupport.install({
-    retrieveFile (fileName) {
+    environment: 'node',
+    retrieveFile (fileName: string) {
       if (project.files[fileName]) {
         return getOutput(fileName)
       }
     }
-  })
+  } as any)
 
   function incrementAndAddFile (fileName: string) {
     // Add files to the hash before compilation.
