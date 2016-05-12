@@ -120,7 +120,7 @@ const DEFAULT_OPTIONS: Options = {
   getVersion,
   disableWarnings: process.env.TS_NODE_DISABLE_WARNINGS,
   compiler: process.env.TS_NODE_COMPILER,
-  project: process.env.TS_NODE_PROJECT,
+  project: process.env.TS_NODE_PROJECT || process.cwd(),
   noProject: process.env.TS_NODE_NO_PROJECT,
   ignoreWarnings: process.env.TS_NODE_IGNORE_WARNINGS
 }
@@ -130,7 +130,7 @@ const DEFAULT_OPTIONS: Options = {
  */
 export function register (opts?: Options) {
   const cwd = process.cwd()
-  const options = extend(DEFAULT_OPTIONS, { project: cwd }, opts)
+  const options = extend(DEFAULT_OPTIONS, opts)
   const project: Project = { version: 0, files: {}, versions: {} }
 
   // Enable compiler overrides.
