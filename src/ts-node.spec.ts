@@ -44,12 +44,15 @@ describe('ts-node', function () {
     })
 
     it('should eval code', function (done) {
-      exec(`${BIN_EXEC} -e "import * as m from './tests/module';console.log(m.example('test'))"`, function (err, stdout) {
-        expect(err).to.not.exist
-        expect(stdout).to.equal('TEST\n')
+      exec(
+        `${BIN_EXEC} -e "import * as m from './tests/module';console.log(m.example('test'))"`,
+        function (err, stdout) {
+          expect(err).to.not.exist
+          expect(stdout).to.equal('TEST\n')
 
-        return done()
-      })
+          return done()
+        }
+      )
     })
 
     it('should throw errors', function (done) {
@@ -63,11 +66,16 @@ describe('ts-node', function () {
     })
 
     it('should be able to ignore errors', function (done) {
-      exec(`${BIN_EXEC} --ignoreWarnings 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
-        expect(err.message).to.match(/TypeError: (?:(?:undefined|foo\.toUpperCase) is not a function|.*has no method \'toUpperCase\')/)
+      exec(
+        `${BIN_EXEC} --ignoreWarnings 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
+        function (err) {
+          expect(err.message).to.match(
+            /TypeError: (?:(?:undefined|foo\.toUpperCase) is not a function|.*has no method \'toUpperCase\')/
+          )
 
-        return done()
-      })
+          return done()
+        }
+      )
     })
 
     it('should work with source maps', function (done) {

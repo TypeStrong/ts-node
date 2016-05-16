@@ -31,7 +31,13 @@ export interface TSCommon {
   }
 
   // TypeScript 1.7+.
-  parseJsonConfigFileContent? (json: any, host: any, basePath: string, existingOptions: any, configFileName: string): any
+  parseJsonConfigFileContent? (
+    json: any,
+    host: any,
+    basePath: string,
+    existingOptions: any,
+    configFileName: string
+  ): any
 
   // TypeScript 1.5+.
   parseConfigFile? (json: any, host: any, basePath: string): any
