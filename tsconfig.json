@@ -13,6 +13,6 @@
     "src/ts-node.ts",
     "src/ts-node.spec.ts",
     "src/bin/ts-node.ts",
-    "typings/main.d.ts"
+    "typings/index.d.ts"
   ]
 }

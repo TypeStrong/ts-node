@@ -9,11 +9,11 @@
     "source-map-support": "registry:npm/source-map-support#0.3.0+20160211003958",
     "xtend": "registry:npm/xtend#4.0.0+20160211003958"
   },
-  "ambientDependencies": {
+  "globalDependencies": {
     "node": "github:borisyankov/DefinitelyTyped/node/node.d.ts#b37afda34daa6186c3f143609555fcd6d70b249f",
     "node-extended": "file:custom_typings/node.d.ts"
   },
-  "ambientDevDependencies": {
+  "globalDevDependencies": {
     "chai": "registry:dt/chai#3.4.0+20160216071402",
     "mocha": "registry:dt/mocha#2.2.5+20151023103246"
   }
