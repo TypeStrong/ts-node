@@ -53,7 +53,7 @@
     "tslint": "^3.10.2",
     "tslint-config-standard": "^1.0.0",
     "typescript": "^1.8.10",
-    "typings": "^1.0.2"
+    "typings": "^1.0.4"
   },
   "dependencies": {
     "arrify": "^1.0.0",
