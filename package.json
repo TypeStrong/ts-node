@@ -51,7 +51,7 @@
     "ntypescript": "^1.201507091536.1",
     "proxyquire": "^1.7.2",
     "tslint": "^3.10.2",
-    "tslint-config-standard": "^1.0.0",
+    "tslint-config-standard": "^1.2.0",
     "typescript": "^1.8.10",
     "typings": "^1.0.4"
   },
