@@ -59,6 +59,7 @@ export const EXTENSIONS = ['.ts', '.tsx']
 export interface Options {
   compiler?: string
   noProject?: boolean
+  configFileName?: string
   project?: string
   ignoreWarnings?: Array<number | string>
   disableWarnings?: boolean
