@@ -70,8 +70,8 @@ export interface Options {
  * Load TypeScript configuration.
  */
 function readConfig (options: Options, cwd: string, ts: TSCommon) {
-  const { project, noProject } = options
-  const fileName = noProject ? undefined : ts.findConfigFile(project || cwd, ts.sys.fileExists)
+  const { project, noProject, configFileName } = options
+  const fileName = configFileName || (noProject ? undefined : ts.findConfigFile(project || cwd, ts.sys.fileExists))
 
   const result = fileName ? ts.readConfigFile(fileName, ts.sys.readFile) : {
     config: {
