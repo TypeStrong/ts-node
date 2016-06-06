@@ -7,6 +7,7 @@
     "minimist": "registry:npm/minimist#1.0.0+20160229232932",
     "proxyquire": "registry:npm/proxyquire#1.0.0+20160211003958",
     "source-map-support": "registry:npm/source-map-support#0.3.0+20160211003958",
+    "tsconfig": "npm:tsconfig",
     "xtend": "registry:npm/xtend#4.0.0+20160211003958"
   },
   "globalDependencies": {

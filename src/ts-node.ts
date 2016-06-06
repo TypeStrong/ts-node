@@ -5,6 +5,7 @@ import sourceMapSupport = require('source-map-support')
 import extend = require('xtend')
 import arrify = require('arrify')
 import { BaseError } from 'make-error'
+import * as tsconfig from 'tsconfig'
 import * as TS from 'typescript'
 
 const pkg = require('../package.json')
@@ -71,9 +72,9 @@ export interface Options {
  */
 function readConfig (options: Options, cwd: string, ts: TSCommon) {
   const { project, noProject } = options
-  const fileName = noProject ? undefined : ts.findConfigFile(project || cwd, ts.sys.fileExists)
+  const fileName = noProject ? undefined : tsconfig.resolveSync(project || cwd)
 
-  const result = fileName ? ts.readConfigFile(fileName, ts.sys.readFile) : {
+  const result = fileName ? ts.readConfigFile(fileName as string, ts.sys.readFile) : {
     config: {
       files: [],
       compilerOptions: {}
@@ -106,7 +107,7 @@ function readConfig (options: Options, cwd: string, ts: TSCommon) {
     return ts.parseConfigFile(result.config, ts.sys, basePath)
   }
 
-  return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, fileName)
+  return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, fileName as string)
 }
 
 /**
