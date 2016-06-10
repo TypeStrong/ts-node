@@ -65,6 +65,7 @@ export interface Options {
   disableWarnings?: boolean
   getFile?: (fileName: string) => string
   getVersion?: (fileName: string) => string
+  compilerOptions?: Object
 }
 
 /**
@@ -97,7 +98,8 @@ function readConfig (options: Options, cwd: string, ts: TSCommon) {
       inlineSources: true,
       declaration: false,
       noEmit: false
-    }
+    },
+    options.compilerOptions
   )
 
   // Resolve before getting `dirname` to work around Microsoft/TypeScript#2965
