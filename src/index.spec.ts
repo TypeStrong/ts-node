@@ -2,10 +2,10 @@ import { expect } from 'chai'
 import { exec } from 'child_process'
 import { join, normalize } from 'path'
 import proxyquire = require('proxyquire')
-import { register, VERSION } from './ts-node'
+import { register, VERSION } from './index'
 
 const cwd = join(__dirname, '../tests')
-const EXEC_PATH = join(__dirname, '../dist/bin/ts-node')
+const EXEC_PATH = join(__dirname, '../dist/bin')
 const BIN_EXEC = `node ${EXEC_PATH} --project "${cwd}"`
 
 describe('ts-node', function () {

@@ -81,6 +81,7 @@ ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.t
 * **--compiler, -c** Use a custom, require-able TypeScript compiler compatible with `typescript@>=1.5.0-alpha` (also `process.env.TS_NODE_COMPILER`)
 * **--ignoreWarnings, -i** Set an array of TypeScript diagnostic codes to ignore (also `process.env.TS_NODE_IGNORE_WARNINGS`)
 * **--disableWarnings, -d** Ignore all TypeScript errors (also `process.env.TS_NODE_DISABLE_WARNINGS`)
+* **--compilerOptions, -o** Set compiler options using JSON (E.g. `--compilerOptions '{"target":"es6"}'`) (also `process.env.TS_NODE_COMPILER_OPTIONS`)
 
 ### Programmatic Usage
 
