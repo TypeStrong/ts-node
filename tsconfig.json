@@ -10,6 +10,7 @@
     "sourceMap": true
   },
   "files": [
+    "src/_bin.ts",
     "src/bin.ts",
     "src/index.ts",
     "src/index.spec.ts",
