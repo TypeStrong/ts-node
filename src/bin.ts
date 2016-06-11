@@ -8,7 +8,7 @@ import minimist = require('minimist')
 import chalk = require('chalk')
 import { diffLines } from 'diff'
 import { createScript } from 'vm'
-import { register, VERSION, getFile, getVersion, TSError } from '../ts-node'
+import { register, VERSION, getFile, getVersion, TSError } from './index'
 
 interface Argv {
   eval?: string
@@ -20,23 +20,76 @@ interface Argv {
   ignoreWarnings?: string | string[]
   disableWarnings?: boolean
   noProject?: boolean
+  compilerOptions?: any
   _: string[]
 }
 
-const argv = minimist<Argv>(process.argv.slice(2), {
-  stopEarly: true,
-  string: ['eval', 'print', 'compiler', 'project', 'ignoreWarnings'],
-  boolean: ['help', 'version', 'disableWarnings', 'noProject'],
-  alias: {
-    v: ['version'],
-    e: ['eval'],
-    p: ['print'],
-    P: ['project'],
-    c: ['compiler'],
-    i: ['ignoreWarnings', 'ignore-warnings'],
-    d: ['disableWarnings', 'disable-warnings'],
-    n: ['noProject', 'no-project']
+const strings = ['eval', 'print', 'compiler', 'project', 'ignoreWarnings']
+const booleans = ['help', 'version', 'disableWarnings', 'noProject']
+
+const aliases: { [key: string]: string[] } = {
+  help: ['h'],
+  version: ['v'],
+  eval: ['e'],
+  print: ['p'],
+  project: ['P'],
+  compiler: ['c'],
+  ignoreWarnings: ['i', 'ignore-warnings'],
+  disableWarnings: ['d', 'disable-warnings'],
+  noProject: ['n', 'no-project'],
+  compilerOptions: ['o', 'compiler-options']
+}
+
+let stop = process.argv.length
+
+function isFlagOnly (arg: string) {
+  const name = arg.replace(/^--?/, '')
+
+  for (const bool of booleans) {
+    if (name === bool) {
+      return true
+    }
+
+    const alias = aliases[name]
+
+    if (alias) {
+      for (const other of alias) {
+        if (other === name) {
+          return true
+        }
+      }
+    }
   }
+
+  return false
+}
+
+// Hack around known subarg issue with `stopEarly`.
+for (let i = 2; i < process.argv.length; i++) {
+  const arg = process.argv[i]
+  const next = process.argv[i + 1]
+
+  if (/^\[/.test(arg) || /\]$/.test(arg)) {
+    continue
+  }
+
+  if (/^-/.test(arg)) {
+    // Skip next argument.
+    if (!isFlagOnly(arg) && !/^-/.test(next)) {
+      i++
+    }
+
+    continue
+  }
+
+  stop = i
+  break
+}
+
+const argv = minimist<Argv>(process.argv.slice(2, stop), {
+  string: strings,
+  boolean: booleans,
+  alias: aliases
 })
 
 if (argv.version) {
@@ -58,6 +111,7 @@ Options:
   -n, --noProject               Ignore the "tsconfig.json" project file
   -P, --project [path]          Specify the path to the TypeScript project
 `)
+
   process.exit(0)
 }
 
@@ -78,7 +132,7 @@ process.emit = function (type, error): boolean {
 const cwd = process.cwd()
 const code = argv.eval == null ? argv.print : argv.eval
 const isEvalScript = typeof argv.eval === 'string' || !!argv.print // Minimist struggles with empty strings.
-const isEval = isEvalScript || argv._.length === 0
+const isEval = isEvalScript || stop === process.argv.length
 const isPrinted = argv.print != null
 
 // Register the TypeScript compiler instance.
@@ -89,7 +143,8 @@ const service = register({
   ignoreWarnings: list(argv.ignoreWarnings),
   project: argv.project,
   disableWarnings: argv.disableWarnings,
-  noProject: argv.noProject
+  noProject: argv.noProject,
+  compilerOptions: argv.compilerOptions
 })
 
 // TypeScript files must always end with `.ts`.
@@ -102,8 +157,8 @@ const evalFile = { input: '', output: '', version: 0 }
 if (isEvalScript) {
   evalAndExit(code, isPrinted)
 } else {
-  if (argv._.length) {
-    const args = argv._.slice()
+  if (stop < process.argv.length) {
+    const args = process.argv.slice(stop)
     args[0] = resolve(cwd, args[0])
     process.argv = ['node'].concat(args)
     process.execArgv.unshift(__filename)

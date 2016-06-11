@@ -65,6 +65,7 @@ export interface Options {
   disableWarnings?: boolean
   getFile?: (fileName: string) => string
   getVersion?: (fileName: string) => string
+  compilerOptions?: any
 }
 
 /**
@@ -91,6 +92,7 @@ function readConfig (options: Options, cwd: string, ts: TSCommon) {
       module: 'commonjs'
     },
     result.config.compilerOptions,
+    options.compilerOptions,
     {
       sourceMap: false,
       inlineSourceMap: true,
@@ -143,6 +145,11 @@ export function register (opts?: Options) {
   // Enable compiler overrides.
   options.compiler = options.compiler || 'typescript'
   options.ignoreWarnings = arrify(options.ignoreWarnings).map(Number)
+
+  // Parse compiler options as JSON.
+  options.compilerOptions = typeof options.compilerOptions === 'string' ?
+    JSON.parse(options.compilerOptions) :
+    options.compilerOptions
 
   const ts: typeof TS = require(options.compiler)
   const config = readConfig(options, cwd, ts)

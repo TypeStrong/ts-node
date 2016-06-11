@@ -10,9 +10,9 @@
     "sourceMap": true
   },
   "files": [
-    "src/ts-node.ts",
-    "src/ts-node.spec.ts",
-    "src/bin/ts-node.ts",
+    "src/bin.ts",
+    "src/index.ts",
+    "src/index.spec.ts",
     "typings/index.d.ts"
   ]
 }

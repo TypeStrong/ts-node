@@ -3,9 +3,9 @@
   "version": "0.8.0",
   "preferGlobal": true,
   "description": "TypeScript execution environment and REPL for node",
-  "main": "dist/ts-node.js",
+  "main": "dist/index.js",
   "bin": {
-    "ts-node": "dist/bin/ts-node.js"
+    "ts-node": "dist/bin.js"
   },
   "files": [
     "dist/",
