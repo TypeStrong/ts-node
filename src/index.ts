@@ -1,4 +1,4 @@
-import { relative, resolve, dirname } from 'path'
+import { relative, resolve, dirname, sep } from 'path'
 import { readFileSync, statSync } from 'fs'
 import { EOL } from 'os'
 import sourceMapSupport = require('source-map-support')
@@ -9,6 +9,7 @@ import * as tsconfig from 'tsconfig'
 import * as TS from 'typescript'
 
 const pkg = require('../package.json')
+const oldHandlers: { [key: string]: any } = {}
 
 /**
  * Common TypeScript interfaces between versions.
@@ -21,6 +22,7 @@ export interface TSCommon {
   getDefaultLibFilePath: typeof TS.getDefaultLibFilePath
   getPreEmitDiagnostics: typeof TS.getPreEmitDiagnostics
   flattenDiagnosticMessageText: typeof TS.flattenDiagnosticMessageText
+  transpile: typeof TS.transpile
 
   // TypeScript 1.5+, 1.7+ added `fileExists` parameter.
   findConfigFile (path: string, fileExists?: (path: string) => boolean): string
@@ -48,11 +50,6 @@ export interface TSCommon {
  * Export the current version.
  */
 export const VERSION = pkg.version
-
-/**
- * Extensions to compile using TypeScript.
- */
-export const EXTENSIONS = ['.ts', '.tsx']
 
 /**
  * Registration options.
@@ -167,7 +164,7 @@ export function register (opts?: Options) {
   const serviceHost = {
     getScriptFileNames: () => Object.keys(project.files),
     getProjectVersion: () => String(project.version),
-    getScriptVersion: (fileName: string) => incrementFile(fileName),
+    getScriptVersion: (fileName: string) => versionFile(fileName),
     getScriptSnapshot (fileName: string) {
       const contents = options.getFile(fileName)
 
@@ -191,12 +188,12 @@ export function register (opts?: Options) {
     }
   } as any)
 
-  function incrementAndAddFile (fileName: string) {
+  function addAndVersionFile (fileName: string) {
     // Add files to the hash before compilation.
     project.files[fileName] = true
 
     const currentVersion = project.versions[fileName]
-    const newVersion = incrementFile(fileName)
+    const newVersion = versionFile(fileName)
 
     // Increment the project version for file changes.
     if (currentVersion !== newVersion) {
@@ -206,7 +203,7 @@ export function register (opts?: Options) {
     return newVersion
   }
 
-  function incrementFile (fileName: string) {
+  function versionFile (fileName: string) {
     const version = options.getVersion(fileName)
     project.versions[fileName] = version
     return version
@@ -228,19 +225,37 @@ export function register (opts?: Options) {
   }
 
   function compile (fileName: string) {
-    incrementAndAddFile(fileName)
+    addAndVersionFile(fileName)
 
     return getOutput(fileName)
   }
 
   function loader (m: any, fileName: string) {
-    incrementAndAddFile(fileName)
+    addAndVersionFile(fileName)
 
     return m._compile(getOutput(fileName), fileName)
   }
 
+  function shouldIgnore (filename: string) {
+    return relative(cwd, filename).split(sep).indexOf('node_modules') > -1
+  }
+
+  function registerExtension (ext: string) {
+    const old = oldHandlers[ext] || oldHandlers['.js'] || require.extensions['.js']
+
+    oldHandlers[ext] = require.extensions[ext]
+
+    require.extensions[ext] = function (m: any, filename: string) {
+      if (shouldIgnore(filename)) {
+        return old(m, filename)
+      }
+
+      return loader(m, filename)
+    }
+  }
+
   function getTypeInfo (fileName: string, position: number) {
-    incrementAndAddFile(fileName)
+    addAndVersionFile(fileName)
 
     const info = service.getQuickInfoAtPosition(fileName, position)
     const name = ts.displayPartsToString(info ? info.displayParts : [])
@@ -249,10 +264,12 @@ export function register (opts?: Options) {
     return { name, comment }
   }
 
-  // Attach the loader to each defined extension.
-  EXTENSIONS.forEach(function (extension) {
-    require.extensions[extension] = loader
-  })
+  registerExtension('.ts')
+  registerExtension('.tsx')
+
+  if (config.options.allowJs) {
+    registerExtension('.js')
+  }
 
   return { compile, getTypeInfo }
 }
@@ -278,12 +295,14 @@ export function getFile (fileName: string): string {
 /**
  * Get file diagnostics from a TypeScript language service.
  */
-function getDiagnostics (service: any, fileName: string, options: Options, ts: TSCommon) {
+function getDiagnostics (service: TS.LanguageService, fileName: string, options: Options, ts: TSCommon) {
   if (options.disableWarnings) {
     return []
   }
 
-  return ts.getPreEmitDiagnostics(service.getProgram())
+  return service.getCompilerOptionsDiagnostics()
+    .concat(service.getSyntacticDiagnostics(fileName))
+    .concat(service.getSemanticDiagnostics(fileName))
     .filter(function (diagnostic) {
       return options.ignoreWarnings.indexOf(diagnostic.code) === -1
     })
