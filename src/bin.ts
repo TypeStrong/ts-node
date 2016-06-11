@@ -8,11 +8,12 @@ import minimist = require('minimist')
 import chalk = require('chalk')
 import { diffLines } from 'diff'
 import { createScript } from 'vm'
-import { register, VERSION, getFile, getVersion, TSError } from './index'
+import { register, VERSION, getFile, getVersion, getFileExists, TSError } from './index'
 
 interface Argv {
   eval?: string
   print?: string
+  fast?: boolean
   version?: boolean
   help?: boolean
   compiler?: string
@@ -25,10 +26,11 @@ interface Argv {
 }
 
 const strings = ['eval', 'print', 'compiler', 'project', 'ignoreWarnings']
-const booleans = ['help', 'version', 'disableWarnings', 'noProject']
+const booleans = ['help', 'fast', 'version', 'disableWarnings', 'noProject']
 
 const aliases: { [key: string]: string[] } = {
   help: ['h'],
+  fast: ['f'],
   version: ['v'],
   eval: ['e'],
   print: ['p'],
@@ -44,6 +46,11 @@ let stop = process.argv.length
 
 function isFlagOnly (arg: string) {
   const name = arg.replace(/^--?/, '')
+
+  // The value is part of this argument.
+  if (/=/.test(name)) {
+    return true
+  }
 
   for (const bool of booleans) {
     if (name === bool) {
@@ -139,6 +146,8 @@ const isPrinted = argv.print != null
 const service = register({
   getFile: isEval ? getFileEval : getFile,
   getVersion: isEval ? getVersionEval : getVersion,
+  getFileExists: isEval ? getFileExistsEval : getFileExists,
+  fast: argv.fast,
   compiler: argv.compiler,
   ignoreWarnings: list(argv.ignoreWarnings),
   project: argv.project,
@@ -359,4 +368,11 @@ function getFileEval (fileName: string) {
  */
 function getVersionEval (fileName: string) {
   return fileName === EVAL_PATH ? String(evalFile.version) : getVersion(fileName)
+}
+
+/**
+ * Get whether the file exists.
+ */
+function getFileExistsEval (fileName: string) {
+  return fileName === EVAL_PATH ? true : getFileExists(fileName)
 }
