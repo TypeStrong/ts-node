@@ -97,9 +97,14 @@ function readConfig (options: Options, cwd: string, ts: TSCommon) {
       inlineSourceMap: true,
       inlineSources: true,
       declaration: false,
-      noEmit: false
+      noEmit: false,
+      outDir: `tmp${Math.random().toString(36).substr(2)}`
     }
   )
+
+  // Delete options that *should not* be passed through.
+  delete result.config.compilerOptions.out
+  delete result.config.compilerOptions.outFile
 
   // Resolve before getting `dirname` to work around Microsoft/TypeScript#2965
   const basePath = fileName ? dirname(resolve(fileName)) : cwd

@@ -1,6 +1,8 @@
 import { expect } from 'chai'
 import { exec } from 'child_process'
 import { join, normalize } from 'path'
+import semver = require('semver')
+import ts = require('typescript')
 import proxyquire = require('proxyquire')
 import { register, VERSION } from './index'
 
@@ -42,6 +44,24 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    if (semver.gte(ts.version, '1.8.0')) {
+      it('should allow js', function (done) {
+        exec(
+          [
+            BIN_EXEC,
+            '-o "{\\\"allowJs\\\":true}"',
+            '-p "import { main } from \'./tests/allow-js/run\';main()"'
+          ].join(' '),
+          function (err, stdout) {
+            expect(err).to.not.exist
+            expect(stdout).to.equal('hello world\n')
+
+            return done()
+          }
+        )
+      })
+    }
 
     it('should eval code', function (done) {
       exec(
