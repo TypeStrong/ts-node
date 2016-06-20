@@ -7,7 +7,8 @@
     "noImplicitAny": true,
     "removeComments": true,
     "moduleResolution": "node",
-    "sourceMap": true
+    "sourceMap": true,
+    "inlineSources": true
   },
   "files": [
     "src/_bin.ts",
