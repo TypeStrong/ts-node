@@ -4,23 +4,27 @@ import { spawn } from 'child_process'
 import { join } from 'path'
 
 const args = [join(__dirname, '_bin.js')]
+const opts = process.argv.slice(2)
 
-for (let i = 2; i < process.argv.length; i++) {
-  const arg = process.argv[i]
+for (let i = 0; i < opts.length; i++) {
+  const arg = opts[i]
   const flag = arg.split('=')[0]
 
   switch (flag) {
     case '-d':
       args.unshift('--debug')
+      opts.splice(i, 1)
       break
     case 'debug':
     case '--debug':
     case '--debug-brk':
       args.unshift(arg)
+      opts.splice(i, 1)
       break
     case '-gc':
     case '--expose-gc':
       args.unshift('--expose-gc')
+      opts.splice(i, 1)
       break
     case '--gc-global':
     case '--es_staging':
@@ -33,10 +37,12 @@ for (let i = 2; i < process.argv.length; i++) {
     case '--allow-natives-syntax':
     case '--perf-basic-prof':
       args.unshift(arg)
+      opts.splice(i, 1)
       break
     default:
       if (/^--(?:harmony|trace|icu-data-dir|max-old-space-size)/.test(arg)) {
         args.unshift(arg)
+        opts.splice(i, 1)
       }
       break
   }
@@ -47,7 +53,7 @@ for (let i = 2; i < process.argv.length; i++) {
   }
 }
 
-const proc = spawn(process.execPath, args.concat(process.argv.slice(2)), { stdio: 'inherit' })
+const proc = spawn(process.execPath, args.concat(opts), { stdio: 'inherit' })
 
 proc.on('exit', function (code: number, signal: string) {
   process.on('exit', function () {
