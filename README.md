@@ -50,6 +50,11 @@ echo "console.log('Hello, world!')" | ts-node
 ```sh
 mocha --require ts-node/register [...args]
 ```
+With watch mode: 
+
+```sh
+mocha --require ts-node/register [...args] -- --watch --watch-extensions tsx,ts
+```
 
 ### Tape
 
