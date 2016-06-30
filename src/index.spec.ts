@@ -169,6 +169,19 @@ describe('ts-node', function () {
       expect(m.example('foo')).to.equal('FOO')
     })
 
+    it('should be able to require typescript definitions', function () {
+      expect(function () { require('../tests/module3') }).to.throw()
+
+      require('../tests/module2.d.ts')
+      const m = require('../tests/module3')
+
+      expect(m.example()).to.equal(3)
+    })
+
+    it('should not be able to require typescript definitions without extension', function () {
+      expect(function () { require('../tests/module2') }).to.throw()
+    })
+
     it('should compile through js and ts', function () {
       const m = require('../tests/complex')
 

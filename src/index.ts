@@ -280,7 +280,14 @@ export function register (opts?: Options) {
         throw new TSError(diagnosticList)
       }
 
-      return output.outputFiles[0].text
+      if (output.outputFiles && output.outputFiles.length > 0) {
+        return output.outputFiles[0].text
+      } else {
+        // There was no errors and no output file; this might be a definition.
+        // At this point we have the definitions in our program, so just return
+        // an empty file for Node to execute.
+        return ''
+      }
     }
 
     compile = function (fileName: string) {
