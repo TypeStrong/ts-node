@@ -55,7 +55,7 @@ function isFlagOnly (arg: string) {
       return true
     }
 
-    const alias = aliases[name]
+    const alias = aliases[bool]
 
     if (alias) {
       for (const other of alias) {
