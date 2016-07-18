@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { exec } from 'child_process'
-import { join, normalize } from 'path'
+import { join } from 'path'
 import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
@@ -101,7 +101,7 @@ describe('ts-node', function () {
     it('should work with source maps', function (done) {
       exec(`${BIN_EXEC} tests/throw`, function (err) {
         expect(err.message).to.contain([
-          `${normalize('../../tests/throw.ts')}:3`,
+          `${join(__dirname, '../tests/throw.ts')}:3`,
           '  bar () { throw new Error(\'this is a demo\') }',
           '                 ^',
           'Error: this is a demo'
@@ -114,7 +114,7 @@ describe('ts-node', function () {
     it('eval should work with source maps', function (done) {
       exec(`${BIN_EXEC} -p "import './tests/throw'"`, function (err) {
         expect(err.message).to.contain([
-          `${normalize('../../tests/throw.ts')}:3`,
+          `${join(__dirname, '../tests/throw.ts')}:3`,
           '  bar () { throw new Error(\'this is a demo\') }',
           '                 ^',
           'Error: this is a demo'
@@ -189,7 +189,7 @@ describe('ts-node', function () {
       } catch (error) {
         expect(error.stack).to.contain([
           'Error: this is a demo',
-          `    at Foo.bar (${normalize('../../tests/throw.ts')}:3:18)`
+          `    at Foo.bar (${join(__dirname, '../tests/throw.ts')}:3:18)`
         ].join('\n'))
 
         done()
