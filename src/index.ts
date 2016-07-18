@@ -1,4 +1,4 @@
-import { relative, resolve, dirname, sep } from 'path'
+import { relative, basename, resolve, dirname, sep } from 'path'
 import { readFileSync, statSync } from 'fs'
 import { EOL } from 'os'
 import sourceMapSupport = require('source-map-support')
@@ -93,12 +93,12 @@ function readConfig (options: Options, cwd: string, ts: TSCommon) {
     result.config.compilerOptions,
     options.compilerOptions,
     {
-      sourceMap: false,
-      inlineSourceMap: true,
-      inlineSources: true,
+      sourceMap: true,
+      inlineSourceMap: false,
+      inlineSources: false,
       declaration: false,
       noEmit: false,
-      outDir: `../tmp${Math.random().toString(36).substr(2)}`
+      outDir: `tmp${Math.random().toString(36).substr(2)}`
     }
   )
 
@@ -280,7 +280,18 @@ export function register (opts?: Options) {
         throw new TSError(diagnosticList)
       }
 
-      return output.outputFiles[0].text
+      const result = output.outputFiles[1].text
+      const sourceText = service.getSourceFile(fileName).text
+      const sourceMapText = output.outputFiles[0].text
+      const sourceMapFileName = output.outputFiles[0].name
+      const sourceMap = getSourceMap(sourceMapText, fileName, sourceText)
+      const base64SourceMapText = new Buffer(sourceMap).toString('base64')
+
+      return result
+        .replace(
+          '//# sourceMappingURL=' + basename(sourceMapFileName),
+          `//# sourceMappingURL=data:application/json;base64,${base64SourceMapText}`
+        )
     }
 
     compile = function (fileName: string) {
@@ -298,6 +309,18 @@ export function register (opts?: Options) {
 
       return { name, comment }
     }
+  }
+
+  /**
+   * Sanitize the source map content.
+   */
+  function getSourceMap (map: string, fileName: string, code: string): string {
+    const sourceMap = JSON.parse(map)
+    sourceMap.file = fileName
+    sourceMap.sources = [fileName]
+    sourceMap.sourcesContent = [code]
+    delete sourceMap.sourceRoot
+    return JSON.stringify(sourceMap)
   }
 
   function loader (m: any, fileName: string) {
