@@ -98,7 +98,7 @@ function readConfig (options: Options, cwd: string, ts: TSCommon) {
       inlineSources: true,
       declaration: false,
       noEmit: false,
-      outDir: `tmp${Math.random().toString(36).substr(2)}`
+      outDir: `../tmp${Math.random().toString(36).substr(2)}`
     }
   )
 

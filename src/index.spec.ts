@@ -101,7 +101,7 @@ describe('ts-node', function () {
     it('should work with source maps', function (done) {
       exec(`${BIN_EXEC} tests/throw`, function (err) {
         expect(err.message).to.contain([
-          `${normalize('../../tests/throw.ts')}:3`,
+          `${normalize('../../ts-node/tests/throw.ts')}:3`,
           '  bar () { throw new Error(\'this is a demo\') }',
           '                 ^',
           'Error: this is a demo'
@@ -114,7 +114,7 @@ describe('ts-node', function () {
     it('eval should work with source maps', function (done) {
       exec(`${BIN_EXEC} -p "import './tests/throw'"`, function (err) {
         expect(err.message).to.contain([
-          `${normalize('../../tests/throw.ts')}:3`,
+          `${normalize('../../ts-node/tests/throw.ts')}:3`,
           '  bar () { throw new Error(\'this is a demo\') }',
           '                 ^',
           'Error: this is a demo'
@@ -189,7 +189,7 @@ describe('ts-node', function () {
       } catch (error) {
         expect(error.stack).to.contain([
           'Error: this is a demo',
-          `    at Foo.bar (${normalize('../../tests/throw.ts')}:3:18)`
+          `    at Foo.bar (${normalize('../../ts-node/tests/throw.ts')}:3:18)`
         ].join('\n'))
 
         done()
