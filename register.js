@@ -1,1 +1,3 @@
-require('./').register()
+require('./').register({
+  lazy: true
+})
