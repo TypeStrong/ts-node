@@ -6,9 +6,9 @@ import ts = require('typescript')
 import proxyquire = require('proxyquire')
 import { register, VERSION } from './index'
 
-const cwd = join(__dirname, '../tests')
+const testDir = join(__dirname, '../tests')
 const EXEC_PATH = join(__dirname, '../dist/bin')
-const BIN_EXEC = `node ${EXEC_PATH} --project "${cwd}"`
+const BIN_EXEC = `node ${EXEC_PATH}`
 
 describe('ts-node', function () {
   this.timeout(10000)
@@ -28,7 +28,7 @@ describe('ts-node', function () {
     })
 
     it('should execute cli with absolute path', function (done) {
-      exec(`${BIN_EXEC} "${join(cwd, '../tests/hello-world')}"`, function (err, stdout) {
+      exec(`${BIN_EXEC} "${join(testDir, 'hello-world')}"`, function (err, stdout) {
         expect(err).to.not.exist
         expect(stdout).to.equal('Hello, world!\n')
 
@@ -50,7 +50,7 @@ describe('ts-node', function () {
         exec(
           [
             BIN_EXEC,
-            '-o "{\\\"allowJs\\\":true}"',
+            '-O "{\\\"allowJs\\\":true}"',
             '-p "import { main } from \'./tests/allow-js/run\';main()"'
           ].join(' '),
           function (err, stdout) {
@@ -125,7 +125,7 @@ describe('ts-node', function () {
     })
 
     it('should ignore all warnings', function (done) {
-      exec(`${BIN_EXEC} -d -p "x"`, function (err) {
+      exec(`${BIN_EXEC} -D -p "x"`, function (err) {
         expect(err.message).to.contain('ReferenceError: x is not defined')
 
         return done()
@@ -161,7 +161,7 @@ describe('ts-node', function () {
   })
 
   describe('register', function () {
-    register({ project: cwd })
+    register({ project: join(testDir, '..') })
 
     it('should be able to require typescript', function () {
       const m = require('../tests/module')

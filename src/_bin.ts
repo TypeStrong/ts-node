@@ -6,38 +6,38 @@ import minimist = require('minimist')
 import chalk = require('chalk')
 import { diffLines } from 'diff'
 import { createScript } from 'vm'
-import { register, VERSION, getFile, getVersion, getFileExists, TSError } from './index'
+import { register, VERSION, getFile, getVersion, fileExists, TSError } from './index'
 
 interface Argv {
   eval?: string
   print?: string
   fast?: boolean
+  lazy?: boolean
   version?: boolean
   help?: boolean
   compiler?: string
   project?: string
   ignoreWarnings?: string | string[]
   disableWarnings?: boolean
-  noProject?: boolean
   compilerOptions?: any
   _: string[]
 }
 
 const strings = ['eval', 'print', 'compiler', 'project', 'ignoreWarnings']
-const booleans = ['help', 'fast', 'version', 'disableWarnings', 'noProject']
+const booleans = ['help', 'fast', 'lazy', 'version', 'disableWarnings']
 
 const aliases: { [key: string]: string[] } = {
   help: ['h'],
-  fast: ['f'],
+  fast: ['F'],
+  lazy: ['L'],
   version: ['v'],
   eval: ['e'],
   print: ['p'],
   project: ['P'],
-  compiler: ['c'],
-  ignoreWarnings: ['i', 'ignore-warnings'],
-  disableWarnings: ['d', 'disable-warnings'],
-  noProject: ['n', 'no-project'],
-  compilerOptions: ['o', 'compiler-options']
+  compiler: ['C'],
+  ignoreWarnings: ['I', 'ignore-warnings'],
+  disableWarnings: ['D', 'disable-warnings'],
+  compilerOptions: ['O', 'compiler-options']
 }
 
 let stop = process.argv.length
@@ -98,7 +98,8 @@ const argv = minimist<Argv>(process.argv.slice(2, stop), {
 })
 
 if (argv.version) {
-  console.log(VERSION)
+  console.log(`ts-node v${VERSION}`)
+  console.log(`node ${process.version}`)
   process.exit(0)
 }
 
@@ -110,11 +111,13 @@ Options:
 
   -e, --eval [code]             Evaluate code
   -p, --print [code]            Evaluate code and print result
-  -c, --compiler [name]         Specify a custom TypeScript compiler
-  -i, --ignoreWarnings [codes]  Ignore TypeScript warnings by diagnostic code
-  -d, --disableWarnings         Ignore every TypeScript warning
-  -n, --noProject               Ignore the "tsconfig.json" project file
-  -P, --project [path]          Specify the path to the TypeScript project
+  -C, --compiler [name]         Specify a custom TypeScript compiler
+  -I, --ignoreWarnings [codes]  Ignore TypeScript warnings by diagnostic code
+  -D, --disableWarnings         Ignore every TypeScript warning
+  -P, --project [path]          Path to TypeScript project (or \`false\`)
+  -O, --compilerOptions [opts]  JSON compiler options to merge with compilation
+  -L, --lazy                    Lazily load TypeScript compilation
+  -F, --fast                    Run TypeScript compilation in transpile mode
 `)
 
   process.exit(0)
@@ -144,13 +147,13 @@ const isPrinted = argv.print != null
 const service = register({
   getFile: isEval ? getFileEval : getFile,
   getVersion: isEval ? getVersionEval : getVersion,
-  getFileExists: isEval ? getFileExistsEval : getFileExists,
+  fileExists: isEval ? fileExistsEval : fileExists,
   fast: argv.fast,
+  lazy: argv.lazy,
   compiler: argv.compiler,
   ignoreWarnings: list(argv.ignoreWarnings),
   project: argv.project,
   disableWarnings: argv.disableWarnings,
-  noProject: argv.noProject,
   compilerOptions: argv.compilerOptions
 })
 
@@ -246,7 +249,7 @@ function _eval (code: string, context: any) {
 
   // Undo on TypeScript compilation errors.
   try {
-    output = service.compile(EVAL_PATH)
+    output = service().compile(EVAL_PATH)
   } catch (error) {
     evalFile.input = undo
 
@@ -311,7 +314,7 @@ function startRepl () {
       evalFile.input += identifier
       evalFile.version++
 
-      const { name, comment } = service.getTypeInfo(EVAL_PATH, evalFile.input.length)
+      const { name, comment } = service().getTypeInfo(EVAL_PATH, evalFile.input.length)
 
       ;(repl as any).outputStream.write(`${chalk.bold(name)}\n${comment ? `${comment}\n` : ''}`)
       ;(repl as any).displayPrompt()
@@ -371,6 +374,6 @@ function getVersionEval (fileName: string) {
 /**
  * Get whether the file exists.
  */
-function getFileExistsEval (fileName: string) {
-  return fileName === EVAL_PATH ? true : getFileExists(fileName)
+function fileExistsEval (fileName: string) {
+  return fileName === EVAL_PATH ? true : fileExists(fileName)
 }
