@@ -13,6 +13,7 @@ interface Argv {
   print?: string
   fast?: boolean
   lazy?: boolean
+  cache?: boolean
   version?: boolean
   help?: boolean
   compiler?: string
@@ -24,7 +25,7 @@ interface Argv {
 }
 
 const strings = ['eval', 'print', 'compiler', 'project', 'ignoreWarnings']
-const booleans = ['help', 'fast', 'lazy', 'version', 'disableWarnings']
+const booleans = ['help', 'fast', 'lazy', 'version', 'disableWarnings', 'cache']
 
 const aliases: { [key: string]: string[] } = {
   help: ['h'],
@@ -94,7 +95,10 @@ for (let i = 2; i < process.argv.length; i++) {
 const argv = minimist<Argv>(process.argv.slice(2, stop), {
   string: strings,
   boolean: booleans,
-  alias: aliases
+  alias: aliases,
+  default: {
+    cache: true
+  }
 })
 
 if (argv.version) {
@@ -118,6 +122,7 @@ Options:
   -O, --compilerOptions [opts]  JSON compiler options to merge with compilation
   -L, --lazy                    Lazily load TypeScript compilation
   -F, --fast                    Run TypeScript compilation in transpile mode
+  --no-cache                    Disable the TypeScript cache
 `)
 
   process.exit(0)
@@ -150,6 +155,7 @@ const service = register({
   fileExists: isEval ? fileExistsEval : fileExists,
   fast: argv.fast,
   lazy: argv.lazy,
+  cache: argv.cache,
   compiler: argv.compiler,
   ignoreWarnings: list(argv.ignoreWarnings),
   project: argv.project,
