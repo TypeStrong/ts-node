@@ -1,6 +1,8 @@
 import { join, resolve } from 'path'
 import { start } from 'repl'
 import { inspect } from 'util'
+import arrify = require('arrify')
+import extend = require('xtend')
 import Module = require('module')
 import minimist = require('minimist')
 import chalk = require('chalk')
@@ -14,6 +16,7 @@ interface Argv {
   fast?: boolean
   lazy?: boolean
   cache?: boolean
+  cacheDirectory?: string
   version?: boolean
   help?: boolean
   compiler?: string
@@ -24,7 +27,7 @@ interface Argv {
   _: string[]
 }
 
-const strings = ['eval', 'print', 'compiler', 'project', 'ignoreWarnings']
+const strings = ['eval', 'print', 'compiler', 'project', 'ignoreWarnings', 'cacheDirectory']
 const booleans = ['help', 'fast', 'lazy', 'version', 'disableWarnings', 'cache']
 
 const aliases: { [key: string]: string[] } = {
@@ -36,6 +39,7 @@ const aliases: { [key: string]: string[] } = {
   print: ['p'],
   project: ['P'],
   compiler: ['C'],
+  cacheDirectory: ['cache-directory'],
   ignoreWarnings: ['I', 'ignore-warnings'],
   disableWarnings: ['D', 'disable-warnings'],
   compilerOptions: ['O', 'compiler-options']
@@ -116,13 +120,14 @@ Options:
   -e, --eval [code]             Evaluate code
   -p, --print [code]            Evaluate code and print result
   -C, --compiler [name]         Specify a custom TypeScript compiler
-  -I, --ignoreWarnings [codes]  Ignore TypeScript warnings by diagnostic code
+  -I, --ignoreWarnings [code]   Ignore TypeScript warnings by diagnostic code
   -D, --disableWarnings         Ignore every TypeScript warning
   -P, --project [path]          Path to TypeScript project (or \`false\`)
   -O, --compilerOptions [opts]  JSON compiler options to merge with compilation
   -L, --lazy                    Lazily load TypeScript compilation
   -F, --fast                    Run TypeScript compilation in transpile mode
   --no-cache                    Disable the TypeScript cache
+  --cache-directory             Configure the TypeScript cache directory
 `)
 
   process.exit(0)
@@ -149,19 +154,12 @@ const isEval = isEvalScript || stop === process.argv.length
 const isPrinted = argv.print != null
 
 // Register the TypeScript compiler instance.
-const service = register({
+const service = register(extend(argv, {
   getFile: isEval ? getFileEval : getFile,
   getVersion: isEval ? getVersionEval : getVersion,
   fileExists: isEval ? fileExistsEval : fileExists,
-  fast: argv.fast,
-  lazy: argv.lazy,
-  cache: argv.cache,
-  compiler: argv.compiler,
-  ignoreWarnings: list(argv.ignoreWarnings),
-  project: argv.project,
-  disableWarnings: argv.disableWarnings,
-  compilerOptions: argv.compilerOptions
-})
+  ignoreWarnings: arrify(argv.ignoreWarnings)
+}))
 
 // TypeScript files must always end with `.ts`.
 const EVAL_FILENAME = '[eval].ts'
@@ -354,13 +352,6 @@ function replEval (code: string, context: any, filename: string, callback: (err?
   }
 
   callback(err, result)
-}
-
-/**
- * Split a string of values into an array.
- */
-function list (value: string | string[]) {
-  return String(value).split(/ *, */)
 }
 
 /**
