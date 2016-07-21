@@ -1,5 +1,5 @@
 import { relative, basename, extname, resolve, dirname, sep, join } from 'path'
-import { writeFileSync, readFileSync, statSync } from 'fs'
+import { readdirSync, writeFileSync, readFileSync, statSync } from 'fs'
 import { EOL, tmpdir } from 'os'
 import sourceMapSupport = require('source-map-support')
 import extend = require('xtend')
@@ -208,6 +208,8 @@ export function register (opts?: Options): () => Register {
 
           return ts.ScriptSnapshot.fromString(options.getFile(fileName))
         },
+        getDirectories: getDirectories,
+        directoryExists: directoryExists,
         getNewLine: () => EOL,
         getCurrentDirectory: () => cwd,
         getCompilationSettings: () => config.options,
@@ -500,6 +502,24 @@ export function fileExists (fileName: string): boolean {
     const stats = statSync(fileName)
 
     return stats.isFile() || stats.isFIFO()
+  } catch (err) {
+    return false
+  }
+}
+
+/**
+ * Get directories within a directory.
+ */
+export function getDirectories (path: string): string[] {
+  return readdirSync(path).filter(name => directoryExists(join(path, name)))
+}
+
+/**
+ * Check if a directory exists.
+ */
+export function directoryExists (path: string): boolean {
+  try {
+    return statSync(path).isDirectory()
   } catch (err) {
     return false
   }
