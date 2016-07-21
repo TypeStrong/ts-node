@@ -53,7 +53,7 @@
     "semver": "^5.1.0",
     "tslint": "^3.10.2",
     "tslint-config-standard": "^1.0.0",
-    "typescript": "1.8.7",
+    "typescript": "^1.8.10",
     "typings": "^1.0.4"
   },
   "dependencies": {
