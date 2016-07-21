@@ -9,8 +9,6 @@ import crypto = require('crypto')
 import { BaseError } from 'make-error'
 import * as TS from 'typescript'
 
-const TMP_DIR = join(tmpdir(), 'ts-node')
-
 const pkg = require('../package.json')
 const oldHandlers: { [key: string]: any } = {}
 
@@ -62,6 +60,7 @@ export interface Options {
   fast?: boolean
   lazy?: boolean
   cache?: boolean
+  cacheDirectory?: string
   compiler?: string
   project?: string
   ignoreWarnings?: Array<number | string>
@@ -98,6 +97,7 @@ const DEFAULT_OPTIONS: Options = {
   getVersion,
   fileExists,
   cache: process.env.TS_NODE_CACHE,
+  cacheDirectory: process.env.TS_NODE_CACHE_DIRECTORY || join(tmpdir(), 'ts-node'),
   disableWarnings: process.env.TS_NODE_DISABLE_WARNINGS,
   compiler: process.env.TS_NODE_COMPILER,
   project: process.env.TS_NODE_PROJECT,
@@ -148,7 +148,7 @@ export function register (opts?: Options): () => Register {
     const ts: typeof TS = require(options.compiler)
     const config = readConfig(options, cwd, ts)
     const configDiagnostics = formatDiagnostics(config.errors, options, cwd, ts)
-    const cachedir = join(TMP_DIR, getCompilerDigest(ts, options, config))
+    const cachedir = join(resolve(cwd, options.cacheDirectory), getCompilerDigest(ts, options, config))
 
     // Make sure the temp cache directory exists.
     mkdirp.sync(cachedir)
