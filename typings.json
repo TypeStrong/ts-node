@@ -8,6 +8,7 @@
     "mkdirp": "registry:npm/mkdirp#0.5.0+20160222053049",
     "proxyquire": "registry:npm/proxyquire#1.0.0+20160211003958",
     "source-map-support": "registry:npm/source-map-support#0.3.0+20160413183746",
+    "tsconfig": "npm:tsconfig",
     "xtend": "registry:npm/xtend#4.0.0+20160211003958"
   },
   "globalDependencies": {

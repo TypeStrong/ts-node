@@ -8,6 +8,7 @@ import mkdirp = require('mkdirp')
 import crypto = require('crypto')
 import { BaseError } from 'make-error'
 import * as TS from 'typescript'
+import { loadSync } from 'tsconfig'
 
 const pkg = require('../package.json')
 const oldHandlers: { [key: string]: any } = {}
@@ -322,32 +323,7 @@ export function register (opts?: Options): () => Register {
  * Load TypeScript configuration.
  */
 function readConfig (options: Options, cwd: string, ts: TSCommon) {
-  let project: string
-
-  if (options.project == null) {
-    const path = ts.findConfigFile(cwd, options.fileExists)
-
-    project = path ? resolve(path) : undefined
-  } else if (typeof options.project === 'string') {
-    const path = resolve(options.project)
-
-    if (options.fileExists(path)) {
-      project = path
-    } else {
-      project = join(path, 'tsconfig.json')
-    }
-  }
-
-  const result = project ? ts.readConfigFile(project, options.getFile) : {
-    config: {
-      files: [],
-      compilerOptions: {}
-    }
-  }
-
-  if (result.error) {
-    throw new TSError([formatDiagnostic(result.error, cwd, ts)])
-  }
+  const result = loadSync(cwd, options.project)
 
   result.config.compilerOptions = extend(
     {
@@ -370,13 +346,13 @@ function readConfig (options: Options, cwd: string, ts: TSCommon) {
   delete result.config.compilerOptions.out
   delete result.config.compilerOptions.outFile
 
-  const basePath = project ? dirname(project) : cwd
+  const basePath = result.path ? dirname(result.path) : cwd
 
   if (typeof ts.parseConfigFile === 'function') {
     return ts.parseConfigFile(result.config, ts.sys, basePath)
   }
 
-  return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, project)
+  return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, result.path)
 }
 
 /**

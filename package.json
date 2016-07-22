@@ -64,6 +64,7 @@
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "source-map-support": "^0.4.0",
+    "tsconfig": "^5.0.2",
     "xtend": "^4.0.0"
   }
 }
