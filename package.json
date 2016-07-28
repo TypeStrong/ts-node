@@ -4,6 +4,7 @@
   "preferGlobal": true,
   "description": "TypeScript execution environment and REPL for node",
   "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
   "bin": {
     "ts-node": "dist/bin.js"
   },
