@@ -101,6 +101,7 @@ const DEFAULT_OPTIONS: Options = {
   cacheDirectory: process.env.TS_NODE_CACHE_DIRECTORY || join(tmpdir(), 'ts-node'),
   disableWarnings: process.env.TS_NODE_DISABLE_WARNINGS,
   compiler: process.env.TS_NODE_COMPILER,
+  compilerOptions: process.env.TS_NODE_COMPILER_OPTIONS,
   project: process.env.TS_NODE_PROJECT,
   ignoreWarnings: process.env.TS_NODE_IGNORE_WARNINGS,
   fast: process.env.TS_NODE_FAST
