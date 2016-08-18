@@ -48,7 +48,7 @@ echo "console.log('Hello, world!')" | ts-node
 ### Mocha
 
 ```sh
-mocha --compilers ts:ts-node/register --compilers tsx:ts-node/register [...args]
+mocha --compilers ts:ts-node/register,tsx:ts-node/register [...args]
 ```
 
 ### Tape
