@@ -346,6 +346,7 @@ function readConfig (options: Options, cwd: string, ts: TSCommon) {
   // Delete options that *should not* be passed through.
   delete result.config.compilerOptions.out
   delete result.config.compilerOptions.outFile
+  delete result.config.compilerOptions.declarationDir
 
   const basePath = result.path ? dirname(result.path) : cwd
 
