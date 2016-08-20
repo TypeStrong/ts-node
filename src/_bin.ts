@@ -8,7 +8,7 @@ import minimist = require('minimist')
 import chalk = require('chalk')
 import { diffLines } from 'diff'
 import { createScript } from 'vm'
-import { register, VERSION, getFile, getVersion, fileExists, TSError } from './index'
+import { register, VERSION, getFile, fileExists, TSError } from './index'
 
 interface Argv {
   eval?: string
@@ -156,7 +156,6 @@ const isPrinted = argv.print != null
 // Register the TypeScript compiler instance.
 const service = register(extend(argv, {
   getFile: isEval ? getFileEval : getFile,
-  getVersion: isEval ? getVersionEval : getVersion,
   fileExists: isEval ? fileExistsEval : fileExists,
   ignoreWarnings: arrify(argv.ignoreWarnings)
 }))
@@ -253,7 +252,7 @@ function _eval (code: string, context: any) {
 
   // Undo on TypeScript compilation errors.
   try {
-    output = service().compile(EVAL_PATH)
+    output = service().compile(evalFile.input, EVAL_PATH)
   } catch (error) {
     evalFile.input = undo
 
@@ -359,13 +358,6 @@ function replEval (code: string, context: any, filename: string, callback: (err?
  */
 function getFileEval (fileName: string) {
   return fileName === EVAL_PATH ? evalFile.input : getFile(fileName)
-}
-
-/**
- * Get the file version, checking for eval first.
- */
-function getVersionEval (fileName: string) {
-  return fileName === EVAL_PATH ? String(evalFile.version) : getVersion(fileName)
 }
 
 /**
