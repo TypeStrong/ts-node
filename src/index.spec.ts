@@ -158,6 +158,15 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    it('should support require flags', function (done) {
+      exec(`${BIN_EXEC} -r ./tests/hello-world -p "console.log('success')"`, function (err, stdout) {
+        expect(err).to.not.exist
+        expect(stdout).to.equal('Hello, world!\nsuccess\nundefined\n')
+
+        return done()
+      })
+    })
   })
 
   describe('register', function () {

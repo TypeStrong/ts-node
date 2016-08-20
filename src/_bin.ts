@@ -21,13 +21,14 @@ interface Argv {
   help?: boolean
   compiler?: string
   project?: string
+  require?: string | string[]
   ignoreWarnings?: string | string[]
   disableWarnings?: boolean
   compilerOptions?: any
   _: string[]
 }
 
-const strings = ['eval', 'print', 'compiler', 'project', 'ignoreWarnings', 'cacheDirectory']
+const strings = ['eval', 'print', 'compiler', 'project', 'ignoreWarnings', 'require', 'cacheDirectory']
 const booleans = ['help', 'fast', 'lazy', 'version', 'disableWarnings', 'cache']
 
 const aliases: { [key: string]: string[] } = {
@@ -39,6 +40,7 @@ const aliases: { [key: string]: string[] } = {
   print: ['p'],
   project: ['P'],
   compiler: ['C'],
+  require: ['r'],
   cacheDirectory: ['cache-directory'],
   ignoreWarnings: ['I', 'ignore-warnings'],
   disableWarnings: ['D', 'disable-warnings'],
@@ -119,6 +121,7 @@ Options:
 
   -e, --eval [code]             Evaluate code
   -p, --print [code]            Evaluate code and print result
+  -r, --require [path]          Require a node module for execution
   -C, --compiler [name]         Specify a custom TypeScript compiler
   -I, --ignoreWarnings [code]   Ignore TypeScript warnings by diagnostic code
   -D, --disableWarnings         Ignore every TypeScript warning
@@ -167,6 +170,12 @@ const EVAL_PATH = join(cwd, EVAL_FILENAME)
 // Store eval contents for in-memory lookups.
 const evalFile = { input: '', output: '', version: 0 }
 
+// Require specified modules before start-up.
+for (const id of arrify(argv.require)) {
+  Module._load(id)
+}
+
+// Execute the main contents (either eval, script or piped).
 if (isEvalScript) {
   evalAndExit(code, isPrinted)
 } else {
