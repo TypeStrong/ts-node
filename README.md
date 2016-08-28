@@ -83,8 +83,8 @@ ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.t
 * **--compilerOptions, -O** Set compiler options using JSON (E.g. `--compilerOptions '{"target":"es6"}'`) (also `process.env.TS_NODE_COMPILER_OPTIONS`)
 * **--fast, -F** Use TypeScript's `transpileModule` mode (no type checking, but faster compilation) (also `process.env.TS_NODE_FAST`)
 * **--lazy, -L** Lazily defer TypeScript initialization until first `.ts` file
-* **--no-cache** Skip hitting the compiled JavaScript cache
-* **--cache-directory** Configure the TypeScript cache directory
+* **--no-cache** Skip hitting the compiled JavaScript cache (also `process.env.TS_NODE_CACHE`)
+* **--cache-directory** Configure the TypeScript cache directory (also `process.env.TS_NODE_CACHE_DIRECTORY`)
 
 ### Programmatic Usage
 
