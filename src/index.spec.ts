@@ -77,9 +77,10 @@ describe('ts-node', function () {
 
     it('should throw errors', function (done) {
       exec(`${BIN_EXEC} -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
-        expect(err.message).to.contain(
-          '[eval].ts (1,59): Argument of type \'number\' is not assignable to parameter of type \'string\'. (2345)'
-        )
+        expect(err.message).to.match(new RegExp(
+          '\\[eval\\]\\.ts \\(1,59\\): Argument of type \'(?:number|123)\' ' +
+          'is not assignable to parameter of type \'string\'\\. \\(2345\\)'
+        ))
 
         return done()
       })
