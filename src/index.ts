@@ -253,6 +253,16 @@ export function register (opts?: Options): () => Register {
           throw new TSError(diagnosticList)
         }
 
+        // Throw an error when requiring `.d.ts` files.
+        if (output.outputFiles.length === 0) {
+          throw new TypeError(
+            'Unable to require `.d.ts` file.\n' +
+            'This is usually the result of a faulty configuration or import. ' +
+            'Make sure there\'s a `.js` (or another extension with matching node ' +
+            `loader attached before \`ts-node\`) available alongside \`${fileName}\`.`
+          )
+        }
+
         return [output.outputFiles[1].text, output.outputFiles[0].text]
       }
 
