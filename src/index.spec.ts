@@ -8,7 +8,7 @@ import { register, VERSION } from './index'
 
 const testDir = join(__dirname, '../tests')
 const EXEC_PATH = join(__dirname, '../dist/bin')
-const BIN_EXEC = `node ${EXEC_PATH}`
+const BIN_EXEC = `node "${EXEC_PATH}" --project "${testDir}"`
 
 describe('ts-node', function () {
   this.timeout(10000)
@@ -171,7 +171,7 @@ describe('ts-node', function () {
   })
 
   describe('register', function () {
-    register({ project: join(testDir, '..') })
+    register({ project: testDir })
 
     it('should be able to require typescript', function () {
       const m = require('../tests/module')

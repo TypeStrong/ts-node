@@ -1,15 +1,16 @@
 {
   "dependencies": {
-    "arrify": "registry:npm/arrify#1.0.0+20160211003958",
+    "arrify": "registry:npm/arrify#1.0.0+20160723033700",
     "chalk": "registry:npm/chalk#1.0.0+20160211003958",
     "diff": "registry:npm/diff#2.0.0+20160211003958",
     "make-error": "registry:npm/make-error#1.0.0+20160211003958",
     "minimist": "registry:npm/minimist#1.0.0+20160229232932",
     "mkdirp": "registry:npm/mkdirp#0.5.0+20160222053049",
     "proxyquire": "registry:npm/proxyquire#1.0.0+20160211003958",
-    "source-map-support": "registry:npm/source-map-support#0.3.0+20160413183746",
+    "source-map-support": "registry:npm/source-map-support#0.3.0+20161006200546",
     "tsconfig": "npm:tsconfig",
-    "xtend": "registry:npm/xtend#4.0.0+20160211003958"
+    "xtend": "registry:npm/xtend#4.0.0+20160211003958",
+    "yn": "registry:npm/yn#1.2.0+20161006191459"
   },
   "globalDependencies": {
     "node": "github:borisyankov/DefinitelyTyped/node/node.d.ts#b37afda34daa6186c3f143609555fcd6d70b249f",

@@ -6,7 +6,6 @@ notifications:
     on_failure: change
 
 script:
-  - npm run build
   - npm run lint
   - npm rm tslint
   - npm install $TYPESCRIPT --force
@@ -16,6 +15,7 @@ env:
   - TYPESCRIPT=typescript@1.6
   - TYPESCRIPT=typescript@1.7
   - TYPESCRIPT=typescript@1.8
+  - TYPESCRIPT=typescript@2.0
   - TYPESCRIPT=typescript@next
 
 node_js:
