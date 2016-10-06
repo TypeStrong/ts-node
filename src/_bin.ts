@@ -53,7 +53,7 @@ function isFlagOnly (arg: string) {
   const name = arg.replace(/^--?/, '')
 
   // The value is part of this argument.
-  if (/=/.test(name)) {
+  if (/=/.test(name) || /^--no-/.test(arg)) {
     return true
   }
 
@@ -177,7 +177,7 @@ for (const id of arrify(argv.require)) {
 
 // Execute the main contents (either eval, script or piped).
 if (isEvalScript) {
-  evalAndExit(code, isPrinted)
+  evalAndExit(code as string, isPrinted)
 } else {
   if (stop < process.argv.length) {
     const args = process.argv.slice(stop)

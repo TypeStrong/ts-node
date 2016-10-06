@@ -6,6 +6,7 @@ import extend = require('xtend')
 import arrify = require('arrify')
 import mkdirp = require('mkdirp')
 import crypto = require('crypto')
+import yn = require('yn')
 import { BaseError } from 'make-error'
 import * as TS from 'typescript'
 import { loadSync } from 'tsconfig'
@@ -57,14 +58,14 @@ export const VERSION = pkg.version
  * Registration options.
  */
 export interface Options {
-  fast?: boolean
-  lazy?: boolean
-  cache?: boolean
+  fast?: boolean | null
+  lazy?: boolean | null
+  cache?: boolean | null
   cacheDirectory?: string
   compiler?: string
   project?: string
   ignoreWarnings?: Array<number | string>
-  disableWarnings?: boolean
+  disableWarnings?: boolean | null
   getFile?: (fileName: string) => string
   fileExists?: (fileName: string) => boolean
   compilerOptions?: any
@@ -93,14 +94,21 @@ export interface TypeInfo {
 const DEFAULT_OPTIONS: Options = {
   getFile,
   fileExists,
-  cache: process.env.TS_NODE_CACHE,
+  cache: yn(process.env.TS_NODE_CACHE),
   cacheDirectory: process.env.TS_NODE_CACHE_DIRECTORY || join(tmpdir(), 'ts-node'),
-  disableWarnings: process.env.TS_NODE_DISABLE_WARNINGS,
+  disableWarnings: yn(process.env.TS_NODE_DISABLE_WARNINGS),
   compiler: process.env.TS_NODE_COMPILER,
   compilerOptions: process.env.TS_NODE_COMPILER_OPTIONS,
   project: process.env.TS_NODE_PROJECT,
-  ignoreWarnings: process.env.TS_NODE_IGNORE_WARNINGS,
-  fast: process.env.TS_NODE_FAST
+  ignoreWarnings: split(process.env.TS_NODE_IGNORE_WARNINGS),
+  fast: yn(process.env.TS_NODE_FAST)
+}
+
+/**
+ * Split a string array of values.
+ */
+function split (value: string | undefined) {
+  return value ? value.split(/ *, */g) : []
 }
 
 export interface Register {
@@ -114,14 +122,17 @@ export interface Register {
  */
 export function register (opts?: Options): () => Register {
   const options = extend(DEFAULT_OPTIONS, opts)
+  const compiler = options.compiler || 'typescript'
+  const ignoreWarnings = arrify(options.ignoreWarnings).map(Number)
+  const disableWarnings = !!options.disableWarnings
+  const getFile = options.getFile as ((fileName: string) => string)
+  const fileExists = options.fileExists as ((fileName: string) => boolean)
+  const cache = !!options.cache
+  const fast = !!options.fast
   let result: Register
 
-  // Enable compiler overrides.
-  options.compiler = options.compiler || 'typescript'
-  options.ignoreWarnings = arrify(options.ignoreWarnings).map(Number)
-
   // Parse compiler options as JSON.
-  options.compilerOptions = typeof options.compilerOptions === 'string' ?
+  const compilerOptions = typeof options.compilerOptions === 'string' ?
     JSON.parse(options.compilerOptions) :
     options.compilerOptions
 
@@ -135,7 +146,7 @@ export function register (opts?: Options): () => Register {
         if (project.sourceMaps[fileName]) {
           return {
             url: project.sourceMaps[fileName],
-            map: options.getFile(project.sourceMaps[fileName])
+            map: getFile(project.sourceMaps[fileName])
           }
         }
       }
@@ -143,10 +154,14 @@ export function register (opts?: Options): () => Register {
 
     // Require the TypeScript compiler and configuration.
     const cwd = process.cwd()
-    const ts: typeof TS = require(options.compiler)
-    const config = readConfig(options, cwd, ts)
-    const configDiagnostics = formatDiagnostics(config.errors, options, cwd, ts)
-    const cachedir = join(resolve(cwd, options.cacheDirectory), getCompilerDigest(ts, options, config))
+    const ts: typeof TS = require(compiler)
+    const config = readConfig(compilerOptions, options.project, cwd, ts)
+    const configDiagnostics = formatDiagnostics(config.errors, ignoreWarnings, disableWarnings, cwd, ts)
+
+    const cachedir = join(
+      resolve(cwd, options.cacheDirectory),
+      getCompilerDigest({ version: ts.version, fast, ignoreWarnings, disableWarnings, config, compiler })
+    )
 
     // Make sure the temp cache directory exists.
     mkdirp.sync(cachedir)
@@ -179,24 +194,24 @@ export function register (opts?: Options): () => Register {
       })
 
       const diagnosticList = result.diagnostics ?
-        formatDiagnostics(result.diagnostics, options, cwd, ts) :
+        formatDiagnostics(result.diagnostics, ignoreWarnings, disableWarnings, cwd, ts) :
         []
 
       if (diagnosticList.length) {
         throw new TSError(diagnosticList)
       }
 
-      return [result.outputText, result.sourceMapText]
+      return [result.outputText, result.sourceMapText as string]
     }
 
-    let compile = readThrough(cachedir, options, project, getOutput)
+    let compile = readThrough(cachedir, cache, getFile, fileExists, project, getOutput)
 
     let getTypeInfo = function (fileName: string, position: number): TypeInfo {
       throw new TypeError(`No type information available under "--fast" mode`)
     }
 
     // Use full language services when the fast option is disabled.
-    if (!options.fast) {
+    if (!fast) {
       // Add the file to the project.
       const addVersion = function (fileName: string) {
         if (!project.versions.hasOwnProperty(fileName)) {
@@ -216,11 +231,11 @@ export function register (opts?: Options): () => Register {
         getScriptVersion: (fileName: string) => String(project.versions[fileName]),
         getScriptSnapshot (fileName: string) {
           if (!project.cache.hasOwnProperty(fileName)) {
-            if (!options.fileExists(fileName)) {
+            if (!fileExists(fileName)) {
               return undefined
             }
 
-            project.cache[fileName] = options.getFile(fileName)
+            project.cache[fileName] = getFile(fileName)
           }
 
           return ts.ScriptSnapshot.fromString(project.cache[fileName])
@@ -243,7 +258,7 @@ export function register (opts?: Options): () => Register {
           .concat(service.getSyntacticDiagnostics(fileName))
           .concat(service.getSemanticDiagnostics(fileName))
 
-        const diagnosticList = formatDiagnostics(diagnostics, options, cwd, ts)
+        const diagnosticList = formatDiagnostics(diagnostics, ignoreWarnings, disableWarnings, cwd, ts)
 
         if (output.emitSkipped) {
           diagnosticList.push(`${relative(cwd, fileName)}: Emit skipped`)
@@ -258,15 +273,15 @@ export function register (opts?: Options): () => Register {
           throw new TypeError(
             'Unable to require `.d.ts` file.\n' +
             'This is usually the result of a faulty configuration or import. ' +
-            'Make sure there\'s a `.js` (or another extension with matching node ' +
-            `loader attached before \`ts-node\`) available alongside \`${fileName}\`.`
+            'Make sure there is a `.js`, `.json` or another executable extension and ' +
+            `loader (attached before \`ts-node\`) available alongside \`${fileName}\`.`
           )
         }
 
         return [output.outputFiles[1].text, output.outputFiles[0].text]
       }
 
-      compile = readThrough(cachedir, options, project, function (code: string, fileName: string) {
+      compile = readThrough(cachedir, cache, getFile, fileExists, project, function (code: string, fileName: string) {
         addVersion(fileName)
         addCache(code, fileName)
 
@@ -328,8 +343,8 @@ export function register (opts?: Options): () => Register {
 /**
  * Load TypeScript configuration.
  */
-function readConfig (options: Options, cwd: string, ts: TSCommon) {
-  const result = loadSync(cwd, options.project)
+function readConfig (compilerOptions: any, project: string | boolean | undefined, cwd: string, ts: TSCommon) {
+  const result = loadSync(cwd, typeof project === 'string' ? project : undefined)
 
   result.config.compilerOptions = extend(
     {
@@ -337,7 +352,7 @@ function readConfig (options: Options, cwd: string, ts: TSCommon) {
       module: 'commonjs'
     },
     result.config.compilerOptions,
-    options.compilerOptions,
+    compilerOptions,
     {
       sourceMap: true,
       inlineSourceMap: false,
@@ -359,7 +374,11 @@ function readConfig (options: Options, cwd: string, ts: TSCommon) {
     return ts.parseConfigFile(result.config, ts.sys, basePath)
   }
 
-  return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, result.path)
+  if (typeof ts.parseJsonConfigFileContent === 'function') {
+    return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, result.path as string)
+  }
+
+  throw new TypeError('Could not find a compatible `parseConfigFile` function')
 }
 
 /**
@@ -372,11 +391,13 @@ type SourceOutput = [string, string]
  */
 function readThrough (
   cachedir: string,
-  options: Options,
+  cache: boolean,
+  getFile: (fileName: string) => string,
+  fileExists: (fileName: string) => boolean,
   project: Project,
   compile: (code: string, fileName: string) => SourceOutput
 ) {
-  if (options.cache === false) {
+  if (cache === false) {
     return function (code: string, fileName: string) {
       const cachePath = join(cachedir, getCacheName(code, fileName))
       const sourceMapPath = `${cachePath}.js.map`
@@ -401,8 +422,8 @@ function readThrough (
     project.sourceMaps[fileName] = sourceMapPath
 
     // Use the cache when available.
-    if (options.fileExists(outputPath)) {
-      return options.getFile(outputPath)
+    if (fileExists(outputPath)) {
+      return getFile(outputPath)
     }
 
     const out = compile(code, fileName)
@@ -453,19 +474,8 @@ function getCacheName (sourceCode: string, fileName: string) {
 /**
  * Create a hash of the current configuration.
  */
-function getCompilerDigest (ts: TSCommon, options: Options, config: any) {
-  return join(
-    crypto.createHash('sha1')
-      // TypeScript version.
-      .update(ts.version, 'utf8')
-      .update('\0', 'utf8')
-      // Configuration options.
-      .update(JSON.stringify(options), 'utf8')
-      .update('\0', 'utf8')
-      // Compiler options.
-      .update(JSON.stringify(config), 'utf8')
-      .digest('hex')
-  )
+function getCompilerDigest (opts: any) {
+  return crypto.createHash('sha1').update(JSON.stringify(opts), 'utf8').digest('hex')
 }
 
 /**
@@ -509,14 +519,20 @@ export function getFile (fileName: string): string {
 /**
  * Format an array of diagnostics.
  */
-function formatDiagnostics (diagnostics: TS.Diagnostic[], options: Options, cwd: string, ts: TSCommon) {
-  if (options.disableWarnings) {
+function formatDiagnostics (
+  diagnostics: TS.Diagnostic[],
+  ignore: number[],
+  disable: boolean,
+  cwd: string,
+  ts: TSCommon
+) {
+  if (disable) {
     return []
   }
 
   return diagnostics
     .filter(function (diagnostic) {
-      return options.ignoreWarnings.indexOf(diagnostic.code) === -1
+      return ignore.indexOf(diagnostic.code) === -1
     })
     .map(function (diagnostic) {
       return formatDiagnostic(diagnostic, cwd, ts)
