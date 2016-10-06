@@ -253,7 +253,12 @@ export function register (opts?: Options): () => Register {
           throw new TSError(diagnosticList)
         }
 
-        return [output.outputFiles[1].text, output.outputFiles[0].text]
+        if (output.outputFiles[1] && output.outputFiles[0]) {
+          return [output.outputFiles[1].text, output.outputFiles[0].text]
+        } else {
+          // no output, we compiled a type declaration file
+          return null
+        }
       }
 
       compile = readThrough(cachedir, options, project, function (code: string, fileName: string) {
@@ -371,6 +376,10 @@ function readThrough (
       const cachePath = join(cachedir, getCacheName(code, fileName))
       const sourceMapPath = `${cachePath}.js.map`
       const out = compile(code, fileName)
+      if (out == null) {
+        // no output, we compiled a file that only had type declarations
+        return ''
+      }
 
       project.sourceMaps[fileName] = sourceMapPath
 
@@ -396,6 +405,10 @@ function readThrough (
     }
 
     const out = compile(code, fileName)
+    if (out == null) {
+      // no output, we compiled a file that only had type declarations
+      return ''
+    }
 
     const output = updateOutput(out[0], fileName, sourceMapPath)
     const sourceMap = updateSourceMap(out[1], fileName)
