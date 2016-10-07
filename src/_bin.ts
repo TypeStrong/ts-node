@@ -2,7 +2,6 @@ import { join, resolve } from 'path'
 import { start } from 'repl'
 import { inspect } from 'util'
 import arrify = require('arrify')
-import extend = require('xtend')
 import Module = require('module')
 import minimist = require('minimist')
 import chalk = require('chalk')
@@ -22,13 +21,14 @@ interface Argv {
   compiler?: string
   project?: string
   require?: string | string[]
+  ignore?: boolean | string | string[]
   ignoreWarnings?: string | string[]
   disableWarnings?: boolean
   compilerOptions?: any
   _: string[]
 }
 
-const strings = ['eval', 'print', 'compiler', 'project', 'ignoreWarnings', 'require', 'cacheDirectory']
+const strings = ['eval', 'print', 'compiler', 'project', 'ignoreWarnings', 'require', 'cacheDirectory', 'ignore']
 const booleans = ['help', 'fast', 'lazy', 'version', 'disableWarnings', 'cache']
 
 const aliases: { [key: string]: string[] } = {
@@ -119,18 +119,19 @@ Usage: ts-node [options] [ -e script | script.ts ] [arguments]
 
 Options:
 
-  -e, --eval [code]             Evaluate code
-  -p, --print [code]            Evaluate code and print result
-  -r, --require [path]          Require a node module for execution
-  -C, --compiler [name]         Specify a custom TypeScript compiler
-  -I, --ignoreWarnings [code]   Ignore TypeScript warnings by diagnostic code
-  -D, --disableWarnings         Ignore every TypeScript warning
-  -P, --project [path]          Path to TypeScript project (or \`false\`)
-  -O, --compilerOptions [opts]  JSON compiler options to merge with compilation
-  -L, --lazy                    Lazily load TypeScript compilation
-  -F, --fast                    Run TypeScript compilation in transpile mode
-  --no-cache                    Disable the TypeScript cache
-  --cache-directory             Configure the TypeScript cache directory
+  -e, --eval [code]              Evaluate code
+  -p, --print [code]             Evaluate code and print result
+  -r, --require [path]           Require a node module for execution
+  -C, --compiler [name]          Specify a custom TypeScript compiler
+  -I, --ignoreWarnings [code]    Ignore TypeScript warnings by diagnostic code
+  -D, --disableWarnings          Ignore every TypeScript warning
+  -P, --project [path]           Path to TypeScript project (or \`false\`)
+  -O, --compilerOptions [opts]   JSON object to merge with compiler options
+  -L, --lazy                     Lazily load TypeScript compilation on demand
+  -F, --fast                     Run TypeScript compilation in transpile mode
+  --ignore [regexp], --no-ignore Set the ignore check (default: \`/node_modules/\`)
+  --no-cache                     Disable the TypeScript cache
+  --cache-directory              Configure the TypeScript cache directory
 `)
 
   process.exit(0)
@@ -157,11 +158,20 @@ const isEval = isEvalScript || stop === process.argv.length
 const isPrinted = argv.print != null
 
 // Register the TypeScript compiler instance.
-const service = register(extend(argv, {
+const service = register({
+  fast: argv.fast,
+  lazy: argv.lazy,
+  cache: argv.cache,
+  cacheDirectory: argv.cacheDirectory,
+  compiler: argv.compiler,
+  project: argv.project,
+  ignore: typeof argv.ignore === 'boolean' ? argv.ignore : arrify(argv.ignore),
+  ignoreWarnings: arrify(argv.ignoreWarnings),
+  disableWarnings: argv.disableWarnings,
+  compilerOptions: argv.compilerOptions,
   getFile: isEval ? getFileEval : getFile,
-  fileExists: isEval ? fileExistsEval : fileExists,
-  ignoreWarnings: arrify(argv.ignoreWarnings)
-}))
+  fileExists: isEval ? fileExistsEval : fileExists
+})
 
 // TypeScript files must always end with `.ts`.
 const EVAL_FILENAME = '[eval].ts'
