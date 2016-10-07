@@ -1,9 +1,8 @@
-import { relative, basename, extname, resolve, dirname, sep, join } from 'path'
+import { relative, basename, extname, resolve, dirname, join } from 'path'
 import { readdirSync, writeFileSync, readFileSync, statSync } from 'fs'
 import { EOL, tmpdir } from 'os'
 import sourceMapSupport = require('source-map-support')
 import extend = require('xtend')
-import arrify = require('arrify')
 import mkdirp = require('mkdirp')
 import crypto = require('crypto')
 import yn = require('yn')
@@ -63,7 +62,8 @@ export interface Options {
   cache?: boolean | null
   cacheDirectory?: string
   compiler?: string
-  project?: string
+  project?: boolean | string
+  ignore?: boolean | string[]
   ignoreWarnings?: Array<number | string>
   disableWarnings?: boolean | null
   getFile?: (fileName: string) => string
@@ -74,8 +74,8 @@ export interface Options {
 /**
  * Track the project information.
  */
-interface Project {
-  cache: { [fileName: string]: string }
+interface Cache {
+  contents: { [fileName: string]: string }
   versions: { [fileName: string]: number }
   sourceMaps: { [fileName: string]: string }
 }
@@ -91,15 +91,16 @@ export interface TypeInfo {
 /**
  * Default register options.
  */
-const DEFAULT_OPTIONS: Options = {
+const DEFAULTS = {
   getFile,
   fileExists,
   cache: yn(process.env.TS_NODE_CACHE),
-  cacheDirectory: process.env.TS_NODE_CACHE_DIRECTORY || join(tmpdir(), 'ts-node'),
+  cacheDirectory: process.env.TS_NODE_CACHE_DIRECTORY,
   disableWarnings: yn(process.env.TS_NODE_DISABLE_WARNINGS),
   compiler: process.env.TS_NODE_COMPILER,
   compilerOptions: process.env.TS_NODE_COMPILER_OPTIONS,
   project: process.env.TS_NODE_PROJECT,
+  ignore: split(process.env.TS_NODE_IGNORE),
   ignoreWarnings: split(process.env.TS_NODE_IGNORE_WARNINGS),
   fast: yn(process.env.TS_NODE_FAST)
 }
@@ -111,6 +112,13 @@ function split (value: string | undefined) {
   return value ? value.split(/ *, */g) : []
 }
 
+/**
+ * Replace backslashes with forward slashes.
+ */
+function slash (value: string): string {
+  return value.replace(/\\/g, '/')
+}
+
 export interface Register {
   cwd: string
   compile (code: string, fileName: string): string
@@ -120,16 +128,26 @@ export interface Register {
 /**
  * Register TypeScript compiler.
  */
-export function register (opts?: Options): () => Register {
-  const options = extend(DEFAULT_OPTIONS, opts)
+export function register (options: Options = {}): () => Register {
   const compiler = options.compiler || 'typescript'
-  const ignoreWarnings = arrify(options.ignoreWarnings).map(Number)
-  const disableWarnings = !!options.disableWarnings
-  const getFile = options.getFile as ((fileName: string) => string)
-  const fileExists = options.fileExists as ((fileName: string) => boolean)
-  const cache = !!options.cache
-  const fast = !!options.fast
+  const ignoreWarnings = (options.ignoreWarnings || DEFAULTS.ignoreWarnings).map(Number)
+  const disableWarnings = !!(options.disableWarnings == null ? DEFAULTS.disableWarnings : options.disableWarnings)
+  const getFile = options.getFile || DEFAULTS.getFile
+  const fileExists = options.fileExists || DEFAULTS.fileExists
+  const shouldCache = !!(options.cache == null ? DEFAULTS.cache : options.cache)
+  const fast = !!(options.fast == null ? DEFAULTS.fast : options.fast)
+  const project = options.project || DEFAULTS.project
+  const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || join(tmpdir(), 'ts-node')
   let result: Register
+
+  const ignore = (
+    (
+      typeof options.ignore === 'boolean' ?
+        (options.ignore === false ? [] : undefined) :
+        (options.ignore || DEFAULTS.ignore)
+    ) ||
+    ['^node_modules/']
+  ).map(str => new RegExp(str))
 
   // Parse compiler options as JSON.
   const compilerOptions = typeof options.compilerOptions === 'string' ?
@@ -137,16 +155,16 @@ export function register (opts?: Options): () => Register {
     options.compilerOptions
 
   function load () {
-    const project: Project = { cache: {}, versions: {}, sourceMaps: {} }
+    const cache: Cache = { contents: {}, versions: {}, sourceMaps: {} }
 
     // Install source map support and read from cache.
     sourceMapSupport.install({
       environment: 'node',
       retrieveSourceMap (fileName: string) {
-        if (project.sourceMaps[fileName]) {
+        if (cache.sourceMaps[fileName]) {
           return {
-            url: project.sourceMaps[fileName],
-            map: getFile(project.sourceMaps[fileName])
+            url: cache.sourceMaps[fileName],
+            map: getFile(cache.sourceMaps[fileName])
           }
         }
       }
@@ -155,11 +173,11 @@ export function register (opts?: Options): () => Register {
     // Require the TypeScript compiler and configuration.
     const cwd = process.cwd()
     const ts: typeof TS = require(compiler)
-    const config = readConfig(compilerOptions, options.project, cwd, ts)
+    const config = readConfig(compilerOptions, project, cwd, ts)
     const configDiagnostics = formatDiagnostics(config.errors, ignoreWarnings, disableWarnings, cwd, ts)
 
     const cachedir = join(
-      resolve(cwd, options.cacheDirectory),
+      resolve(cwd, cacheDirectory),
       getCompilerDigest({ version: ts.version, fast, ignoreWarnings, disableWarnings, config, compiler })
     )
 
@@ -173,13 +191,13 @@ export function register (opts?: Options): () => Register {
 
     // Enable `allowJs` when flag is set.
     if (config.options.allowJs) {
-      registerExtension('.js')
+      registerExtension('.js', ignore, service)
     }
 
     // Add all files into the file hash.
     for (const fileName of config.fileNames) {
       if (/\.d\.ts$/.test(fileName)) {
-        project.versions[fileName] = 1
+        cache.versions[fileName] = 1
       }
     }
 
@@ -204,7 +222,7 @@ export function register (opts?: Options): () => Register {
       return [result.outputText, result.sourceMapText as string]
     }
 
-    let compile = readThrough(cachedir, cache, getFile, fileExists, project, getOutput)
+    let compile = readThrough(cachedir, shouldCache, getFile, fileExists, cache, getOutput)
 
     let getTypeInfo = function (fileName: string, position: number): TypeInfo {
       throw new TypeError(`No type information available under "--fast" mode`)
@@ -214,31 +232,31 @@ export function register (opts?: Options): () => Register {
     if (!fast) {
       // Add the file to the project.
       const addVersion = function (fileName: string) {
-        if (!project.versions.hasOwnProperty(fileName)) {
-          project.versions[fileName] = 1
+        if (!cache.versions.hasOwnProperty(fileName)) {
+          cache.versions[fileName] = 1
         }
       }
 
       // Set the file contents into cache.
       const addCache = function (code: string, fileName: string) {
-        project.cache[fileName] = code
-        project.versions[fileName] += 1
+        cache.contents[fileName] = code
+        cache.versions[fileName] += 1
       }
 
       // Create the compiler host for type checking.
       const serviceHost = {
-        getScriptFileNames: () => Object.keys(project.versions),
-        getScriptVersion: (fileName: string) => String(project.versions[fileName]),
+        getScriptFileNames: () => Object.keys(cache.versions),
+        getScriptVersion: (fileName: string) => String(cache.versions[fileName]),
         getScriptSnapshot (fileName: string) {
-          if (!project.cache.hasOwnProperty(fileName)) {
+          if (!cache.contents.hasOwnProperty(fileName)) {
             if (!fileExists(fileName)) {
               return undefined
             }
 
-            project.cache[fileName] = getFile(fileName)
+            cache.contents[fileName] = getFile(fileName)
           }
 
-          return ts.ScriptSnapshot.fromString(project.cache[fileName])
+          return ts.ScriptSnapshot.fromString(cache.contents[fileName])
         },
         getDirectories: getDirectories,
         directoryExists: directoryExists,
@@ -281,12 +299,19 @@ export function register (opts?: Options): () => Register {
         return [output.outputFiles[1].text, output.outputFiles[0].text]
       }
 
-      compile = readThrough(cachedir, cache, getFile, fileExists, project, function (code: string, fileName: string) {
-        addVersion(fileName)
-        addCache(code, fileName)
+      compile = readThrough(
+        cachedir,
+        shouldCache,
+        getFile,
+        fileExists,
+        cache,
+        function (code: string, fileName: string) {
+          addVersion(fileName)
+          addCache(code, fileName)
 
-        return getOutput(code, fileName)
-      })
+          return getOutput(code, fileName)
+        }
+      )
 
       getTypeInfo = function (fileName: string, position: number) {
         addVersion(fileName)
@@ -306,31 +331,9 @@ export function register (opts?: Options): () => Register {
     return result || (result = load())
   }
 
-  function shouldIgnore (filename: string) {
-    return relative(service().cwd, filename).split(sep).indexOf('node_modules') > -1
-  }
-
-  function registerExtension (ext: string) {
-    const old = require.extensions[ext] || require.extensions['.js']
-
-    require.extensions[ext] = function (m: any, filename: string) {
-      if (shouldIgnore(filename)) {
-        return old(m, filename)
-      }
-
-      const _compile = m._compile
-
-      m._compile = function (code: string, fileName: string) {
-        return _compile.call(this, service().compile(code, fileName), fileName)
-      }
-
-      return old(m, filename)
-    }
-  }
-
   // Eagerly register TypeScript extensions (JavaScript is registered lazily).
-  registerExtension('.ts')
-  registerExtension('.tsx')
+  registerExtension('.ts', ignore, service)
+  registerExtension('.tsx', ignore, service)
 
   // Immediately initialize the TypeScript compiler.
   if (!options.lazy) {
@@ -338,6 +341,36 @@ export function register (opts?: Options): () => Register {
   }
 
   return service
+}
+
+/**
+ * Check if the filename should be ignored.
+ */
+function shouldIgnore (filename: string, service: () => Register, ignore: RegExp[]) {
+  const relname = slash(filename)
+
+  return ignore.some(x => x.test(relname))
+}
+
+/**
+ * Register the extension for node.
+ */
+function registerExtension (ext: string, ignore: RegExp[], service: () => Register) {
+  const old = require.extensions[ext] || require.extensions['.js']
+
+  require.extensions[ext] = function (m: any, filename: string) {
+    if (shouldIgnore(filename, service, ignore)) {
+      return old(m, filename)
+    }
+
+    const _compile = m._compile
+
+    m._compile = function (code: string, fileName: string) {
+      return _compile.call(this, service().compile(code, fileName), fileName)
+    }
+
+    return old(m, filename)
+  }
 }
 
 /**
@@ -391,19 +424,19 @@ type SourceOutput = [string, string]
  */
 function readThrough (
   cachedir: string,
-  cache: boolean,
+  shouldCache: boolean,
   getFile: (fileName: string) => string,
   fileExists: (fileName: string) => boolean,
-  project: Project,
+  cache: Cache,
   compile: (code: string, fileName: string) => SourceOutput
 ) {
-  if (cache === false) {
+  if (shouldCache === false) {
     return function (code: string, fileName: string) {
       const cachePath = join(cachedir, getCacheName(code, fileName))
       const sourceMapPath = `${cachePath}.js.map`
       const out = compile(code, fileName)
 
-      project.sourceMaps[fileName] = sourceMapPath
+      cache.sourceMaps[fileName] = sourceMapPath
 
       const output = updateOutput(out[0], fileName, sourceMapPath)
       const sourceMap = updateSourceMap(out[1], fileName)
@@ -419,7 +452,7 @@ function readThrough (
     const outputPath = `${cachePath}.js`
     const sourceMapPath = `${cachePath}.js.map`
 
-    project.sourceMaps[fileName] = sourceMapPath
+    cache.sourceMaps[fileName] = sourceMapPath
 
     // Use the cache when available.
     if (fileExists(outputPath)) {
