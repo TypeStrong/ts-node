@@ -98,7 +98,7 @@ const DEFAULTS = {
   cacheDirectory: process.env.TS_NODE_CACHE_DIRECTORY,
   disableWarnings: yn(process.env.TS_NODE_DISABLE_WARNINGS),
   compiler: process.env.TS_NODE_COMPILER,
-  compilerOptions: process.env.TS_NODE_COMPILER_OPTIONS,
+  compilerOptions: parse(process.env.TS_NODE_COMPILER_OPTIONS),
   project: process.env.TS_NODE_PROJECT,
   ignore: split(process.env.TS_NODE_IGNORE),
   ignoreWarnings: split(process.env.TS_NODE_IGNORE_WARNINGS),
@@ -108,14 +108,21 @@ const DEFAULTS = {
 /**
  * Split a string array of values.
  */
-function split (value: string | undefined) {
+export function split (value: string | undefined) {
   return value ? value.split(/ *, */g) : []
+}
+
+/**
+ * Parse a string as JSON.
+ */
+export function parse (value: string | undefined) {
+  return value ? JSON.parse(value) : undefined
 }
 
 /**
  * Replace backslashes with forward slashes.
  */
-function slash (value: string): string {
+export function slash (value: string): string {
   return value.replace(/\\/g, '/')
 }
 
@@ -138,6 +145,7 @@ export function register (options: Options = {}): () => Register {
   const fast = !!(options.fast == null ? DEFAULTS.fast : options.fast)
   const project = options.project || DEFAULTS.project
   const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || join(tmpdir(), 'ts-node')
+  const compilerOptions = extend(DEFAULTS.compilerOptions, options.compilerOptions)
   let result: Register
 
   const ignore = (
@@ -146,13 +154,8 @@ export function register (options: Options = {}): () => Register {
         (options.ignore === false ? [] : undefined) :
         (options.ignore || DEFAULTS.ignore)
     ) ||
-    ['^node_modules/']
+    ['/node_modules/']
   ).map(str => new RegExp(str))
-
-  // Parse compiler options as JSON.
-  const compilerOptions = typeof options.compilerOptions === 'string' ?
-    JSON.parse(options.compilerOptions) :
-    options.compilerOptions
 
   function load () {
     const cache: Cache = { contents: {}, versions: {}, sourceMaps: {} }

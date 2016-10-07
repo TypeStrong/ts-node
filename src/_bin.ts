@@ -7,7 +7,7 @@ import minimist = require('minimist')
 import chalk = require('chalk')
 import { diffLines } from 'diff'
 import { createScript } from 'vm'
-import { register, VERSION, getFile, fileExists, TSError } from './index'
+import { register, VERSION, getFile, fileExists, TSError, parse } from './index'
 
 interface Argv {
   eval?: string
@@ -168,7 +168,7 @@ const service = register({
   ignore: typeof argv.ignore === 'boolean' ? argv.ignore : arrify(argv.ignore),
   ignoreWarnings: arrify(argv.ignoreWarnings),
   disableWarnings: argv.disableWarnings,
-  compilerOptions: argv.compilerOptions,
+  compilerOptions: parse(argv.compilerOptions),
   getFile: isEval ? getFileEval : getFile,
   fileExists: isEval ? fileExistsEval : fileExists
 })
