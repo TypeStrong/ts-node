@@ -205,6 +205,22 @@ export function register (options: Options = {}): () => Register {
     }
 
     /**
+     * get the output's expected extension
+     */
+    function getOutputExtension(
+      filename: string,
+      preserveJSX: boolean = options.compilerOptions
+        ? options.compilerOptions.jsx === 'preserve'
+        : false
+    ) {
+      switch (extname(filename)) {
+        case '.ts': return '.js'
+        case '.tsx': return preserveJSX ? '.jsx' : '.js'
+        default: return '.js'
+      }
+    }
+
+    /**
      * Create the basic required function using transpile mode.
      */
     let getOutput = function (code: string, fileName: string): SourceOutput {
@@ -225,7 +241,15 @@ export function register (options: Options = {}): () => Register {
       return [result.outputText, result.sourceMapText as string]
     }
 
-    let compile = readThrough(cachedir, shouldCache, getFile, fileExists, cache, getOutput)
+    let compile = readThrough(
+      cachedir,
+      shouldCache,
+      getFile,
+      fileExists,
+      cache,
+      getOutput,
+      getOutputExtension
+    )
 
     let getTypeInfo = function (fileName: string, position: number): TypeInfo {
       throw new TypeError(`No type information available under "--fast" mode`)
@@ -313,7 +337,8 @@ export function register (options: Options = {}): () => Register {
           addCache(code, fileName)
 
           return getOutput(code, fileName)
-        }
+        },
+        getOutputExtension
       )
 
       getTypeInfo = function (fileName: string, position: number) {
@@ -431,17 +456,19 @@ function readThrough (
   getFile: (fileName: string) => string,
   fileExists: (fileName: string) => boolean,
   cache: Cache,
-  compile: (code: string, fileName: string) => SourceOutput
+  compile: (code: string, fileName: string) => SourceOutput,
+  getOutputExtension: (fileName: string) => string
 ) {
   if (shouldCache === false) {
     return function (code: string, fileName: string) {
       const cachePath = join(cachedir, getCacheName(code, fileName))
-      const sourceMapPath = `${cachePath}.js.map`
+      const outputExtension = getOutputExtension(fileName)
+      const sourceMapPath = `${cachePath}${outputExtension}.map`
       const out = compile(code, fileName)
 
       cache.sourceMaps[fileName] = sourceMapPath
 
-      const output = updateOutput(out[0], fileName, sourceMapPath)
+      const output = updateOutput(out[0], fileName, sourceMapPath, outputExtension)
       const sourceMap = updateSourceMap(out[1], fileName)
 
       writeFileSync(sourceMapPath, sourceMap)
@@ -452,8 +479,9 @@ function readThrough (
 
   return function (code: string, fileName: string) {
     const cachePath = join(cachedir, getCacheName(code, fileName))
-    const outputPath = `${cachePath}.js`
-    const sourceMapPath = `${cachePath}.js.map`
+    const outputExtension = getOutputExtension(fileName)
+    const outputPath = `${cachePath}${outputExtension}`
+    const sourceMapPath = `${cachePath}${outputExtension}.map`
 
     cache.sourceMaps[fileName] = sourceMapPath
 
@@ -464,7 +492,7 @@ function readThrough (
 
     const out = compile(code, fileName)
 
-    const output = updateOutput(out[0], fileName, sourceMapPath)
+    const output = updateOutput(out[0], fileName, sourceMapPath, outputExtension)
     const sourceMap = updateSourceMap(out[1], fileName)
 
     writeFileSync(outputPath, output)
@@ -477,11 +505,10 @@ function readThrough (
 /**
  * Update the output remapping the source map.
  */
-function updateOutput (outputText: string, fileName: string, sourceMapPath: string) {
+function updateOutput (outputText: string, fileName: string, sourceMapPath: string, outputExt: string) {
     // Replace the original extension (E.g. `.ts`).
   const ext = extname(fileName)
-  const originalPath = basename(fileName).slice(0, -ext.length) + '.js.map'
-
+  const originalPath = basename(fileName).slice(0, -ext.length) + `${outputExt}.map`
   return outputText.slice(0, -originalPath.length) + sourceMapPath.replace(/\\/g, '/')
 }
 
