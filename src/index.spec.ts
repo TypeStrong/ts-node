@@ -4,7 +4,7 @@ import { join } from 'path'
 import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
-import { register, VERSION } from './index'
+import { register, VERSION, Options } from './index'
 
 const testDir = join(__dirname, '../tests')
 const EXEC_PATH = join(__dirname, '../dist/bin')
@@ -171,7 +171,8 @@ describe('ts-node', function () {
   })
 
   describe('register', function () {
-    register({ project: testDir })
+    const options: Options = { project: testDir, compilerOptions: {jsx: 'preserve'} }
+    register(options)
 
     it('should be able to require typescript', function () {
       const m = require('../tests/module')
@@ -204,6 +205,37 @@ describe('ts-node', function () {
 
         done()
       }
+    })
+
+    describe('should properly attach sourcemap comment with "jsx": "preserve"', () => {
+      let old: any = require.extensions['.tsx']
+      let compiled: string
+      before(() => {
+        require.extensions['.tsx'] = (m: any, filename: any) => {
+          const _compile = m._compile
+          m._compile = (code: any, filename: any) => {
+            compiled = code
+            return _compile.call(this, code, filename)
+          }
+          return old(m, filename)
+        }
+      })
+
+      after(() => {
+        require.extensions['.tsx'] = old
+      })
+
+      it('should use source maps', function (done) {
+        try {
+          require('../tests/with-jsx.tsx')
+        } catch (error) {
+          expect(error.stack).to.contain('SyntaxError: Unexpected token <\n')
+          expect(compiled).to.not.contain('//# sourceMappingURL=w') // first letter of filename
+          expect(compiled).to.match(/\/\/# sourceMappingURL=.*\.jsx.map$/)
+          done()
+        }
+
+      })
     })
   })
 })
