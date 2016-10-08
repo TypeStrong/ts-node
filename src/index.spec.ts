@@ -171,7 +171,12 @@ describe('ts-node', function () {
   })
 
   describe('register', function () {
-    register({ project: testDir })
+    register({
+      project: testDir,
+      compilerOptions: {
+        jsx: 'preserve'
+      }
+    })
 
     it('should be able to require typescript', function () {
       const m = require('../tests/module')
@@ -204,6 +209,38 @@ describe('ts-node', function () {
 
         done()
       }
+    })
+
+    describe('JSX preserve', () => {
+      let old = require.extensions['.tsx']
+      let compiled: string
+
+      before(function () {
+        require.extensions['.tsx'] = (m: any, fileName: string) => {
+          const _compile = m._compile
+
+          m._compile = (code: string, fileName: string) => {
+            compiled = code
+            return _compile.call(this, code, fileName)
+          }
+          return old(m, fileName)
+        }
+      })
+
+      after(function () {
+        require.extensions['.tsx'] = old
+      })
+
+      it('should use source maps', function (done) {
+        try {
+          require('../tests/with-jsx.tsx')
+        } catch (error) {
+          expect(error.stack).to.contain('SyntaxError: Unexpected token <\n')
+          expect(compiled).to.not.contain('//# sourceMappingURL=w') // First letter of filename.
+          expect(compiled).to.match(/\/\/# sourceMappingURL=.*\.jsx.map$/)
+          done()
+        }
+      })
     })
   })
 })
