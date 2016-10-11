@@ -8,17 +8,11 @@ const opts = process.argv.slice(2)
 
 for (let i = 0; i < opts.length; i++) {
   const arg = opts[i]
-  const flag = arg.split('=')[0]
+  const flag = arg.split('=', 1)[0]
 
   switch (flag) {
     case '-d':
       args.unshift('--debug')
-      opts.splice(i, 1)
-      break
-    case 'debug':
-    case '--debug':
-    case '--debug-brk':
-      args.unshift(arg)
       opts.splice(i, 1)
       break
     case '-gc':
@@ -26,6 +20,10 @@ for (let i = 0; i < opts.length; i++) {
       args.unshift('--expose-gc')
       opts.splice(i, 1)
       break
+    case 'debug':
+    case '--debug':
+    case '--debug-brk':
+    case '--inspect':
     case '--gc-global':
     case '--es_staging':
     case '--no-deprecation':
