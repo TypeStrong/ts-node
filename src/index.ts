@@ -94,15 +94,15 @@ export interface TypeInfo {
 const DEFAULTS = {
   getFile,
   fileExists,
-  cache: yn(process.env.TS_NODE_CACHE),
-  cacheDirectory: process.env.TS_NODE_CACHE_DIRECTORY,
-  disableWarnings: yn(process.env.TS_NODE_DISABLE_WARNINGS),
-  compiler: process.env.TS_NODE_COMPILER,
-  compilerOptions: parse(process.env.TS_NODE_COMPILER_OPTIONS),
-  project: process.env.TS_NODE_PROJECT,
-  ignore: split(process.env.TS_NODE_IGNORE),
-  ignoreWarnings: split(process.env.TS_NODE_IGNORE_WARNINGS),
-  fast: yn(process.env.TS_NODE_FAST)
+  cache: yn(process.env['TS_NODE_CACHE']),
+  cacheDirectory: process.env['TS_NODE_CACHE_DIRECTORY'],
+  disableWarnings: yn(process.env['TS_NODE_DISABLE_WARNINGS']),
+  compiler: process.env['TS_NODE_COMPILER'],
+  compilerOptions: parse(process.env['TS_NODE_COMPILER_OPTIONS']),
+  project: process.env['TS_NODE_PROJECT'],
+  ignore: split(process.env['TS_NODE_IGNORE']),
+  ignoreWarnings: split(process.env['TS_NODE_IGNORE_WARNINGS']),
+  fast: yn(process.env['TS_NODE_FAST'])
 }
 
 /**
@@ -381,14 +381,14 @@ function shouldIgnore (filename: string, service: () => Register, ignore: RegExp
 function registerExtension (ext: string, ignore: RegExp[], service: () => Register) {
   const old = require.extensions[ext] || require.extensions['.js']
 
-  require.extensions[ext] = function (m: any, filename: string) {
+  require.extensions[ext] = function (m, filename) {
     if (shouldIgnore(filename, service, ignore)) {
       return old(m, filename)
     }
 
     const _compile = m._compile
 
-    m._compile = function (code: string, fileName: string) {
+    m._compile = function (code, fileName) {
       return _compile.call(this, service().compile(code, fileName), fileName)
     }
 

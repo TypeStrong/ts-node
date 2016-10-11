@@ -13,8 +13,7 @@
     "yn": "registry:npm/yn#1.2.0+20161006191459"
   },
   "globalDependencies": {
-    "node": "github:borisyankov/DefinitelyTyped/node/node.d.ts#b37afda34daa6186c3f143609555fcd6d70b249f",
-    "node-extended": "file:custom_typings/node.d.ts"
+    "node": "registry:env/node#6.0.0+20161011193755"
   },
   "globalDevDependencies": {
     "chai": "registry:dt/chai#3.4.0+20160216071402",

@@ -216,10 +216,10 @@ describe('ts-node', function () {
       let compiled: string
 
       before(function () {
-        require.extensions['.tsx'] = (m: any, fileName: string) => {
+        require.extensions['.tsx'] = (m, fileName) => {
           const _compile = m._compile
 
-          m._compile = (code: string, fileName: string) => {
+          m._compile = (code, fileName) => {
             compiled = code
             return _compile.call(this, code, fileName)
           }

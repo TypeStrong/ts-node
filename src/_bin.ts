@@ -211,16 +211,16 @@ if (isEvalScript) {
  * Evaluate a script.
  */
 function evalAndExit (code: string, isPrinted: boolean) {
-  global.__filename = EVAL_FILENAME
-  global.__dirname = cwd
+  ;(global as any).__filename = EVAL_FILENAME
+  ;(global as any).__dirname = cwd
 
-  const module = new Module(global.__filename)
-  module.filename = global.__filename
-  module.paths = Module._nodeModulePaths(global.__dirname)
+  const module = new Module((global as any).__filename)
+  module.filename = (global as any).__filename
+  module.paths = Module._nodeModulePaths((global as any).__dirname)
 
-  global.exports = module.exports
-  global.module = module
-  global.require = module.require.bind(module)
+  ;(global as any).exports = module.exports
+  ;(global as any).module = module
+  ;(global as any).require = module.require.bind(module)
 
   let result: any
 
