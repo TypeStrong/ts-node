@@ -208,7 +208,7 @@ export function register (options: Options = {}): () => Register {
      * Get the extension for a transpiled file.
      */
     function getExtension (fileName: string) {
-      if (compilerOptions.jsx === 'preserve' && extname(fileName) === '.tsx') {
+      if (config.options.jsx === ts.JsxEmit.Preserve && extname(fileName) === '.tsx') {
         return '.jsx'
       }
 
