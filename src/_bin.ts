@@ -5,7 +5,6 @@ import arrify = require('arrify')
 import Module = require('module')
 import minimist = require('minimist')
 import chalk = require('chalk')
-import { diffLines } from 'diff'
 import { createScript } from 'vm'
 import { register, VERSION, getFile, fileExists, TSError, parse } from './index'
 
@@ -173,12 +172,11 @@ const service = register({
   fileExists: isEval ? fileExistsEval : fileExists
 })
 
-// TypeScript files must always end with `.ts`.
-const EVAL_FILENAME = '[eval].ts'
-const EVAL_PATH = join(cwd, EVAL_FILENAME)
+// Increment the `eval` id to keep track of execution.
+let evalId = 0
 
-// Store eval contents for in-memory lookups.
-const evalFile = { input: '', output: '', version: 0 }
+// Note: TypeScript files must always end with `.ts`.
+const EVAL_FILES: { [path: string]: string } = {}
 
 // Require specified modules before start-up.
 for (const id of arrify(argv.require)) {
@@ -211,7 +209,7 @@ if (isEvalScript) {
  * Evaluate a script.
  */
 function evalAndExit (code: string, isPrinted: boolean) {
-  ;(global as any).__filename = EVAL_FILENAME
+  ;(global as any).__filename = getEvalFileName(evalId)
   ;(global as any).__dirname = cwd
 
   const module = new Module((global as any).__filename)
@@ -260,45 +258,18 @@ function printAndExit (error: TSError) {
  * Evaluate the code snippet.
  */
 function _eval (code: string, context: any) {
-  const undo = evalFile.input
   const isCompletion = !/\n$/.test(code)
+  const evalFilename = getEvalFileName(evalId++)
+  const evalPath = join(cwd, evalFilename)
+  const evalCode = getEvalContents(code)
 
-  // Increment eval constants for the compiler to pick up changes.
-  evalFile.input += code
-  evalFile.version++
+  const output = service().compile(evalCode, evalPath)
 
-  let output: string
+  const script = createScript(output, evalFilename)
+  const result = script.runInNewContext(context)
 
-  // Undo on TypeScript compilation errors.
-  try {
-    output = service().compile(evalFile.input, EVAL_PATH)
-  } catch (error) {
-    evalFile.input = undo
-
-    throw error
-  }
-
-  // Use `diff` to check for new JavaScript to execute.
-  const changes = diffLines(evalFile.output, output)
-
-  // Revert the code if running in "completion" environment. Updated the output
-  // to diff against future executions when evaling code.
-  if (isCompletion) {
-    evalFile.input = undo
-  } else {
-    evalFile.output = output
-  }
-
-  let result: any
-
-  // Iterate over the diff and evaluate `added` lines. The only removed lines
-  // should be the source map and lines that stay the same are ignored.
-  for (const change of changes) {
-    if (change.added) {
-      const script = createScript(change.value, EVAL_FILENAME)
-
-      result = script.runInNewContext(context)
-    }
+  if (!isCompletion) {
+    EVAL_FILES[evalPath] = evalCode
   }
 
   return result
@@ -316,13 +287,6 @@ function startRepl () {
     useGlobal: false
   })
 
-  // Reset eval file information when repl is reset.
-  repl.on('reset', () => {
-    evalFile.input = ''
-    evalFile.output = ''
-    evalFile.version = 0
-  })
-
   ;(repl as any).defineCommand('type', {
     help: 'Check the type of a TypeScript identifier',
     action: function (identifier: string) {
@@ -331,17 +295,19 @@ function startRepl () {
         return
       }
 
-      const undo = evalFile.input
+      const fileName = getEvalFileName(evalId++)
+      const contents = getEvalContents(identifier)
 
-      evalFile.input += identifier
-      evalFile.version++
+      // Cache the file for language services lookup.
+      EVAL_FILES[fileName] = contents
 
-      const { name, comment } = service().getTypeInfo(EVAL_PATH, evalFile.input.length)
+      const { name, comment } = service().getTypeInfo(fileName, contents.length)
+
+      // Delete the file from the cache after used for lookup.
+      delete EVAL_FILES[fileName]
 
       ;(repl as any).outputStream.write(`${chalk.bold(name)}\n${comment ? `${comment}\n` : ''}`)
       ;(repl as any).displayPrompt()
-
-      evalFile.input = undo
     }
   })
 }
@@ -376,12 +342,28 @@ function replEval (code: string, context: any, filename: string, callback: (err?
  * Get the file text, checking for eval first.
  */
 function getFileEval (fileName: string) {
-  return fileName === EVAL_PATH ? evalFile.input : getFile(fileName)
+  return EVAL_FILES.hasOwnProperty(fileName) ? EVAL_FILES[fileName] : getFile(fileName)
 }
 
 /**
  * Get whether the file exists.
  */
 function fileExistsEval (fileName: string) {
-  return fileName === EVAL_PATH ? true : fileExists(fileName)
+  return EVAL_FILES.hasOwnProperty(fileName) || fileExists(fileName)
+}
+
+/**
+ * Create an file for evaluation.
+ */
+function getEvalContents (code: string) {
+  const refs = Object.keys(EVAL_FILES).map(x => `/// <reference path="${x}" />`).join('\n')
+
+  return `${refs}\n${code}`
+}
+
+/**
+ * Retrieve the eval filename.
+ */
+function getEvalFileName (index: number) {
+  return `[eval ${index}].ts`
 }

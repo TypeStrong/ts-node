@@ -2,7 +2,6 @@
   "dependencies": {
     "arrify": "registry:npm/arrify#1.0.0+20160723033700",
     "chalk": "registry:npm/chalk#1.0.0+20160211003958",
-    "diff": "registry:npm/diff#2.0.0+20160211003958",
     "make-error": "registry:npm/make-error#1.0.0+20160211003958",
     "minimist": "registry:npm/minimist#1.0.0+20160229232932",
     "mkdirp": "registry:npm/mkdirp#0.5.0+20160222053049",
