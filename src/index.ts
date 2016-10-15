@@ -128,6 +128,7 @@ export function slash (value: string): string {
 
 export interface Register {
   cwd: string
+  extensions: string[]
   compile (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (fileName: string, position: number): TypeInfo
 }
@@ -178,6 +179,7 @@ export function register (options: Options = {}): () => Register {
     const ts: typeof TS = require(compiler)
     const config = readConfig(compilerOptions, project, cwd, ts)
     const configDiagnostics = filterDiagnostics(config.errors, ignoreWarnings, disableWarnings)
+    const extensions = ['.ts', '.tsx']
 
     const cachedir = join(
       resolve(cwd, cacheDirectory),
@@ -194,6 +196,7 @@ export function register (options: Options = {}): () => Register {
 
     // Enable `allowJs` when flag is set.
     if (config.options.allowJs) {
+      extensions.push('.js')
       registerExtension('.js', ignore, service)
     }
 
@@ -348,7 +351,7 @@ export function register (options: Options = {}): () => Register {
       }
     }
 
-    return { cwd, compile, getTypeInfo }
+    return { cwd, compile, getTypeInfo, extensions }
   }
 
   function service () {
@@ -370,10 +373,15 @@ export function register (options: Options = {}): () => Register {
 /**
  * Check if the filename should be ignored.
  */
-function shouldIgnore (filename: string, service: () => Register, ignore: RegExp[]) {
+function shouldIgnore (filename: string, ignore: RegExp[], service: () => Register) {
   const relname = slash(filename)
+  const extension = extname(filename)
 
-  return ignore.some(x => x.test(relname))
+  if (service().extensions.indexOf(extension) > -1) {
+    return ignore.some(x => x.test(relname))
+  }
+
+  return false
 }
 
 /**
@@ -383,7 +391,7 @@ function registerExtension (ext: string, ignore: RegExp[], service: () => Regist
   const old = require.extensions[ext] || require.extensions['.js']
 
   require.extensions[ext] = function (m, filename) {
-    if (shouldIgnore(filename, service, ignore)) {
+    if (shouldIgnore(filename, ignore, service)) {
       return old(m, filename)
     }
 
