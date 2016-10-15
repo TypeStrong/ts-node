@@ -1,5 +1,5 @@
-import { join, resolve } from 'path'
-import { start } from 'repl'
+import { join, resolve, basename } from 'path'
+import { start, Recoverable } from 'repl'
 import { inspect } from 'util'
 import arrify = require('arrify')
 import Module = require('module')
@@ -136,25 +136,12 @@ Options:
   process.exit(0)
 }
 
-/**
- * Override `process.emit` for clearer compiler errors.
- */
-const _emit = process.emit
-
-process.emit = function (type, error): boolean {
-  // Print the error message when no other listeners are present.
-  if (type === 'uncaughtException' && error instanceof TSError && process.listeners(type).length === 0) {
-    printAndExit(error)
-  }
-
-  return _emit.apply(this, arguments)
-}
-
 const cwd = process.cwd()
 const code = argv.eval == null ? argv.print : argv.eval
 const isEvalScript = typeof argv.eval === 'string' || !!argv.print // Minimist struggles with empty strings.
 const isEval = isEvalScript || stop === process.argv.length
 const isPrinted = argv.print != null
+const supportsScriptOptions = parseFloat(process.version.substr(1)) >= 1
 
 // Register the TypeScript compiler instance.
 const service = register({
@@ -176,7 +163,7 @@ const service = register({
 let evalId = 0
 
 // Note: TypeScript files must always end with `.ts`.
-const EVAL_FILES: { [path: string]: string } = {}
+const EVAL_PATHS: { [path: string]: string } = {}
 
 // Require specified modules before start-up.
 for (const id of arrify(argv.require)) {
@@ -209,13 +196,14 @@ if (isEvalScript) {
  * Evaluate a script.
  */
 function evalAndExit (code: string, isPrinted: boolean) {
-  ;(global as any).__filename = getEvalFileName(evalId)
+  const filename = getEvalFileName(evalId)
+
+  const module = new Module(filename)
+  module.filename = filename
+  module.paths = Module._nodeModulePaths(cwd)
+
+  ;(global as any).__filename = filename
   ;(global as any).__dirname = cwd
-
-  const module = new Module((global as any).__filename)
-  module.filename = (global as any).__filename
-  module.paths = Module._nodeModulePaths((global as any).__dirname)
-
   ;(global as any).exports = module.exports
   ;(global as any).module = module
   ;(global as any).require = module.require.bind(module)
@@ -226,7 +214,8 @@ function evalAndExit (code: string, isPrinted: boolean) {
     result = _eval(code, global)
   } catch (error) {
     if (error instanceof TSError) {
-      printAndExit(error)
+      console.error(print(error))
+      process.exit(1)
     }
 
     throw error
@@ -243,33 +232,27 @@ function evalAndExit (code: string, isPrinted: boolean) {
  * Stringify the `TSError` instance.
  */
 function print (error: TSError) {
-  return chalk.bold(`${chalk.red('⨯')} Unable to compile TypeScript`) + `\n${error.diagnostics.join('\n')}`
-}
+  const title = `${chalk.red('⨯')} Unable to compile TypeScript`
 
-/**
- * Print the error and exit.
- */
-function printAndExit (error: TSError) {
-  console.error(print(error))
-  process.exit(1)
+  return `${chalk.bold(title)}\n${error.diagnostics.map(x => x.message).join('\n')}`
 }
 
 /**
  * Evaluate the code snippet.
  */
-function _eval (code: string, context: any) {
-  const isCompletion = !/\n$/.test(code)
-  const evalFilename = getEvalFileName(evalId++)
-  const evalPath = join(cwd, evalFilename)
-  const evalCode = getEvalContents(code)
+function _eval (input: string, context: any) {
+  const isCompletion = !/\n$/.test(input)
+  const path = join(cwd, getEvalFileName(evalId++))
+  const { code, lineOffset } = getEvalContent(input)
+  const filename = basename(path)
 
-  const output = service().compile(evalCode, evalPath)
+  const output = service().compile(code, path, lineOffset)
 
-  const script = createScript(output, evalFilename)
+  const script = createScript(output, supportsScriptOptions ? { filename, lineOffset } : filename)
   const result = script.runInNewContext(context)
 
   if (!isCompletion) {
-    EVAL_FILES[evalPath] = evalCode
+    EVAL_PATHS[path] = code
   }
 
   return result
@@ -287,27 +270,27 @@ function startRepl () {
     useGlobal: false
   })
 
-  ;(repl as any).defineCommand('type', {
+  repl.defineCommand('type', {
     help: 'Check the type of a TypeScript identifier',
     action: function (identifier: string) {
       if (!identifier) {
-        ;(repl as any).displayPrompt()
+        repl.displayPrompt()
         return
       }
 
-      const fileName = getEvalFileName(evalId++)
-      const contents = getEvalContents(identifier)
+      const path = join(cwd, getEvalFileName(evalId++))
+      const { code, lineOffset } = getEvalContent(identifier)
 
       // Cache the file for language services lookup.
-      EVAL_FILES[fileName] = contents
+      EVAL_PATHS[path] = code
 
-      const { name, comment } = service().getTypeInfo(fileName, contents.length)
+      const { name, comment } = service().getTypeInfo(path, code.length)
 
       // Delete the file from the cache after used for lookup.
-      delete EVAL_FILES[fileName]
+      delete EVAL_PATHS[path]
 
-      ;(repl as any).outputStream.write(`${chalk.bold(name)}\n${comment ? `${comment}\n` : ''}`)
-      ;(repl as any).displayPrompt()
+      repl.outputStream.write(`${chalk.bold(name)}\n${comment ? `${comment}\n` : ''}`)
+      repl.displayPrompt()
     }
   })
 }
@@ -329,7 +312,12 @@ function replEval (code: string, context: any, filename: string, callback: (err?
     result = _eval(code, context)
   } catch (error) {
     if (error instanceof TSError) {
-      err = print(error)
+      // Support recoverable compilations using >= node 6.
+      if (typeof Recoverable === 'function' && isRecoverable(error)) {
+        err = new Recoverable(error)
+      } else {
+        err = print(error)
+      }
     } else {
       err = error
     }
@@ -341,24 +329,27 @@ function replEval (code: string, context: any, filename: string, callback: (err?
 /**
  * Get the file text, checking for eval first.
  */
-function getFileEval (fileName: string) {
-  return EVAL_FILES.hasOwnProperty(fileName) ? EVAL_FILES[fileName] : getFile(fileName)
+function getFileEval (path: string) {
+  return EVAL_PATHS.hasOwnProperty(path) ? EVAL_PATHS[path] : getFile(path)
 }
 
 /**
  * Get whether the file exists.
  */
-function fileExistsEval (fileName: string) {
-  return EVAL_FILES.hasOwnProperty(fileName) || fileExists(fileName)
+function fileExistsEval (path: string) {
+  return EVAL_PATHS.hasOwnProperty(path) || fileExists(path)
 }
 
 /**
  * Create an file for evaluation.
  */
-function getEvalContents (code: string) {
-  const refs = Object.keys(EVAL_FILES).map(x => `/// <reference path="${x}" />`).join('\n')
+function getEvalContent (input: string) {
+  const refs = Object.keys(EVAL_PATHS).map(x => `/// <reference path="${x}" />\n`)
 
-  return `${refs}\n${code}`
+  return {
+    lineOffset: -refs.length,
+    code: refs.join('') + input
+  }
 }
 
 /**
@@ -366,4 +357,20 @@ function getEvalContents (code: string) {
  */
 function getEvalFileName (index: number) {
   return `[eval ${index}].ts`
+}
+
+const RECOVERY_CODES: number[] = [
+  1003, // "Identifier expected."
+  1005, // "')' expected."
+  1109, // "Expression expected."
+  1126, // "Unexpected end of text."
+  1160, // "Unterminated template literal."
+  1161 // "Unterminated regular expression literal."
+]
+
+/**
+ * Check if a function can recover gracefully.
+ */
+function isRecoverable (error: TSError) {
+  return error.diagnostics.every(x => RECOVERY_CODES.indexOf(x.code) > -1)
 }

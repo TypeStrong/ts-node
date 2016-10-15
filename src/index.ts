@@ -128,7 +128,7 @@ export function slash (value: string): string {
 
 export interface Register {
   cwd: string
-  compile (code: string, fileName: string): string
+  compile (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (fileName: string, position: number): TypeInfo
 }
 
@@ -177,7 +177,7 @@ export function register (options: Options = {}): () => Register {
     const cwd = process.cwd()
     const ts: typeof TS = require(compiler)
     const config = readConfig(compilerOptions, project, cwd, ts)
-    const configDiagnostics = formatDiagnostics(config.errors, ignoreWarnings, disableWarnings, cwd, ts)
+    const configDiagnostics = filterDiagnostics(config.errors, ignoreWarnings, disableWarnings)
 
     const cachedir = join(
       resolve(cwd, cacheDirectory),
@@ -189,7 +189,7 @@ export function register (options: Options = {}): () => Register {
 
     // Render the configuration errors and exit the script.
     if (configDiagnostics.length) {
-      throw new TSError(configDiagnostics)
+      throw new TSError(formatDiagnostics(configDiagnostics, cwd, ts, 0))
     }
 
     // Enable `allowJs` when flag is set.
@@ -218,7 +218,7 @@ export function register (options: Options = {}): () => Register {
     /**
      * Create the basic required function using transpile mode.
      */
-    let getOutput = function (code: string, fileName: string): SourceOutput {
+    let getOutput = function (code: string, fileName: string, lineOffset = 0): SourceOutput {
       const result = ts.transpileModule(code, {
         fileName,
         compilerOptions: config.options,
@@ -226,11 +226,11 @@ export function register (options: Options = {}): () => Register {
       })
 
       const diagnosticList = result.diagnostics ?
-        formatDiagnostics(result.diagnostics, ignoreWarnings, disableWarnings, cwd, ts) :
+        filterDiagnostics(result.diagnostics, ignoreWarnings, disableWarnings) :
         []
 
       if (diagnosticList.length) {
-        throw new TSError(diagnosticList)
+        throw new TSError(formatDiagnostics(diagnosticList, cwd, ts, lineOffset))
       }
 
       return [result.outputText, result.sourceMapText as string]
@@ -290,7 +290,7 @@ export function register (options: Options = {}): () => Register {
 
       const service = ts.createLanguageService(serviceHost)
 
-      getOutput = function (code: string, fileName: string) {
+      getOutput = function (code: string, fileName: string, lineOffset = 0) {
         const output = service.getEmitOutput(fileName)
 
         // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.
@@ -298,14 +298,14 @@ export function register (options: Options = {}): () => Register {
           .concat(service.getSyntacticDiagnostics(fileName))
           .concat(service.getSemanticDiagnostics(fileName))
 
-        const diagnosticList = formatDiagnostics(diagnostics, ignoreWarnings, disableWarnings, cwd, ts)
-
-        if (output.emitSkipped) {
-          diagnosticList.push(`${relative(cwd, fileName)}: Emit skipped`)
-        }
+        const diagnosticList = filterDiagnostics(diagnostics, ignoreWarnings, disableWarnings)
 
         if (diagnosticList.length) {
-          throw new TSError(diagnosticList)
+          throw new TSError(formatDiagnostics(diagnosticList, cwd, ts, lineOffset))
+        }
+
+        if (output.emitSkipped) {
+          throw new TypeError(`${relative(cwd, fileName)}: Emit skipped`)
         }
 
         // Throw an error when requiring `.d.ts` files.
@@ -314,7 +314,8 @@ export function register (options: Options = {}): () => Register {
             'Unable to require `.d.ts` file.\n' +
             'This is usually the result of a faulty configuration or import. ' +
             'Make sure there is a `.js`, `.json` or another executable extension and ' +
-            `loader (attached before \`ts-node\`) available alongside \`${fileName}\`.`
+            'loader (attached before `ts-node`) available alongside ' +
+            `\`${basename(fileName)}\`.`
           )
         }
 
@@ -327,11 +328,11 @@ export function register (options: Options = {}): () => Register {
         getFile,
         fileExists,
         cache,
-        function (code: string, fileName: string) {
+        function (code: string, fileName: string, lineOffset?: number) {
           addVersion(fileName)
           addCache(code, fileName)
 
-          return getOutput(code, fileName)
+          return getOutput(code, fileName, lineOffset)
         },
         getExtension
       )
@@ -347,7 +348,7 @@ export function register (options: Options = {}): () => Register {
       }
     }
 
-    return { cwd, compile, getOutput, getTypeInfo }
+    return { cwd, compile, getTypeInfo }
   }
 
   function service () {
@@ -451,15 +452,15 @@ function readThrough (
   getFile: (fileName: string) => string,
   fileExists: (fileName: string) => boolean,
   cache: Cache,
-  compile: (code: string, fileName: string) => SourceOutput,
+  compile: (code: string, fileName: string, lineOffset?: number) => SourceOutput,
   getExtension: (fileName: string) => string
 ) {
   if (shouldCache === false) {
-    return function (code: string, fileName: string) {
+    return function (code: string, fileName: string, lineOffset?: number) {
       const cachePath = join(cachedir, getCacheName(code, fileName))
       const extension = getExtension(fileName)
       const sourceMapPath = `${cachePath}${extension}.map`
-      const out = compile(code, fileName)
+      const out = compile(code, fileName, lineOffset)
 
       cache.sourceMaps[fileName] = sourceMapPath
 
@@ -472,7 +473,7 @@ function readThrough (
     }
   }
 
-  return function (code: string, fileName: string) {
+  return function (code: string, fileName: string, lineOffset?: number) {
     const cachePath = join(cachedir, getCacheName(code, fileName))
     const extension = getExtension(fileName)
     const outputPath = `${cachePath}${extension}`
@@ -485,7 +486,7 @@ function readThrough (
       return getFile(outputPath)
     }
 
-    const out = compile(code, fileName)
+    const out = compile(code, fileName, lineOffset)
 
     const output = updateOutput(out[0], fileName, extension, sourceMapPath)
     const sourceMap = updateSourceMap(out[1], fileName)
@@ -575,42 +576,51 @@ export function getFile (fileName: string): string {
 }
 
 /**
- * Format an array of diagnostics.
+ * Filter diagnostics.
  */
-function formatDiagnostics (
-  diagnostics: TS.Diagnostic[],
-  ignore: number[],
-  disable: boolean,
-  cwd: string,
-  ts: TSCommon
-) {
+function filterDiagnostics (diagnostics: TS.Diagnostic[], ignore: number[], disable: boolean) {
   if (disable) {
     return []
   }
 
-  return diagnostics
-    .filter(function (diagnostic) {
-      return ignore.indexOf(diagnostic.code) === -1
-    })
-    .map(function (diagnostic) {
-      return formatDiagnostic(diagnostic, cwd, ts)
-    })
+  return diagnostics.filter(x => ignore.indexOf(x.code))
+}
+
+/**
+ * Format an array of diagnostics.
+ */
+export function formatDiagnostics (diagnostics: TS.Diagnostic[], cwd: string, ts: TSCommon, lineOffset: number) {
+  return diagnostics.map(x => formatDiagnostic(x, cwd, ts, lineOffset))
+}
+
+/**
+ * Internal diagnostic representation.
+ */
+export interface TSDiagnostic {
+  message: string
+  code: number
 }
 
 /**
  * Format a diagnostic object into a string.
  */
-function formatDiagnostic (diagnostic: TS.Diagnostic, cwd: string, ts: TSCommon): string {
-  const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
+export function formatDiagnostic (
+  diagnostic: TS.Diagnostic,
+  cwd: string,
+  ts: TSCommon,
+  lineOffset: number
+): TSDiagnostic {
+  const messageText = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
 
   if (diagnostic.file) {
     const path = relative(cwd, diagnostic.file.fileName)
     const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start)
+    const message = `${path} (${line + 1 + lineOffset},${character + 1}): ${messageText} (${diagnostic.code})`
 
-    return `${path} (${line + 1},${character + 1}): ${message} (${diagnostic.code})`
+    return { message, code: diagnostic.code }
   }
 
-  return `${message} (${diagnostic.code})`
+  return { message: `${messageText} (${diagnostic.code})`, code: diagnostic.code }
 }
 
 /**
@@ -619,11 +629,13 @@ function formatDiagnostic (diagnostic: TS.Diagnostic, cwd: string, ts: TSCommon)
 export class TSError extends BaseError {
 
   name = 'TSError'
-  diagnostics: string[]
 
-  constructor (diagnostics: string[]) {
-    super(`⨯ Unable to compile TypeScript\n${diagnostics.join('\n')}`)
-    this.diagnostics = diagnostics
+  constructor (public diagnostics: TSDiagnostic[]) {
+    super(
+      `⨯ Unable to compile TypeScript\n${diagnostics.map(x => x.message).join('\n')}`
+    )
+
+    this.stack = '' // Hide the stack trace.
   }
 
 }

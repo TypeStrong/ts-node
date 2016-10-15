@@ -12,7 +12,7 @@
     "yn": "registry:npm/yn#1.2.0+20161006191459"
   },
   "globalDependencies": {
-    "node": "registry:env/node#6.0.0+20161011193755"
+    "node": "registry:env/node#6.0.0+20161015001438"
   },
   "globalDevDependencies": {
     "chai": "registry:dt/chai#3.4.0+20160216071402",
