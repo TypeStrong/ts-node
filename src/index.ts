@@ -147,6 +147,7 @@ export function register (options: Options = {}): () => Register {
   const project = options.project || DEFAULTS.project
   const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || join(tmpdir(), 'ts-node')
   const compilerOptions = extend(DEFAULTS.compilerOptions, options.compilerOptions)
+  const originalJsHandler = require.extensions['.js']
   let result: Register
 
   const ignore = (
@@ -197,7 +198,7 @@ export function register (options: Options = {}): () => Register {
     // Enable `allowJs` when flag is set.
     if (config.options.allowJs) {
       extensions.push('.js')
-      registerExtension('.js', ignore, service)
+      registerExtension('.js', ignore, service, originalJsHandler)
     }
 
     // Add all files into the file hash.
@@ -359,8 +360,8 @@ export function register (options: Options = {}): () => Register {
   }
 
   // Eagerly register TypeScript extensions (JavaScript is registered lazily).
-  registerExtension('.ts', ignore, service)
-  registerExtension('.tsx', ignore, service)
+  registerExtension('.ts', ignore, service, originalJsHandler)
+  registerExtension('.tsx', ignore, service, originalJsHandler)
 
   // Immediately initialize the TypeScript compiler.
   if (!options.lazy) {
@@ -377,7 +378,7 @@ function shouldIgnore (filename: string, ignore: RegExp[], service: () => Regist
   const relname = slash(filename)
   const extension = extname(filename)
 
-  if (service().extensions.indexOf(extension) > -1) {
+  if (!extension || service().extensions.indexOf(extension) > -1) {
     return ignore.some(x => x.test(relname))
   }
 
@@ -387,8 +388,13 @@ function shouldIgnore (filename: string, ignore: RegExp[], service: () => Regist
 /**
  * Register the extension for node.
  */
-function registerExtension (ext: string, ignore: RegExp[], service: () => Register) {
-  const old = require.extensions[ext] || require.extensions['.js']
+function registerExtension (
+  ext: string,
+  ignore: RegExp[],
+  service: () => Register,
+  originalHandler: (m: NodeModule, filename: string) => any
+) {
+  const old = require.extensions[ext] || originalHandler
 
   require.extensions[ext] = function (m, filename) {
     if (shouldIgnore(filename, ignore, service)) {
