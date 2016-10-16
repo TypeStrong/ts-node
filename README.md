@@ -22,7 +22,7 @@ npm install -g typescript
 * Interactive REPL
 * Execute (and print) TypeScript through the CLI
 * Uses source maps
-* Loads from `tsconfig.json`
+* Loads compiler options and `.d.ts` files from `tsconfig.json`
 
 ## Usage
 
@@ -64,11 +64,17 @@ ts-node node_modules/tape/bin/tape [...args]
 gulp
 ```
 
-### Loading `tsconfig.json`
+## How It Works
+
+**TypeScript Node** works by registering the TypeScript compiler for the `.ts`, `.tsx` and - when `allowJs` is enabled - `.js` extensions. When node.js has a file extension registered (the `require.extensions` object), it will use the extension internally with module resolution. By default, when an extension is unknown to node.js, it will fallback to handling the file as `.js` (JavaScript).
+
+**P.S.** This means that if you don't register an extension, it'll be compiled as JavaScript. When `ts-node` is used with `allowJs`, JavaScript files are transpiled using the TypeScript compiler.
+
+## Loading `tsconfig.json`
 
 **Typescript Node** uses `tsconfig.json` automatically, use `-n` to skip loading `tsconfig.json`.
 
-### Configuration Options
+## Configuration Options
 
 You can set options by passing them in before the script.
 
@@ -76,8 +82,9 @@ You can set options by passing them in before the script.
 ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.ts
 ```
 
-* **--project, -P** Path to resolve `tsconfig.json` from (or `false`) (also `process.env.TS_NODE_PROJECT`)
+* **--project, -P** Path to resolve `tsconfig.json` from (or `false` to disable) (also `process.env.TS_NODE_PROJECT`)
 * **--compiler, -C** Use a custom, require-able TypeScript compiler compatible with `typescript@>=1.5.0-alpha` (also `process.env.TS_NODE_COMPILER`)
+* **--ignore** Specify an array of regular expression strings for `ts-node` to skip compiling as TypeScript (defaults to `/node_modules/`, `false` to disable) (also `process.env.TS_NODE_IGNORE`)
 * **--ignoreWarnings, -I** Set an array of TypeScript diagnostic codes to ignore (also `process.env.TS_NODE_IGNORE_WARNINGS`)
 * **--disableWarnings, -D** Ignore all TypeScript errors (also `process.env.TS_NODE_DISABLE_WARNINGS`)
 * **--compilerOptions, -O** Set compiler options using JSON (E.g. `--compilerOptions '{"target":"es6"}'`) (also `process.env.TS_NODE_COMPILER_OPTIONS`)
@@ -86,7 +93,7 @@ ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.t
 * **--no-cache** Skip hitting the compiled JavaScript cache (also `process.env.TS_NODE_CACHE`)
 * **--cache-directory** Configure the TypeScript cache directory (also `process.env.TS_NODE_CACHE_DIRECTORY`)
 
-### Programmatic Usage
+## Programmatic Usage
 
 ```js
 require('ts-node').register({ /* options */ })

@@ -6,6 +6,7 @@ import extend = require('xtend')
 import mkdirp = require('mkdirp')
 import crypto = require('crypto')
 import yn = require('yn')
+import arrify = require('arrify')
 import { BaseError } from 'make-error'
 import * as TS from 'typescript'
 import { loadSync } from 'tsconfig'
@@ -63,8 +64,8 @@ export interface Options {
   cacheDirectory?: string
   compiler?: string
   project?: boolean | string
-  ignore?: boolean | string[]
-  ignoreWarnings?: Array<number | string>
+  ignore?: boolean | string | string[]
+  ignoreWarnings?: number | string | Array<number | string>
   disableWarnings?: boolean | null
   getFile?: (fileName: string) => string
   fileExists?: (fileName: string) => boolean
@@ -109,7 +110,7 @@ const DEFAULTS = {
  * Split a string array of values.
  */
 export function split (value: string | undefined) {
-  return value ? value.split(/ *, */g) : []
+  return value ? value.split(/ *, */g) : undefined
 }
 
 /**
@@ -138,7 +139,7 @@ export interface Register {
  */
 export function register (options: Options = {}): () => Register {
   const compiler = options.compiler || 'typescript'
-  const ignoreWarnings = (options.ignoreWarnings || DEFAULTS.ignoreWarnings).map(Number)
+  const ignoreWarnings = arrify(options.ignoreWarnings || DEFAULTS.ignoreWarnings || []).map(Number)
   const disableWarnings = !!(options.disableWarnings == null ? DEFAULTS.disableWarnings : options.disableWarnings)
   const getFile = options.getFile || DEFAULTS.getFile
   const fileExists = options.fileExists || DEFAULTS.fileExists
@@ -150,7 +151,7 @@ export function register (options: Options = {}): () => Register {
   const originalJsHandler = require.extensions['.js']
   let result: Register
 
-  const ignore = (
+  const ignore = arrify(
     (
       typeof options.ignore === 'boolean' ?
         (options.ignore === false ? [] : undefined) :
@@ -376,13 +377,8 @@ export function register (options: Options = {}): () => Register {
  */
 function shouldIgnore (filename: string, ignore: RegExp[], service: () => Register) {
   const relname = slash(filename)
-  const extension = extname(filename)
 
-  if (!extension || service().extensions.indexOf(extension) > -1) {
-    return ignore.some(x => x.test(relname))
-  }
-
-  return false
+  return ignore.some(x => x.test(relname))
 }
 
 /**
