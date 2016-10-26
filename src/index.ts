@@ -139,7 +139,10 @@ export interface Register {
  */
 export function register (options: Options = {}): () => Register {
   const compiler = options.compiler || 'typescript'
-  const ignoreWarnings = arrify(options.ignoreWarnings || DEFAULTS.ignoreWarnings || []).map(Number)
+  const emptyFileListWarnings = [18002, 18003]
+  const ignoreWarnings = arrify(
+    options.ignoreWarnings || DEFAULTS.ignoreWarnings || []
+  ).concat(emptyFileListWarnings).map(Number)
   const disableWarnings = !!(options.disableWarnings == null ? DEFAULTS.disableWarnings : options.disableWarnings)
   const getFile = options.getFile || DEFAULTS.getFile
   const fileExists = options.fileExists || DEFAULTS.fileExists
