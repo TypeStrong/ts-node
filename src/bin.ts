@@ -23,6 +23,7 @@ for (let i = 0; i < opts.length; i++) {
     case 'debug':
     case '--debug':
     case '--debug-brk':
+    case '--nolazy':
     case '--inspect':
     case '--gc-global':
     case '--es_staging':
