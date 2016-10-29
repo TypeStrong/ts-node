@@ -3,9 +3,9 @@
 import { spawn } from 'child_process'
 import { join } from 'path'
 
-const args = [join(__dirname, '_bin.js')]
 const opts = process.argv.slice(2)
-let i;
+let args = [join(__dirname, '_bin.js')]
+let i = 0;
 for (i = 0; i < opts.length; i++) {
   const arg = opts[i]
   const flag = arg.split('=', 1)[0]
