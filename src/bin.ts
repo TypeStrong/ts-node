@@ -6,19 +6,18 @@ import { join } from 'path'
 const args = [join(__dirname, '_bin.js')]
 const opts = process.argv.slice(2)
 
-for (let i = 0; i < opts.length; i++) {
+let i = 0
+for (i = 0; i < opts.length; i++) {
   const arg = opts[i]
   const flag = arg.split('=', 1)[0]
 
   switch (flag) {
     case '-d':
       args.unshift('--debug')
-      opts.splice(i, 1)
       break
     case '-gc':
     case '--expose-gc':
       args.unshift('--expose-gc')
-      opts.splice(i, 1)
       break
     case 'debug':
     case '--debug':
@@ -35,12 +34,10 @@ for (let i = 0; i < opts.length; i++) {
     case '--allow-natives-syntax':
     case '--perf-basic-prof':
       args.unshift(arg)
-      opts.splice(i, 1)
       break
     default:
       if (/^--(?:harmony|trace|icu-data-dir|max-old-space-size)/.test(arg)) {
         args.unshift(arg)
-        opts.splice(i, 1)
       }
       break
   }
@@ -50,8 +47,7 @@ for (let i = 0; i < opts.length; i++) {
     break
   }
 }
-
-const proc = spawn(process.execPath, args.concat(opts), { stdio: 'inherit' })
+const proc = spawn(process.execPath, args.concat(opts.splice(i)), { stdio: 'inherit' })
 
 proc.on('exit', function (code: number, signal: string) {
   process.on('exit', function () {
