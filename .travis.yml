@@ -19,9 +19,7 @@ env:
   - TYPESCRIPT=typescript@next
 
 node_js:
-  - "0.12"
-  - "iojs"
-  - "4"
-  - "stable"
+  - '4'
+  - stable
 
 after_script: "npm install coveralls@2 && cat ./coverage/lcov.info | coveralls"
