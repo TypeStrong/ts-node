@@ -8,6 +8,7 @@
     "proxyquire": "registry:npm/proxyquire#1.0.0+20160211003958",
     "source-map-support": "registry:npm/source-map-support#0.3.0+20161006200546",
     "tsconfig": "npm:tsconfig",
+    "v8flags": "registry:npm/v8flags#3.0.0+20161011212142",
     "xtend": "registry:npm/xtend#4.0.0+20160211003958",
     "yn": "registry:npm/yn#1.2.0+20161006191459"
   },
