@@ -93,6 +93,14 @@ ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.t
 * **--no-cache** Skip hitting the compiled JavaScript cache (also `process.env.TS_NODE_CACHE`)
 * **--cache-directory** Configure the TypeScript cache directory (also `process.env.TS_NODE_CACHE_DIRECTORY`)
 
+### Mocha Configuration
+
+When registering ts-node through mocha options, ts-node configuration options should be passed in via environment variables.
+
+```sh
+TS_NODE_PROJECT=<file_path> TS_NODE_IGNORE_WARNINGS=<warnings> mocha
+```
+
 ## Programmatic Usage
 
 ```js
