@@ -152,6 +152,10 @@ export function register (options: Options = {}): () => Register {
   const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || join(tmpdir(), 'ts-node')
   const compilerOptions = extend(DEFAULTS.compilerOptions, options.compilerOptions)
   const originalJsHandler = require.extensions['.js']
+  const cwd = process.cwd()
+  const ts: typeof TS = require(compiler)
+  const config = readConfig(compilerOptions, project, cwd, ts)
+  const extensions = ['.ts', '.tsx']
   let result: Register
 
   const ignore = arrify(
@@ -180,11 +184,7 @@ export function register (options: Options = {}): () => Register {
     })
 
     // Require the TypeScript compiler and configuration.
-    const cwd = process.cwd()
-    const ts: typeof TS = require(compiler)
-    const config = readConfig(compilerOptions, project, cwd, ts)
     const configDiagnostics = filterDiagnostics(config.errors, ignoreWarnings, disableWarnings)
-    const extensions = ['.ts', '.tsx']
 
     const cachedir = join(
       resolve(cwd, cacheDirectory),
@@ -197,12 +197,6 @@ export function register (options: Options = {}): () => Register {
     // Render the configuration errors and exit the script.
     if (configDiagnostics.length) {
       throw new TSError(formatDiagnostics(configDiagnostics, cwd, ts, 0))
-    }
-
-    // Enable `allowJs` when flag is set.
-    if (config.options.allowJs) {
-      extensions.push('.js')
-      registerExtension('.js', ignore, service, originalJsHandler)
     }
 
     // Add all files into the file hash.
@@ -366,6 +360,11 @@ export function register (options: Options = {}): () => Register {
   // Eagerly register TypeScript extensions (JavaScript is registered lazily).
   registerExtension('.ts', ignore, service, originalJsHandler)
   registerExtension('.tsx', ignore, service, originalJsHandler)
+  // Enable `allowJs` when flag is set.
+  if (config.options.allowJs) {
+    extensions.push('.js')
+    registerExtension('.js', ignore, service, originalJsHandler)
+  }
 
   // Immediately initialize the TypeScript compiler.
   if (!options.lazy) {
