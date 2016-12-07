@@ -298,7 +298,7 @@ export function register (options: Options = {}): () => Register {
 
       const service = ts.createLanguageService(serviceHost)
 
-      getOutput = function (code: string, fileName: string, lineOffset = 0) {
+      getOutput = function (code: string, fileName: string, lineOffset: number = 0) {
         const output = service.getEmitOutput(fileName)
 
         // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.

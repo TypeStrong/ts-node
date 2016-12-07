@@ -15,8 +15,9 @@
   ],
   "scripts": {
     "lint": "tslint \"src/**/*.ts\"",
-    "build": "npm run build-ts",
-    "build-ts": "rm -rf dist && tsc",
+    "clean": "rimraf dist",
+    "tsc": "tsc",
+    "build": "npm run clean && npm run tsc",
     "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
     "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- \"dist/**/*.spec.js\" -R spec --bail",
     "test": "npm run build && npm run lint && npm run test-cov",
@@ -50,10 +51,11 @@
     "mocha": "^3.0.0",
     "ntypescript": "^1.201507091536.1",
     "proxyquire": "^1.7.2",
+    "rimraf": "^2.5.4",
     "semver": "^5.1.0",
     "tslint": "^4.0.2",
     "tslint-config-standard": "^2.0.0",
-    "typescript": "^2.0.3",
+    "typescript": "^2.1.4",
     "typings": "^2.0.0"
   },
   "dependencies": {

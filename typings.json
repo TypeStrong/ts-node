@@ -17,7 +17,7 @@
   },
   "globalDevDependencies": {
     "chai": "registry:dt/chai#3.4.0+20160216071402",
-    "mocha": "registry:dt/mocha#2.2.5+20151023103246"
+    "mocha": "registry:dt/mocha#2.2.5+20161028141524"
   },
   "devDependencies": {
     "semver": "registry:npm/semver#5.0.0+20160211003958"
