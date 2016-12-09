@@ -5,6 +5,7 @@ import arrify = require('arrify')
 import Module = require('module')
 import minimist = require('minimist')
 import chalk = require('chalk')
+import { diffLines } from 'diff'
 import { createScript } from 'vm'
 import { register, VERSION, getFile, fileExists, TSError, parse } from './index'
 
@@ -159,16 +160,17 @@ const service = register({
   fileExists: isEval ? fileExistsEval : fileExists
 })
 
-// Increment the `eval` id to keep track of execution.
-let evalId = 0
-
-// Note: TypeScript files must always end with `.ts`.
-const EVAL_PATHS: { [path: string]: string } = {}
-
 // Require specified modules before start-up.
 for (const id of arrify(argv.require)) {
   Module._load(id)
 }
+
+/**
+ * Eval helpers.
+ */
+const EVAL_FILENAME = `[eval].ts`
+const EVAL_PATH = join(cwd, EVAL_FILENAME)
+const EVAL_INSTANCE = { input: '', output: '', version: 0, lines: 0 }
 
 // Execute the main contents (either eval, script or piped).
 if (isEvalScript) {
@@ -196,13 +198,11 @@ if (isEvalScript) {
  * Evaluate a script.
  */
 function evalAndExit (code: string, isPrinted: boolean) {
-  const filename = getEvalFileName(evalId)
-
-  const module = new Module(filename)
-  module.filename = filename
+  const module = new Module(EVAL_FILENAME)
+  module.filename = EVAL_FILENAME
   module.paths = Module._nodeModulePaths(cwd)
 
-  ;(global as any).__filename = filename
+  ;(global as any).__filename = EVAL_FILENAME
   ;(global as any).__dirname = cwd
   ;(global as any).exports = module.exports
   ;(global as any).module = module
@@ -241,18 +241,36 @@ function print (error: TSError) {
  * Evaluate the code snippet.
  */
 function _eval (input: string, context: any) {
+  const lines = EVAL_INSTANCE.lines
   const isCompletion = !/\n$/.test(input)
-  const path = join(cwd, getEvalFileName(evalId++))
-  const { code, lineOffset } = getEvalContent(input)
-  const filename = basename(path)
+  const undo = appendEval(input)
+  let output: string
 
-  const output = service().compile(code, path, lineOffset)
+  try {
+    output = service().compile(EVAL_INSTANCE.input, EVAL_PATH, -lines)
+  } catch (err) {
+    undo()
 
-  const script = createScript(output, supportsScriptOptions ? { filename, lineOffset } : filename)
-  const result = script.runInNewContext(context)
+    throw err
+  }
 
-  if (!isCompletion) {
-    EVAL_PATHS[path] = code
+  // Use `diff` to check for new JavaScript to execute.
+  const changes = diffLines(EVAL_INSTANCE.output, output)
+
+  if (isCompletion) {
+    undo()
+  } else {
+    EVAL_INSTANCE.output = output
+  }
+
+  let result: any
+
+  for (const change of changes) {
+    if (change.added) {
+      const script = createScript(change.value, EVAL_FILENAME)
+
+      result = script.runInNewContext(context)
+    }
   }
 
   return result
@@ -270,6 +288,10 @@ function startRepl () {
     useGlobal: false
   })
 
+  const undo = appendEval('')
+
+  repl.on('reset', () => undo())
+
   repl.defineCommand('type', {
     help: 'Check the type of a TypeScript identifier',
     action: function (identifier: string) {
@@ -278,16 +300,10 @@ function startRepl () {
         return
       }
 
-      const path = join(cwd, getEvalFileName(evalId++))
-      const { code, lineOffset } = getEvalContent(identifier)
+      const undo = appendEval(identifier)
+      const { name, comment } = service().getTypeInfo(EVAL_PATH, EVAL_INSTANCE.input.length)
 
-      // Cache the file for language services lookup.
-      EVAL_PATHS[path] = code
-
-      const { name, comment } = service().getTypeInfo(path, code.length)
-
-      // Delete the file from the cache after used for lookup.
-      delete EVAL_PATHS[path]
+      undo()
 
       repl.outputStream.write(`${chalk.bold(name)}\n${comment ? `${comment}\n` : ''}`)
       repl.displayPrompt()
@@ -327,36 +343,58 @@ function replEval (code: string, context: any, filename: string, callback: (err?
 }
 
 /**
+ * Append to the eval instance and return an undo function.
+ */
+function appendEval (input: string) {
+  const undoInput = EVAL_INSTANCE.input
+  const undoVersion = EVAL_INSTANCE.version
+  const undoOutput = EVAL_INSTANCE.output
+  const undoLines = EVAL_INSTANCE.lines
+
+  // Handle ASI issues with TypeScript re-evaluation.
+  if (undoInput.charAt(undoInput.length - 1) === '\n' && /^\s*[\[\(\`]/.test(input) && !/;\s*$/.test(undoInput)) {
+    EVAL_INSTANCE.input = `${EVAL_INSTANCE.input.slice(0, -1)};\n`
+  }
+
+  EVAL_INSTANCE.input += input
+  EVAL_INSTANCE.lines += lineCount(input)
+  EVAL_INSTANCE.version++
+
+  return function () {
+    EVAL_INSTANCE.input = undoInput
+    EVAL_INSTANCE.output = undoOutput
+    EVAL_INSTANCE.version = undoVersion
+    EVAL_INSTANCE.lines = undoLines
+  }
+}
+
+/**
+ * Count the number of lines.
+ */
+function lineCount (value: string) {
+  let count = 0
+
+  for (const char of value) {
+    if (char === '\n') {
+      count++
+    }
+  }
+
+  return count
+}
+
+/**
  * Get the file text, checking for eval first.
  */
 function getFileEval (path: string) {
-  return EVAL_PATHS.hasOwnProperty(path) ? EVAL_PATHS[path] : getFile(path)
+  return path === EVAL_PATH ? EVAL_INSTANCE.input : getFile(path)
 }
 
 /**
  * Get whether the file exists.
  */
 function fileExistsEval (path: string) {
-  return EVAL_PATHS.hasOwnProperty(path) || fileExists(path)
-}
-
-/**
- * Create an file for evaluation.
- */
-function getEvalContent (input: string) {
-  const refs = Object.keys(EVAL_PATHS).map(x => `/// <reference path="${x}" />\n`)
-
-  return {
-    lineOffset: -refs.length,
-    code: refs.join('') + input
-  }
-}
-
-/**
- * Retrieve the eval filename.
- */
-function getEvalFileName (index: number) {
-  return `[eval ${index}].ts`
+  return path === EVAL_PATH || fileExists(path)
 }
 
 const RECOVERY_CODES: number[] = [

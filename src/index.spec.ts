@@ -79,7 +79,7 @@ describe('ts-node', function () {
       exec(`${BIN_EXEC} -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
         expect(err.message).to.match(new RegExp(
           // Node 0.10 can not override the `lineOffset` option.
-          '\\[eval [01]\\]\\.ts \\(1,59\\): Argument of type \'(?:number|123)\' ' +
+          '\\[eval\\]\\.ts \\(1,59\\): Argument of type \'(?:number|123)\' ' +
           'is not assignable to parameter of type \'string\'\\. \\(2345\\)'
         ))
 
