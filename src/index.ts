@@ -647,8 +647,6 @@ export class TSError extends BaseError {
     super(
       `⨯ Unable to compile TypeScript\n${diagnostics.map(x => x.message).join('\n')}`
     )
-
-    this.stack = '' // Hide the stack trace.
   }
 
 }
