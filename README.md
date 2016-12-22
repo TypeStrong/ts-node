@@ -102,6 +102,13 @@ require('ts-node').register({ /* options */ })
 require('ts-node/register')
 ```
 
+This will register the TypeScript compiler for "on the fly" compilation support of `.ts` and `.tsx` files during the run
+of the script. From here you can use `require` to bring in modules from TypeScript files:
+
+```js
+var someModule = require('path_to_a_typescript_file');
+```
+
 ## License
 
 MIT
