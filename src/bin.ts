@@ -27,7 +27,8 @@ v8flags(function (err, v8flags) {
     '--throw-deprecation',
     '--trace-deprecation',
     '--allow-natives-syntax',
-    '--perf-basic-prof'
+    '--perf-basic-prof',
+    '--preserve-symlinks'
   ])
 
   for (let i = 0; i < argv.length; i++) {
