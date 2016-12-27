@@ -1,5 +1,5 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path'
-import { readdirSync, writeFileSync, readFileSync, statSync } from 'fs'
+import { readdirSync, writeFileSync, readFileSync, statSync, existsSync } from 'fs'
 import { EOL, tmpdir } from 'os'
 import sourceMapSupport = require('source-map-support')
 import extend = require('xtend')
@@ -185,6 +185,11 @@ export function register (options: Options = {}): () => Register {
     const config = readConfig(compilerOptions, project, cwd, ts)
     const configDiagnostics = filterDiagnostics(config.errors, ignoreWarnings, disableWarnings)
     const extensions = ['.ts', '.tsx']
+
+    // Augment loading of node modules according to paths in tsconfig
+    if (config.options.baseUrl && config.options.paths) {
+      installModuleLoadForPaths(config.options.baseUrl, config.options.paths)
+    }
 
     const cachedir = join(
       resolve(cwd, cacheDirectory),
@@ -647,6 +652,63 @@ export class TSError extends BaseError {
     super(
       `⨯ Unable to compile TypeScript\n${diagnostics.map(x => x.message).join('\n')}`
     )
+  }
+
+}
+
+/**
+ * Matches pattern with a single star against search.
+ * Star must match at least one character to be considered a match.
+ * @returns the part of search that * matches, or undefined if no match.
+ */
+function matchStar(pattern: string, search: string): string | undefined {
+  if (search.length < pattern.length) { return undefined }
+  if (pattern === '*') { return search }
+  const star = pattern.indexOf('*')
+  if (star === -1) { return undefined }
+  const part1 = pattern.substring(0, star)
+  const part2 = pattern.substring(star + 1)
+  if (search.substr(0, star) !== part1) { return undefined }
+  if (search.substr(search.length - part2.length) !== part2) { return undefined }
+  return search.substr(star, search.length - part2.length)
+}
+
+/**
+ * Finds a path from tsconfig that matches a module load request.
+ * @returns the found path, or undefined if no path was found.
+ */
+function findConfigPath(request: string, baseUrl: string, paths: {[key: string]: Array<string>}) {
+
+  if (request[0] !== '.' && request[0] !== '/') {
+    for (const key of Object.keys(paths)) {
+      const starReplace = key === request ? '' : matchStar(key, request)
+      if (starReplace !== undefined) {
+        for (const pathToTry of paths[key]) {
+          const file = pathToTry.replace('*', starReplace)
+          if (existsSync(join(baseUrl, file))
+            || existsSync(join(baseUrl, file + '.ts'))
+            || existsSync(join(baseUrl, file + '.tsx'))) {
+            return file
+          }
+        }
+      }
+    }
+  }
+  return undefined
+
+}
+
+/**
+ * Installs a custom module load function that can adhere to paths in tsconfig.
+ */
+function installModuleLoadForPaths(baseUrl: string, paths: {[key: string]: Array<string>}): void {
+
+  const Module = require('module')
+  const originalLoader = Module._load
+  Module._load = function (request: string, parent: any) {
+    const found = findConfigPath(request, baseUrl, paths)
+    if (found) { arguments[0] = found }
+    return originalLoader.apply(this, arguments)
   }
 
 }
