@@ -6,7 +6,7 @@ import Module = require('module')
 import minimist = require('minimist')
 import chalk = require('chalk')
 import { diffLines } from 'diff'
-import { createScript } from 'vm'
+import { Script } from 'vm'
 import { register, VERSION, getFile, fileExists, TSError, parse } from './index'
 
 interface Argv {
@@ -267,7 +267,7 @@ function _eval (input: string, context: any) {
 
   for (const change of changes) {
     if (change.added) {
-      const script = createScript(change.value, EVAL_FILENAME)
+      const script = new Script(change.value, EVAL_FILENAME)
 
       result = script.runInNewContext(context)
     }
