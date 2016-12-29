@@ -161,9 +161,7 @@ const service = register({
 })
 
 // Require specified modules before start-up.
-for (const id of arrify(argv.require)) {
-  Module._load(id)
-}
+;(Module as any)._preloadModules(arrify(argv.require))
 
 /**
  * Eval helpers.
