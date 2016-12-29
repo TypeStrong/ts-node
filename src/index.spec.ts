@@ -171,7 +171,7 @@ describe('ts-node', function () {
     })
 
     it('should support require from node modules', function (done) {
-      exec(`${BIN_EXEC} -r tslint -e "console.log('success')"`, function (err, stdout) {
+      exec(`${BIN_EXEC} -r typescript -e "console.log('success')"`, function (err, stdout) {
         expect(err).to.not.exist
         expect(stdout).to.equal('success\n')
 
