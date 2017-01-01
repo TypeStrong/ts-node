@@ -27,7 +27,7 @@ npm install -g typescript
 ## Usage
 
 ```sh
-# Execute a script as you world normally with `node`.
+# Execute a script as you would normally with `node`.
 ts-node script.ts
 
 # Starts the TypeScript REPL.
