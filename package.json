@@ -54,7 +54,7 @@
     "rimraf": "^2.5.4",
     "semver": "^5.1.0",
     "tslint": "^4.0.2",
-    "tslint-config-standard": "^2.0.0",
+    "tslint-config-standard": "^3.0.0",
     "typescript": "^2.1.4",
     "typings": "^2.0.0"
   },
