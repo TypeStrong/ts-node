@@ -134,6 +134,13 @@ export interface Register {
   getTypeInfo (fileName: string, position: number): TypeInfo
 }
 
+function getTmpDir (): string {
+  const hash: string = crypto.createHash('sha1')
+    .update(homedir(), 'utf8')
+    .digest('hex')
+  return join(tmpdir(), 'ts-node-' + hash)
+}
+
 /**
  * Register TypeScript compiler.
  */
@@ -149,13 +156,6 @@ export function register (options: Options = {}): () => Register {
   const shouldCache = !!(options.cache == null ? DEFAULTS.cache : options.cache)
   const fast = !!(options.fast == null ? DEFAULTS.fast : options.fast)
   const project = options.project || DEFAULTS.project
-
-  function getTmpDir(): string {
-    const hash: string = crypto.createHash('sha1')
-      .update(homedir(), 'utf8')
-      .digest('hex')
-    return join(tmpdir(), 'ts-node-' + hash)
-  }
 
   const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || getTmpDir()
   const compilerOptions = extend(DEFAULTS.compilerOptions, options.compilerOptions)
