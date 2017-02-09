@@ -138,7 +138,7 @@ function getTmpDir (): string {
   const hash: string = crypto.createHash('sha1')
     .update(homedir(), 'utf8')
     .digest('hex')
-  return join(tmpdir(), 'ts-node-' + hash)
+  return join(tmpdir(), `ts-node-${hash}`)
 }
 
 /**
@@ -156,7 +156,6 @@ export function register (options: Options = {}): () => Register {
   const shouldCache = !!(options.cache == null ? DEFAULTS.cache : options.cache)
   const fast = !!(options.fast == null ? DEFAULTS.fast : options.fast)
   const project = options.project || DEFAULTS.project
-
   const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || getTmpDir()
   const compilerOptions = extend(DEFAULTS.compilerOptions, options.compilerOptions)
   const originalJsHandler = require.extensions['.js']
