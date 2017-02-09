@@ -150,7 +150,7 @@ export function register (options: Options = {}): () => Register {
   const fast = !!(options.fast == null ? DEFAULTS.fast : options.fast)
   const project = options.project || DEFAULTS.project
 
-  function getTmpDir(): string{
+  function getTmpDir(): string {
     const hash: string = crypto.createHash('sha1')
       .update(homedir(), 'utf8')
       .digest('hex')
