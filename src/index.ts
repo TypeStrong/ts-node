@@ -1,6 +1,6 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path'
 import { readdirSync, writeFileSync, readFileSync, statSync } from 'fs'
-import { EOL, tmpdir } from 'os'
+import { EOL, tmpdir, homedir } from 'os'
 import sourceMapSupport = require('source-map-support')
 import extend = require('xtend')
 import mkdirp = require('mkdirp')
@@ -134,6 +134,13 @@ export interface Register {
   getTypeInfo (fileName: string, position: number): TypeInfo
 }
 
+function getTmpDir (): string {
+  const hash: string = crypto.createHash('sha1')
+    .update(homedir(), 'utf8')
+    .digest('hex')
+  return join(tmpdir(), `ts-node-${hash}`)
+}
+
 /**
  * Register TypeScript compiler.
  */
@@ -149,7 +156,7 @@ export function register (options: Options = {}): () => Register {
   const shouldCache = !!(options.cache == null ? DEFAULTS.cache : options.cache)
   const fast = !!(options.fast == null ? DEFAULTS.fast : options.fast)
   const project = options.project || DEFAULTS.project
-  const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || join(tmpdir(), 'ts-node')
+  const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || getTmpDir()
   const compilerOptions = extend(DEFAULTS.compilerOptions, options.compilerOptions)
   const originalJsHandler = require.extensions['.js']
   let result: Register
