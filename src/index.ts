@@ -123,7 +123,7 @@ export function parse (value: string | undefined) {
 /**
  * Replace backslashes with forward slashes.
  */
-export function slash (value: string): string {
+export function normalizeSlashes (value: string): string {
   return value.replace(/\\/g, '/')
 }
 
@@ -386,7 +386,7 @@ export function register (options: Options = {}): () => Register {
  * Check if the filename should be ignored.
  */
 function shouldIgnore (filename: string, ignore: RegExp[], service: () => Register) {
-  const relname = slash(filename)
+  const relname = normalizeSlashes(filename)
 
   return ignore.some(x => x.test(relname))
 }
@@ -445,14 +445,14 @@ function readConfig (compilerOptions: any, project: string | boolean | undefined
   delete result.config.compilerOptions.outFile
   delete result.config.compilerOptions.declarationDir
 
-  const basePath = result.path ? dirname(result.path) : cwd
+  const basePath = result.path ? normalizeSlashes(dirname(result.path)) : cwd
 
   if (typeof ts.parseConfigFile === 'function') {
     return ts.parseConfigFile(result.config, ts.sys, basePath)
   }
 
   if (typeof ts.parseJsonConfigFileContent === 'function') {
-    return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, result.path as string)
+    return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, normalizeSlashes(result.path as string))
   }
 
   throw new TypeError('Could not find a compatible `parseConfigFile` function')
@@ -574,6 +574,7 @@ export function fileExists (fileName: string): boolean {
  * Get directories within a directory.
  */
 export function getDirectories (path: string): string[] {
+  console.log(`getDirectories: ${path}`)
   return readdirSync(path).filter(name => directoryExists(join(path, name)))
 }
 
