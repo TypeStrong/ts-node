@@ -445,14 +445,15 @@ function readConfig (compilerOptions: any, project: string | boolean | undefined
   delete result.config.compilerOptions.outFile
   delete result.config.compilerOptions.declarationDir
 
-  const basePath = result.path ? normalizeSlashes(dirname(result.path)) : cwd
+  const normalizedConfigPath = result.path && normalizeSlashes(result.path)
+  const basePath = normalizedConfigPath ? dirname(normalizedConfigPath) : normalizeSlashes(cwd)
 
   if (typeof ts.parseConfigFile === 'function') {
     return ts.parseConfigFile(result.config, ts.sys, basePath)
   }
 
   if (typeof ts.parseJsonConfigFileContent === 'function') {
-    return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, normalizeSlashes(result.path as string))
+    return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, normalizedConfigPath as string)
   }
 
   throw new TypeError('Could not find a compatible `parseConfigFile` function')
@@ -574,7 +575,6 @@ export function fileExists (fileName: string): boolean {
  * Get directories within a directory.
  */
 export function getDirectories (path: string): string[] {
-  console.log(`getDirectories: ${path}`)
   return readdirSync(path).filter(name => directoryExists(join(path, name)))
 }
 
