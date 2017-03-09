@@ -62,7 +62,7 @@
     "arrify": "^1.0.0",
     "chalk": "^1.1.1",
     "diff": "^3.1.0",
-    "make-error": "^1.1.1",
+    "make-error": "^1.2.3",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "pinkie": "^2.0.4",
