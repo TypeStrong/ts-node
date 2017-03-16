@@ -66,7 +66,7 @@
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "pinkie": "^2.0.4",
-    "source-map-support": "^0.4.0",
+    "source-map-support": "^0.4.13",
     "tsconfig": "^5.0.2",
     "v8flags": "^2.0.11",
     "xtend": "^4.0.0",
