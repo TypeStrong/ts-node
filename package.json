@@ -67,7 +67,7 @@
     "mkdirp": "^0.5.1",
     "pinkie": "^2.0.4",
     "source-map-support": "^0.4.0",
-    "tsconfig": "^5.0.2",
+    "tsconfig": "^6.0.0",
     "v8flags": "^2.0.11",
     "xtend": "^4.0.0",
     "yn": "^1.2.0"
