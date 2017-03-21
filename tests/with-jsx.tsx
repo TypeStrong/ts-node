@@ -1,3 +1,3 @@
 class Foo2 {
-  render() { return <div></div> }
+  render () { return <div></div> }
 }

@@ -157,7 +157,7 @@ describe('ts-node', function () {
     })
 
     it('should pipe into an eval script', function (done) {
-      const cp = exec(`${BIN_EXEC} -p '(process.stdin as any).isTTY'`, function (err, stdout) {
+      const cp = exec(`${BIN_EXEC} -p 'declare var process: any\nprocess.stdin.isTTY'`, function (err, stdout) {
         expect(err).to.not.exist
         expect(stdout).to.equal('undefined\n')
 
