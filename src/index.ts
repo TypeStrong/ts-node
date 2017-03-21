@@ -120,10 +120,12 @@ export interface Register {
   getTypeInfo (fileName: string, position: number): TypeInfo
 }
 
+/**
+ * Return a default temp directory based on home directory of user.
+ */
 function getTmpDir (): string {
-  const hash: string = crypto.createHash('sha1')
-    .update(homedir(), 'utf8')
-    .digest('hex')
+  const hash = crypto.createHash('sha256').update(homedir(), 'utf8').digest('hex')
+
   return join(tmpdir(), `ts-node-${hash}`)
 }
 
@@ -182,10 +184,8 @@ export function register (options: Options = {}): Register {
     getCompilerDigest({ version: ts.version, fast, ignoreWarnings, disableWarnings, config, compiler })
   )
 
-  // Make sure the temp cache directory exists.
-  if (shouldCache) {
-    mkdirp.sync(cachedir)
-  }
+  // Make sure the cache directory _always_ exists (source maps write there).
+  mkdirp.sync(cachedir)
 
   // Render the configuration errors and exit the script.
   if (configDiagnostics.length) {
@@ -521,7 +521,7 @@ function updateSourceMap (sourceMapText: string, fileName: string) {
  * Get the file name for the cache entry.
  */
 function getCacheName (sourceCode: string, fileName: string) {
-  return crypto.createHash('sha1')
+  return crypto.createHash('sha256')
     .update(extname(fileName), 'utf8')
     .update('\0', 'utf8')
     .update(sourceCode, 'utf8')
@@ -532,7 +532,7 @@ function getCacheName (sourceCode: string, fileName: string) {
  * Create a hash of the current configuration.
  */
 function getCompilerDigest (opts: any) {
-  return crypto.createHash('sha1').update(JSON.stringify(opts), 'utf8').digest('hex')
+  return crypto.createHash('sha256').update(JSON.stringify(opts), 'utf8').digest('hex')
 }
 
 /**
