@@ -46,7 +46,6 @@ export const VERSION = pkg.version
  */
 export interface Options {
   fast?: boolean | null
-  lazy?: boolean | null
   cache?: boolean | null
   cacheDirectory?: string
   compiler?: string
@@ -131,7 +130,7 @@ function getTmpDir (): string {
 /**
  * Register TypeScript compiler.
  */
-export function register (options: Options = {}): () => Register {
+export function register (options: Options = {}): Register {
   const compiler = options.compiler || 'typescript'
   const emptyFileListWarnings = [18002, 18003]
   const ignoreWarnings = arrify(
@@ -146,6 +145,7 @@ export function register (options: Options = {}): () => Register {
   const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || getTmpDir()
   const compilerOptions = extend(DEFAULTS.compilerOptions, options.compilerOptions)
   const originalJsHandler = require.extensions['.js']
+  const cache: Cache = { contents: {}, versions: {}, sourceMaps: {} }
   let result: Register
 
   const ignore = arrify(
@@ -157,232 +157,219 @@ export function register (options: Options = {}): () => Register {
     ['/node_modules/']
   ).map(str => new RegExp(str))
 
-  function load () {
-    const cache: Cache = { contents: {}, versions: {}, sourceMaps: {} }
-
-    // Install source map support and read from cache.
-    sourceMapSupport.install({
-      environment: 'node',
-      retrieveSourceMap (fileName: string) {
-        if (cache.sourceMaps[fileName]) {
-          return {
-            url: cache.sourceMaps[fileName],
-            map: getFile(cache.sourceMaps[fileName])
-          }
+  // Install source map support and read from cache.
+  sourceMapSupport.install({
+    environment: 'node',
+    retrieveSourceMap (fileName: string) {
+      if (cache.sourceMaps[fileName]) {
+        return {
+          url: cache.sourceMaps[fileName],
+          map: getFile(cache.sourceMaps[fileName])
         }
       }
+    }
+  })
+
+  // Require the TypeScript compiler and configuration.
+  const cwd = process.cwd()
+  const ts: typeof TS = require(compiler)
+  const config = readConfig(compilerOptions, project, cwd, ts)
+  const configDiagnostics = filterDiagnostics(config.errors, ignoreWarnings, disableWarnings)
+  const extensions = ['.ts', '.tsx']
+
+  const cachedir = join(
+    resolve(cwd, cacheDirectory),
+    getCompilerDigest({ version: ts.version, fast, ignoreWarnings, disableWarnings, config, compiler })
+  )
+
+  // Make sure the temp cache directory exists.
+  if (shouldCache) {
+    mkdirp.sync(cachedir)
+  }
+
+  // Render the configuration errors and exit the script.
+  if (configDiagnostics.length) {
+    throw new TSError(formatDiagnostics(configDiagnostics, cwd, ts, 0))
+  }
+
+  // Target ES5 output by default (instead of ES3).
+  if (config.options.target === undefined) {
+    config.options.target = ts.ScriptTarget.ES5
+  }
+
+  // Target CommonJS modules by default (instead of magically switching to ES6 when the target is ES6).
+  if (config.options.module === undefined) {
+    config.options.module = ts.ModuleKind.CommonJS
+  }
+
+  // Enable `allowJs` when flag is set.
+  if (config.options.allowJs) {
+    extensions.push('.js')
+  }
+
+  // Add all files into the file hash.
+  for (const fileName of config.fileNames) {
+    if (/\.d\.ts$/.test(fileName)) {
+      cache.versions[fileName] = 1
+    }
+  }
+
+  /**
+   * Get the extension for a transpiled file.
+   */
+  function getExtension (fileName: string) {
+    if (config.options.jsx === ts.JsxEmit.Preserve && extname(fileName) === '.tsx') {
+      return '.jsx'
+    }
+
+    return '.js'
+  }
+
+  /**
+   * Create the basic required function using transpile mode.
+   */
+  let getOutput = function (code: string, fileName: string, lineOffset = 0): SourceOutput {
+    const result = ts.transpileModule(code, {
+      fileName,
+      compilerOptions: config.options,
+      reportDiagnostics: true
     })
 
-    // Require the TypeScript compiler and configuration.
-    const cwd = process.cwd()
-    const ts: typeof TS = require(compiler)
-    const config = readConfig(compilerOptions, project, cwd, ts)
-    const configDiagnostics = filterDiagnostics(config.errors, ignoreWarnings, disableWarnings)
-    const extensions = ['.ts', '.tsx']
+    const diagnosticList = result.diagnostics ?
+      filterDiagnostics(result.diagnostics, ignoreWarnings, disableWarnings) :
+      []
 
-    const cachedir = join(
-      resolve(cwd, cacheDirectory),
-      getCompilerDigest({ version: ts.version, fast, ignoreWarnings, disableWarnings, config, compiler })
-    )
-
-    // Make sure the temp cache directory exists.
-    mkdirp.sync(cachedir)
-
-    // Render the configuration errors and exit the script.
-    if (configDiagnostics.length) {
-      throw new TSError(formatDiagnostics(configDiagnostics, cwd, ts, 0))
+    if (diagnosticList.length) {
+      throw new TSError(formatDiagnostics(diagnosticList, cwd, ts, lineOffset))
     }
 
-    // Target ES5 output by default (instead of ES3).
-    if (config.options.target === undefined) {
-      config.options.target = ts.ScriptTarget.ES5
-    }
+    return [result.outputText, result.sourceMapText as string]
+  }
 
-    // Target CommonJS modules by default (instead of magically switching to ES6 when the target is ES6).
-    if (config.options.module === undefined) {
-      config.options.module = ts.ModuleKind.CommonJS
-    }
+  let compile = readThrough(
+    cachedir,
+    shouldCache,
+    getFile,
+    fileExists,
+    cache,
+    getOutput,
+    getExtension
+  )
 
-    // Enable `allowJs` when flag is set.
-    if (config.options.allowJs) {
-      extensions.push('.js')
-      registerExtension('.js', ignore, service, originalJsHandler)
-    }
+  let getTypeInfo = function (fileName: string, position: number): TypeInfo {
+    throw new TypeError(`No type information available under "--fast" mode`)
+  }
 
-    // Add all files into the file hash.
-    for (const fileName of config.fileNames) {
-      if (/\.d\.ts$/.test(fileName)) {
+  // Use full language services when the fast option is disabled.
+  if (!fast) {
+    // Add the file to the project.
+    const addVersion = function (fileName: string) {
+      if (!cache.versions.hasOwnProperty(fileName)) {
         cache.versions[fileName] = 1
       }
     }
 
-    /**
-     * Get the extension for a transpiled file.
-     */
-    function getExtension (fileName: string) {
-      if (config.options.jsx === ts.JsxEmit.Preserve && extname(fileName) === '.tsx') {
-        return '.jsx'
-      }
-
-      return '.js'
+    // Set the file contents into cache.
+    const addCache = function (code: string, fileName: string) {
+      cache.contents[fileName] = code
+      cache.versions[fileName] += 1
     }
 
-    /**
-     * Create the basic required function using transpile mode.
-     */
-    let getOutput = function (code: string, fileName: string, lineOffset = 0): SourceOutput {
-      const result = ts.transpileModule(code, {
-        fileName,
-        compilerOptions: config.options,
-        reportDiagnostics: true
-      })
+    // Create the compiler host for type checking.
+    const serviceHost = {
+      getScriptFileNames: () => Object.keys(cache.versions),
+      getScriptVersion: (fileName: string) => String(cache.versions[fileName]),
+      getScriptSnapshot (fileName: string) {
+        if (!cache.contents.hasOwnProperty(fileName)) {
+          if (!fileExists(fileName)) {
+            return undefined
+          }
 
-      const diagnosticList = result.diagnostics ?
-        filterDiagnostics(result.diagnostics, ignoreWarnings, disableWarnings) :
-        []
+          cache.contents[fileName] = getFile(fileName)
+        }
+
+        return ts.ScriptSnapshot.fromString(cache.contents[fileName])
+      },
+      getDirectories: getDirectories,
+      directoryExists: directoryExists,
+      getNewLine: () => EOL,
+      getCurrentDirectory: () => cwd,
+      getCompilationSettings: () => config.options,
+      getDefaultLibFileName: (options: any) => ts.getDefaultLibFilePath(config.options)
+    }
+
+    const service = ts.createLanguageService(serviceHost)
+
+    getOutput = function (code: string, fileName: string, lineOffset: number = 0) {
+      const output = service.getEmitOutput(fileName)
+
+      // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.
+      const diagnostics = service.getCompilerOptionsDiagnostics()
+        .concat(service.getSyntacticDiagnostics(fileName))
+        .concat(service.getSemanticDiagnostics(fileName))
+
+      const diagnosticList = filterDiagnostics(diagnostics, ignoreWarnings, disableWarnings)
 
       if (diagnosticList.length) {
         throw new TSError(formatDiagnostics(diagnosticList, cwd, ts, lineOffset))
       }
 
-      return [result.outputText, result.sourceMapText as string]
+      if (output.emitSkipped) {
+        throw new TypeError(`${relative(cwd, fileName)}: Emit skipped`)
+      }
+
+      // Throw an error when requiring `.d.ts` files.
+      if (output.outputFiles.length === 0) {
+        throw new TypeError(
+          'Unable to require `.d.ts` file.\n' +
+          'This is usually the result of a faulty configuration or import. ' +
+          'Make sure there is a `.js`, `.json` or another executable extension and ' +
+          'loader (attached before `ts-node`) available alongside ' +
+          `\`${basename(fileName)}\`.`
+        )
+      }
+
+      return [output.outputFiles[1].text, output.outputFiles[0].text]
     }
 
-    let compile = readThrough(
+    compile = readThrough(
       cachedir,
       shouldCache,
       getFile,
       fileExists,
       cache,
-      getOutput,
+      function (code: string, fileName: string, lineOffset?: number) {
+        addVersion(fileName)
+        addCache(code, fileName)
+
+        return getOutput(code, fileName, lineOffset)
+      },
       getExtension
     )
 
-    let getTypeInfo = function (fileName: string, position: number): TypeInfo {
-      throw new TypeError(`No type information available under "--fast" mode`)
+    getTypeInfo = function (fileName: string, position: number) {
+      addVersion(fileName)
+
+      const info = service.getQuickInfoAtPosition(fileName, position)
+      const name = ts.displayPartsToString(info ? info.displayParts : [])
+      const comment = ts.displayPartsToString(info ? info.documentation : [])
+
+      return { name, comment }
     }
-
-    // Use full language services when the fast option is disabled.
-    if (!fast) {
-      // Add the file to the project.
-      const addVersion = function (fileName: string) {
-        if (!cache.versions.hasOwnProperty(fileName)) {
-          cache.versions[fileName] = 1
-        }
-      }
-
-      // Set the file contents into cache.
-      const addCache = function (code: string, fileName: string) {
-        cache.contents[fileName] = code
-        cache.versions[fileName] += 1
-      }
-
-      // Create the compiler host for type checking.
-      const serviceHost = {
-        getScriptFileNames: () => Object.keys(cache.versions),
-        getScriptVersion: (fileName: string) => String(cache.versions[fileName]),
-        getScriptSnapshot (fileName: string) {
-          if (!cache.contents.hasOwnProperty(fileName)) {
-            if (!fileExists(fileName)) {
-              return undefined
-            }
-
-            cache.contents[fileName] = getFile(fileName)
-          }
-
-          return ts.ScriptSnapshot.fromString(cache.contents[fileName])
-        },
-        getDirectories: getDirectories,
-        directoryExists: directoryExists,
-        getNewLine: () => EOL,
-        getCurrentDirectory: () => cwd,
-        getCompilationSettings: () => config.options,
-        getDefaultLibFileName: (options: any) => ts.getDefaultLibFilePath(config.options)
-      }
-
-      const service = ts.createLanguageService(serviceHost)
-
-      getOutput = function (code: string, fileName: string, lineOffset: number = 0) {
-        const output = service.getEmitOutput(fileName)
-
-        // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.
-        const diagnostics = service.getCompilerOptionsDiagnostics()
-          .concat(service.getSyntacticDiagnostics(fileName))
-          .concat(service.getSemanticDiagnostics(fileName))
-
-        const diagnosticList = filterDiagnostics(diagnostics, ignoreWarnings, disableWarnings)
-
-        if (diagnosticList.length) {
-          throw new TSError(formatDiagnostics(diagnosticList, cwd, ts, lineOffset))
-        }
-
-        if (output.emitSkipped) {
-          throw new TypeError(`${relative(cwd, fileName)}: Emit skipped`)
-        }
-
-        // Throw an error when requiring `.d.ts` files.
-        if (output.outputFiles.length === 0) {
-          throw new TypeError(
-            'Unable to require `.d.ts` file.\n' +
-            'This is usually the result of a faulty configuration or import. ' +
-            'Make sure there is a `.js`, `.json` or another executable extension and ' +
-            'loader (attached before `ts-node`) available alongside ' +
-            `\`${basename(fileName)}\`.`
-          )
-        }
-
-        return [output.outputFiles[1].text, output.outputFiles[0].text]
-      }
-
-      compile = readThrough(
-        cachedir,
-        shouldCache,
-        getFile,
-        fileExists,
-        cache,
-        function (code: string, fileName: string, lineOffset?: number) {
-          addVersion(fileName)
-          addCache(code, fileName)
-
-          return getOutput(code, fileName, lineOffset)
-        },
-        getExtension
-      )
-
-      getTypeInfo = function (fileName: string, position: number) {
-        addVersion(fileName)
-
-        const info = service.getQuickInfoAtPosition(fileName, position)
-        const name = ts.displayPartsToString(info ? info.displayParts : [])
-        const comment = ts.displayPartsToString(info ? info.documentation : [])
-
-        return { name, comment }
-      }
-    }
-
-    return { cwd, compile, getTypeInfo, extensions }
   }
 
-  function service () {
-    return result || (result = load())
-  }
+  const register: Register = { cwd, compile, getTypeInfo, extensions }
 
-  // Eagerly register TypeScript extensions (JavaScript is registered lazily).
-  registerExtension('.ts', ignore, service, originalJsHandler)
-  registerExtension('.tsx', ignore, service, originalJsHandler)
+  // Register the extensions.
+  extensions.forEach(extension => registerExtension(extension, ignore, register, originalJsHandler))
 
-  // Immediately initialize the TypeScript compiler.
-  if (!options.lazy) {
-    service()
-  }
-
-  return service
+  return register
 }
 
 /**
  * Check if the filename should be ignored.
  */
-function shouldIgnore (filename: string, ignore: RegExp[], service: () => Register) {
+function shouldIgnore (filename: string, ignore: RegExp[]) {
   const relname = normalizeSlashes(filename)
 
   return ignore.some(x => x.test(relname))
@@ -394,20 +381,20 @@ function shouldIgnore (filename: string, ignore: RegExp[], service: () => Regist
 function registerExtension (
   ext: string,
   ignore: RegExp[],
-  service: () => Register,
+  register: Register,
   originalHandler: (m: NodeModule, filename: string) => any
 ) {
   const old = require.extensions[ext] || originalHandler
 
   require.extensions[ext] = function (m, filename) {
-    if (shouldIgnore(filename, ignore, service)) {
+    if (shouldIgnore(filename, ignore)) {
       return old(m, filename)
     }
 
     const _compile = m._compile
 
     m._compile = function (code, fileName) {
-      return _compile.call(this, service().compile(code, fileName), fileName)
+      return _compile.call(this, register.compile(code, fileName), fileName)
     }
 
     return old(m, filename)

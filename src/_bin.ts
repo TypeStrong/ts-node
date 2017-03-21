@@ -13,7 +13,6 @@ interface Argv {
   eval?: string
   print?: string
   fast?: boolean
-  lazy?: boolean
   cache?: boolean
   cacheDirectory?: string
   version?: boolean
@@ -29,12 +28,11 @@ interface Argv {
 }
 
 const strings = ['eval', 'print', 'compiler', 'project', 'ignoreWarnings', 'require', 'cacheDirectory', 'ignore']
-const booleans = ['help', 'fast', 'lazy', 'version', 'disableWarnings', 'cache']
+const booleans = ['help', 'fast', 'version', 'disableWarnings', 'cache']
 
 const aliases: { [key: string]: string[] } = {
   help: ['h'],
   fast: ['F'],
-  lazy: ['L'],
   version: ['v'],
   eval: ['e'],
   print: ['p'],
@@ -127,7 +125,6 @@ Options:
   -D, --disableWarnings          Ignore every TypeScript warning
   -P, --project [path]           Path to TypeScript project (or \`false\`)
   -O, --compilerOptions [opts]   JSON object to merge with compiler options
-  -L, --lazy                     Lazily load TypeScript compilation on demand
   -F, --fast                     Run TypeScript compilation in transpile mode
   --ignore [regexp], --no-ignore Set the ignore check (default: \`/node_modules/\`)
   --no-cache                     Disable the TypeScript cache
@@ -147,7 +144,6 @@ const supportsScriptOptions = parseFloat(process.version.substr(1)) >= 1
 // Register the TypeScript compiler instance.
 const service = register({
   fast: argv.fast,
-  lazy: argv.lazy,
   cache: argv.cache,
   cacheDirectory: argv.cacheDirectory,
   compiler: argv.compiler,
@@ -245,7 +241,7 @@ function _eval (input: string, context: any) {
   let output: string
 
   try {
-    output = service().compile(EVAL_INSTANCE.input, EVAL_PATH, -lines)
+    output = service.compile(EVAL_INSTANCE.input, EVAL_PATH, -lines)
   } catch (err) {
     undo()
 
@@ -299,7 +295,7 @@ function startRepl () {
       }
 
       const undo = appendEval(identifier)
-      const { name, comment } = service().getTypeInfo(EVAL_PATH, EVAL_INSTANCE.input.length)
+      const { name, comment } = service.getTypeInfo(EVAL_PATH, EVAL_INSTANCE.input.length)
 
       undo()
 
