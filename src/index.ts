@@ -26,26 +26,13 @@ export interface TSCommon {
   getPreEmitDiagnostics: typeof TS.getPreEmitDiagnostics
   flattenDiagnosticMessageText: typeof TS.flattenDiagnosticMessageText
   transpileModule: typeof TS.transpileModule
+  ModuleKind: typeof TS.ModuleKind
+  ScriptTarget: typeof TS.ScriptTarget
+  findConfigFile: typeof TS.findConfigFile
+  readConfigFile: typeof TS.readConfigFile
+  parseJsonConfigFileContent: typeof TS.parseJsonConfigFileContent
 
-  // TypeScript 1.5+, 1.7+ added `fileExists` parameter.
-  findConfigFile (path: string, fileExists?: (path: string) => boolean): string
-
-  // TypeScript 1.5+, 1.7+ added `readFile` parameter.
-  readConfigFile (path: string, readFile?: (path: string) => string): {
-    config?: any
-    error?: TS.Diagnostic
-  }
-
-  // TypeScript 1.7+.
-  parseJsonConfigFileContent? (
-    json: any,
-    host: any,
-    basePath: string,
-    existingOptions: any,
-    configFileName: string
-  ): any
-
-  // TypeScript 1.5+.
+  // TypeScript 1.5 and 1.6.
   parseConfigFile? (json: any, host: any, basePath: string): any
 }
 
@@ -204,6 +191,16 @@ export function register (options: Options = {}): () => Register {
     // Render the configuration errors and exit the script.
     if (configDiagnostics.length) {
       throw new TSError(formatDiagnostics(configDiagnostics, cwd, ts, 0))
+    }
+
+    // Target ES5 output by default (instead of ES3).
+    if (config.options.target === undefined) {
+      config.options.target = ts.ScriptTarget.ES5
+    }
+
+    // Target CommonJS modules by default (instead of magically switching to ES6 when the target is ES6).
+    if (config.options.module === undefined) {
+      config.options.module = ts.ModuleKind.CommonJS
     }
 
     // Enable `allowJs` when flag is set.
@@ -423,22 +420,15 @@ function registerExtension (
 function readConfig (compilerOptions: any, project: string | boolean | undefined, cwd: string, ts: TSCommon) {
   const result = loadSync(cwd, typeof project === 'string' ? project : undefined)
 
-  result.config.compilerOptions = extend(
-    {
-      target: 'es5',
-      module: 'commonjs'
-    },
-    result.config.compilerOptions,
-    compilerOptions,
-    {
-      sourceMap: true,
-      inlineSourceMap: false,
-      inlineSources: true,
-      declaration: false,
-      noEmit: false,
-      outDir: '$$ts-node$$'
-    }
-  )
+  // Override default configuration options.
+  result.config.compilerOptions = extend(result.config.compilerOptions, compilerOptions, {
+    sourceMap: true,
+    inlineSourceMap: false,
+    inlineSources: true,
+    declaration: false,
+    noEmit: false,
+    outDir: '$$ts-node$$'
+  })
 
   // Delete options that *should not* be passed through.
   delete result.config.compilerOptions.out
@@ -453,7 +443,7 @@ function readConfig (compilerOptions: any, project: string | boolean | undefined
   }
 
   if (typeof ts.parseJsonConfigFileContent === 'function') {
-    return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, configPath as string)
+    return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, undefined, configPath as string)
   }
 
   throw new TypeError('Could not find a compatible `parseConfigFile` function')
