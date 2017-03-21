@@ -445,15 +445,15 @@ function readConfig (compilerOptions: any, project: string | boolean | undefined
   delete result.config.compilerOptions.outFile
   delete result.config.compilerOptions.declarationDir
 
-  const normalizedConfigPath = result.path && normalizeSlashes(result.path)
-  const basePath = normalizedConfigPath ? dirname(normalizedConfigPath) : normalizeSlashes(cwd)
+  const configPath = result.path && normalizeSlashes(result.path)
+  const basePath = configPath ? dirname(configPath) : normalizeSlashes(cwd)
 
   if (typeof ts.parseConfigFile === 'function') {
     return ts.parseConfigFile(result.config, ts.sys, basePath)
   }
 
   if (typeof ts.parseJsonConfigFileContent === 'function') {
-    return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, normalizedConfigPath as string)
+    return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, null, configPath as string)
   }
 
   throw new TypeError('Could not find a compatible `parseConfigFile` function')
