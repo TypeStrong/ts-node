@@ -579,7 +579,7 @@ function filterDiagnostics (diagnostics: TS.Diagnostic[], ignore: number[], disa
     return []
   }
 
-  return diagnostics.filter(x => ignore.indexOf(x.code))
+  return diagnostics.filter(x => ignore.indexOf(x.code) === -1)
 }
 
 /**
