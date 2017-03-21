@@ -23,6 +23,9 @@
     "test": "npm run build && npm run lint && npm run test-cov",
     "prepublish": "typings install && npm run build"
   },
+  "engines": {
+    "node": ">=4.2.0"
+  },
   "repository": {
     "type": "git",
     "url": "git://github.com/TypeStrong/ts-node.git"
