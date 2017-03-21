@@ -1,6 +1,6 @@
 {
   "name": "ts-node",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "preferGlobal": true,
   "description": "TypeScript execution environment and REPL for node",
   "main": "dist/index.js",
