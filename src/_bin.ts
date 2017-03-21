@@ -1,4 +1,4 @@
-import { join, resolve, basename } from 'path'
+import { join, resolve } from 'path'
 import { start, Recoverable } from 'repl'
 import { inspect } from 'util'
 import arrify = require('arrify')
@@ -139,7 +139,6 @@ const code = argv.eval == null ? argv.print : argv.eval
 const isEvalScript = typeof argv.eval === 'string' || !!argv.print // Minimist struggles with empty strings.
 const isEval = isEvalScript || stop === process.argv.length
 const isPrinted = argv.print != null
-const supportsScriptOptions = parseFloat(process.version.substr(1)) >= 1
 
 // Register the TypeScript compiler instance.
 const service = register({
@@ -308,7 +307,7 @@ function startRepl () {
 /**
  * Eval code from the REPL.
  */
-function replEval (code: string, context: any, filename: string, callback: (err?: Error, result?: any) => any) {
+function replEval (code: string, context: any, _filename: string, callback: (err?: Error, result?: any) => any) {
   let err: any
   let result: any
 

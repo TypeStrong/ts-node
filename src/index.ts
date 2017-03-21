@@ -2,7 +2,6 @@ import { relative, basename, extname, resolve, dirname, join } from 'path'
 import { readdirSync, writeFileSync, readFileSync, statSync } from 'fs'
 import { EOL, tmpdir, homedir } from 'os'
 import sourceMapSupport = require('source-map-support')
-import extend = require('xtend')
 import mkdirp = require('mkdirp')
 import crypto = require('crypto')
 import yn = require('yn')
@@ -145,10 +144,9 @@ export function register (options: Options = {}): Register {
   const fast = !!(options.fast == null ? DEFAULTS.fast : options.fast)
   const project = options.project || DEFAULTS.project
   const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || getTmpDir()
-  const compilerOptions = extend(DEFAULTS.compilerOptions, options.compilerOptions)
+  const compilerOptions = Object.assign({}, DEFAULTS.compilerOptions, options.compilerOptions)
   const originalJsHandler = require.extensions['.js']
   const cache: Cache = { contents: {}, versions: {}, sourceMaps: {} }
-  let result: Register
 
   const ignore = arrify(
     (
@@ -256,7 +254,7 @@ export function register (options: Options = {}): Register {
     getExtension
   )
 
-  let getTypeInfo = function (fileName: string, position: number): TypeInfo {
+  let getTypeInfo = function (_fileName: string, _position: number): TypeInfo {
     throw new TypeError(`No type information available under "--fast" mode`)
   }
 
@@ -295,12 +293,12 @@ export function register (options: Options = {}): Register {
       getNewLine: () => EOL,
       getCurrentDirectory: () => cwd,
       getCompilationSettings: () => config.options,
-      getDefaultLibFileName: (options: any) => ts.getDefaultLibFilePath(config.options)
+      getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options)
     }
 
     const service = ts.createLanguageService(serviceHost)
 
-    getOutput = function (code: string, fileName: string, lineOffset: number = 0) {
+    getOutput = function (_code: string, fileName: string, lineOffset: number = 0) {
       const output = service.getEmitOutput(fileName)
 
       // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.
@@ -408,7 +406,7 @@ function readConfig (compilerOptions: any, project: string | boolean | undefined
   const result = loadSync(cwd, typeof project === 'string' ? project : undefined)
 
   // Override default configuration options.
-  result.config.compilerOptions = extend(result.config.compilerOptions, compilerOptions, {
+  result.config.compilerOptions = Object.assign({}, result.config.compilerOptions, compilerOptions, {
     sourceMap: true,
     inlineSourceMap: false,
     inlineSources: true,

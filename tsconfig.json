@@ -1,21 +1,21 @@
 {
   "compilerOptions": {
     "target": "es5",
+    "lib": ["es2015"],
     "outDir": "dist",
     "module": "commonjs",
     "declaration": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
     "removeComments": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "moduleResolution": "node",
     "sourceMap": true,
     "inlineSources": true
   },
-  "files": [
-    "src/_bin.ts",
-    "src/bin.ts",
-    "src/index.ts",
-    "src/index.spec.ts",
-    "typings/index.d.ts"
+  "include": [
+    "src/**/*",
+    "typings/**/*"
   ]
 }
