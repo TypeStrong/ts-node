@@ -74,6 +74,8 @@ gulp
 
 **Typescript Node** uses `tsconfig.json` automatically, use `-n` to skip loading `tsconfig.json`.
 
+**NOTE**: You can use `ts-node` together with [tsconfig-paths](https://www.npmjs.com/package/tsconfig-paths) to load modules according to the `paths` section in `tsconfig.json`.
+
 ## Configuration Options
 
 You can set options by passing them in before the script.
