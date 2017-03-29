@@ -20,7 +20,7 @@ describe('ts-node', function () {
   describe('cli', function () {
     it('should execute cli', function (done) {
       exec(`${BIN_EXEC} tests/hello-world`, function (err, stdout) {
-        expect(err).to.not.exist
+        expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\n')
 
         return done()
@@ -29,7 +29,7 @@ describe('ts-node', function () {
 
     it('should execute cli with absolute path', function (done) {
       exec(`${BIN_EXEC} "${join(testDir, 'hello-world')}"`, function (err, stdout) {
-        expect(err).to.not.exist
+        expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\n')
 
         return done()
@@ -38,7 +38,7 @@ describe('ts-node', function () {
 
     it('should print scripts', function (done) {
       exec(`${BIN_EXEC} -p "import { example } from './tests/complex/index';example()"`, function (err, stdout) {
-        expect(err).to.not.exist
+        expect(err).to.equal(null)
         expect(stdout).to.equal('example\n')
 
         return done()
@@ -54,7 +54,7 @@ describe('ts-node', function () {
             '-p "import { main } from \'./tests/allow-js/run\';main()"'
           ].join(' '),
           function (err, stdout) {
-            expect(err).to.not.exist
+            expect(err).to.equal(null)
             expect(stdout).to.equal('hello world\n')
 
             return done()
@@ -67,7 +67,7 @@ describe('ts-node', function () {
       exec(
         `${BIN_EXEC} -e "import * as m from './tests/module';console.log(m.example('test'))"`,
         function (err, stdout) {
-          expect(err).to.not.exist
+          expect(err).to.equal(null)
           expect(stdout).to.equal('TEST\n')
 
           return done()
@@ -136,7 +136,7 @@ describe('ts-node', function () {
 
     it('should pipe into `ts-node` and evaluate', function (done) {
       const cp = exec(BIN_EXEC, function (err, stdout) {
-        expect(err).to.not.exist
+        expect(err).to.equal(null)
         expect(stdout).to.equal('hello\n')
 
         return done()
@@ -147,7 +147,7 @@ describe('ts-node', function () {
 
     it('should pipe into `ts-node`', function (done) {
       const cp = exec(`${BIN_EXEC} -p`, function (err, stdout) {
-        expect(err).to.not.exist
+        expect(err).to.equal(null)
         expect(stdout).to.equal('true\n')
 
         return done()
@@ -158,7 +158,7 @@ describe('ts-node', function () {
 
     it('should pipe into an eval script', function (done) {
       const cp = exec(`${BIN_EXEC} -p 'declare var process: any\nprocess.stdin.isTTY'`, function (err, stdout) {
-        expect(err).to.not.exist
+        expect(err).to.equal(null)
         expect(stdout).to.equal('undefined\n')
 
         return done()
@@ -169,7 +169,7 @@ describe('ts-node', function () {
 
     it('should support require flags', function (done) {
       exec(`${BIN_EXEC} -r ./tests/hello-world -p "console.log('success')"`, function (err, stdout) {
-        expect(err).to.not.exist
+        expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\nsuccess\nundefined\n')
 
         return done()
@@ -178,7 +178,7 @@ describe('ts-node', function () {
 
     it('should support require from node modules', function (done) {
       exec(`${BIN_EXEC} -r typescript -e "console.log('success')"`, function (err, stdout) {
-        expect(err).to.not.exist
+        expect(err).to.equal(null)
         expect(stdout).to.equal('success\n')
 
         return done()
