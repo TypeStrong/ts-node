@@ -283,7 +283,7 @@ function startRepl () {
 
   const undo = appendEval('')
 
-  repl.on('reset', () => undo())
+  repl.on('reset', undo)
 
   repl.defineCommand('type', {
     help: 'Check the type of a TypeScript identifier',
