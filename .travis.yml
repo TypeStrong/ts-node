@@ -5,6 +5,9 @@ notifications:
     on_success: never
     on_failure: change
 
+before_install:
+  - nvm install $NODE
+
 script:
   - npm run lint
   - npm rm tslint
@@ -12,14 +15,16 @@ script:
   - npm run test-cov
 
 env:
-  - TYPESCRIPT=typescript@1.6
-  - TYPESCRIPT=typescript@1.7
-  - TYPESCRIPT=typescript@1.8
-  - TYPESCRIPT=typescript@2.0
-  - TYPESCRIPT=typescript@next
+  - NODE=stable TYPESCRIPT=typescript@1.6
+  - NODE=stable TYPESCRIPT=typescript@1.7
+  - NODE=stable TYPESCRIPT=typescript@1.8
+  - NODE=stable TYPESCRIPT=typescript@2.0
+  - NODE=stable TYPESCRIPT=typescript@2.1
+  - NODE=4 TYPESCRIPT=typescript@latest
+  - NODE=stable TYPESCRIPT=typescript@latest
+  - NODE=stable TYPESCRIPT=typescript@next
 
 node_js:
-  - '4'
   - stable
 
 after_script: "npm install coveralls@2 && cat ./coverage/lcov.info | coveralls"
