@@ -415,23 +415,30 @@ function readConfig (compilerOptions: any, project: string | boolean | undefined
     outDir: '$$ts-node$$'
   })
 
-  // Delete options that *should not* be passed through.
-  delete result.config.compilerOptions.out
-  delete result.config.compilerOptions.outFile
-  delete result.config.compilerOptions.declarationDir
-
   const configPath = result.path && normalizeSlashes(result.path)
   const basePath = configPath ? dirname(configPath) : normalizeSlashes(cwd)
 
   if (typeof ts.parseConfigFile === 'function') {
+    deleteConfigOptionsThatShouldNotBePassedThrough(result.config.compilerOptions)
     return ts.parseConfigFile(result.config, ts.sys, basePath)
   }
 
   if (typeof ts.parseJsonConfigFileContent === 'function') {
-    return ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, undefined, configPath as string)
+    let finalResult = ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, undefined, configPath as string)
+    deleteConfigOptionsThatShouldNotBePassedThrough(finalResult.options)
+    return finalResult
   }
 
   throw new TypeError('Could not find a compatible `parseConfigFile` function')
+}
+
+/**
+ * Delete options that *should not* be passed through.
+ */
+function deleteConfigOptionsThatShouldNotBePassedThrough (compilerOptions: any) {
+  delete compilerOptions.out
+  delete compilerOptions.outFile
+  delete compilerOptions.declarationDir
 }
 
 /**
