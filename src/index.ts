@@ -190,16 +190,6 @@ export function register (options: Options = {}): Register {
     throw new TSError(formatDiagnostics(configDiagnostics, cwd, ts, 0))
   }
 
-  // Target ES5 output by default (instead of ES3).
-  if (config.options.target === undefined) {
-    config.options.target = ts.ScriptTarget.ES5
-  }
-
-  // Target CommonJS modules by default (instead of magically switching to ES6 when the target is ES6).
-  if (config.options.module === undefined) {
-    config.options.module = ts.ModuleKind.CommonJS
-  }
-
   // Enable `allowJs` when flag is set.
   if (config.options.allowJs) {
     extensions.push('.js')
@@ -400,6 +390,28 @@ function registerExtension (
 }
 
 /**
+ * Do post-processing on config options to correct them.
+ */
+function fixConfig (config: any, ts: TSCommon) {
+  // Delete options that *should not* be passed through.
+  delete config.options.out
+  delete config.options.outFile
+  delete config.options.declarationDir
+
+  // Target ES5 output by default (instead of ES3).
+  if (config.options.target === undefined) {
+    config.options.target = ts.ScriptTarget.ES5
+  }
+
+  // Target CommonJS modules by default (instead of magically switching to ES6 when the target is ES6).
+  if (config.options.module === undefined) {
+    config.options.module = ts.ModuleKind.CommonJS
+  }
+
+  return config
+}
+
+/**
  * Load TypeScript configuration.
  */
 function readConfig (compilerOptions: any, project: string | boolean | undefined, cwd: string, ts: TSCommon) {
@@ -419,26 +431,14 @@ function readConfig (compilerOptions: any, project: string | boolean | undefined
   const basePath = configPath ? dirname(configPath) : normalizeSlashes(cwd)
 
   if (typeof ts.parseConfigFile === 'function') {
-    deleteConfigOptionsThatShouldNotBePassedThrough(result.config.compilerOptions)
-    return ts.parseConfigFile(result.config, ts.sys, basePath)
+    return fixConfig(ts.parseConfigFile(result.config, ts.sys, basePath), ts)
   }
 
   if (typeof ts.parseJsonConfigFileContent === 'function') {
-    let finalResult = ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, undefined, configPath as string)
-    deleteConfigOptionsThatShouldNotBePassedThrough(finalResult.options)
-    return finalResult
+    return fixConfig(ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, undefined, configPath as string), ts)
   }
 
   throw new TypeError('Could not find a compatible `parseConfigFile` function')
-}
-
-/**
- * Delete options that *should not* be passed through.
- */
-function deleteConfigOptionsThatShouldNotBePassedThrough (compilerOptions: any) {
-  delete compilerOptions.out
-  delete compilerOptions.outFile
-  delete compilerOptions.declarationDir
 }
 
 /**
