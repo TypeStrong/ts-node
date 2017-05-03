@@ -52,7 +52,7 @@
     "chai": "^3.0.0",
     "istanbul": "^0.4.0",
     "mocha": "^3.0.0",
-    "ntypescript": "^1.201507091536.1",
+    "ntypescript": "^1.201609050105.1",
     "proxyquire": "^1.7.2",
     "rimraf": "^2.5.4",
     "semver": "^5.1.0",
