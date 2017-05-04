@@ -80,7 +80,7 @@ export interface TypeInfo {
 const DEFAULTS = {
   getFile,
   fileExists,
-  cache: yn(process.env['TS_NODE_CACHE']),
+  cache: process.env['TS_NODE_CACHE'] ? yn(process.env['TS_NODE_CACHE']) : true,
   cacheDirectory: process.env['TS_NODE_CACHE_DIRECTORY'],
   disableWarnings: yn(process.env['TS_NODE_DISABLE_WARNINGS']),
   compiler: process.env['TS_NODE_COMPILER'],
