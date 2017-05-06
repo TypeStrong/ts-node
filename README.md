@@ -111,6 +111,8 @@ of the script. From here you can use `require` to bring in modules from TypeScri
 var someModule = require('path_to_a_typescript_file');
 ```
 
+Checkout this [example](https://github.com/realappie/nodejs-typescript) repository
+
 ## License
 
 MIT
