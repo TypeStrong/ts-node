@@ -5,7 +5,8 @@
   "description": "TypeScript execution environment and REPL for node",
   "main": "dist/index.js",
   "bin": {
-    "ts-node": "dist/bin.js"
+    "ts-node": "dist/bin.js",
+    "_ts-node": "dist/_bin.js"
   },
   "files": [
     "dist/",
