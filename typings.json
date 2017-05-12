@@ -11,7 +11,7 @@
     "tsconfig": "npm:tsconfig",
     "v8flags": "registry:npm/v8flags#3.0.0+20161011212142",
     "xtend": "registry:npm/xtend#4.0.0+20160211003958",
-    "yn": "registry:npm/yn#1.2.0+20161006191459"
+    "yn": "registry:npm/yn#1.3.0+20170508185912"
   },
   "globalDependencies": {
     "node": "registry:env/node#6.0.0+20170213133316"
