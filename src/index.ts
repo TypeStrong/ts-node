@@ -116,7 +116,7 @@ export interface Register {
   cwd: string
   extensions: string[]
   compile (code: string, fileName: string, lineOffset?: number): string
-  getTypeInfo (fileName: string, position: number): TypeInfo
+  getTypeInfo (code: string, fileName: string, position: number): TypeInfo
 }
 
 /**
@@ -146,7 +146,12 @@ export function register (options: Options = {}): Register {
   const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || getTmpDir()
   const compilerOptions = Object.assign({}, DEFAULTS.compilerOptions, options.compilerOptions)
   const originalJsHandler = require.extensions['.js']
-  const cache: Cache = { contents: {}, versions: {}, sourceMaps: {} }
+
+  const cache: Cache = {
+    contents: Object.create(null),
+    versions: Object.create(null),
+    sourceMaps: Object.create(null)
+  }
 
   const ignore = arrify(
     (
@@ -244,23 +249,16 @@ export function register (options: Options = {}): Register {
     getExtension
   )
 
-  let getTypeInfo = function (_fileName: string, _position: number): TypeInfo {
+  let getTypeInfo = function (_code: string, _fileName: string, _position: number): TypeInfo {
     throw new TypeError(`No type information available under "--fast" mode`)
   }
 
   // Use full language services when the fast option is disabled.
   if (!fast) {
-    // Add the file to the project.
-    const addVersion = function (fileName: string) {
-      if (!cache.versions.hasOwnProperty(fileName)) {
-        cache.versions[fileName] = 1
-      }
-    }
-
     // Set the file contents into cache.
-    const addCache = function (code: string, fileName: string) {
+    const setCache = function (code: string, fileName: string) {
       cache.contents[fileName] = code
-      cache.versions[fileName] += 1
+      cache.versions[fileName] = (cache.versions[fileName] + 1) || 1
     }
 
     // Create the compiler host for type checking.
@@ -268,12 +266,12 @@ export function register (options: Options = {}): Register {
       getScriptFileNames: () => Object.keys(cache.versions),
       getScriptVersion: (fileName: string) => String(cache.versions[fileName]),
       getScriptSnapshot (fileName: string) {
-        if (!cache.contents.hasOwnProperty(fileName)) {
+        if (!cache.contents[fileName]) {
           if (!fileExists(fileName)) {
             return undefined
           }
 
-          cache.contents[fileName] = getFile(fileName)
+          setCache(getFile(fileName), fileName)
         }
 
         return ts.ScriptSnapshot.fromString(cache.contents[fileName])
@@ -327,16 +325,15 @@ export function register (options: Options = {}): Register {
       fileExists,
       cache,
       function (code: string, fileName: string, lineOffset?: number) {
-        addVersion(fileName)
-        addCache(code, fileName)
+        setCache(code, fileName)
 
         return getOutput(code, fileName, lineOffset)
       },
       getExtension
     )
 
-    getTypeInfo = function (fileName: string, position: number) {
-      addVersion(fileName)
+    getTypeInfo = function (code: string, fileName: string, position: number) {
+      setCache(code, fileName)
 
       const info = service.getQuickInfoAtPosition(fileName, position)
       const name = ts.displayPartsToString(info ? info.displayParts : [])

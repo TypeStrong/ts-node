@@ -281,9 +281,13 @@ function startRepl () {
     useGlobal: false
   })
 
-  const undo = appendEval('')
+  // Hard fix for TypeScript forcing `Object.defineProperty(exports, ...)`.
+  appendEval('exports = module.exports\n')
 
-  repl.on('reset', undo)
+  // Bookmark the point where we should reset the REPL state.
+  const reset = appendEval('')
+
+  repl.on('reset', reset)
 
   repl.defineCommand('type', {
     help: 'Check the type of a TypeScript identifier',
@@ -294,7 +298,7 @@ function startRepl () {
       }
 
       const undo = appendEval(identifier)
-      const { name, comment } = service.getTypeInfo(EVAL_PATH, EVAL_INSTANCE.input.length)
+      const { name, comment } = service.getTypeInfo(EVAL_INSTANCE.input, EVAL_PATH, EVAL_INSTANCE.input.length)
 
       undo()
 
