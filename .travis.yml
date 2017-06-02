@@ -15,14 +15,14 @@ script:
   - npm run test-cov
 
 env:
-  - NODE=stable TYPESCRIPT=typescript@1.6
-  - NODE=stable TYPESCRIPT=typescript@1.7
-  - NODE=stable TYPESCRIPT=typescript@1.8
-  - NODE=stable TYPESCRIPT=typescript@2.0
-  - NODE=stable TYPESCRIPT=typescript@2.1
+  - NODE=6 TYPESCRIPT=typescript@1.6
+  - NODE=6 TYPESCRIPT=typescript@1.7
+  - NODE=6 TYPESCRIPT=typescript@1.8
+  - NODE=6 TYPESCRIPT=typescript@2.0
+  - NODE=6 TYPESCRIPT=typescript@2.1
   - NODE=4 TYPESCRIPT=typescript@latest
-  - NODE=stable TYPESCRIPT=typescript@latest
-  - NODE=stable TYPESCRIPT=typescript@next
+  - NODE=6 TYPESCRIPT=typescript@latest
+  - NODE=6 TYPESCRIPT=typescript@next
 
 node_js:
   - stable
