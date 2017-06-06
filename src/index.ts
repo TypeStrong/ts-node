@@ -271,7 +271,7 @@ export function register (options: Options = {}): Register {
             return undefined
           }
 
-          setCache(getFile(fileName), fileName)
+          cache.contents[fileName] = getFile(fileName)
         }
 
         return ts.ScriptSnapshot.fromString(cache.contents[fileName])
