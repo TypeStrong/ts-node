@@ -21,6 +21,7 @@ v8flags(function (err, v8flags) {
     '--debug',
     '--debug-brk',
     '--inspect',
+    '--inspect-brk',
     '--nolazy',
     '--no-deprecation',
     '--log-timer-events',
