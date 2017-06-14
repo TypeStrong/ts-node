@@ -544,7 +544,8 @@ export function fileExists (fileName: string): boolean {
   try {
     const stats = statSync(fileName)
 
-    return stats.isFile() || stats.isFIFO()
+    // Ensure the file size is non-zero to avoid racing against cache users in other processes.
+    return (stats.isFile() && stats.size > 0) || stats.isFIFO()
   } catch (err) {
     return false
   }
