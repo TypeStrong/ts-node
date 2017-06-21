@@ -105,12 +105,6 @@ const argv = minimist<Argv>(process.argv.slice(2, stop), {
   }
 })
 
-if (argv.version) {
-  console.log(`ts-node v${VERSION}`)
-  console.log(`node ${process.version}`)
-  process.exit(0)
-}
-
 if (argv.help) {
   console.log(`
 Usage: ts-node [options] [ -e script | script.ts ] [arguments]
@@ -155,8 +149,17 @@ const service = register({
   fileExists: isEval ? fileExistsEval : fileExists
 })
 
+// Output project information.
+if (argv.version) {
+  console.log(`ts-node v${VERSION}`)
+  console.log(`node ${process.version}`)
+  console.log(`typescript v${service.ts.version}`)
+  console.log(`cache ${JSON.stringify(service.cachedir)}`)
+  process.exit(0)
+}
+
 // Require specified modules before start-up.
-;(Module as any)._preloadModules(arrify(argv.require))
+(Module as any)._preloadModules(arrify(argv.require))
 
 /**
  * Eval helpers.

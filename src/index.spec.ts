@@ -252,8 +252,6 @@ describe('ts-node', function () {
           require('../tests/with-jsx.tsx')
         } catch (error) {
           expect(error.stack).to.contain('SyntaxError: Unexpected token <\n')
-          expect(compiled).to.not.contain('//# sourceMappingURL=w') // First letter of filename.
-          expect(compiled).to.match(/\/\/# sourceMappingURL=.*\.jsx.map$/)
           done()
         }
       })

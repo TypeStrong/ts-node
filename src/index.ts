@@ -63,7 +63,7 @@ export interface Options {
 interface Cache {
   contents: { [fileName: string]: string }
   versions: { [fileName: string]: number }
-  sourceMaps: { [fileName: string]: string }
+  outputs: { [fileName: string]: string }
 }
 
 /**
@@ -115,6 +115,8 @@ export function normalizeSlashes (value: string): string {
 export interface Register {
   cwd: string
   extensions: string[]
+  cachedir: string
+  ts: TSCommon
   compile (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
 }
@@ -150,7 +152,7 @@ export function register (options: Options = {}): Register {
   const cache: Cache = {
     contents: Object.create(null),
     versions: Object.create(null),
-    sourceMaps: Object.create(null)
+    outputs: Object.create(null)
   }
 
   const ignore = arrify(
@@ -165,13 +167,8 @@ export function register (options: Options = {}): Register {
   // Install source map support and read from cache.
   sourceMapSupport.install({
     environment: 'node',
-    retrieveSourceMap (fileName: string) {
-      if (cache.sourceMaps[fileName]) {
-        return {
-          url: cache.sourceMaps[fileName],
-          map: getFile(cache.sourceMaps[fileName])
-        }
-      }
+    retrieveFile (path: string) {
+      return cache.outputs[path]
     }
   })
 
@@ -186,9 +183,6 @@ export function register (options: Options = {}): Register {
     resolve(cwd, cacheDirectory),
     getCompilerDigest({ version: ts.version, fast, ignoreWarnings, disableWarnings, config, compiler })
   )
-
-  // Make sure the cache directory _always_ exists (source maps write there).
-  mkdirp.sync(cachedir)
 
   // Render the configuration errors and exit the script.
   if (configDiagnostics.length) {
@@ -243,7 +237,6 @@ export function register (options: Options = {}): Register {
     cachedir,
     shouldCache,
     getFile,
-    fileExists,
     cache,
     getOutput,
     getExtension
@@ -325,7 +318,6 @@ export function register (options: Options = {}): Register {
       cachedir,
       shouldCache,
       getFile,
-      fileExists,
       cache,
       function (code: string, fileName: string, lineOffset?: number) {
         setCache(code, fileName)
@@ -346,10 +338,12 @@ export function register (options: Options = {}): Register {
     }
   }
 
-  const register: Register = { cwd, compile, getTypeInfo, extensions }
+  const register: Register = { cwd, compile, getTypeInfo, extensions, cachedir, ts }
 
   // Register the extensions.
-  extensions.forEach(extension => registerExtension(extension, ignore, register, originalJsHandler))
+  extensions.forEach(extension => {
+    registerExtension(extension, ignore, register, originalJsHandler)
+  })
 
   return register
 }
@@ -453,49 +447,40 @@ function readThrough (
   cachedir: string,
   shouldCache: boolean,
   getFile: (fileName: string) => string,
-  fileExists: (fileName: string) => boolean,
   cache: Cache,
   compile: (code: string, fileName: string, lineOffset?: number) => SourceOutput,
   getExtension: (fileName: string) => string
 ) {
   if (shouldCache === false) {
     return function (code: string, fileName: string, lineOffset?: number) {
-      const cachePath = join(cachedir, getCacheName(code, fileName))
-      const extension = getExtension(fileName)
-      const sourceMapPath = `${cachePath}${extension}.map`
-      const out = compile(code, fileName, lineOffset)
+      const [value, sourceMap] = compile(code, fileName, lineOffset)
+      const output = updateOutput(value, fileName, sourceMap)
 
-      cache.sourceMaps[fileName] = sourceMapPath
-
-      const output = updateOutput(out[0], fileName, extension, sourceMapPath)
-      const sourceMap = updateSourceMap(out[1], fileName)
-
-      writeFileSync(sourceMapPath, sourceMap)
+      cache.outputs[fileName] = output
 
       return output
     }
   }
 
+  // Make sure the cache directory exists before continuing.
+  mkdirp.sync(cachedir)
+
   return function (code: string, fileName: string, lineOffset?: number) {
     const cachePath = join(cachedir, getCacheName(code, fileName))
     const extension = getExtension(fileName)
     const outputPath = `${cachePath}${extension}`
-    const sourceMapPath = `${outputPath}.map`
 
-    cache.sourceMaps[fileName] = sourceMapPath
+    try {
+      const output = getFile(outputPath)
+      cache.outputs[fileName] = output
+      return output
+    } catch (err) {/* Ignore. */}
 
-    // Use the cache when available.
-    if (fileExists(outputPath)) {
-      return getFile(outputPath)
-    }
+    const [value, sourceMap] = compile(code, fileName, lineOffset)
+    const output = updateOutput(value, fileName, sourceMap)
 
-    const out = compile(code, fileName, lineOffset)
-
-    const output = updateOutput(out[0], fileName, extension, sourceMapPath)
-    const sourceMap = updateSourceMap(out[1], fileName)
-
+    cache.outputs[fileName] = output
     writeFileSync(outputPath, output)
-    writeFileSync(sourceMapPath, sourceMap)
 
     return output
   }
@@ -504,11 +489,11 @@ function readThrough (
 /**
  * Update the output remapping the source map.
  */
-function updateOutput (outputText: string, fileName: string, extension: string, sourceMapPath: string) {
-  // Replace the original extension (E.g. `.ts`).
-  const ext = extname(fileName)
-  const originalPath = basename(fileName).slice(0, -ext.length) + `${extension}.map`
-  return outputText.slice(0, -originalPath.length) + sourceMapPath.replace(/\\/g, '/')
+function updateOutput (outputText: string, fileName: string, sourceMap: string) {
+  const base64Map = new Buffer(updateSourceMap(sourceMap, fileName), 'utf8').toString('base64')
+  const sourceMapContent = `data:application/json;charset=utf-8;base64,${base64Map}`
+
+  return outputText.slice(0, -1 * (basename(fileName).length + 4)) + sourceMapContent
 }
 
 /**
@@ -528,7 +513,7 @@ function updateSourceMap (sourceMapText: string, fileName: string) {
 function getCacheName (sourceCode: string, fileName: string) {
   return crypto.createHash('sha256')
     .update(extname(fileName), 'utf8')
-    .update('\0', 'utf8')
+    .update('\x001\x00', 'utf8') // Store "cache version" in hash.
     .update(sourceCode, 'utf8')
     .digest('hex')
 }
