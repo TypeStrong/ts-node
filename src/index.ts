@@ -485,7 +485,7 @@ function readThrough (
     cache.sourceMaps[fileName] = sourceMapPath
 
     // Use the cache when available.
-    if (fileExists(outputPath)) {
+    if (fileExists(outputPath) && fileExists(sourceMapPath)) {
       return getFile(outputPath)
     }
 
