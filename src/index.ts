@@ -599,16 +599,22 @@ export function formatDiagnostic (
   lineOffset: number
 ): TSDiagnostic {
   const messageText = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
+  const { code } = diagnostic
 
   if (diagnostic.file) {
     const path = relative(cwd, diagnostic.file.fileName)
-    const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start)
-    const message = `${path} (${line + 1 + lineOffset},${character + 1}): ${messageText} (${diagnostic.code})`
 
-    return { message, code: diagnostic.code }
+    if (diagnostic.start) {
+      const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start)
+      const message = `${path} (${line + 1 + lineOffset},${character + 1}): ${messageText} (${code})`
+
+      return { message, code }
+    }
+
+    return { message: `${path}: ${messageText} (${code})`, code }
   }
 
-  return { message: `${messageText} (${diagnostic.code})`, code: diagnostic.code }
+  return { message: `${messageText} (${code})`, code }
 }
 
 /**
