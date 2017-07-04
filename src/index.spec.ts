@@ -100,6 +100,25 @@ describe('ts-node', function () {
       )
     })
 
+    it('should be able to disable warnings from environment', function (done) {
+      exec(
+        `${BIN_EXEC} tests/compiler-error`,
+        {
+          env: {
+            PATH: process.env.PATH,
+            TS_NODE_DISABLE_WARNINGS: true
+          }
+        },
+        function (err) {
+          expect(err.message).to.match(
+            /TypeError: (?:(?:undefined|str\.toUpperCase) is not a function|.*has no method \'toUpperCase\')/
+          )
+
+          return done()
+        }
+      )
+    })
+
     it('should work with source maps', function (done) {
       exec(`${BIN_EXEC} tests/throw`, function (err) {
         expect(err.message).to.contain([
