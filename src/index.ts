@@ -2,6 +2,7 @@ import { relative, basename, extname, resolve, dirname, join } from 'path'
 import { readdirSync, writeFileSync, readFileSync, statSync } from 'fs'
 import { EOL, tmpdir, homedir } from 'os'
 import sourceMapSupport = require('source-map-support')
+import chalk = require('chalk')
 import mkdirp = require('mkdirp')
 import crypto = require('crypto')
 import yn = require('yn')
@@ -630,4 +631,13 @@ export class TSError extends BaseError {
     )
   }
 
+}
+
+/**
+ * Stringify the `TSError` instance.
+ */
+export function printError (error: TSError) {
+  const title = `${chalk.red('⨯')} Unable to compile TypeScript`
+
+  return `${chalk.bold(title)}\n${error.diagnostics.map(x => x.message).join('\n')}`
 }

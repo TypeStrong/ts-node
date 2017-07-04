@@ -7,7 +7,7 @@ import minimist = require('minimist')
 import chalk = require('chalk')
 import { diffLines } from 'diff'
 import { Script } from 'vm'
-import { register, VERSION, getFile, fileExists, TSError, parse } from './index'
+import { register, VERSION, getFile, fileExists, TSError, parse, printError } from './index'
 
 interface Argv {
   eval?: string
@@ -212,7 +212,7 @@ function evalAndExit (code: string, isPrinted: boolean) {
     result = _eval(code, global)
   } catch (error) {
     if (error instanceof TSError) {
-      console.error(print(error))
+      console.error(printError(error))
       process.exit(1)
     }
 
@@ -224,15 +224,6 @@ function evalAndExit (code: string, isPrinted: boolean) {
   }
 
   process.exit(0)
-}
-
-/**
- * Stringify the `TSError` instance.
- */
-function print (error: TSError) {
-  const title = `${chalk.red('⨯')} Unable to compile TypeScript`
-
-  return `${chalk.bold(title)}\n${error.diagnostics.map(x => x.message).join('\n')}`
 }
 
 /**
@@ -334,7 +325,7 @@ function replEval (code: string, context: any, _filename: string, callback: (err
       if (typeof Recoverable === 'function' && isRecoverable(error)) {
         err = new Recoverable(error)
       } else {
-        err = print(error)
+        err = printError(error)
       }
     } else {
       err = error
