@@ -101,7 +101,9 @@ const argv = minimist<Argv>(process.argv.slice(2, stop), {
   boolean: booleans,
   alias: aliases,
   default: {
-    cache: true
+    cache: null,
+    fast: null,
+    disableWarnings: null
   }
 })
 
