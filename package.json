@@ -1,6 +1,6 @@
 {
   "name": "ts-node",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "TypeScript execution environment and REPL for node",
   "main": "dist/index.js",
   "bin": {
