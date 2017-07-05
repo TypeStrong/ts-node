@@ -1,5 +1,5 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path'
-import { readdirSync, writeFileSync, readFileSync, statSync } from 'fs'
+import { writeFileSync, readFileSync, statSync } from 'fs'
 import { EOL, tmpdir, homedir } from 'os'
 import sourceMapSupport = require('source-map-support')
 import mkdirp = require('mkdirp')
@@ -11,6 +11,16 @@ import * as TS from 'typescript'
 import { loadSync } from 'tsconfig'
 
 const pkg = require('../package.json')
+const shouldDebug = yn(process.env.TS_NODE_DEBUG)
+const debug = shouldDebug ? console.log.bind(console, 'ts-node') : () => undefined
+const debugFn = shouldDebug ?
+  <T, U> (key: string, fn: (arg: T) => U) => {
+    return (x: T) => {
+      debug(key, x)
+      return fn(x)
+    }
+  } :
+  <T, U> (_: string, fn: (arg: T) => U) => fn
 
 /**
  * Common TypeScript interfaces between versions.
@@ -52,8 +62,8 @@ export interface Options {
   ignore?: boolean | string | string[]
   ignoreWarnings?: number | string | Array<number | string>
   disableWarnings?: boolean | null
-  getFile?: (fileName: string) => string
-  fileExists?: (fileName: string) => boolean
+  getFile?: (path: string) => string
+  fileExists?: (path: string) => boolean
   compilerOptions?: any
 }
 
@@ -61,9 +71,9 @@ export interface Options {
  * Track the project information.
  */
 interface Cache {
-  contents: { [fileName: string]: string }
-  versions: { [fileName: string]: number }
-  outputs: { [fileName: string]: string }
+  contents: { [path: string]: string }
+  versions: { [path: string]: number }
+  outputs: { [path: string]: string }
 }
 
 /**
@@ -269,11 +279,11 @@ export function register (options: Options = {}): Register {
 
         return ts.ScriptSnapshot.fromString(cache.contents[fileName])
       },
-      getDirectories: getDirectories,
-      directoryExists: directoryExists,
-      fileExists: fileExists,
-      readFile: getFile,
-      readDirectory: ts.sys.readDirectory,
+      fileExists: debugFn('fileExists', fileExists),
+      readFile: debugFn('getFile', getFile),
+      readDirectory: debugFn('readDirectory', ts.sys.readDirectory),
+      getDirectories: debugFn('getDirectories', ts.sys.getDirectories),
+      directoryExists: debugFn('directoryExists', ts.sys.directoryExists),
       getNewLine: () => EOL,
       getCurrentDirectory: () => cwd,
       getCompilationSettings: () => config.options,
@@ -376,6 +386,8 @@ function registerExtension (
     const _compile = m._compile
 
     m._compile = function (code, fileName) {
+      debug('module._compile', fileName)
+
       return _compile.call(this, register.compile(code, fileName), fileName)
     }
 
@@ -453,6 +465,8 @@ function readThrough (
 ) {
   if (shouldCache === false) {
     return function (code: string, fileName: string, lineOffset?: number) {
+      debug('readThrough', fileName)
+
       const [value, sourceMap] = compile(code, fileName, lineOffset)
       const output = updateOutput(value, fileName, sourceMap)
 
@@ -466,6 +480,8 @@ function readThrough (
   mkdirp.sync(cachedir)
 
   return function (code: string, fileName: string, lineOffset?: number) {
+    debug('readThrough', fileName)
+
     const cachePath = join(cachedir, getCacheName(code, fileName))
     const extension = getExtension(fileName)
     const outputPath = `${cachePath}${extension}`
@@ -533,24 +549,6 @@ export function fileExists (fileName: string): boolean {
     const stats = statSync(fileName)
 
     return stats.isFile() || stats.isFIFO()
-  } catch (err) {
-    return false
-  }
-}
-
-/**
- * Get directories within a directory.
- */
-export function getDirectories (path: string): string[] {
-  return readdirSync(path).filter(name => directoryExists(join(path, name)))
-}
-
-/**
- * Check if a directory exists.
- */
-export function directoryExists (path: string): boolean {
-  try {
-    return statSync(path).isDirectory()
   } catch (err) {
     return false
   }
