@@ -81,6 +81,8 @@ gulp
 
 You can set options by passing them in before the script.
 
+**Note:** These are in addition to the [node.js CLI arguments](https://nodejs.org/api/cli.html).
+
 ```sh
 ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.ts
 ```
