@@ -81,6 +81,8 @@ gulp
 
 You can set options by passing them in before the script.
 
+Note: These are in addition to Node.js's own [command line options](https://nodejs.org/api/cli.html), as a result, they are case sensetive and capitalized (tsconfig.json is chosen by -P not -p, as in typescript's command line).
+
 ```sh
 ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.ts
 ```
