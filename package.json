@@ -70,7 +70,7 @@
     "mkdirp": "^0.5.1",
     "source-map-support": "^0.4.0",
     "tsconfig": "^6.0.0",
-    "v8flags": "^2.0.11",
+    "v8flags": "^3.0.0",
     "yn": "^2.0.0"
   }
 }
