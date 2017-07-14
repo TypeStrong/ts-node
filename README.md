@@ -87,7 +87,7 @@ You can set options by passing them in before the script.
 ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.ts
 ```
 
-* **--project, -P** Path to resolve `tsconfig.json` from (or `false` to disable) (also `process.env.TS_NODE_PROJECT`)
+* **--project, -P** Path to resolve TypeScript configuration file from (or `false` to disable) (also `process.env.TS_NODE_PROJECT`) (can be file or directory, if directory is specified then `tsconfig.json` from this directory will be resolved)
 * **--compiler, -C** Use a custom, require-able TypeScript compiler compatible with `typescript@>=1.5.0-alpha` (also `process.env.TS_NODE_COMPILER`)
 * **--ignore** Specify an array of regular expression strings for `ts-node` to skip compiling as TypeScript (defaults to `/node_modules/`, `false` to disable) (also `process.env.TS_NODE_IGNORE`)
 * **--ignoreWarnings, -I** Set an array of TypeScript diagnostic codes to ignore (also `process.env.TS_NODE_IGNORE_WARNINGS`)
