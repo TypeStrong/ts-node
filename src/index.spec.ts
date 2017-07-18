@@ -106,6 +106,7 @@ describe('ts-node', function () {
         {
           env: {
             PATH: process.env.PATH,
+            HOME: process.env.HOME,
             TS_NODE_DISABLE_WARNINGS: true
           }
         },
