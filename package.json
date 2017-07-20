@@ -49,11 +49,13 @@
   },
   "homepage": "https://github.com/TypeStrong/ts-node",
   "devDependencies": {
+    "@types/react": "^15.0.38",
     "chai": "^4.0.1",
     "istanbul": "^0.4.0",
     "mocha": "^3.0.0",
     "ntypescript": "^1.201507091536.1",
     "proxyquire": "^1.7.2",
+    "react": "^15.6.1",
     "rimraf": "^2.5.4",
     "semver": "^5.1.0",
     "tslint": "^5.0.0",

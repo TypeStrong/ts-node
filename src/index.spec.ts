@@ -10,6 +10,8 @@ const testDir = join(__dirname, '../tests')
 const EXEC_PATH = join(__dirname, '../dist/bin')
 const BIN_EXEC = `node "${EXEC_PATH}" --project "${testDir}"`
 
+const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
+
 describe('ts-node', function () {
   this.timeout(10000)
 
@@ -177,7 +179,7 @@ describe('ts-node', function () {
     })
 
     it('should pipe into an eval script', function (done) {
-      const cp = exec(`${BIN_EXEC} -p 'declare var process: any\nprocess.stdin.isTTY'`, function (err, stdout) {
+      const cp = exec(`${BIN_EXEC} --fast -p 'process.stdin.isTTY'`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('undefined\n')
 
@@ -200,6 +202,15 @@ describe('ts-node', function () {
       exec(`${BIN_EXEC} -r typescript -e "console.log('success')"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('success\n')
+
+        return done()
+      })
+    })
+
+    it.skip('should use source maps with react tsx', function (done) {
+      exec(`${BIN_EXEC} -r ./tests/emit-compiled.ts tests/jsx-react.tsx`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('todo')
 
         return done()
       })
@@ -259,6 +270,7 @@ describe('ts-node', function () {
             compiled = code
             return _compile.call(this, code, fileName)
           }
+
           return old(m, fileName)
         }
       })
@@ -272,8 +284,11 @@ describe('ts-node', function () {
           require('../tests/with-jsx.tsx')
         } catch (error) {
           expect(error.stack).to.contain('SyntaxError: Unexpected token <\n')
-          done()
         }
+
+        expect(compiled).to.match(SOURCE_MAP_REGEXP)
+
+        done()
       })
     })
   })
