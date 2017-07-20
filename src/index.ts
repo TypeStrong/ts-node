@@ -510,7 +510,7 @@ function updateOutput (outputText: string, fileName: string, sourceMap: string) 
   const base64Map = new Buffer(updateSourceMap(sourceMap, fileName), 'utf8').toString('base64')
   const sourceMapContent = `data:application/json;charset=utf-8;base64,${base64Map}`
 
-  return outputText.slice(0, -1 * (basename(fileName).length + 4)) + sourceMapContent
+  return outputText.replace(/[^=]+$/, sourceMapContent)
 }
 
 /**
