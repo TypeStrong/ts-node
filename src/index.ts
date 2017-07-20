@@ -275,7 +275,12 @@ export function register (options: Options = {}): Register {
             return undefined
           }
 
-          cache.contents[fileName] = getFile(fileName)
+          const content = getFile(fileName)
+          if (!isValidCacheContent(content)) {
+            return undefined
+          }
+
+          cache.contents[fileName] = content
         }
 
         return ts.ScriptSnapshot.fromString(cache.contents[fileName])
@@ -489,8 +494,10 @@ function readThrough (
 
     try {
       const output = getFile(outputPath)
-      cache.outputs[fileName] = output
-      return output
+      if (isValidCacheContent(output)) {
+        cache.outputs[fileName] = output
+        return output
+      }
     } catch (err) {/* Ignore. */}
 
     const [value, sourceMap] = compile(code, fileName, lineOffset)
@@ -533,6 +540,13 @@ function getCacheName (sourceCode: string, fileName: string) {
     .update('\x001\x00', 'utf8') // Store "cache version" in hash.
     .update(sourceCode, 'utf8')
     .digest('hex')
+}
+
+/**
+ * Ensure the given cached content is valid (i.e., has a sourceMap)
+ */
+function isValidCacheContent (content: string) {
+  return content.indexOf('//# sourceMappingURL=data:application/json;') !== -1
 }
 
 /**
