@@ -489,8 +489,10 @@ function readThrough (
 
     try {
       const output = getFile(outputPath)
-      cache.outputs[fileName] = output
-      return output
+      if (isValidCacheContent(output)) {
+        cache.outputs[fileName] = output
+        return output
+      }
     } catch (err) {/* Ignore. */}
 
     const [value, sourceMap] = compile(code, fileName, lineOffset)
@@ -534,6 +536,14 @@ function getCacheName (sourceCode: string, fileName: string) {
     .update('\x001\x00', 'utf8') // Store "cache version" in hash.
     .update(sourceCode, 'utf8')
     .digest('hex')
+}
+
+/**
+ * Ensure the given cached content is valid by sniffing for a base64 encoded '}'
+ * at the end of the content, which should exist if there is a valid sourceMap present.
+ */
+function isValidCacheContent (content: string) {
+  return /(?:9|0=|Q==)$/.test(content.slice(-3))
 }
 
 /**
