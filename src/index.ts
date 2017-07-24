@@ -469,7 +469,7 @@ function readThrough (
       debug('readThrough', fileName)
 
       const [value, sourceMap] = compile(code, fileName, lineOffset)
-      const output = updateOutput(value, fileName, sourceMap)
+      const output = updateOutput(value, fileName, sourceMap, getExtension)
 
       cache.outputs[fileName] = output
 
@@ -494,7 +494,7 @@ function readThrough (
     } catch (err) {/* Ignore. */}
 
     const [value, sourceMap] = compile(code, fileName, lineOffset)
-    const output = updateOutput(value, fileName, sourceMap)
+    const output = updateOutput(value, fileName, sourceMap, getExtension)
 
     cache.outputs[fileName] = output
     writeFileSync(outputPath, output)
@@ -506,11 +506,12 @@ function readThrough (
 /**
  * Update the output remapping the source map.
  */
-function updateOutput (outputText: string, fileName: string, sourceMap: string) {
+function updateOutput (outputText: string, fileName: string, sourceMap: string, getExtension: (fileName: string) => string) {
   const base64Map = new Buffer(updateSourceMap(sourceMap, fileName), 'utf8').toString('base64')
   const sourceMapContent = `data:application/json;charset=utf-8;base64,${base64Map}`
+  const sourceMapLength = `${basename(fileName)}.map`.length + (getExtension(fileName).length - extname(fileName).length)
 
-  return outputText.replace(/[^=]+$/, sourceMapContent)
+  return outputText.slice(0, -1 * sourceMapLength) + sourceMapContent
 }
 
 /**

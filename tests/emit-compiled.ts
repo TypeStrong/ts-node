@@ -7,7 +7,7 @@ extensions.forEach(ext => {
     const _compile = m._compile
 
     m._compile = (code, path) => {
-      console.log(code)
+      console.error(code)
       return _compile.call(this, code, path)
     }
 
