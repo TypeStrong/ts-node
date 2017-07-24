@@ -58,7 +58,6 @@ export interface Options {
   fast?: boolean | null
   cache?: boolean | null
   cacheDirectory?: string
-  cacheVerification?: boolean | null
   compiler?: string
   project?: boolean | string
   ignore?: boolean | string | string[]
@@ -94,7 +93,6 @@ const DEFAULTS = {
   fileExists,
   cache: yn(process.env['TS_NODE_CACHE'], { default: true }),
   cacheDirectory: process.env['TS_NODE_CACHE_DIRECTORY'],
-  cacheVerification: yn(process.env['TS_NODE_CACHE_VERIFICATION'], { default: false }),
   disableWarnings: yn(process.env['TS_NODE_DISABLE_WARNINGS']),
   compiler: process.env['TS_NODE_COMPILER'],
   compilerOptions: parse(process.env['TS_NODE_COMPILER_OPTIONS']),
@@ -156,7 +154,6 @@ export function register (options: Options = {}): Register {
   const getFile = options.getFile || DEFAULTS.getFile
   const fileExists = options.fileExists || DEFAULTS.fileExists
   const shouldCache = !!(options.cache == null ? DEFAULTS.cache : options.cache)
-  const shouldVerifyCache = !!(options.cacheVerification == null ? DEFAULTS.cacheVerification : options.cacheVerification)
   const fast = !!(options.fast == null ? DEFAULTS.fast : options.fast)
   const project = options.project || DEFAULTS.project
   const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || getTmpDir()
@@ -250,7 +247,6 @@ export function register (options: Options = {}): Register {
   let compile = readThrough(
     cachedir,
     shouldCache,
-    shouldVerifyCache,
     getFile,
     cache,
     getOutput,
@@ -279,12 +275,7 @@ export function register (options: Options = {}): Register {
             return undefined
           }
 
-          const content = getFile(fileName)
-          if (shouldVerifyCache && !isValidCacheContent(content)) {
-            return undefined
-          }
-
-          cache.contents[fileName] = content
+          cache.contents[fileName] = getFile(fileName)
         }
 
         return ts.ScriptSnapshot.fromString(cache.contents[fileName])
@@ -337,7 +328,6 @@ export function register (options: Options = {}): Register {
     compile = readThrough(
       cachedir,
       shouldCache,
-      shouldVerifyCache,
       getFile,
       cache,
       function (code: string, fileName: string, lineOffset?: number) {
@@ -469,7 +459,6 @@ type SourceOutput = [string, string]
 function readThrough (
   cachedir: string,
   shouldCache: boolean,
-  shouldVerifyCache: boolean,
   getFile: (fileName: string) => string,
   cache: Cache,
   compile: (code: string, fileName: string, lineOffset?: number) => SourceOutput,
@@ -500,7 +489,7 @@ function readThrough (
 
     try {
       const output = getFile(outputPath)
-      if (!shouldVerifyCache || isValidCacheContent(output)) {
+      if (isValidCacheContent(output)) {
         cache.outputs[fileName] = output
         return output
       }
@@ -549,10 +538,11 @@ function getCacheName (sourceCode: string, fileName: string) {
 }
 
 /**
- * Ensure the given cached content is valid (i.e., has a sourceMap)
+ * Ensure the given cached content is valid by sniffing for a base64 encoded '}'
+ * at the end of the content, which should exist if there is a valid sourceMap present.
  */
 function isValidCacheContent (content: string) {
-  return content.indexOf('//# sourceMappingURL=data:application/json;') !== -1
+  return /(?:9|0=|Q==)$/.test(content.slice(-3))
 }
 
 /**
