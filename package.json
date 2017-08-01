@@ -49,7 +49,7 @@
   },
   "homepage": "https://github.com/TypeStrong/ts-node",
   "devDependencies": {
-    "@types/react": "^15.0.38",
+    "@types/react": "^16.0.0",
     "chai": "^4.0.1",
     "istanbul": "^0.4.0",
     "mocha": "^3.0.0",
