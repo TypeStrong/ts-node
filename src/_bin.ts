@@ -131,10 +131,10 @@ Options:
 }
 
 const cwd = process.cwd()
-const code = argv.eval == null ? argv.print : argv.eval
+const code = argv.eval === undefined ? argv.print : argv.eval
 const isEvalScript = typeof argv.eval === 'string' || !!argv.print // Minimist struggles with empty strings.
 const isEval = isEvalScript || stop === process.argv.length
-const isPrinted = argv.print != null
+const isPrinted = argv.print !== undefined
 
 // Register the TypeScript compiler instance.
 const service = register({
@@ -252,17 +252,18 @@ function _eval (input: string, context: any) {
     EVAL_INSTANCE.output = output
   }
 
-  let result: any
+  return changes.reduce((result, change) => {
+    return change.added ? exec(change.value, EVAL_FILENAME, context) : result
+  }, undefined)
+}
 
-  for (const change of changes) {
-    if (change.added) {
-      const script = new Script(change.value, EVAL_FILENAME)
+/**
+ * Execute some code.
+ */
+function exec (code: string, filename: string, context: any) {
+  const script = new Script(code, filename)
 
-      result = script.runInNewContext(context)
-    }
-  }
-
-  return result
+  return script.runInNewContext(context)
 }
 
 /**
@@ -277,12 +278,17 @@ function startRepl () {
     useGlobal: false
   })
 
-  // Hard fix for TypeScript forcing `Object.defineProperty(exports, ...)`.
-  appendEval('exports = module.exports\n')
-
   // Bookmark the point where we should reset the REPL state.
-  const reset = appendEval('')
+  const resetEval = appendEval('')
 
+  function reset () {
+    resetEval()
+
+    // Hard fix for TypeScript forcing `Object.defineProperty(exports, ...)`.
+    exec('exports = module.exports', EVAL_FILENAME, (repl as any).context)
+  }
+
+  reset()
   repl.on('reset', reset)
 
   repl.defineCommand('type', {
@@ -322,7 +328,7 @@ function replEval (code: string, context: any, _filename: string, callback: (err
   } catch (error) {
     if (error instanceof TSError) {
       // Support recoverable compilations using >= node 6.
-      if (typeof Recoverable === 'function' && isRecoverable(error)) {
+      if (Recoverable && isRecoverable(error)) {
         err = new Recoverable(error)
       } else {
         err = printError(error)
