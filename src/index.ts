@@ -123,6 +123,24 @@ export function normalizeSlashes (value: string): string {
   return value.replace(/\\/g, '/')
 }
 
+/**
+ * TypeScript diagnostics error.
+ */
+export class TSError extends BaseError {
+
+  name = 'TSError'
+
+  constructor (public diagnostics: TSDiagnostic[]) {
+    super(
+      `⨯ Unable to compile TypeScript\n${diagnostics.map(x => x.message).join('\n')}`
+    )
+  }
+
+}
+
+/**
+ * Return type for registering `ts-node`.
+ */
 export interface Register {
   cwd: string
   extensions: string[]
@@ -625,21 +643,6 @@ export function formatDiagnostic (
   }
 
   return { message: `${messageText} (${code})`, code }
-}
-
-/**
- * TypeScript diagnostics error.
- */
-export class TSError extends BaseError {
-
-  name = 'TSError'
-
-  constructor (public diagnostics: TSDiagnostic[]) {
-    super(
-      `⨯ Unable to compile TypeScript\n${diagnostics.map(x => x.message).join('\n')}`
-    )
-  }
-
 }
 
 /**
