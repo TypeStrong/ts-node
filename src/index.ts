@@ -55,14 +55,13 @@ export const VERSION = pkg.version
  * Registration options.
  */
 export interface Options {
-  fast?: boolean | null
+  typeCheck?: boolean | null
   cache?: boolean | null
   cacheDirectory?: string
   compiler?: string
   project?: boolean | string
   ignore?: boolean | string | string[]
   ignoreWarnings?: number | string | Array<number | string>
-  disableWarnings?: boolean | null
   getFile?: (path: string) => string
   fileExists?: (path: string) => boolean
   compilerOptions?: any
@@ -93,13 +92,12 @@ const DEFAULTS = {
   fileExists,
   cache: yn(process.env['TS_NODE_CACHE'], { default: true }),
   cacheDirectory: process.env['TS_NODE_CACHE_DIRECTORY'],
-  disableWarnings: yn(process.env['TS_NODE_DISABLE_WARNINGS']),
   compiler: process.env['TS_NODE_COMPILER'],
   compilerOptions: parse(process.env['TS_NODE_COMPILER_OPTIONS']),
   project: process.env['TS_NODE_PROJECT'],
   ignore: split(process.env['TS_NODE_IGNORE']),
   ignoreWarnings: split(process.env['TS_NODE_IGNORE_WARNINGS']),
-  fast: yn(process.env['TS_NODE_FAST'])
+  typeCheck: yn(process.env['TS_NODE_FAST'])
 }
 
 /**
@@ -168,11 +166,10 @@ export function register (options: Options = {}): Register {
   const ignoreWarnings = arrify(
     options.ignoreWarnings || DEFAULTS.ignoreWarnings || []
   ).concat(emptyFileListWarnings).map(Number)
-  const disableWarnings = !!(options.disableWarnings == null ? DEFAULTS.disableWarnings : options.disableWarnings)
   const getFile = options.getFile || DEFAULTS.getFile
   const fileExists = options.fileExists || DEFAULTS.fileExists
   const shouldCache = !!(options.cache == null ? DEFAULTS.cache : options.cache)
-  const fast = !!(options.fast == null ? DEFAULTS.fast : options.fast)
+  const typeCheck = !!(options.typeCheck == null ? DEFAULTS.typeCheck : options.typeCheck)
   const project = options.project || DEFAULTS.project
   const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || getTmpDir()
   const compilerOptions = Object.assign({}, DEFAULTS.compilerOptions, options.compilerOptions)
@@ -205,12 +202,12 @@ export function register (options: Options = {}): Register {
   const cwd = process.cwd()
   const ts: typeof TS = require(compiler)
   const config = readConfig(compilerOptions, project, cwd, ts)
-  const configDiagnostics = filterDiagnostics(config.errors, ignoreWarnings, disableWarnings)
+  const configDiagnostics = filterDiagnostics(config.errors, ignoreWarnings)
   const extensions = ['.ts', '.tsx']
 
   const cachedir = join(
     resolve(cwd, cacheDirectory),
-    getCompilerDigest({ version: ts.version, fast, ignoreWarnings, disableWarnings, config, compiler })
+    getCompilerDigest({ version: ts.version, typeCheck, ignoreWarnings, config, compiler })
   )
 
   // Render the configuration errors and exit the script.
@@ -252,7 +249,7 @@ export function register (options: Options = {}): Register {
     })
 
     const diagnosticList = result.diagnostics ?
-      filterDiagnostics(result.diagnostics, ignoreWarnings, disableWarnings) :
+      filterDiagnostics(result.diagnostics, ignoreWarnings) :
       []
 
     if (diagnosticList.length) {
@@ -276,7 +273,7 @@ export function register (options: Options = {}): Register {
   }
 
   // Use full language services when the fast option is disabled.
-  if (!fast) {
+  if (typeCheck) {
     // Set the file contents into cache.
     const setCache = function (code: string, fileName: string) {
       cache.contents[fileName] = code
@@ -319,7 +316,7 @@ export function register (options: Options = {}): Register {
         .concat(service.getSyntacticDiagnostics(fileName))
         .concat(service.getSemanticDiagnostics(fileName))
 
-      const diagnosticList = filterDiagnostics(diagnostics, ignoreWarnings, disableWarnings)
+      const diagnosticList = filterDiagnostics(diagnostics, ignoreWarnings)
 
       if (diagnosticList.length) {
         throw new TSError(formatDiagnostics(diagnosticList, cwd, ts, lineOffset))
@@ -594,11 +591,7 @@ export function getFile (fileName: string): string {
 /**
  * Filter diagnostics.
  */
-function filterDiagnostics (diagnostics: TS.Diagnostic[], ignore: number[], disable: boolean) {
-  if (disable) {
-    return []
-  }
-
+function filterDiagnostics (diagnostics: TS.Diagnostic[], ignore: number[]) {
   return diagnostics.filter(x => ignore.indexOf(x.code) === -1)
 }
 

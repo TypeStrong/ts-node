@@ -46,6 +46,10 @@ echo "console.log('Hello, world!')" | ts-node
 
 ![TypeScript REPL](https://github.com/TypeStrong/ts-node/raw/master/screenshot.png)
 
+### Programmatic
+
+You can require `ts-node` and register the loader for future requires by using `require('ts-node').register({ /* options */ })`. You can also use the shortcut files `node -r ts-node/register` or `node -r ts-node/register/type-check` depending on your preferences.
+
 ### Mocha
 
 ```sh
@@ -96,22 +100,6 @@ ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.t
 * **--fast, -F** Use TypeScript's `transpileModule` mode (no type checking, but faster compilation) (also `process.env.TS_NODE_FAST`)
 * **--no-cache** Skip hitting the compiled JavaScript cache (also `process.env.TS_NODE_CACHE`)
 * **--cache-directory** Configure the TypeScript cache directory (also `process.env.TS_NODE_CACHE_DIRECTORY`)
-
-## Programmatic Usage
-
-```js
-require('ts-node').register({ /* options */ })
-
-// Or using the shortcut file.
-require('ts-node/register')
-```
-
-This will register the TypeScript compiler for "on the fly" compilation support of `.ts` and `.tsx` files during the run
-of the script. From here you can use `require` to bring in modules from TypeScript files:
-
-```js
-var someModule = require('path_to_a_typescript_file');
-```
 
 ## License
 
