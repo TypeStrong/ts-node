@@ -12,7 +12,7 @@ import { register, VERSION, getFile, fileExists, TSError, parse, printError } fr
 interface Argv {
   eval?: string
   print?: string
-  fast?: boolean
+  typeCheck?: boolean
   cache?: boolean
   cacheDirectory?: string
   version?: boolean
@@ -22,26 +22,24 @@ interface Argv {
   require?: string | string[]
   ignore?: boolean | string | string[]
   ignoreWarnings?: string | string[]
-  disableWarnings?: boolean
   compilerOptions?: any
   _: string[]
 }
 
 const strings = ['eval', 'print', 'compiler', 'project', 'ignoreWarnings', 'require', 'cacheDirectory', 'ignore']
-const booleans = ['help', 'fast', 'version', 'disableWarnings', 'cache']
+const booleans = ['help', 'typeCheck', 'version', 'cache']
 
 const aliases: { [key: string]: string[] } = {
   help: ['h'],
-  fast: ['F'],
   version: ['v'],
   eval: ['e'],
   print: ['p'],
   project: ['P'],
   compiler: ['C'],
   require: ['r'],
+  typeCheck: ['type-check'],
   cacheDirectory: ['cache-directory'],
   ignoreWarnings: ['I', 'ignore-warnings'],
-  disableWarnings: ['D', 'disable-warnings'],
   compilerOptions: ['O', 'compiler-options']
 }
 
@@ -102,8 +100,7 @@ const argv = minimist<Argv>(process.argv.slice(2, stop), {
   alias: aliases,
   default: {
     cache: null,
-    fast: null,
-    disableWarnings: null
+    typeCheck: null
   }
 })
 
@@ -118,7 +115,6 @@ Options:
   -r, --require [path]           Require a node module for execution
   -C, --compiler [name]          Specify a custom TypeScript compiler
   -I, --ignoreWarnings [code]    Ignore TypeScript warnings by diagnostic code
-  -D, --disableWarnings          Ignore every TypeScript warning
   -P, --project [path]           Path to TypeScript project (or \`false\`)
   -O, --compilerOptions [opts]   JSON object to merge with compiler options
   -F, --fast                     Run TypeScript compilation in transpile mode
@@ -138,14 +134,13 @@ const isPrinted = argv.print !== undefined
 
 // Register the TypeScript compiler instance.
 const service = register({
-  fast: argv.fast,
+  typeCheck: argv.typeCheck,
   cache: argv.cache,
   cacheDirectory: argv.cacheDirectory,
   compiler: argv.compiler,
   project: argv.project,
   ignore: argv.ignore,
   ignoreWarnings: argv.ignoreWarnings,
-  disableWarnings: argv.disableWarnings,
   compilerOptions: parse(argv.compilerOptions),
   getFile: isEval ? getFileEval : getFile,
   fileExists: isEval ? fileExistsEval : fileExists

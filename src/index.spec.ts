@@ -29,6 +29,17 @@ describe('ts-node', function () {
       })
     })
 
+    it('should register via cli', function (done) {
+      exec(`node -r ../register hello-world.ts`, {
+        cwd: testDir
+      }, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('Hello, world!\n')
+
+        return done()
+      })
+    })
+
     it('should execute cli with absolute path', function (done) {
       exec(`${BIN_EXEC} "${join(testDir, 'hello-world')}"`, function (err, stdout) {
         expect(err).to.equal(null)
@@ -78,7 +89,7 @@ describe('ts-node', function () {
     })
 
     it('should throw errors', function (done) {
-      exec(`${BIN_EXEC} -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
+      exec(`${BIN_EXEC} --type-check -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
         expect(err.message).to.match(new RegExp(
           // Node 0.10 can not override the `lineOffset` option.
           '\\[eval\\]\\.ts \\(1,59\\): Argument of type \'(?:number|123)\' ' +
@@ -91,7 +102,7 @@ describe('ts-node', function () {
 
     it('should be able to ignore errors', function (done) {
       exec(
-        `${BIN_EXEC} --ignoreWarnings 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
+        `${BIN_EXEC} --type-check --ignoreWarnings 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
         function (err) {
           expect(err.message).to.match(
             /TypeError: (?:(?:undefined|foo\.toUpperCase) is not a function|.*has no method \'toUpperCase\')/
@@ -102,28 +113,8 @@ describe('ts-node', function () {
       )
     })
 
-    it('should be able to disable warnings from environment', function (done) {
-      exec(
-        `${BIN_EXEC} tests/compiler-error`,
-        {
-          env: {
-            PATH: process.env.PATH,
-            HOME: process.env.HOME,
-            TS_NODE_DISABLE_WARNINGS: true
-          }
-        },
-        function (err) {
-          expect(err.message).to.match(
-            /TypeError: (?:(?:undefined|str\.toUpperCase) is not a function|.*has no method \'toUpperCase\')/
-          )
-
-          return done()
-        }
-      )
-    })
-
     it('should work with source maps', function (done) {
-      exec(`${BIN_EXEC} tests/throw`, function (err) {
+      exec(`${BIN_EXEC} --type-check tests/throw`, function (err) {
         expect(err.message).to.contain([
           `${join(__dirname, '../tests/throw.ts')}:3`,
           '  bar () { throw new Error(\'this is a demo\') }',
@@ -136,7 +127,7 @@ describe('ts-node', function () {
     })
 
     it.skip('eval should work with source maps', function (done) {
-      exec(`${BIN_EXEC} -p "import './tests/throw'"`, function (err) {
+      exec(`${BIN_EXEC} --type-check -p "import './tests/throw'"`, function (err) {
         expect(err.message).to.contain([
           `${join(__dirname, '../tests/throw.ts')}:3`,
           '  bar () { throw new Error(\'this is a demo\') }',
@@ -147,8 +138,8 @@ describe('ts-node', function () {
       })
     })
 
-    it('should ignore all warnings', function (done) {
-      exec(`${BIN_EXEC} -D -p "x"`, function (err) {
+    it('should use transpile mode by default', function (done) {
+      exec(`${BIN_EXEC} -p "x"`, function (err) {
         expect(err.message).to.contain('ReferenceError: x is not defined')
 
         return done()
