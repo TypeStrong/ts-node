@@ -174,7 +174,16 @@ if (isEvalScript) {
     args[0] = resolve(cwd, args[0])
     process.argv = ['node'].concat(args)
     process.execArgv.unshift(__filename)
-    Module.runMain()
+    try {
+      Module.runMain()
+    } catch (error) {
+      if (error instanceof TSError) {
+        console.error(printError(error))
+        process.exit(1)
+      }
+
+      throw error
+    }
   } else {
     // Piping of execution _only_ occurs when no other script is specified.
     if ((process.stdin as any).isTTY) {
