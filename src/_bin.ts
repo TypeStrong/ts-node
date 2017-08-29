@@ -5,6 +5,7 @@ import arrify = require('arrify')
 import Module = require('module')
 import minimist = require('minimist')
 import chalk = require('chalk')
+import sourceMapSupport = require('source-map-support')
 import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { register, VERSION, getFile, fileExists, TSError, parse, printError } from './index'
@@ -174,16 +175,8 @@ if (isEvalScript) {
     args[0] = resolve(cwd, args[0])
     process.argv = ['node'].concat(args)
     process.execArgv.unshift(__filename)
-    try {
-      Module.runMain()
-    } catch (error) {
-      if (error instanceof TSError) {
-        console.error(printError(error))
-        process.exit(1)
-      }
-
-      throw error
-    }
+    subscribeToUncaughtExceptions()
+    Module.runMain()
   } else {
     // Piping of execution _only_ occurs when no other script is specified.
     if ((process.stdin as any).isTTY) {
@@ -194,6 +187,35 @@ if (isEvalScript) {
       process.stdin.on('end', () => evalAndExit(code, isPrinted))
     }
   }
+}
+
+/**
+ * Listen for uncaught exceptions, print them, and exit with nonzero.
+ */
+function subscribeToUncaughtExceptions () {
+  process.on('uncaughtException', (error: Error) => {
+    if (error instanceof TSError) {
+      console.error(printError(error))
+    } else {
+      printGenericError(error)
+    }
+    process.exit(1)
+  })
+}
+
+/**
+ * Print a nonspecific error. See
+ * {@link https://github.com/evanw/node-source-map-support/blob/6c3f3083a60b28212b7ea554672af31297e370d9/source-map-support.js#L406-L416}.
+ */
+function printGenericError (error: Error) {
+  const source = sourceMapSupport.getErrorSource(error)
+
+  if (source) {
+    console.error('')
+    console.error(source)
+  }
+
+  console.error(error.stack)
 }
 
 /**
@@ -210,18 +232,8 @@ function evalAndExit (code: string, isPrinted: boolean) {
   ;(global as any).module = module
   ;(global as any).require = module.require.bind(module)
 
-  let result: any
-
-  try {
-    result = _eval(code, global)
-  } catch (error) {
-    if (error instanceof TSError) {
-      console.error(printError(error))
-      process.exit(1)
-    }
-
-    throw error
-  }
+  subscribeToUncaughtExceptions()
+  const result = _eval(code, global)
 
   if (isPrinted) {
     console.log(typeof result === 'string' ? result : inspect(result))
