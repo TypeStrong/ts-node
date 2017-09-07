@@ -53,16 +53,42 @@ v8flags(function (err, v8flags) {
   const proc = spawn(
     process.execPath,
     nodeArgs.concat(join(__dirname, '_bin.js'), scriptArgs),
-    { stdio: 'inherit' }
+    {
+      // We need to run in detached mode so to avoid
+      // automatic propagation of signals to the child process.
+      // This is necessary because by default, keyboard interrupts
+      // are propagated to the process tree, but `kill` is not.
+      //
+      // See: https://nodejs.org/api/child_process.html#child_process_options_detached
+      detached: true,
+
+      // Pipe all input and output to this process
+      stdio: 'inherit'
+    }
   )
 
-  proc.on('exit', function (code: number, signal: string) {
-    process.on('exit', function () {
-      if (signal) {
-        process.kill(process.pid, signal)
-      } else {
-        process.exit(code)
-      }
-    })
+  // Ignore signals, and instead forward them to the
+  // child process
+  const forward = (signal: NodeJS.Signals) => process.on(signal, () => proc.kill(signal))
+
+  // Interrupt (CTRL-C)
+  forward('SIGINT')
+
+  // Termination (`kill` default signal)
+  forward('SIGTERM')
+
+  // Terminal size change must be forwarded to the subprocess
+  forward('SIGWINCH')
+
+  // On exit, exit this process with the same exit code
+  proc.on('close', (code: number, signal: string) => {
+    if (signal) {
+      process.kill(process.pid, signal)
+    } else if (code) {
+      process.exit(code)
+    }
   })
+
+  // If this process is exited, kill the child first
+  process.on('exit', (_code: number) => proc.kill())
 })
