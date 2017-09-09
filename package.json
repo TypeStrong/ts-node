@@ -18,9 +18,10 @@
     "clean": "rimraf dist",
     "tsc": "tsc",
     "build": "npm run clean && npm run tsc",
-    "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
-    "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- \"dist/**/*.spec.js\" -R spec --bail",
+    "test-spec": "mocha dist/**/*.spec.js -R mocha-reporter --bail",
+    "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- \"dist/**/*.spec.js\" -R mocha-reporter --bail",
     "test": "npm run build && npm run lint && npm run test-cov",
+    "travis": "docker run -it -v $(pwd):/repo ruby /repo/scripts/travis/local.sh",
     "prepublish": "typings install && npm run build"
   },
   "engines": {
@@ -51,8 +52,10 @@
   "devDependencies": {
     "@types/react": "^16.0.2",
     "chai": "^4.0.1",
+    "git-message": "^2.0.2",
     "istanbul": "^0.4.0",
     "mocha": "^3.0.0",
+    "mocha-reporter": "0.0.3",
     "ntypescript": "^1.201507091536.1",
     "proxyquire": "^1.7.2",
     "react": "^15.6.1",
