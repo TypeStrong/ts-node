@@ -13,10 +13,9 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "inlineSources": true,
-    "types": []
+    "types": ["node", "mocha"]
   },
   "include": [
-    "src/**/*",
-    "typings/**/*"
+    "src/**/*"
   ]
 }

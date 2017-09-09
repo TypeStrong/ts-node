@@ -3,13 +3,13 @@
   "version": "3.3.0",
   "description": "TypeScript execution environment and REPL for node",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "ts-node": "dist/bin.js",
     "_ts-node": "dist/_bin.js"
   },
   "files": [
     "dist/",
-    "typings.js",
     "register.js",
     "LICENSE"
   ],
@@ -21,7 +21,7 @@
     "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
     "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- \"dist/**/*.spec.js\" -R spec --bail",
     "test": "npm run build && npm run lint && npm run test-cov",
-    "prepublish": "typings install && npm run build"
+    "prepublish": "npm run build"
   },
   "engines": {
     "node": ">=4.2.0"
@@ -49,7 +49,11 @@
   },
   "homepage": "https://github.com/TypeStrong/ts-node",
   "devDependencies": {
+    "@types/chai": "^4.0.4",
+    "@types/mocha": "^2.2.42",
+    "@types/proxyquire": "^1.3.28",
     "@types/react": "^16.0.2",
+    "@types/semver": "^5.3.34",
     "chai": "^4.0.1",
     "istanbul": "^0.4.0",
     "mocha": "^3.0.0",
@@ -60,10 +64,18 @@
     "semver": "^5.1.0",
     "tslint": "^5.0.0",
     "tslint-config-standard": "^6.0.1",
-    "typescript": "^2.4.1",
-    "typings": "^2.0.0"
+    "typescript": "^2.4.1"
   },
   "dependencies": {
+    "@types/arrify": "^1.0.1",
+    "@types/chalk": "^0.4.31",
+    "@types/diff": "^3.2.1",
+    "@types/minimist": "^1.2.0",
+    "@types/mkdirp": "^0.5.0",
+    "@types/node": "^8.0.27",
+    "@types/source-map-support": "^0.4.0",
+    "@types/v8flags": "types/npm-v8flags#de224ae1cd5fd7dbb4e7158a6cc7a29e5315930d",
+    "@types/yn": "types/npm-yn#ca75f6c82940fae6a06fb41d2d37a6aa9b4ea8e9",
     "arrify": "^1.0.0",
     "chalk": "^2.0.0",
     "diff": "^3.1.0",

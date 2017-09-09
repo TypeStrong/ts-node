@@ -394,14 +394,14 @@ function registerExtension (
 ) {
   const old = require.extensions[ext] || originalHandler
 
-  require.extensions[ext] = function (m, filename) {
+  require.extensions[ext] = function (m: any, filename) {
     if (shouldIgnore(filename, ignore)) {
       return old(m, filename)
     }
 
     const _compile = m._compile
 
-    m._compile = function (code, fileName) {
+    m._compile = function (code: string, fileName: string) {
       debug('module._compile', fileName)
 
       return _compile.call(this, register.compile(code, fileName), fileName)

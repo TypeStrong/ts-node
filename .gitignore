@@ -4,4 +4,3 @@ coverage/
 .DS_Store
 npm-debug.log
 dist/
-typings/
