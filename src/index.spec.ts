@@ -74,6 +74,7 @@ describe('ts-node', function () {
           function (err, stdout) {
             expect(err).to.equal(null)
             expect(stdout).to.equal('hello world\n')
+
             return done()
           }
         )
