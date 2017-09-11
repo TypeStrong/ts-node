@@ -193,7 +193,7 @@ if (isEvalScript) {
 function evalAndExit (code: string, isPrinted: boolean) {
   const module = new Module(EVAL_FILENAME)
   module.filename = EVAL_FILENAME
-  module.paths = Module._nodeModulePaths(cwd)
+  module.paths = (Module as any)._nodeModulePaths(cwd)
 
   ;(global as any).__filename = EVAL_FILENAME
   ;(global as any).__dirname = cwd
@@ -256,7 +256,7 @@ function _eval (input: string, context: any) {
  * Execute some code.
  */
 function exec (code: string, filename: string, context: any) {
-  const script = new Script(code, filename)
+  const script = new Script(code, { filename: filename })
 
   return script.runInNewContext(context)
 }

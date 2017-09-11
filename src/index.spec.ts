@@ -90,6 +90,10 @@ describe('ts-node', function () {
 
     it('should throw errors', function (done) {
       exec(`${BIN_EXEC} --type-check -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
+        if (err === null) {
+          return done('Command was expected to fail, but it succeeded.')
+        }
+
         expect(err.message).to.match(new RegExp(
           // Node 0.10 can not override the `lineOffset` option.
           '\\[eval\\]\\.ts \\(1,59\\): Argument of type \'(?:number|123)\' ' +
@@ -104,6 +108,10 @@ describe('ts-node', function () {
       exec(
         `${BIN_EXEC} --type-check --ignoreWarnings 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
         function (err) {
+          if (err === null) {
+            return done('Command was expected to fail, but it succeeded.')
+          }
+
           expect(err.message).to.match(
             /TypeError: (?:(?:undefined|foo\.toUpperCase) is not a function|.*has no method \'toUpperCase\')/
           )
@@ -115,6 +123,10 @@ describe('ts-node', function () {
 
     it('should work with source maps', function (done) {
       exec(`${BIN_EXEC} --type-check tests/throw`, function (err) {
+        if (err === null) {
+          return done('Command was expected to fail, but it succeeded.')
+        }
+
         expect(err.message).to.contain([
           `${join(__dirname, '../tests/throw.ts')}:3`,
           '  bar () { throw new Error(\'this is a demo\') }',
@@ -128,6 +140,10 @@ describe('ts-node', function () {
 
     it.skip('eval should work with source maps', function (done) {
       exec(`${BIN_EXEC} --type-check -p "import './tests/throw'"`, function (err) {
+        if (err === null) {
+          return done('Command was expected to fail, but it succeeded.')
+        }
+
         expect(err.message).to.contain([
           `${join(__dirname, '../tests/throw.ts')}:3`,
           '  bar () { throw new Error(\'this is a demo\') }',
@@ -140,6 +156,10 @@ describe('ts-node', function () {
 
     it('should use transpile mode by default', function (done) {
       exec(`${BIN_EXEC} -p "x"`, function (err) {
+        if (err === null) {
+          return done('Command was expected to fail, but it succeeded.')
+        }
+
         expect(err.message).to.contain('ReferenceError: x is not defined')
 
         return done()
@@ -253,10 +273,10 @@ describe('ts-node', function () {
       let compiled: string
 
       before(function () {
-        require.extensions['.tsx'] = (m, fileName) => {
+        require.extensions['.tsx'] = (m: any, fileName) => {
           const _compile = m._compile
 
-          m._compile = (code, fileName) => {
+          m._compile = (code: string, fileName: string) => {
             compiled = code
             return _compile.call(this, code, fileName)
           }
