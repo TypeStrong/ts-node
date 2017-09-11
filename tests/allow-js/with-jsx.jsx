@@ -1,5 +1,7 @@
 export class Foo2 {
-  render () { return <div></div> }
+  render () { 
+    return <div /> 
+  }
 }
  
 Foo2.sayHi = () => 'hello world'
