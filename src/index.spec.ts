@@ -63,6 +63,21 @@ describe('ts-node', function () {
           }
         )
       })
+
+      it('should include jsx when `allow-js` true', function (done) {
+        exec(
+          [
+            BIN_EXEC,
+            '-O "{\\\"allowJs\\\":true}"',
+            '-p "import { Foo2 } from \'./tests/allow-js/with-jsx\'; Foo2.sayHi()"'
+          ].join(' '),
+          function (err, stdout) {
+            expect(err).to.equal(null)
+            expect(stdout).to.equal('hello world\n')
+            return done()
+          }
+        )
+      })
     }
 
     it('should eval code', function (done) {

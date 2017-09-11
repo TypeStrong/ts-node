@@ -203,6 +203,7 @@ export function register (options: Options = {}): Register {
   // Enable `allowJs` when flag is set.
   if (config.options.allowJs) {
     extensions.push('.js')
+    extensions.push('.jsx')
   }
 
   // Add all files into the file hash.
@@ -216,7 +217,8 @@ export function register (options: Options = {}): Register {
    * Get the extension for a transpiled file.
    */
   function getExtension (fileName: string) {
-    if (config.options.jsx === ts.JsxEmit.Preserve && extname(fileName) === '.tsx') {
+    const ext = extname(fileName)
+    if (config.options.jsx === ts.JsxEmit.Preserve && (ext === '.tsx' || ext === '.jsx')) {
       return '.jsx'
     }
 
