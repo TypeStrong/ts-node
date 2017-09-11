@@ -218,6 +218,7 @@ export function register (options: Options = {}): Register {
    */
   function getExtension (fileName: string) {
     const ext = extname(fileName)
+    
     if (config.options.jsx === ts.JsxEmit.Preserve && (ext === '.tsx' || ext === '.jsx')) {
       return '.jsx'
     }
