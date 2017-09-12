@@ -97,7 +97,7 @@ const DEFAULTS = {
   project: process.env['TS_NODE_PROJECT'],
   ignore: split(process.env['TS_NODE_IGNORE']),
   ignoreWarnings: split(process.env['TS_NODE_IGNORE_WARNINGS']),
-  typeCheck: yn(process.env['TS_NODE_FAST'])
+  typeCheck: yn(process.env['TS_NODE_TYPE_CHECK'])
 }
 
 /**
@@ -272,7 +272,7 @@ export function register (options: Options = {}): Register {
   )
 
   let getTypeInfo = function (_code: string, _fileName: string, _position: number): TypeInfo {
-    throw new TypeError(`No type information available under "--fast" mode`)
+    throw new TypeError(`Type information is unavailable without "--type-check"`)
   }
 
   // Use full language services when the fast option is disabled.
