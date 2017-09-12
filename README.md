@@ -97,7 +97,7 @@ ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.t
 * **--ignoreWarnings, -I** Set an array of TypeScript diagnostic codes to ignore (also `process.env.TS_NODE_IGNORE_WARNINGS`)
 * **--disableWarnings, -D** Ignore all TypeScript errors (also `process.env.TS_NODE_DISABLE_WARNINGS`)
 * **--compilerOptions, -O** Set compiler options using JSON (E.g. `--compilerOptions '{"target":"es6"}'`) (also `process.env.TS_NODE_COMPILER_OPTIONS`)
-* **--fast, -F** Use TypeScript's `transpileModule` mode (no type checking, but faster compilation) (also `process.env.TS_NODE_FAST`)
+* **--type-check** Use TypeScript with type checking (also `process.env.TS_NODE_TYPE_CHECK`)
 * **--no-cache** Skip hitting the compiled JavaScript cache (also `process.env.TS_NODE_CACHE`)
 * **--cache-directory** Configure the TypeScript cache directory (also `process.env.TS_NODE_CACHE_DIRECTORY`)
 
