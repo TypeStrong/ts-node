@@ -18,6 +18,7 @@ v8flags(function (err, v8flags) {
 
   const knownFlags = v8flags.concat([
     'debug',
+    'inspect',
     '--debug',
     '--debug-brk',
     '--inspect',
@@ -29,18 +30,16 @@ v8flags(function (err, v8flags) {
     '--trace-deprecation',
     '--allow-natives-syntax',
     '--perf-basic-prof',
-    '--preserve-symlinks'
+    '--preserve-symlinks',
+    '--expose-gc',
+    '--expose-http2'
   ])
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     const flag = arg.split('=', 1)[0]
 
-    if (flag === '-d') {
-      nodeArgs.push('--debug')
-    } else if (flag === '-gc') {
-      nodeArgs.push('--expose-gc')
-    } else if (knownFlags.indexOf(flag) > -1) {
+    if (knownFlags.indexOf(flag) > -1) {
       nodeArgs.push(arg)
     } else if (/^-/.test(flag)) {
       scriptArgs.push(arg)
