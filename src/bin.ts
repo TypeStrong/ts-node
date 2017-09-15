@@ -32,7 +32,9 @@ v8flags(function (err, v8flags) {
     '--perf-basic-prof',
     '--preserve-symlinks',
     '--expose-gc',
-    '--expose-http2'
+    '--expose-http2',
+    '--harmony',
+    '--harmony-async-iteration'
   ])
 
   for (let i = 0; i < argv.length; i++) {
