@@ -65,6 +65,7 @@ export interface Options {
   getFile?: (path: string) => string
   fileExists?: (path: string) => boolean
   compilerOptions?: any
+  transformers?: TS.CustomTransformers
 }
 
 /**
@@ -248,7 +249,8 @@ export function register (options: Options = {}): Register {
     const result = ts.transpileModule(code, {
       fileName,
       compilerOptions: config.options,
-      reportDiagnostics: true
+      reportDiagnostics: true,
+      transformers: options.transformers
     })
 
     const diagnosticList = result.diagnostics ?
@@ -306,7 +308,8 @@ export function register (options: Options = {}): Register {
       getNewLine: () => EOL,
       getCurrentDirectory: () => cwd,
       getCompilationSettings: () => config.options,
-      getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options)
+      getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
+      getCustomTransformers: () => options.transformers
     }
 
     const service = ts.createLanguageService(serviceHost)

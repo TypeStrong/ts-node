@@ -101,6 +101,7 @@ ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.t
 * **--no-cache** Skip hitting the compiled JavaScript cache (also `process.env.TS_NODE_CACHE`)
 * **--cache-directory** Configure the TypeScript cache directory (also `process.env.TS_NODE_CACHE_DIRECTORY`)
 
+In addition, a `transformers` option may be used when programmatically starting ts-node to specify custom transformers.
 ## License
 
 MIT
