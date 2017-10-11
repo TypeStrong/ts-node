@@ -82,7 +82,7 @@
     "make-error": "^1.1.1",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
-    "source-map-support": "^0.4.0",
+    "source-map-support": "^0.5.0",
     "tsconfig": "^7.0.0",
     "v8flags": "^3.0.0",
     "yn": "^2.0.0"
