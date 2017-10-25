@@ -4,7 +4,7 @@ import { inspect } from 'util'
 import arrify = require('arrify')
 import Module = require('module')
 import minimist = require('minimist')
-import chalk = require('chalk')
+import chalk from 'chalk'
 import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { register, VERSION, getFile, fileExists, TSError, parse, printError } from './index'
