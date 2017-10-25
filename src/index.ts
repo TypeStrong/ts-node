@@ -2,7 +2,7 @@ import { relative, basename, extname, resolve, dirname, join } from 'path'
 import { writeFileSync, readFileSync, statSync } from 'fs'
 import { EOL, tmpdir, homedir } from 'os'
 import sourceMapSupport = require('source-map-support')
-import chalk = require('chalk')
+import chalk from 'chalk'
 import mkdirp = require('mkdirp')
 import crypto = require('crypto')
 import yn = require('yn')
