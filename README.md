@@ -56,6 +56,11 @@ You can require `ts-node` and register the loader for future requires by using `
 mocha --require ts-node/register "test/**/*.{ts,tsx}" [...args]
 ```
 
+If you want to start mocha in watch mode you should specify the option `--watch-extensions ts,tsx` since mocha only watches js files by default.
+```sh
+mocha --require ts-node/register --watch --watch-extensions ts,tsx "test/**/*.{ts,tsx}" [...args]
+```
+
 ### Tape
 
 ```sh
