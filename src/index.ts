@@ -463,7 +463,7 @@ function readConfig (compilerOptions: any, project: string | boolean | undefined
   }
 
   if (typeof ts.parseJsonConfigFileContent === 'function') {
-    return fixConfig(ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, undefined, configPath as string), ts)
+    return fixConfig(ts.parseJsonConfigFileContent(result.config, ts.sys, basePath, undefined, configPath), ts)
   }
 
   throw new TypeError('Could not find a compatible `parseConfigFile` function')
