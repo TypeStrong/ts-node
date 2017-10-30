@@ -105,6 +105,8 @@ ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.t
 
 Additionally, the `transformers` option may be provided when programmatically registering `ts-node` to specify custom TypeScript transformers.
 
+Checkout this [example](https://github.com/realappie/nodejs-typescript) repository
+
 ## License
 
 MIT
