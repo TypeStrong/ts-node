@@ -56,9 +56,10 @@ v8flags(function (err, v8flags) {
     { stdio: 'inherit' }
   )
 
-  // trap SIGINT. prevents main process from finishing
-  // before the child one does
-  process.once('SIGINT', () => {});
+  process.once('SIGINT', () => {
+    // trap SIGINT to prevents main process from finishing
+    // before the child one does
+  })
 
   proc.on('exit', function (code: number, signal: string) {
     process.on('exit', function () {
