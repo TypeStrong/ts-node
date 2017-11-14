@@ -224,12 +224,7 @@ export function register (options: Options = {}): Register {
 
   // Add all files into the file hash.
   for (const fileName of config.fileNames) {
-    const regexpContent = ['.d.ts'].concat(extensions).map(e => e.replace(/\./g, '\\.')).join('|')
-    // going to look something like /(\.d\.ts|\.ts|\.tsx)$/
-    const regexp = new RegExp('(' + regexpContent + ')$')
-    if (regexp.test(fileName)) {
-      cache.versions[fileName] = 1
-    }
+    cache.versions[fileName] = 1
   }
 
   /**
