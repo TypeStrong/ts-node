@@ -224,7 +224,10 @@ export function register (options: Options = {}): Register {
 
   // Add all files into the file hash.
   for (const fileName of config.fileNames) {
-    if (/\.d\.ts$/.test(fileName)) {
+    const regexpContent = ['.d.ts'].concat(extensions).map(e => e.replace(/\./g, '\\.')).join('|')
+    // going to look something like /(\.d\.ts|\.ts|\.tsx)$/
+    const regexp = new RegExp('(' + regexpContent + ')$')
+    if (regexp.test(fileName)) {
       cache.versions[fileName] = 1
     }
   }
@@ -281,14 +284,20 @@ export function register (options: Options = {}): Register {
   if (typeCheck) {
     // Set the file contents into cache.
     const setCache = function (code: string, fileName: string) {
-      cache.contents[fileName] = code
-      cache.versions[fileName] = (cache.versions[fileName] + 1) || 1
+      if (cache.contents[fileName] !== code) {
+        cache.contents[fileName] = code
+        cache.versions[fileName] = (cache.versions[fileName] + 1) || 1
+      }
     }
 
     // Create the compiler host for type checking.
     const serviceHost = {
       getScriptFileNames: () => Object.keys(cache.versions),
-      getScriptVersion: (fileName: string) => String(cache.versions[fileName]),
+      getScriptVersion: (fileName: string): any => {
+        const version = cache.versions[fileName]
+        // tslint:disable-next-line
+        return version !== undefined ? String(version) : undefined
+      },
       getScriptSnapshot (fileName: string) {
         if (!cache.contents[fileName]) {
           if (!fileExists(fileName)) {
