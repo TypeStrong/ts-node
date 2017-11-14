@@ -289,8 +289,7 @@ export function register (options: Options = {}): Register {
     const serviceHost = {
       getScriptFileNames: () => Object.keys(cache.versions),
       getScriptVersion: (fileName: string): any => {
-        const version = cache.versions[fileName]
-        // tslint:disable-next-line
+        const version = cache.versions[fileName] as number | undefined
         return version !== undefined ? String(version) : undefined
       },
       getScriptSnapshot (fileName: string) {
