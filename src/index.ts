@@ -73,7 +73,7 @@ export interface Options {
  */
 interface Cache {
   contents: { [path: string]: string }
-  versions: { [path: string]: number }
+  versions: { [path: string]: number | undefined }
   outputs: { [path: string]: string }
 }
 
@@ -281,7 +281,7 @@ export function register (options: Options = {}): Register {
     const setCache = function (code: string, fileName: string) {
       if (cache.contents[fileName] !== code) {
         cache.contents[fileName] = code
-        cache.versions[fileName] = (cache.versions[fileName] + 1) || 1
+        cache.versions[fileName] = ((cache.versions[fileName] || 0) + 1)
       }
     }
 
@@ -289,7 +289,7 @@ export function register (options: Options = {}): Register {
     const serviceHost = {
       getScriptFileNames: () => Object.keys(cache.versions),
       getScriptVersion: (fileName: string): any => {
-        const version = cache.versions[fileName] as number | undefined
+        const version = cache.versions[fileName]
         return version !== undefined ? String(version) : undefined
       },
       getScriptSnapshot (fileName: string) {
