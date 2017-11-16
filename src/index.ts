@@ -171,7 +171,7 @@ export function register (options: Options = {}): Register {
   const fileExists = options.fileExists || DEFAULTS.fileExists
   const shouldCache = !!(options.cache == null ? DEFAULTS.cache : options.cache)
   const typeCheck = !!(options.typeCheck == null ? DEFAULTS.typeCheck : options.typeCheck)
-  const project = options.project || DEFAULTS.project
+  const project = options.project == null ? DEFAULTS.project : options.project
   const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || getTmpDir()
   const compilerOptions = Object.assign({}, DEFAULTS.compilerOptions, options.compilerOptions)
   const originalJsHandler = require.extensions['.js']
