@@ -93,11 +93,10 @@ You can set options by passing them in before the script.
 ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.ts
 ```
 
-* **--project, -P** Path to load TypeScript configuration from (JSON file, a directory containing `tsconfig.json`, or `false` to disable) (also `process.env.TS_NODE_PROJECT`)
+* **--project, -P** Path to load TypeScript configuration from (JSON file, a directory containing `tsconfig.json`, or `--no-project`/`false` to disable) (also `process.env.TS_NODE_PROJECT`)
 * **--compiler, -C** Use a custom, require-able TypeScript compiler compatible with `typescript@>=1.5.0-alpha` (also `process.env.TS_NODE_COMPILER`)
-* **--ignore** Specify an array of regular expression strings for `ts-node` to skip compiling as TypeScript (defaults to `/node_modules/`, `false` to disable) (also `process.env.TS_NODE_IGNORE`)
+* **--ignore** Specify an array of regular expression strings for `ts-node` to skip compiling as TypeScript (defaults to `/node_modules/`, `--no-ignore`/`false` to disable) (also `process.env.TS_NODE_IGNORE`)
 * **--ignoreWarnings, -I** Set an array of TypeScript diagnostic codes to ignore (also `process.env.TS_NODE_IGNORE_WARNINGS`)
-* **--disableWarnings, -D** Ignore all TypeScript errors (also `process.env.TS_NODE_DISABLE_WARNINGS`)
 * **--compilerOptions, -O** Set compiler options using JSON (E.g. `--compilerOptions '{"target":"es6"}'`) (also `process.env.TS_NODE_COMPILER_OPTIONS`)
 * **--type-check** Use TypeScript with type checking (also `process.env.TS_NODE_TYPE_CHECK`)
 * **--no-cache** Skip hitting the compiled JavaScript cache (also `process.env.TS_NODE_CACHE`)
