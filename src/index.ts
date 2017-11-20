@@ -290,6 +290,16 @@ export function register (options: Options = {}): Register {
       getScriptFileNames: () => Object.keys(cache.versions),
       getScriptVersion: (fileName: string) => {
         const version = cache.versions[fileName]
+        // We need to make sure we return `undefined` not as string here ("undefined"), because
+        // TypeScript internally will use `getScriptVersion` to find out the version of the files,
+        // which are not in `cache.versions`, like various `.d.ts` files in `node_modules`.
+        // Their `version` gonna be `undefined`, and if we return "undefined" as string here, TypeScript
+        // will compare `undefined === "undefined", and make a decision that the code was changed,
+        // and will run `createProgram` again. `createProgram` is very slow, and on large projects
+        // it may lead to significant degradation of bootup time.
+        //
+        // Unfortunately, TypeScript defines `getScriptVersion` signature as `(fileName: string) => string`,
+        // so to conform to it, let's cast our `undefined | string` here to `string` via `as string`.
         return (version !== undefined ? String(version) : undefined) as string
       },
       getScriptSnapshot (fileName: string) {
