@@ -288,9 +288,9 @@ export function register (options: Options = {}): Register {
     // Create the compiler host for type checking.
     const serviceHost = {
       getScriptFileNames: () => Object.keys(cache.versions),
-      getScriptVersion: (fileName: string): any => {
+      getScriptVersion: (fileName: string) => {
         const version = cache.versions[fileName]
-        return version !== undefined ? String(version) : undefined
+        return (version !== undefined ? String(version) : undefined) as string
       },
       getScriptSnapshot (fileName: string) {
         if (!cache.contents[fileName]) {
