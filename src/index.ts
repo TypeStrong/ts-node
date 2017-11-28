@@ -289,12 +289,14 @@ export function register (options: Options = {}): Register {
     const serviceHost = {
       getScriptFileNames: () => Object.keys(cache.versions),
       getScriptVersion: (fileName: string) => {
+        const version = cache.versions[fileName]
+        
         // We need to return `undefined` and not a string here because TypeScript will use
         // `getScriptVersion` and compare against their own version - which can be `undefined`.
         // If we don't return `undefined` it results in `undefined === "undefined"` and run
         // `createProgram` again (which is very slow). Using a `string` assertion here to avoid
         // TypeScript errors from the function signature (expects `(x: string) => string`).
-        return cache.versions[fileName] as string
+        return version === undefined ? undefined as string : version
       },
       getScriptSnapshot (fileName: string) {
         if (!cache.contents[fileName]) {
