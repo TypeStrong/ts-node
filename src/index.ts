@@ -281,7 +281,7 @@ export function register (options: Options = {}): Register {
     const setCache = function (code: string, fileName: string) {
       if (cache.contents[fileName] !== code) {
         cache.contents[fileName] = code
-        cache.versions[fileName] = ((cache.versions[fileName] || 0) + 1)
+        cache.versions[fileName] = (cache.versions[fileName] || 0) + 1
       }
     }
 
@@ -289,18 +289,12 @@ export function register (options: Options = {}): Register {
     const serviceHost = {
       getScriptFileNames: () => Object.keys(cache.versions),
       getScriptVersion: (fileName: string) => {
-        const version = cache.versions[fileName]
-        // We need to make sure we return `undefined` not as string here ("undefined"), because
-        // TypeScript internally will use `getScriptVersion` to find out the version of the files,
-        // which are not in `cache.versions`, like various `.d.ts` files in `node_modules`.
-        // Their `version` gonna be `undefined`, and if we return "undefined" as string here, TypeScript
-        // will compare `undefined === "undefined", and make a decision that the code was changed,
-        // and will run `createProgram` again. `createProgram` is very slow, and on large projects
-        // it may lead to significant degradation of bootup time.
-        //
-        // Unfortunately, TypeScript defines `getScriptVersion` signature as `(fileName: string) => string`,
-        // so to conform to it, let's cast our `undefined | string` here to `string` via `as string`.
-        return (version !== undefined ? String(version) : undefined) as string
+        // We need to return `undefined` and not a string here because TypeScript will use
+        // `getScriptVersion` and compare against their own version - which can be `undefined`.
+        // If we don't return `undefined` it results in `undefined === "undefined"` and run
+        // `createProgram` again (which is very slow). Using a `string` assertion here to avoid
+        // TypeScript errors from the function signature (expects `(x: string) => string`).
+        return cache.versions[fileName] as string
       },
       getScriptSnapshot (fileName: string) {
         if (!cache.contents[fileName]) {
