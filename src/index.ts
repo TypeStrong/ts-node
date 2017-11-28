@@ -296,7 +296,7 @@ export function register (options: Options = {}): Register {
         // If we don't return `undefined` it results in `undefined === "undefined"` and run
         // `createProgram` again (which is very slow). Using a `string` assertion here to avoid
         // TypeScript errors from the function signature (expects `(x: string) => string`).
-        return version === undefined ? undefined as string : version
+        return version === undefined ? undefined as string : String(version)
       },
       getScriptSnapshot (fileName: string) {
         if (!cache.contents[fileName]) {
