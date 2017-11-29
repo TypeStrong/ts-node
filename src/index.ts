@@ -73,7 +73,7 @@ export interface Options {
  */
 interface Cache {
   contents: { [path: string]: string }
-  versions: { [path: string]: number }
+  versions: { [path: string]: number | undefined }
   outputs: { [path: string]: string }
 }
 
@@ -224,9 +224,7 @@ export function register (options: Options = {}): Register {
 
   // Add all files into the file hash.
   for (const fileName of config.fileNames) {
-    if (/\.d\.ts$/.test(fileName)) {
-      cache.versions[fileName] = 1
-    }
+    cache.versions[fileName] = 1
   }
 
   /**
@@ -281,14 +279,25 @@ export function register (options: Options = {}): Register {
   if (typeCheck) {
     // Set the file contents into cache.
     const setCache = function (code: string, fileName: string) {
-      cache.contents[fileName] = code
-      cache.versions[fileName] = (cache.versions[fileName] + 1) || 1
+      if (cache.contents[fileName] !== code) {
+        cache.contents[fileName] = code
+        cache.versions[fileName] = (cache.versions[fileName] || 0) + 1
+      }
     }
 
     // Create the compiler host for type checking.
     const serviceHost = {
       getScriptFileNames: () => Object.keys(cache.versions),
-      getScriptVersion: (fileName: string) => String(cache.versions[fileName]),
+      getScriptVersion: (fileName: string) => {
+        const version = cache.versions[fileName]
+
+        // We need to return `undefined` and not a string here because TypeScript will use
+        // `getScriptVersion` and compare against their own version - which can be `undefined`.
+        // If we don't return `undefined` it results in `undefined === "undefined"` and run
+        // `createProgram` again (which is very slow). Using a `string` assertion here to avoid
+        // TypeScript errors from the function signature (expects `(x: string) => string`).
+        return version === undefined ? undefined as any as string : String(version)
+      },
       getScriptSnapshot (fileName: string) {
         if (!cache.contents[fileName]) {
           if (!fileExists(fileName)) {
