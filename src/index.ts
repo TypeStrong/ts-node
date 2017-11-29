@@ -290,7 +290,7 @@ export function register (options: Options = {}): Register {
       getScriptFileNames: () => Object.keys(cache.versions),
       getScriptVersion: (fileName: string) => {
         const version = cache.versions[fileName]
-        
+
         // We need to return `undefined` and not a string here because TypeScript will use
         // `getScriptVersion` and compare against their own version - which can be `undefined`.
         // If we don't return `undefined` it results in `undefined === "undefined"` and run
