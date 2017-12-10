@@ -5,6 +5,7 @@ import { join } from 'path'
 import v8flags = require('v8flags')
 
 const argv = process.argv.slice(2)
+const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGWINCH']
 
 v8flags(function (err, v8flags) {
   if (err) {
@@ -66,9 +67,7 @@ v8flags(function (err, v8flags) {
   )
 
   // Ignore signals, and instead forward them to the child process.
-  ;['SIGINT', 'SIGTERM', 'SIGWINCH'].forEach(signal => {
-    process.on(signal, () => proc.kill(signal))
-  })
+  signals.forEach(signal => process.on(signal, () => proc.kill(signal)))
 
   // On spawned close, exit this process with the same code.
   proc.on('close', (code: number, signal: string) => {
