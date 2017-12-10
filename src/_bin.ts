@@ -217,8 +217,6 @@ function evalAndExit (code: string, isPrinted: boolean) {
   if (isPrinted) {
     console.log(typeof result === 'string' ? result : inspect(result))
   }
-
-  process.exit(0)
 }
 
 /**
