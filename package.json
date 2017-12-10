@@ -10,7 +10,7 @@
   },
   "files": [
     "dist/",
-    "register.js",
+    "register/",
     "LICENSE"
   ],
   "scripts": {
