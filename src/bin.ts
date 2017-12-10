@@ -5,6 +5,7 @@ import { join } from 'path'
 import v8flags = require('v8flags')
 
 const argv = process.argv.slice(2)
+const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGWINCH']
 
 v8flags(function (err, v8flags) {
   if (err) {
@@ -53,16 +54,30 @@ v8flags(function (err, v8flags) {
   const proc = spawn(
     process.execPath,
     nodeArgs.concat(join(__dirname, '_bin.js'), scriptArgs),
-    { stdio: 'inherit' }
+    {
+      // We need to run in detached mode so to avoid
+      // automatic propagation of signals to the child process.
+      // This is necessary because by default, keyboard interrupts
+      // are propagated to the process tree, but `kill` is not.
+      //
+      // See: https://nodejs.org/api/child_process.html#child_process_options_detached
+      detached: true,
+      stdio: 'inherit'
+    }
   )
 
-  proc.on('exit', function (code: number, signal: string) {
-    process.on('exit', function () {
-      if (signal) {
-        process.kill(process.pid, signal)
-      } else {
-        process.exit(code)
-      }
-    })
+  // Ignore signals, and instead forward them to the child process.
+  signals.forEach(signal => process.on(signal, () => proc.kill(signal)))
+
+  // On spawned close, exit this process with the same code.
+  proc.on('close', (code: number, signal: string) => {
+    if (signal) {
+      process.kill(process.pid, signal)
+    } else {
+      process.exit(code)
+    }
   })
+
+  // If this process exits, kill the child first.
+  process.on('exit', () => proc.kill())
 })
