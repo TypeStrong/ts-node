@@ -61,7 +61,12 @@ v8flags(function (err, v8flags) {
       // are propagated to the process tree, but `kill` is not.
       //
       // See: https://nodejs.org/api/child_process.html#child_process_options_detached
-      detached: true,
+      //
+      // This fix is not being required on Windows; besides, detached mode
+      // runs differently on Windows than on other platforms, and it would break
+      // the behavior of this application. See https://github.com/TypeStrong/ts-node/issues/480
+      // for more details.
+      detached: process.platform !== 'win32',
       stdio: 'inherit'
     }
   )
