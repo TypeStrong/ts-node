@@ -15,8 +15,16 @@ const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset
 describe('ts-node', function () {
   this.timeout(10000)
 
-  it('should export the correct version', function () {
-    expect(VERSION).to.equal(require('../package.json').version)
+  describe('package.json', function () {
+    it('should export the correct version', function () {
+      expect(VERSION).to.equal(require('../package.json').version)
+    })
+
+    it('should not include @types in dependencies', function () {
+      const deps = require('../package.json').dependencies
+      // tslint:disable-next-line
+      expect(Object.keys(deps).filter((name) => /^@types\//.test(name))).to.be.empty
+    })
   })
 
   describe('cli', function () {
