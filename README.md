@@ -42,6 +42,11 @@ ts-node -p '"Hello, world!"'
 
 # Pipe scripts to execute with TypeScript.
 echo "console.log('Hello, world!')" | ts-node
+
+# Passing NODE_OPTIONS to the underlying process using TS_NODE_OPTIONS.
+# All `TS_NODE_*` environment variables will be passed as `NODE_*` environment
+# variables to your code.
+TS_NODE_ENV="--inspect-brk" ts-node
 ```
 
 ![TypeScript REPL](https://github.com/TypeStrong/ts-node/raw/master/screenshot.png)

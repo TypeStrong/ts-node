@@ -37,6 +37,17 @@ v8flags(function (err, v8flags) {
     '--trace-warnings'
   ])
 
+  const env: { [key: string]: string | undefined } = {}
+
+  for (const key of Object.keys(process.env)) {
+    const val = process.env[key]
+    if (key.substring(0, 8) === 'TS_NODE_') {
+      env[key.substring(3)] = val
+    } else {
+      env[key] = val
+    }
+  }
+
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     const flag = arg.split('=', 1)[0]
@@ -63,6 +74,7 @@ v8flags(function (err, v8flags) {
       //
       // See: https://nodejs.org/api/child_process.html#child_process_options_detached
       detached: true,
+      env,
       stdio: 'inherit'
     }
   )
