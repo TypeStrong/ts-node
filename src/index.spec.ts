@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { exec, spawn } from 'child_process'
+import { exec } from 'child_process'
 import { join } from 'path'
 import semver = require('semver')
 import ts = require('typescript')
@@ -21,41 +21,6 @@ describe('ts-node', function () {
 
   describe('cli', function () {
     this.slow(1000)
-
-    it('should forward signals to the child process', function (done) {
-      this.slow(5000)
-
-      // We use `spawn` instead because apparently TravisCI
-      // does not let subprocesses be killed when ran under `sh`
-      //
-      // See: https://github.com/travis-ci/travis-ci/issues/704#issuecomment-328278149
-      const proc = spawn('node', [
-        EXEC_PATH,
-        '--project',
-        testDir,
-        'tests/signals'
-      ], {
-        shell: '/bin/bash'
-      })
-
-      let stdout = ''
-      proc.stdout.on('data', (data) => stdout += data.toString())
-
-      let stderr = ''
-      proc.stderr.on('data', (data) => stderr += data.toString())
-
-      proc.on('exit', function (code) {
-        expect(stderr).to.equal('')
-        expect(stdout).to.equal('exited fine')
-        expect(code).to.equal(0)
-
-        return done()
-      })
-
-      // Leave enough time for node to fully start
-      // the process, then send a signal
-      setTimeout(() => proc.kill('SIGINT'), 2000)
-    })
 
     it('should execute cli', function (done) {
       exec(`${BIN_EXEC} tests/hello-world`, function (err, stdout) {
@@ -180,12 +145,8 @@ describe('ts-node', function () {
           return done('Command was expected to fail, but it succeeded.')
         }
 
-        expect(err.message).to.contain([
-          `${join(__dirname, '../tests/throw.ts')}:3`,
-          '  bar () { throw new Error(\'this is a demo\') }',
-          '                 ^',
-          'Error: this is a demo'
-        ].join('\n'))
+        expect(err.message).to.contain(`${join(__dirname, '../tests/throw.ts')}:3`)
+        expect(err.message).to.contain(`Error: this is a demo`)
 
         return done()
       })

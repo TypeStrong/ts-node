@@ -1,162 +1,15 @@
-import { join, resolve } from 'path'
+import { ITSNodeArgs } from './args'
+import { join } from 'path'
 import { start, Recoverable } from 'repl'
 import { inspect } from 'util'
 import arrify = require('arrify')
 import Module = require('module')
-import minimist = require('minimist')
 import chalk from 'chalk'
 import { diffLines } from 'diff'
 import { Script } from 'vm'
-import { register, VERSION, getFile, fileExists, TSError, parse, printError } from './index'
-
-interface Argv {
-  eval?: string
-  print?: string
-  typeCheck?: boolean
-  cache?: boolean
-  cacheDirectory?: string
-  version?: boolean
-  help?: boolean
-  compiler?: string
-  project?: string
-  require?: string | string[]
-  ignore?: boolean | string | string[]
-  ignoreWarnings?: string | string[]
-  compilerOptions?: any
-  _: string[]
-}
-
-const strings = ['eval', 'print', 'compiler', 'project', 'ignoreWarnings', 'require', 'cacheDirectory', 'ignore']
-const booleans = ['help', 'typeCheck', 'version', 'cache']
-
-const aliases: { [key: string]: string[] } = {
-  help: ['h'],
-  version: ['v'],
-  eval: ['e'],
-  print: ['p'],
-  project: ['P'],
-  compiler: ['C'],
-  require: ['r'],
-  typeCheck: ['type-check'],
-  cacheDirectory: ['cache-directory'],
-  ignoreWarnings: ['I', 'ignore-warnings'],
-  compilerOptions: ['O', 'compiler-options']
-}
-
-let stop = process.argv.length
-
-function isFlagOnly (arg: string) {
-  const name = arg.replace(/^--?/, '')
-
-  // The value is part of this argument.
-  if (/=/.test(name) || /^--no-/.test(arg)) {
-    return true
-  }
-
-  for (const bool of booleans) {
-    if (name === bool) {
-      return true
-    }
-
-    const alias = aliases[bool]
-
-    if (alias) {
-      for (const other of alias) {
-        if (other === name) {
-          return true
-        }
-      }
-    }
-  }
-
-  return false
-}
-
-// Hack around known subarg issue with `stopEarly`.
-for (let i = 2; i < process.argv.length; i++) {
-  const arg = process.argv[i]
-  const next = process.argv[i + 1]
-
-  if (/^\[/.test(arg) || /\]$/.test(arg)) {
-    continue
-  }
-
-  if (/^-/.test(arg)) {
-    // Skip next argument.
-    if (!isFlagOnly(arg) && !/^-/.test(next)) {
-      i++
-    }
-
-    continue
-  }
-
-  stop = i
-  break
-}
-
-const argv = minimist<Argv>(process.argv.slice(2, stop), {
-  string: strings,
-  boolean: booleans,
-  alias: aliases,
-  default: {
-    cache: null,
-    typeCheck: null
-  }
-})
-
-if (argv.help) {
-  console.log(`
-Usage: ts-node [options] [ -e script | script.ts ] [arguments]
-
-Options:
-
-  -e, --eval [code]              Evaluate code
-  -p, --print [code]             Evaluate code and print result
-  -r, --require [path]           Require a node module for execution
-  -C, --compiler [name]          Specify a custom TypeScript compiler
-  -I, --ignoreWarnings [code]    Ignore TypeScript warnings by diagnostic code
-  -P, --project [path]           Path to TypeScript project (or \`false\`)
-  -O, --compilerOptions [opts]   JSON object to merge with compiler options
-  -F, --fast                     Run TypeScript compilation in transpile mode
-  --ignore [regexp], --no-ignore Set the ignore check (default: \`/node_modules/\`)
-  --no-cache                     Disable the TypeScript cache
-  --cache-directory              Configure the TypeScript cache directory
-`)
-
-  process.exit(0)
-}
+import { register, Register, VERSION, getFile, fileExists, TSError, parse, printError } from './index'
 
 const cwd = process.cwd()
-const code = argv.eval === undefined ? argv.print : argv.eval
-const isEvalScript = typeof argv.eval === 'string' || !!argv.print // Minimist struggles with empty strings.
-const isEval = isEvalScript || stop === process.argv.length
-const isPrinted = argv.print !== undefined
-
-// Register the TypeScript compiler instance.
-const service = register({
-  typeCheck: argv.typeCheck,
-  cache: argv.cache,
-  cacheDirectory: argv.cacheDirectory,
-  compiler: argv.compiler,
-  project: argv.project,
-  ignore: argv.ignore,
-  ignoreWarnings: argv.ignoreWarnings,
-  compilerOptions: parse(argv.compilerOptions),
-  getFile: isEval ? getFileEval : getFile,
-  fileExists: isEval ? fileExistsEval : fileExists
-})
-
-// Output project information.
-if (argv.version) {
-  console.log(`ts-node v${VERSION}`)
-  console.log(`node ${process.version}`)
-  console.log(`typescript v${service.ts.version}`)
-  console.log(`cache ${JSON.stringify(service.cachedir)}`)
-  process.exit(0)
-}
-
-// Require specified modules before start-up.
-(Module as any)._preloadModules(arrify(argv.require))
 
 /**
  * Eval helpers.
@@ -165,32 +18,90 @@ const EVAL_FILENAME = `[eval].ts`
 const EVAL_PATH = join(cwd, EVAL_FILENAME)
 const EVAL_INSTANCE = { input: '', output: '', version: 0, lines: 0 }
 
-// Execute the main contents (either eval, script or piped).
-if (isEvalScript) {
-  evalAndExit(code as string, isPrinted)
-} else {
-  if (stop < process.argv.length) {
-    const args = process.argv.slice(stop)
-    args[0] = resolve(cwd, args[0])
-    process.argv = ['node'].concat(args)
+/**
+ * Print version information for debugging purposes, and exit
+ *
+ * @param exitCode
+ */
+function printVersionInformationAndExit (service: any, exitCode: number = 0) {
+  console.log(`ts-node v${VERSION}`)
+  console.log(`node ${process.version}`)
+  console.log(`typescript v${service.ts.version}`)
+  console.log(`cache ${JSON.stringify(service.cachedir)}`)
+  process.exit(exitCode)
+}
+
+/**
+ * Interface describing the object received by
+ * the exported execute method
+ */
+export interface IExecuteOptions {
+  tsNodeArgs: ITSNodeArgs
+  scriptFile: string
+  scriptArgs: string[]
+}
+
+/**
+ * Execute the received script, or start in REPL mode
+ */
+export function execute ({
+  tsNodeArgs,
+  scriptFile,
+  scriptArgs
+}: IExecuteOptions) {
+  const code = tsNodeArgs.eval === undefined ? tsNodeArgs.print : tsNodeArgs.eval
+  const isPrinted = tsNodeArgs.print !== undefined
+  const isEval = scriptArgs.length === 0
+
+  // Minimist struggles with empty strings.
+  const isEvalScript = typeof tsNodeArgs.eval === 'string' || !!tsNodeArgs.print
+
+  // Register the TypeScript compiler instance.
+  const service = register({
+    typeCheck: tsNodeArgs.typeCheck,
+    cache: tsNodeArgs.cache,
+    cacheDirectory: tsNodeArgs.cacheDirectory,
+    compiler: tsNodeArgs.compiler,
+    project: tsNodeArgs.project,
+    ignore: tsNodeArgs.ignore,
+    ignoreWarnings: tsNodeArgs.ignoreWarnings,
+    compilerOptions: parse(tsNodeArgs.compilerOptions),
+    getFile: isEval ? getFileEval : getFile,
+    fileExists: isEval ? fileExistsEval : fileExists
+  })
+
+  // Output project information.
+  if (tsNodeArgs.version) {
+    return printVersionInformationAndExit(service)
+  }
+
+  // Require specified modules before start-up.
+  (Module as any)._preloadModules(arrify(tsNodeArgs.require))
+
+  // Execute the main contents (either eval, script or piped).
+  if (isEvalScript) {
+    // Evaluate the script bit fed as a CLI argument
+    evalAndExit(service, code as string, isPrinted)
+  } else if (scriptFile) {
+    // We received a file to run, run this file
+    process.argv = ['node', scriptFile].concat(scriptArgs)
     process.execArgv.unshift(__filename)
     Module.runMain()
+  } else if ((process.stdin as any).isTTY) {
+    // Run the REPL
+    startRepl(service)
   } else {
-    // Piping of execution _only_ occurs when no other script is specified.
-    if ((process.stdin as any).isTTY) {
-      startRepl()
-    } else {
-      let code = ''
-      process.stdin.on('data', (chunk: Buffer) => code += chunk)
-      process.stdin.on('end', () => evalAndExit(code, isPrinted))
-    }
+    // We do not have a TTY, read script from stdin
+    let code = ''
+    process.stdin.on('data', (chunk: Buffer) => code += chunk)
+    process.stdin.on('end', () => evalAndExit(service, code, isPrinted))
   }
 }
 
 /**
  * Evaluate a script.
  */
-function evalAndExit (code: string, isPrinted: boolean) {
+function evalAndExit (service: Register, code: string, isPrinted: boolean) {
   const module = new Module(EVAL_FILENAME)
   module.filename = EVAL_FILENAME
   module.paths = (Module as any)._nodeModulePaths(cwd)
@@ -204,7 +115,7 @@ function evalAndExit (code: string, isPrinted: boolean) {
   let result: any
 
   try {
-    result = _eval(code, global)
+    result = _eval(service, code, global)
   } catch (error) {
     if (error instanceof TSError) {
       console.error(printError(error))
@@ -222,7 +133,7 @@ function evalAndExit (code: string, isPrinted: boolean) {
 /**
  * Evaluate the code snippet.
  */
-function _eval (input: string, context: any) {
+function _eval (service: Register, input: string, context: any) {
   const lines = EVAL_INSTANCE.lines
   const isCompletion = !/\n$/.test(input)
   const undo = appendEval(input)
@@ -262,12 +173,12 @@ function exec (code: string, filename: string, context: any) {
 /**
  * Start a CLI REPL.
  */
-function startRepl () {
+function startRepl (service: Register) {
   const repl = start({
     prompt: '> ',
     input: process.stdin,
     output: process.stdout,
-    eval: replEval,
+    eval: replEval.bind(null, service),
     useGlobal: false
   })
 
@@ -306,7 +217,7 @@ function startRepl () {
 /**
  * Eval code from the REPL.
  */
-function replEval (code: string, context: any, _filename: string, callback: (err?: Error, result?: any) => any) {
+function replEval (service: Register, code: string, context: any, _filename: string, callback: (err?: Error, result?: any) => any) {
   let err: any
   let result: any
 
@@ -317,7 +228,7 @@ function replEval (code: string, context: any, _filename: string, callback: (err
   }
 
   try {
-    result = _eval(code, context)
+    result = _eval(service, code, context)
   } catch (error) {
     if (error instanceof TSError) {
       // Support recoverable compilations using >= node 6.
