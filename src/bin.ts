@@ -68,7 +68,7 @@ v8flags(function (err, v8flags) {
       // the behavior of this application. See https://github.com/TypeStrong/ts-node/issues/480
       // for more details.
       detached: process.platform !== 'win32',
-      stdio: 'inherit'
+      stdio: ['inherit', 'inherit', 'inherit', 'ipc']
     }
   )
 
