@@ -53,7 +53,7 @@
     "@types/diff": "^3.2.1",
     "@types/minimist": "^1.2.0",
     "@types/mkdirp": "^0.5.0",
-    "@types/node": "^8.0.27",
+    "@types/node": "^9.3.0",
     "@types/source-map-support": "^0.4.0",
     "@types/v8flags": "types/npm-v8flags#de224ae1cd5fd7dbb4e7158a6cc7a29e5315930d",
     "@types/yn": "types/npm-yn#ca75f6c82940fae6a06fb41d2d37a6aa9b4ea8e9",
