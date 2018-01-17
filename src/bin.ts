@@ -73,7 +73,11 @@ v8flags(function (err, v8flags) {
   )
 
   // Ignore signals, and instead forward them to the child process.
-  signals.forEach(signal => process.on(signal, () => proc.kill(signal)))
+  signals.forEach(signal => process.on(signal, () => {
+    if (process.platform !== 'win32' || signal === 'SIGINT' || signal === 'SIGTERM' || signal === 'SIGKILL') {
+      proc.kill(signal)
+    }
+  }))
 
   // On spawned close, exit this process with the same code.
   proc.on('close', (code: number, signal: string) => {
