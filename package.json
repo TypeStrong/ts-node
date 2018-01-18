@@ -64,7 +64,7 @@
     "@types/semver": "^5.3.34",
     "chai": "^4.0.1",
     "istanbul": "^0.4.0",
-    "mocha": "^4.0.0",
+    "mocha": "^5.0.0",
     "ntypescript": "^1.201507091536.1",
     "proxyquire": "^1.7.2",
     "react": "^16.0.0",
