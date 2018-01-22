@@ -95,7 +95,7 @@ const DEFAULTS = {
   cacheDirectory: process.env['TS_NODE_CACHE_DIRECTORY'],
   compiler: process.env['TS_NODE_COMPILER'],
   compilerOptions: parse(process.env['TS_NODE_COMPILER_OPTIONS']),
-  project: process.env['TS_NODE_PROJECT'],
+  project: process.env['TS_NODE_NO_PROJECT'] ? false : process.env['TS_NODE_PROJECT'],
   ignore: split(process.env['TS_NODE_IGNORE']),
   ignoreWarnings: split(process.env['TS_NODE_IGNORE_WARNINGS']),
   typeCheck: yn(process.env['TS_NODE_TYPE_CHECK'])
@@ -452,7 +452,14 @@ function fixConfig (config: any, ts: TSCommon) {
  * Load TypeScript configuration.
  */
 function readConfig (compilerOptions: any, project: string | boolean | undefined, cwd: string, ts: TSCommon) {
-  const result = loadSync(cwd, typeof project === 'string' ? project : undefined)
+  const result = false === project
+    ? {
+      config: {
+        files: [],
+        compilerOptions: {}
+      }
+    }
+    : loadSync(cwd, typeof project === 'string' ? project : undefined)
 
   // Override default configuration options.
   result.config.compilerOptions = Object.assign({}, result.config.compilerOptions, compilerOptions, {

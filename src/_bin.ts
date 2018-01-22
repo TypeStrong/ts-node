@@ -115,7 +115,7 @@ Options:
   -r, --require [path]           Require a node module for execution
   -C, --compiler [name]          Specify a custom TypeScript compiler
   -I, --ignoreWarnings [code]    Ignore TypeScript warnings by diagnostic code
-  -P, --project [path]           Path to TypeScript project (or \`false\`)
+  -P, --project [path]           Path to TypeScript project. Defaults to CWD/tsconfig.json. --no-project to skip.
   -O, --compilerOptions [opts]   JSON object to merge with compiler options
   -F, --fast                     Run TypeScript compilation in transpile mode
   --ignore [regexp], --no-ignore Set the ignore check (default: \`/node_modules/\`)
