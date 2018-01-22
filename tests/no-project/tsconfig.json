@@ -1,0 +1,1 @@
+this is garbage which will cause ts-node to fail if it attempts to parse it.

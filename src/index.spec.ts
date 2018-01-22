@@ -278,6 +278,15 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    it('should ignore tsconfig.json if --no-project is passed', function (done) {
+      exec(`node "${EXEC_PATH}" --no-project main.ts`, { cwd: join(__dirname, '../tests/no-project') }, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.match(/^foobar/)
+
+        return done()
+      })
+    })
   })
 
   describe('register', function () {
