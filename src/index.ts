@@ -169,8 +169,8 @@ export function register (options: Options = {}): Register {
   ).concat(emptyFileListWarnings).map(Number)
   const getFile = options.getFile || DEFAULTS.getFile
   const fileExists = options.fileExists || DEFAULTS.fileExists
-  const shouldCache = !!(options.cache === undefined ? DEFAULTS.cache : options.cache)
-  const typeCheck = !!(options.typeCheck === undefined ? DEFAULTS.typeCheck : options.typeCheck)
+  const shouldCache = !!(!options.cache ? DEFAULTS.cache : options.cache)
+  const typeCheck = !!(!options.typeCheck ? DEFAULTS.typeCheck : options.typeCheck)
   const project = options.project === undefined ? DEFAULTS.project : options.project
   const cacheDirectory = options.cacheDirectory || DEFAULTS.cacheDirectory || getTmpDir()
   const compilerOptions = Object.assign({}, DEFAULTS.compilerOptions, options.compilerOptions)
