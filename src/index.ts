@@ -381,9 +381,19 @@ export function register (options: Options = {}): Register {
 
   const register: Register = { cwd, compile, getTypeInfo, extensions, cachedir, ts }
 
+  // Ensure ts and tsx to have maximum priority when registering the extensions @issue #529
+  let oldExtensions = Object.keys(require.extensions)
+
   // Register the extensions.
   extensions.forEach(extension => {
     registerExtension(extension, ignore, register, originalJsHandler)
+  })
+
+  // Ensure ts and tsx to have maximum priority when registering the extensions @issue #529
+  oldExtensions.forEach(extension => {
+    let registerFunction = require.extensions[extension]
+    delete require.extensions[extension]
+    require.extensions[extension] = registerFunction
   })
 
   return register
