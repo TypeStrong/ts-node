@@ -34,7 +34,8 @@ v8flags(function (err, v8flags) {
     '--preserve-symlinks',
     '--expose-gc',
     '--expose-http2',
-    '--trace-warnings'
+    '--trace-warnings',
+    '--stack-trace-limit'
   ])
 
   for (let i = 0; i < argv.length; i++) {
