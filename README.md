@@ -4,9 +4,8 @@
 [![NPM downloads][downloads-image]][downloads-url]
 [![Build status][travis-image]][travis-url]
 [![Test coverage][coveralls-image]][coveralls-url]
-[![Greenkeeper badge](https://badges.greenkeeper.io/TypeStrong/ts-node.svg)](https://greenkeeper.io/)
 
-> TypeScript execution environment and REPL for node. **Works with `typescript@>=1.5`**.
+> TypeScript execution environment and REPL for node. **Works with `typescript@>=2.0`**.
 
 ## Installation
 
@@ -22,7 +21,7 @@ npm install -g typescript
 * Execute TypeScript files with node
 * Interactive REPL
 * Execute (and print) TypeScript through the CLI
-* Uses source maps
+* Source map support
 * Loads compiler options and `.d.ts` files from `tsconfig.json`
 
 ## Usage
@@ -48,7 +47,9 @@ echo "console.log('Hello, world!')" | ts-node
 
 ### Programmatic
 
-You can require `ts-node` and register the loader for future requires by using `require('ts-node').register({ /* options */ })`. You can also use the shortcut files `node -r ts-node/register` or `node -r ts-node/register/type-check` depending on your preferences.
+You can require `ts-node` and register the loader for future requires by using `require('ts-node').register({ /* options */ })`. You can also use the shortcuts `node -r ts-node/register` or `node -r ts-node/register/type-check` depending on your preferences.
+
+**Note:** If you need to use advanced node.js CLI arguments, use `node -r ts-node/register` instead of the `ts-node` CLI.
 
 ### Mocha
 
@@ -67,42 +68,57 @@ ts-node node_modules/tape/bin/tape [...args]
 ### Gulp
 
 ```sh
-# Just create a `gulpfile.ts` and run `gulp`.
+# Create a `gulpfile.ts` and run `gulp`.
 gulp
 ```
 
 ## How It Works
 
-**TypeScript Node** works by registering the TypeScript compiler for the `.ts`, `.tsx` and - when `allowJs` is enabled - `.js` extensions. When node.js has a file extension registered (the `require.extensions` object), it will use the extension internally with module resolution. By default, when an extension is unknown to node.js, it will fallback to handling the file as `.js` (JavaScript).
+**TypeScript Node** works by registering the TypeScript compiler for the `.ts`, `.tsx` and, with `allowJs` enabled, `.js` extensions. When node.js has a file extension registered (the `require.extensions` object), it will use the extension internally for module resolution. When an extension is unknown to node.js, it will handle the file as `.js` (JavaScript).
 
-**P.S.** This means that if you don't register an extension, it'll be compiled as JavaScript. When `ts-node` is used with `allowJs`, JavaScript files are transpiled using the TypeScript compiler.
+**P.S.** This means if you don't register an extension, it is compiled as JavaScript. When `ts-node` is used with `allowJs`, JavaScript files are transpiled using the TypeScript compiler.
 
 ## Loading `tsconfig.json`
 
-**Typescript Node** uses `tsconfig.json` automatically, use `--no-project` to skip loading `tsconfig.json`.
+**Typescript Node** uses `tsconfig.json` automatically, use `--skip-project` to skip loading `tsconfig.json`.
 
 **NOTE**: You can use `ts-node` together with [tsconfig-paths](https://www.npmjs.com/package/tsconfig-paths) to load modules according to the `paths` section in `tsconfig.json`.
 
 ## Configuration Options
 
-You can set options by passing them in before the script.
-
-**Note:** These are in addition to the [node.js CLI arguments](https://nodejs.org/api/cli.html).
+You can set options by passing them before the script path, via programmatic usage or via environment variables.
 
 ```sh
-ts-node --compiler ntypescript --project src --ignoreWarnings 2304 hello-world.ts
+ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 ```
 
-* **--project, -P** Path to load TypeScript configuration from (JSON file, a directory containing `tsconfig.json`, or `--no-project`/`false` to disable) (also `process.env.TS_NODE_PROJECT`)
-* **--compiler, -C** Use a custom, require-able TypeScript compiler compatible with `typescript@>=1.5.0-alpha` (also `process.env.TS_NODE_COMPILER`)
-* **--ignore** Specify an array of regular expression strings for `ts-node` to skip compiling as TypeScript (defaults to `/node_modules/`, `--no-ignore`/`false` to disable) (also `process.env.TS_NODE_IGNORE`)
-* **--ignoreWarnings, -I** Set an array of TypeScript diagnostic codes to ignore (also `process.env.TS_NODE_IGNORE_WARNINGS`)
-* **--compilerOptions, -O** Set compiler options using JSON (E.g. `--compilerOptions '{"target":"es6"}'`) (also `process.env.TS_NODE_COMPILER_OPTIONS`)
-* **--type-check** Use TypeScript with type checking (also `process.env.TS_NODE_TYPE_CHECK`)
-* **--no-cache** Skip hitting the compiled JavaScript cache (also `process.env.TS_NODE_CACHE`)
-* **--cache-directory** Configure the TypeScript cache directory (also `process.env.TS_NODE_CACHE_DIRECTORY`)
+### CLI Options
 
-Additionally, the `transformers` option may be provided when programmatically registering `ts-node` to specify custom TypeScript transformers.
+Support `--print`, `--eval` and `--require` from [node.js CLI options](https://nodejs.org/api/cli.html).
+
+* `--help` Prints help text
+* `--version` Prints version information
+
+### CLI and Programmatic Options
+
+_Environment variable denoted in parentheses._
+
+* `--typeCheck` Enable type checking for TypeScript (`TS_NODE_TYPE_CHECK`)
+* `--cacheDirectory` Configure the output file cache directory (`TS_NODE_CACHE_DIRECTORY`)
+* `-I, --ignore [pattern]` Override the path patterns to skip compilation (`TS_NODE_IGNORE`)
+* `-P, --project [path]` Path to TypeScript JSON project file (`TS_NODE_PROJECT`)
+* `-C, --compiler [name]` Specify a custom TypeScript compiler (`TS_NODE_COMPILER`)
+* `-D, --ignoreDiagnostics [code]` Ignore TypeScript warnings by diagnostic code (`TS_NODE_IGNORE_DIAGNOSTICS`)
+* `-O, --compilerOptions [opts]` JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
+* `--no-cache` Disable the local TypeScript Node cache (`TS_NODE_CACHE`)
+* `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_IGNORE`)
+* `--skip-ignore` Skip ignore checks (`TS_NODE_SKIP_PROJECT`)
+
+### Programmatic Only Options
+
+* `transformers` An array of transformers to pass to TypeScript
+* `readFile` Custom TypeScript-compatible file reading function
+* `fileExists` Custom TypeScript-compatible file existence function
 
 ## License
 

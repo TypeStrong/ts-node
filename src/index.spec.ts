@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { exec, spawn } from 'child_process'
+import { exec } from 'child_process'
 import { join } from 'path'
 import semver = require('semver')
 import ts = require('typescript')
@@ -8,7 +8,7 @@ import { register, VERSION } from './index'
 
 const testDir = join(__dirname, '../tests')
 const EXEC_PATH = join(__dirname, '../dist/bin')
-const BIN_EXEC = `node "${EXEC_PATH}" --project "${testDir}"`
+const BIN_EXEC = `node "${EXEC_PATH}" --project "${testDir}/tsconfig.json"`
 
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
 
@@ -21,41 +21,6 @@ describe('ts-node', function () {
 
   describe('cli', function () {
     this.slow(1000)
-
-    it('should forward signals to the child process', function (done) {
-      this.slow(5000)
-
-      // We use `spawn` instead because apparently TravisCI
-      // does not let subprocesses be killed when ran under `sh`
-      //
-      // See: https://github.com/travis-ci/travis-ci/issues/704#issuecomment-328278149
-      const proc = spawn('node', [
-        EXEC_PATH,
-        '--project',
-        testDir,
-        'tests/signals'
-      ], {
-        shell: '/bin/bash'
-      })
-
-      let stdout = ''
-      proc.stdout.on('data', (data) => stdout += data.toString())
-
-      let stderr = ''
-      proc.stderr.on('data', (data) => stderr += data.toString())
-
-      proc.on('exit', function (code) {
-        expect(stderr).to.equal('')
-        expect(stdout).to.equal('exited fine')
-        expect(code).to.equal(0)
-
-        return done()
-      })
-
-      // Leave enough time for node to fully start
-      // the process, then send a signal
-      setTimeout(() => proc.kill('SIGINT'), 2000)
-    })
 
     it('should execute cli', function (done) {
       exec(`${BIN_EXEC} tests/hello-world`, function (err, stdout) {
@@ -142,7 +107,7 @@ describe('ts-node', function () {
     })
 
     it('should throw errors', function (done) {
-      exec(`${BIN_EXEC} --type-check -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
+      exec(`${BIN_EXEC} --typeCheck -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
@@ -157,9 +122,9 @@ describe('ts-node', function () {
       })
     })
 
-    it('should be able to ignore errors', function (done) {
+    it('should be able to ignore diagnostic', function (done) {
       exec(
-        `${BIN_EXEC} --type-check --ignoreWarnings 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
+        `${BIN_EXEC} --type-check --ignoreDiagnostics 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
         function (err) {
           if (err === null) {
             return done('Command was expected to fail, but it succeeded.')
@@ -282,7 +247,7 @@ describe('ts-node', function () {
 
   describe('register', function () {
     register({
-      project: testDir,
+      project: join(testDir, 'tsconfig.json'),
       compilerOptions: {
         jsx: 'preserve'
       }
