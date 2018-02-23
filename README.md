@@ -111,8 +111,8 @@ _Environment variable denoted in parentheses._
 * `-D, --ignoreDiagnostics [code]` Ignore TypeScript warnings by diagnostic code (`TS_NODE_IGNORE_DIAGNOSTICS`)
 * `-O, --compilerOptions [opts]` JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
 * `--no-cache` Disable the local TypeScript Node cache (`TS_NODE_CACHE`)
-* `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_IGNORE`)
-* `--skip-ignore` Skip ignore checks (`TS_NODE_SKIP_PROJECT`)
+* `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`)
+* `--skip-ignore` Skip ignore checks (`TS_NODE_SKIP_IGNORE`)
 
 ### Programmatic Only Options
 
