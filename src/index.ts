@@ -170,11 +170,15 @@ function getTmpDir (): string {
  * Register TypeScript compiler.
  */
 export function register (opts: Options = {}): Register {
-  const emptyFileListWarnings = [18002, 18003]
   const options = Object.assign({}, DEFAULTS, opts)
   const cacheDirectory = options.cacheDirectory || getTmpDir()
-  const ignoreDiagnostics = arrify(options.ignoreDiagnostics).concat(emptyFileListWarnings).map(Number)
   const originalJsHandler = require.extensions['.js']
+
+  const ignoreDiagnostics = arrify(options.ignoreDiagnostics).concat([
+    6059, // "'rootDir' is expected to contain all source files."
+    18002, // "The 'files' list in config file is empty."
+    18003 // "No inputs were found in config file."
+  ]).map(Number)
 
   const memoryCache: MemoryCache = {
     contents: Object.create(null),
