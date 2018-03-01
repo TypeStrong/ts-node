@@ -49,7 +49,7 @@ echo "console.log('Hello, world!')" | ts-node
 
 You can require `ts-node` and register the loader for future requires by using `require('ts-node').register({ /* options */ })`. You can also use the shortcuts `node -r ts-node/register` or `node -r ts-node/register/type-check` depending on your preferences.
 
-**Note:** If you need to use advanced node.js CLI arguments, use `node -r ts-node/register` instead of the `ts-node` CLI.
+**Note:** If you need to use advanced node.js CLI arguments (e.g. `--inspect`), use them with `node -r ts-node/register` instead of the `ts-node` CLI.
 
 ### Mocha
 
@@ -80,9 +80,9 @@ gulp
 
 ## Loading `tsconfig.json`
 
-**Typescript Node** uses `tsconfig.json` automatically, use `--skip-project` to skip loading `tsconfig.json`.
+**Typescript Node** loads `tsconfig.json` automatically. Use `--skip-project` to the loading `tsconfig.json`.
 
-**NOTE**: You can use `ts-node` together with [tsconfig-paths](https://www.npmjs.com/package/tsconfig-paths) to load modules according to the `paths` section in `tsconfig.json`.
+**Tip**: You can use `ts-node` together with [tsconfig-paths](https://www.npmjs.com/package/tsconfig-paths) to load modules according to the `paths` section in `tsconfig.json`.
 
 ## Configuration Options
 
@@ -94,7 +94,7 @@ ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 
 ### CLI Options
 
-Support `--print`, `--eval` and `--require` from [node.js CLI options](https://nodejs.org/api/cli.html).
+Supports `--print`, `--eval` and `--require` from [node.js CLI options](https://nodejs.org/api/cli.html).
 
 * `--help` Prints help text
 * `--version` Prints version information
