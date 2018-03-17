@@ -113,11 +113,11 @@ of the script. From here you can use `require` to bring in modules from TypeScri
 var someModule = require('path_to_a_typescript_file');
 ```
 
-## Watching and restarting
+## Watching and Restarting
 
-**TypeScript Node** just compiles you typescript code sources on the fly, watching files and restarting is out of its scope. If you want to restart ts-node process on file's changes then just use standard solutions like [nodemon](https://github.com/remy/nodemon), [onchange](https://github.com/Qard/onchange), [node-dev](https://github.com/fgnass/node-dev): `nodemon -e ts -x ts-node ...`, `node-dev -r ts-node/register app.ts`, etc. 
+**TypeScript Node** only compiles source code on the fly, watching files and code reloads are out of scope. If you want to restart the `ts-node` process on file changes, standard node.js tools exist already such as [nodemon](https://github.com/remy/nodemon), [onchange](https://github.com/Qard/onchange) and [node-dev](https://github.com/fgnass/node-dev). 
 
-There is elso [modified version](https://github.com/whitecolor/ts-node-dev) of [node-dev]((https://github.com/fgnass/node-dev) (which is the fastest node watch/restart tool) that uses `ts-node` for compilation under-the-hood, it doesn't reinitialize whole compilation process on each change/restart and makes restarts to happen much faster.
+There is also [`ts-node-dev`](https://github.com/whitecolor/ts-node-dev), a modified version of [`node-dev`](https://github.com/fgnass/node-dev) that uses `ts-node` for compilation and doesn't restart the process on every change.
 
 ## License
 
