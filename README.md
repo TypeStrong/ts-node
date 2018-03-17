@@ -5,7 +5,7 @@
 [![Build status][travis-image]][travis-url]
 [![Test coverage][coveralls-image]][coveralls-url]
 
-> TypeScript execution environment and REPL for node. **Works with `typescript@>=2.0`**.
+> TypeScript execution and REPL for node. **Works with `typescript@>=2.0`**.
 
 ## Installation
 
@@ -22,7 +22,9 @@ npm install -g typescript
 * Interactive REPL
 * Execute (and print) TypeScript through the CLI
 * Source map support
-* Loads compiler options and `.d.ts` files from `tsconfig.json`
+* Loads compiler options from `tsconfig.json`
+
+**Important:** The default mode of `ts-node` is transpile _without_ type checking. This can cause problems where type information is required to generate a valid JavaScript program. Two known examples of this are `const enum` and import elision of type files used in valid runtime positions. If you require these features, ensure you enable type checking.
 
 ## Usage
 
