@@ -72,6 +72,25 @@ ts-node node_modules/tape/bin/tape [...args]
 gulp
 ```
 
+### Visual Studio Code
+
+Create a new node.js configuration, add `-r ts-node/register` to node args and move the `program` to the `args` list (so VS Code doesn't look for `outFiles`).
+
+```json
+{
+    "type": "node",
+    "request": "launch",
+    "name": "Launch Program",
+    "runtimeArgs": [
+        "-r",
+        "ts-node/register"
+    ],
+    "args": [
+        "${workspaceFolder}/index.ts"
+    ]
+}
+```
+
 ## How It Works
 
 **TypeScript Node** works by registering the TypeScript compiler for the `.ts`, `.tsx` and, with `allowJs` enabled, `.js` extensions. When node.js has a file extension registered (the `require.extensions` object), it will use the extension internally for module resolution. When an extension is unknown to node.js, it will handle the file as `.js` (JavaScript).
