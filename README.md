@@ -139,6 +139,12 @@ _Environment variable denoted in parentheses._
 * `readFile` Custom TypeScript-compatible file reading function
 * `fileExists` Custom TypeScript-compatible file existence function
 
+## Watching and Restarting
+
+**TypeScript Node** only compiles source code on the fly, watching files and code reloads are out of scope. If you want to restart the `ts-node` process on file changes, standard node.js tools exist already such as [nodemon](https://github.com/remy/nodemon), [onchange](https://github.com/Qard/onchange) and [node-dev](https://github.com/fgnass/node-dev). 
+
+There is also [`ts-node-dev`](https://github.com/whitecolor/ts-node-dev), a modified version of [`node-dev`](https://github.com/fgnass/node-dev) that uses `ts-node` for compilation and doesn't restart the process on every change.
+
 ## License
 
 MIT
