@@ -107,7 +107,7 @@ describe('ts-node', function () {
     })
 
     it('should throw errors', function (done) {
-      exec(`${BIN_EXEC} --typeCheck -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
+      exec(`${BIN_EXEC} -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
@@ -124,7 +124,7 @@ describe('ts-node', function () {
 
     it('should be able to ignore diagnostic', function (done) {
       exec(
-        `${BIN_EXEC} --type-check --ignoreDiagnostics 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
+        `${BIN_EXEC} --ignoreDiagnostics 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
         function (err) {
           if (err === null) {
             return done('Command was expected to fail, but it succeeded.')
@@ -140,7 +140,7 @@ describe('ts-node', function () {
     })
 
     it('should work with source maps', function (done) {
-      exec(`${BIN_EXEC} --type-check tests/throw`, function (err) {
+      exec(`${BIN_EXEC} tests/throw`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
@@ -157,7 +157,7 @@ describe('ts-node', function () {
     })
 
     it.skip('eval should work with source maps', function (done) {
-      exec(`${BIN_EXEC} --type-check -p "import './tests/throw'"`, function (err) {
+      exec(`${BIN_EXEC} -p "import './tests/throw'"`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
@@ -172,8 +172,8 @@ describe('ts-node', function () {
       })
     })
 
-    it('should use transpile mode by default', function (done) {
-      exec(`${BIN_EXEC} -p "x"`, function (err) {
+    it('should support transpile only mode', function (done) {
+      exec(`${BIN_EXEC} --transpileOnly -p "x"`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }

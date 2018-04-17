@@ -11,8 +11,6 @@
 
 ```sh
 npm install -g ts-node
-
-# Install a TypeScript compiler (requires `typescript` by default).
 npm install -g typescript
 ```
 
@@ -24,15 +22,13 @@ npm install -g typescript
 * Source map support
 * Loads compiler options from `tsconfig.json`
 
-**Important:** The default mode of `ts-node` is transpile _without_ type checking. This can cause problems where type information is required to generate a valid JavaScript program. Two known examples of this are `const enum` and import elision of type files used in valid runtime positions. If you require these features, ensure you enable type checking.
-
 ## Usage
 
 ```sh
-# Execute a script as you would normally with `node`.
+# Execute a script as `node` + `tsc`.
 ts-node script.ts
 
-# Starts the TypeScript REPL.
+# Starts a TypeScript REPL.
 ts-node
 
 # Execute code with TypeScript.
@@ -49,7 +45,7 @@ echo "console.log('Hello, world!')" | ts-node
 
 ### Programmatic
 
-You can require `ts-node` and register the loader for future requires by using `require('ts-node').register({ /* options */ })`. You can also use the shortcuts `node -r ts-node/register` or `node -r ts-node/register/type-check` depending on your preferences.
+You can require `ts-node` and register the loader for future requires by using `require('ts-node').register({ /* options */ })`. You can also use file shortcuts - `node -r ts-node/register` or `node -r ts-node/register/transpile-only` - depending on your preferences.
 
 **Note:** If you need to use advanced node.js CLI arguments (e.g. `--inspect`), use them with `node -r ts-node/register` instead of the `ts-node` CLI.
 
@@ -95,7 +91,7 @@ Create a new node.js configuration, add `-r ts-node/register` to node args and m
 
 ## How It Works
 
-**TypeScript Node** works by registering the TypeScript compiler for the `.ts`, `.tsx` and, with `allowJs` enabled, `.js` extensions. When node.js has a file extension registered (the `require.extensions` object), it will use the extension internally for module resolution. When an extension is unknown to node.js, it will handle the file as `.js` (JavaScript).
+**TypeScript Node** works by registering the TypeScript compiler for `.tsx?` and `.jsx?` extension (when `allowJs == true`). When node.js has an extension registered (via `require.extensions`), it will use the extension internally for module resolution. When an extension is unknown to node.js, it handles the file as `.js` (JavaScript).
 
 **P.S.** This means if you don't register an extension, it is compiled as JavaScript. When `ts-node` is used with `allowJs`, JavaScript files are transpiled using the TypeScript compiler.
 
@@ -124,7 +120,7 @@ Supports `--print`, `--eval` and `--require` from [node.js CLI options](https://
 
 _Environment variable denoted in parentheses._
 
-* `--typeCheck` Enable type checking for TypeScript (`TS_NODE_TYPE_CHECK`)
+* `--transpileOnly` Use TypeScript's faster `transpileModule` (`TS_NODE_TRANSPILE_ONLY`)
 * `--cacheDirectory` Configure the output file cache directory (`TS_NODE_CACHE_DIRECTORY`)
 * `-I, --ignore [pattern]` Override the path patterns to skip compilation (`TS_NODE_IGNORE`)
 * `-P, --project [path]` Path to TypeScript JSON project file (`TS_NODE_PROJECT`)
@@ -143,9 +139,9 @@ _Environment variable denoted in parentheses._
 
 ## Watching and Restarting
 
-**TypeScript Node** only compiles source code on the fly, watching files and code reloads are out of scope. If you want to restart the `ts-node` process on file changes, standard node.js tools exist already such as [nodemon](https://github.com/remy/nodemon), [onchange](https://github.com/Qard/onchange) and [node-dev](https://github.com/fgnass/node-dev). 
+**TypeScript Node** compiles source code via `require()`, watching files and code reloads are out of scope for the project. If you want to restart the `ts-node` process on file change, existing node.js tools such as [nodemon](https://github.com/remy/nodemon), [onchange](https://github.com/Qard/onchange) and [node-dev](https://github.com/fgnass/node-dev) work.
 
-There is also [`ts-node-dev`](https://github.com/whitecolor/ts-node-dev), a modified version of [`node-dev`](https://github.com/fgnass/node-dev) that uses `ts-node` for compilation and doesn't restart the process on every change.
+There's also [`ts-node-dev`](https://github.com/whitecolor/ts-node-dev), a modified version of [`node-dev`](https://github.com/fgnass/node-dev) using `ts-node` for compilation and won't restart the process on file change.
 
 ## License
 

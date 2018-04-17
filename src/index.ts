@@ -52,6 +52,7 @@ export const VERSION = pkg.version
  */
 export interface Options {
   typeCheck?: boolean | null
+  transpileOnly?: boolean | null
   cache?: boolean | null
   cacheDirectory?: string
   compiler?: string
@@ -96,7 +97,8 @@ export const DEFAULTS: Options = {
   skipIgnore: yn(process.env['TS_NODE_SKIP_IGNORE']),
   skipProject: yn(process.env['TS_NODE_SKIP_PROJECT']),
   ignoreDiagnostics: split(process.env['TS_NODE_IGNORE_DIAGNOSTICS']),
-  typeCheck: yn(process.env['TS_NODE_TYPE_CHECK'])
+  typeCheck: yn(process.env['TS_NODE_TYPE_CHECK']),
+  transpileOnly: yn(process.env['TS_NODE_TRANSPILE_ONLY'])
 }
 
 /**
@@ -201,7 +203,7 @@ export function register (opts: Options = {}): Register {
   // Require the TypeScript compiler and configuration.
   const cwd = process.cwd()
   const compiler = options.compiler || 'typescript'
-  const typeCheck = options.typeCheck || false
+  const typeCheck = options.typeCheck === true || options.transpileOnly !== true
   const ts: typeof TS = require(compiler)
   const transformers = options.transformers || undefined
   const readFile = options.readFile || ts.sys.readFile

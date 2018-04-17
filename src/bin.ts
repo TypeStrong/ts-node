@@ -22,6 +22,7 @@ interface Argv {
   version?: boolean
   // Register options.
   typeCheck?: boolean
+  transpileOnly?: boolean
   cache?: boolean
   cacheDirectory?: string
   compiler?: string
@@ -37,7 +38,7 @@ interface Argv {
 const argv = minimist<Argv>(process.argv.slice(2), {
   stopEarly: true,
   string: ['eval', 'print', 'compiler', 'project', 'ignoreDiagnostics', 'require', 'cacheDirectory', 'ignore'],
-  boolean: ['help', 'typeCheck', 'version', 'cache', 'skipProject', 'skipIgnore'],
+  boolean: ['help', 'transpileOnly', 'typeCheck', 'version', 'cache', 'skipProject', 'skipIgnore'],
   alias: {
     eval: ['e'],
     print: ['p'],
@@ -45,6 +46,7 @@ const argv = minimist<Argv>(process.argv.slice(2), {
     help: ['h'],
     version: ['v'],
     typeCheck: ['type-check'],
+    transpileOnly: ['transpile-only'],
     cacheDirectory: ['cache-directory'],
     ignore: ['I'],
     project: ['P'],
@@ -57,6 +59,7 @@ const argv = minimist<Argv>(process.argv.slice(2), {
   default: {
     cache: DEFAULTS.cache,
     typeCheck: DEFAULTS.typeCheck,
+    transpileOnly: DEFAULTS.transpileOnly,
     skipIgnore: DEFAULTS.skipIgnore,
     skipProject: DEFAULTS.skipProject
   }
@@ -75,7 +78,7 @@ Options:
   -h, --help                     Print CLI usage
   -v, --version                  Print module version information
 
-  --type-check                   Enable type checking through CLI
+  -T, --transpile-only           Use TypeScript's faster \`transpileModule\`
   --cache-directory              Configure the output file cache directory
   -I, --ignore [pattern]         Override the path patterns to skip compilation
   -P, --project [path]           Path to TypeScript JSON project file
@@ -84,8 +87,8 @@ Options:
   -O, --compilerOptions [opts]   JSON object to merge with compiler options
 
   --no-cache                     Disable the local TypeScript Node cache
-  --skip-project                 Skip project config resolution and loading
-  --skip-ignore                  Skip ignore checks
+  --skip-project                 Skip reading \`tsconfig.json\`
+  --skip-ignore                  Skip \`--ignore\` checks
 `)
 
   process.exit(0)
@@ -99,6 +102,7 @@ const isPrinted = argv.print !== undefined
 // Register the TypeScript compiler instance.
 const service = register({
   typeCheck: argv.typeCheck,
+  transpileOnly: argv.transpileOnly,
   cache: argv.cache,
   cacheDirectory: argv.cacheDirectory,
   ignore: argv.ignore,
