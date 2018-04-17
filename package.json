@@ -70,7 +70,7 @@
     "semver": "^5.1.0",
     "tslint": "^5.0.0",
     "tslint-config-standard": "^7.0.0",
-    "typescript": "^2.7.2"
+    "typescript": "^2.8.1"
   },
   "dependencies": {
     "arrify": "^1.0.0",

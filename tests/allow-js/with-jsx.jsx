@@ -1,7 +1,11 @@
 export class Foo2 {
-  render () { 
-    return <div /> 
+
+  static sayHi () {
+    return 'hello world'
   }
+
+  render () {
+    return <div />
+  }
+
 }
- 
-Foo2.sayHi = () => 'hello world'
