@@ -46,7 +46,7 @@ const argv = minimist<Argv>(process.argv.slice(2), {
     help: ['h'],
     version: ['v'],
     typeCheck: ['type-check'],
-    transpileOnly: ['transpile-only'],
+    transpileOnly: ['T', 'transpile-only'],
     cacheDirectory: ['cache-directory'],
     ignore: ['I'],
     project: ['P'],
