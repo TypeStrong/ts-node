@@ -106,6 +106,15 @@ describe('ts-node', function () {
       )
     })
 
+    it('should import empty files', function (done) {
+      exec(`${BIN_EXEC} -e "import './tests/empty'"`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('')
+
+        return done()
+      })
+    })
+
     it('should throw errors', function (done) {
       exec(`${BIN_EXEC} -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
         if (err === null) {

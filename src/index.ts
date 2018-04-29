@@ -71,7 +71,7 @@ export interface Options {
  * Track the project information.
  */
 interface MemoryCache {
-  contents: { [path: string]: string }
+  contents: { [path: string]: string | undefined }
   versions: { [path: string]: number | undefined }
   outputs: { [path: string]: string }
 }
@@ -290,16 +290,17 @@ export function register (opts: Options = {}): Register {
         return version === undefined ? undefined as any as string : String(version)
       },
       getScriptSnapshot (fileName: string) {
-        if (!memoryCache.contents[fileName]) {
-          const contents = readFile(fileName)
-          if (!contents) return
-          memoryCache.contents[fileName] = contents
+        // Read contents into TypeScript memory cache.
+        if (!Object.prototype.hasOwnProperty.call(memoryCache.contents, fileName)) {
+          memoryCache.contents[fileName] = readFile(fileName)
         }
 
-        return ts.ScriptSnapshot.fromString(memoryCache.contents[fileName])
+        const contents = memoryCache.contents[fileName]
+        if (contents === undefined) return
+        return ts.ScriptSnapshot.fromString(contents)
       },
       fileExists: debugFn('fileExists', fileExists),
-      readFile: debugFn('getFile', readFile),
+      readFile: debugFn('readFile', readFile),
       readDirectory: debugFn('readDirectory', ts.sys.readDirectory),
       getDirectories: debugFn('getDirectories', ts.sys.getDirectories),
       directoryExists: debugFn('directoryExists', ts.sys.directoryExists),
