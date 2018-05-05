@@ -172,7 +172,7 @@ function evalAndExit (code: string, isPrinted: boolean) {
   let result: any
 
   try {
-    result = _eval(code, global)
+    result = _eval(code)
   } catch (error) {
     if (error instanceof TSError) {
       console.error(printError(error))
@@ -190,7 +190,7 @@ function evalAndExit (code: string, isPrinted: boolean) {
 /**
  * Evaluate the code snippet.
  */
-function _eval (input: string, context: any) {
+function _eval (input: string) {
   const lines = EVAL_INSTANCE.lines
   const isCompletion = !/\n$/.test(input)
   const undo = appendEval(input)
@@ -213,17 +213,17 @@ function _eval (input: string, context: any) {
   }
 
   return changes.reduce((result, change) => {
-    return change.added ? exec(change.value, EVAL_FILENAME, context) : result
+    return change.added ? exec(change.value, EVAL_FILENAME) : result
   }, undefined)
 }
 
 /**
  * Execute some code.
  */
-function exec (code: string, filename: string, context: any) {
+function exec (code: string, filename: string) {
   const script = new Script(code, { filename: filename })
 
-  return script.runInNewContext(context)
+  return script.runInThisContext()
 }
 
 /**
@@ -234,8 +234,9 @@ function startRepl () {
     prompt: '> ',
     input: process.stdin,
     output: process.stdout,
+    terminal: process.stdout.isTTY,
     eval: replEval,
-    useGlobal: false
+    useGlobal: true
   })
 
   // Bookmark the point where we should reset the REPL state.
@@ -245,7 +246,7 @@ function startRepl () {
     resetEval()
 
     // Hard fix for TypeScript forcing `Object.defineProperty(exports, ...)`.
-    exec('exports = module.exports', EVAL_FILENAME, (repl as any).context)
+    exec('exports = module.exports', EVAL_FILENAME)
   }
 
   reset()
@@ -273,7 +274,7 @@ function startRepl () {
 /**
  * Eval code from the REPL.
  */
-function replEval (code: string, context: any, _filename: string, callback: (err?: Error, result?: any) => any) {
+function replEval (code: string, _context: any, _filename: string, callback: (err?: Error, result?: any) => any) {
   let err: any
   let result: any
 
@@ -284,7 +285,7 @@ function replEval (code: string, context: any, _filename: string, callback: (err
   }
 
   try {
-    result = _eval(code, context)
+    result = _eval(code)
   } catch (error) {
     if (error instanceof TSError) {
       // Support recoverable compilations using >= node 6.
