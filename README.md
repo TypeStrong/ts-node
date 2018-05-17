@@ -14,6 +14,12 @@ npm install -g ts-node
 npm install -g typescript
 ```
 
+Note that to use ts-node with VSCode Debugger, you will need to install ts-node as a local dev dependency in the project you're working on : 
+
+```sh 
+cd path/to/my/project
+npm install --dev ts-node
+```
 ## Features
 
 * Execute TypeScript files with node
