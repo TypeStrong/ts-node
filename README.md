@@ -18,7 +18,7 @@ Note that to use ts-node with VSCode Debugger, you will need to install ts-node 
 
 ```sh 
 cd path/to/my/project
-npm install --only=dev ts-node
+npm install -D ts-node
 ```
 
 ## Features
