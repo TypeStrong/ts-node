@@ -1,6 +1,7 @@
 # TypeScript Node
 
 [![NPM version][npm-image]][npm-url]
+[![NPM Install Size][install-size-image]][install-size-url]
 [![NPM downloads][downloads-image]][downloads-url]
 [![Build status][travis-image]][travis-url]
 [![Test coverage][coveralls-image]][coveralls-url]
@@ -149,6 +150,8 @@ MIT
 
 [npm-image]: https://img.shields.io/npm/v/ts-node.svg?style=flat
 [npm-url]: https://npmjs.org/package/ts-node
+[install-size-image]: https://packagephobia.now.sh/badge?p=ts-node
+[install-size-url]: https://packagephobia.now.sh/result?p=ts-node
 [downloads-image]: https://img.shields.io/npm/dm/ts-node.svg?style=flat
 [downloads-url]: https://npmjs.org/package/ts-node
 [travis-image]: https://img.shields.io/travis/TypeStrong/ts-node.svg?style=flat
