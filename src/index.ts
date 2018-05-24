@@ -442,15 +442,17 @@ function readConfig (
   noProject?: boolean | null
 ) {
   let config = { compilerOptions: {} as any }
-  let basePath = cwd
+  let basePath = normalizeSlashes(cwd)
   let configFileName: string | undefined = undefined
 
   // Read project configuration when available.
   if (!noProject) {
-    configFileName = project ? resolve(cwd, project) : ts.findConfigFile(normalizeSlashes(cwd), fileExists)
+    configFileName = project
+      ? normalizeSlashes(resolve(cwd, project))
+      : ts.findConfigFile(normalizeSlashes(cwd), fileExists)
 
     if (configFileName) {
-      const result = ts.readConfigFile(normalizeSlashes(configFileName), readFile)
+      const result = ts.readConfigFile(configFileName, readFile)
 
       if (result.error) {
         throw new TSError([formatDiagnostic(result.error, cwd, ts, 0)])
