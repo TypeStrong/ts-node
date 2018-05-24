@@ -527,7 +527,7 @@ function readThrough (
  * Update the output remapping the source map.
  */
 function updateOutput (outputText: string, fileName: string, sourceMap: string, getExtension: (fileName: string) => string) {
-  const base64Map = new Buffer(updateSourceMap(sourceMap, fileName), 'utf8').toString('base64')
+  const base64Map = Buffer.from(updateSourceMap(sourceMap, fileName), 'utf8').toString('base64')
   const sourceMapContent = `data:application/json;charset=utf-8;base64,${base64Map}`
   const sourceMapLength = `${basename(fileName)}.map`.length + (getExtension(fileName).length - extname(fileName).length)
 
