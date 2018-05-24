@@ -447,10 +447,10 @@ function readConfig (
 
   // Read project configuration when available.
   if (!noProject) {
-    configFileName = project ? resolve(cwd, project) : ts.findConfigFile(cwd, fileExists)
+    configFileName = project ? resolve(cwd, project) : ts.findConfigFile(normalizeSlashes(cwd), fileExists)
 
     if (configFileName) {
-      const result = ts.readConfigFile(configFileName, readFile)
+      const result = ts.readConfigFile(normalizeSlashes(configFileName), readFile)
 
       if (result.error) {
         throw new TSError([formatDiagnostic(result.error, cwd, ts, 0)])
