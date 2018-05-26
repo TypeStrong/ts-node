@@ -2,15 +2,22 @@ import { relative, basename, extname, resolve, dirname, join } from 'path'
 import { readFileSync, writeFileSync } from 'fs'
 import { EOL, tmpdir, homedir } from 'os'
 import sourceMapSupport = require('source-map-support')
-import chalk from 'chalk'
 import mkdirp = require('mkdirp')
 import crypto = require('crypto')
 import yn = require('yn')
 import arrify = require('arrify')
 import { BaseError } from 'make-error'
-import * as TS from 'typescript'
+import * as util from 'util'
+import * as _ts from 'typescript'
 
-const pkg = require('../package.json')
+/**
+ * @internal
+ */
+export const INSPECT_CUSTOM = util.inspect.custom || 'inspect'
+
+/**
+ * Debugging `ts-node`.
+ */
 const shouldDebug = yn(process.env.TS_NODE_DEBUG)
 const debug = shouldDebug ? console.log.bind(console, 'ts-node') : () => undefined
 const debugFn = shouldDebug ?
@@ -26,31 +33,34 @@ const debugFn = shouldDebug ?
  * Common TypeScript interfaces between versions.
  */
 export interface TSCommon {
-  version: typeof TS.version
-  sys: typeof TS.sys
-  ScriptSnapshot: typeof TS.ScriptSnapshot
-  displayPartsToString: typeof TS.displayPartsToString
-  createLanguageService: typeof TS.createLanguageService
-  getDefaultLibFilePath: typeof TS.getDefaultLibFilePath
-  getPreEmitDiagnostics: typeof TS.getPreEmitDiagnostics
-  flattenDiagnosticMessageText: typeof TS.flattenDiagnosticMessageText
-  transpileModule: typeof TS.transpileModule
-  ModuleKind: typeof TS.ModuleKind
-  ScriptTarget: typeof TS.ScriptTarget
-  findConfigFile: typeof TS.findConfigFile
-  readConfigFile: typeof TS.readConfigFile
-  parseJsonConfigFileContent: typeof TS.parseJsonConfigFileContent
+  version: typeof _ts.version
+  sys: typeof _ts.sys
+  ScriptSnapshot: typeof _ts.ScriptSnapshot
+  displayPartsToString: typeof _ts.displayPartsToString
+  createLanguageService: typeof _ts.createLanguageService
+  getDefaultLibFilePath: typeof _ts.getDefaultLibFilePath
+  getPreEmitDiagnostics: typeof _ts.getPreEmitDiagnostics
+  flattenDiagnosticMessageText: typeof _ts.flattenDiagnosticMessageText
+  transpileModule: typeof _ts.transpileModule
+  ModuleKind: typeof _ts.ModuleKind
+  ScriptTarget: typeof _ts.ScriptTarget
+  findConfigFile: typeof _ts.findConfigFile
+  readConfigFile: typeof _ts.readConfigFile
+  parseJsonConfigFileContent: typeof _ts.parseJsonConfigFileContent
+  formatDiagnostics: typeof _ts.formatDiagnostics
+  formatDiagnosticsWithColorAndContext: typeof _ts.formatDiagnosticsWithColorAndContext
 }
 
 /**
  * Export the current version.
  */
-export const VERSION = pkg.version
+export const VERSION = require('../package.json').version
 
 /**
  * Registration options.
  */
 export interface Options {
+  pretty?: boolean | null
   typeCheck?: boolean | null
   transpileOnly?: boolean | null
   cache?: boolean | null
@@ -64,7 +74,7 @@ export interface Options {
   ignoreDiagnostics?: number | string | Array<number | string>
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
-  transformers?: TS.CustomTransformers
+  transformers?: _ts.CustomTransformers
 }
 
 /**
@@ -89,6 +99,7 @@ export interface TypeInfo {
  */
 export const DEFAULTS: Options = {
   cache: yn(process.env['TS_NODE_CACHE'], { default: true }),
+  pretty: yn(process.env['TS_NODE_PRETTY']),
   cacheDirectory: process.env['TS_NODE_CACHE_DIRECTORY'],
   compiler: process.env['TS_NODE_COMPILER'],
   compilerOptions: parse(process.env['TS_NODE_COMPILER_OPTIONS']),
@@ -140,10 +151,15 @@ export function normalizeSlashes (value: string): string {
 export class TSError extends BaseError {
   name = 'TSError'
 
-  constructor (public diagnostics: TSDiagnostic[]) {
-    super(
-      `⨯ Unable to compile TypeScript\n${diagnostics.map(x => x.message).join('\n')}`
-    )
+  constructor (public diagnosticText: string, public diagnosticCodes: number[]) {
+    super('Unable to compile TypeScript')
+  }
+
+  /**
+   * @internal
+   */
+  [INSPECT_CUSTOM] () {
+    return this.diagnosticText
   }
 }
 
@@ -202,14 +218,15 @@ export function register (opts: Options = {}): Register {
 
   // Require the TypeScript compiler and configuration.
   const cwd = process.cwd()
+  const { compilerOptions, project, skipProject } = options
   const compiler = options.compiler || 'typescript'
   const typeCheck = options.typeCheck === true || options.transpileOnly !== true
-  const ts: typeof TS = require(compiler)
+  const ts: typeof _ts = require(compiler)
   const transformers = options.transformers || undefined
   const readFile = options.readFile || ts.sys.readFile
   const fileExists = options.fileExists || ts.sys.fileExists
-  const config = readConfig(cwd, ts, options.compilerOptions, fileExists, readFile, options.project, options.skipProject)
-  const configDiagnostics = filterDiagnostics(config.errors, ignoreDiagnostics)
+  const config = readConfig(cwd, ts, fileExists, readFile, compilerOptions, project, skipProject)
+  const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
   const extensions = ['.ts', '.tsx']
 
   const cachedir = join(
@@ -217,10 +234,24 @@ export function register (opts: Options = {}): Register {
     getCompilerDigest({ version: ts.version, typeCheck, ignoreDiagnostics, config, compiler })
   )
 
-  // Render the configuration errors and exit the script.
-  if (configDiagnostics.length) {
-    throw new TSError(formatDiagnostics(configDiagnostics, cwd, ts, 0))
+  const diagnosticHost: _ts.FormatDiagnosticsHost = {
+    getNewLine: () => EOL,
+    getCurrentDirectory: () => cwd,
+    getCanonicalFileName: (path) => path
   }
+
+  const formatDiagnostics = options.pretty
+    ? ts.formatDiagnosticsWithColorAndContext
+    : ts.formatDiagnostics
+
+  function createTSError (diagnostics: ReadonlyArray<_ts.Diagnostic>) {
+    const diagnosticText = formatDiagnostics(diagnostics, diagnosticHost)
+    const diagnosticCodes = diagnostics.map(x => x.code)
+    return new TSError(diagnosticText, diagnosticCodes)
+  }
+
+  // Render the configuration errors and exit the script.
+  if (configDiagnosticList.length) throw createTSError(configDiagnosticList)
 
   // Enable `allowJs` when flag is set.
   if (config.options.allowJs) {
@@ -255,9 +286,7 @@ export function register (opts: Options = {}): Register {
       filterDiagnostics(result.diagnostics, ignoreDiagnostics) :
       []
 
-    if (diagnosticList.length) {
-      throw new TSError(formatDiagnostics(diagnosticList, cwd, ts, lineOffset))
-    }
+    if (diagnosticList.length) throw createTSError(diagnosticList)
 
     return [result.outputText, result.sourceMapText as string]
   }
@@ -326,9 +355,7 @@ export function register (opts: Options = {}): Register {
 
       const diagnosticList = filterDiagnostics(diagnostics, ignoreDiagnostics)
 
-      if (diagnosticList.length) {
-        throw new TSError(formatDiagnostics(diagnosticList, cwd, ts, lineOffset))
-      }
+      if (diagnosticList.length) throw createTSError(diagnosticList)
 
       if (output.emitSkipped) {
         throw new TypeError(`${relative(cwd, fileName)}: Emit skipped`)
@@ -435,13 +462,13 @@ function fixConfig (ts: TSCommon, config: any) {
 function readConfig (
   cwd: string,
   ts: TSCommon,
-  compilerOptions: any,
   fileExists: (path: string) => boolean,
   readFile: (path: string) => string | undefined,
+  compilerOptions?: object,
   project?: string | null,
   noProject?: boolean | null
 ) {
-  let config = { compilerOptions: {} as any }
+  let config = { compilerOptions: {} }
   let basePath = normalizeSlashes(cwd)
   let configFileName: string | undefined = undefined
 
@@ -454,9 +481,8 @@ function readConfig (
     if (configFileName) {
       const result = ts.readConfigFile(configFileName, readFile)
 
-      if (result.error) {
-        throw new TSError([formatDiagnostic(result.error, cwd, ts, 0)])
-      }
+      // Return diagnostics.
+      if (result.error) return { errors: [result.error] }
 
       config = result.config
       basePath = normalizeSlashes(dirname(configFileName))
@@ -576,58 +602,6 @@ function getCompilerDigest (obj: object) {
 /**
  * Filter diagnostics.
  */
-function filterDiagnostics (diagnostics: TS.Diagnostic[], ignore: number[]) {
+function filterDiagnostics (diagnostics: _ts.Diagnostic[], ignore: number[]) {
   return diagnostics.filter(x => ignore.indexOf(x.code) === -1)
-}
-
-/**
- * Format an array of diagnostics.
- */
-export function formatDiagnostics (diagnostics: TS.Diagnostic[], cwd: string, ts: TSCommon, lineOffset: number) {
-  return diagnostics.map(x => formatDiagnostic(x, cwd, ts, lineOffset))
-}
-
-/**
- * Internal diagnostic representation.
- */
-export interface TSDiagnostic {
-  message: string
-  code: number
-}
-
-/**
- * Format a diagnostic object into a string.
- */
-export function formatDiagnostic (
-  diagnostic: TS.Diagnostic,
-  cwd: string,
-  ts: TSCommon,
-  lineOffset: number
-): TSDiagnostic {
-  const messageText = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
-  const { code } = diagnostic
-
-  if (diagnostic.file) {
-    const path = relative(cwd, diagnostic.file.fileName)
-
-    if (diagnostic.start) {
-      const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start)
-      const message = `${path} (${line + 1 + lineOffset},${character + 1}): ${messageText} (${code})`
-
-      return { message, code }
-    }
-
-    return { message: `${path}: ${messageText} (${code})`, code }
-  }
-
-  return { message: `${messageText} (${code})`, code }
-}
-
-/**
- * Stringify the `TSError` instance.
- */
-export function printError (error: TSError) {
-  const title = `${chalk.red('⨯')} Unable to compile TypeScript`
-
-  return `${chalk.bold(title)}\n${error.diagnostics.map(x => x.message).join('\n')}`
 }
