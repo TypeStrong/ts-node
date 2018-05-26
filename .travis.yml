@@ -15,10 +15,10 @@ script:
   - npm run test-cov
 
 env:
-  - NODE=8 TYPESCRIPT=typescript@2.0
   - NODE=6 TYPESCRIPT=typescript@latest
-  - NODE=8 TYPESCRIPT=typescript@latest
-  - NODE=8 TYPESCRIPT=typescript@next
+  - NODE=stable TYPESCRIPT=typescript@latest
+  - NODE=stable TYPESCRIPT=typescript@2.0
+  - NODE=stable TYPESCRIPT=typescript@next
 
 node_js:
   - stable
