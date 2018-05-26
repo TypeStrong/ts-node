@@ -152,7 +152,7 @@ export class TSError extends BaseError {
   name = 'TSError'
 
   constructor (public diagnosticText: string, public diagnosticCodes: number[]) {
-    super('Unable to compile TypeScript')
+    super(`⨯ Unable to compile TypeScript:\n${diagnosticText}`)
   }
 
   /**
