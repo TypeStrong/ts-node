@@ -122,9 +122,8 @@ describe('ts-node', function () {
         }
 
         expect(err.message).to.match(new RegExp(
-          // Node 0.10 can not override the `lineOffset` option.
-          '\\[eval\\]\\.ts \\(1,59\\): Argument of type \'(?:number|123)\' ' +
-          'is not assignable to parameter of type \'string\'\\. \\(2345\\)'
+          'TS2345: Argument of type \'(?:number|123)\' ' +
+          'is not assignable to parameter of type \'string\'\\.'
         ))
 
         return done()

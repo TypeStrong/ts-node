@@ -70,16 +70,15 @@
     "semver": "^5.1.0",
     "tslint": "^5.0.0",
     "tslint-config-standard": "^7.0.0",
-    "typescript": "^2.8.1"
+    "typescript": "^2.8.3"
   },
   "dependencies": {
     "arrify": "^1.0.0",
-    "chalk": "^2.3.0",
     "diff": "^3.1.0",
     "make-error": "^1.1.1",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
-    "source-map-support": "^0.5.3",
+    "source-map-support": "^0.5.6",
     "yn": "^2.0.0"
   }
 }

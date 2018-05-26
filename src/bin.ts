@@ -6,11 +6,10 @@ import { inspect } from 'util'
 import arrify = require('arrify')
 import Module = require('module')
 import minimist = require('minimist')
-import chalk from 'chalk'
 import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { readFileSync, statSync } from 'fs'
-import { register, VERSION, DEFAULTS, TSError, parse, printError } from './index'
+import { register, VERSION, DEFAULTS, TSError, parse } from './index'
 
 interface Argv {
   // Node.js-like options.
@@ -21,6 +20,7 @@ interface Argv {
   help?: boolean
   version?: boolean
   // Register options.
+  pretty?: boolean
   typeCheck?: boolean
   transpileOnly?: boolean
   cache?: boolean
@@ -38,7 +38,7 @@ interface Argv {
 const argv = minimist<Argv>(process.argv.slice(2), {
   stopEarly: true,
   string: ['eval', 'print', 'compiler', 'project', 'ignoreDiagnostics', 'require', 'cacheDirectory', 'ignore'],
-  boolean: ['help', 'transpileOnly', 'typeCheck', 'version', 'cache', 'skipProject', 'skipIgnore'],
+  boolean: ['help', 'transpileOnly', 'typeCheck', 'version', 'cache', 'pretty', 'skipProject', 'skipIgnore'],
   alias: {
     eval: ['e'],
     print: ['p'],
@@ -86,6 +86,7 @@ Options:
   -D, --ignoreDiagnostics [code] Ignore TypeScript warnings by diagnostic code
   -O, --compilerOptions [opts]   JSON object to merge with compiler options
 
+  --pretty                       Use pretty diagnostic formatter
   --no-cache                     Disable the local TypeScript Node cache
   --skip-project                 Skip reading \`tsconfig.json\`
   --skip-ignore                  Skip \`--ignore\` checks
@@ -101,6 +102,7 @@ const isPrinted = argv.print !== undefined
 
 // Register the TypeScript compiler instance.
 const service = register({
+  pretty: argv.pretty,
   typeCheck: argv.typeCheck,
   transpileOnly: argv.transpileOnly,
   cache: argv.cache,
@@ -175,7 +177,7 @@ function evalAndExit (code: string, isPrinted: boolean) {
     result = _eval(code)
   } catch (error) {
     if (error instanceof TSError) {
-      console.error(printError(error))
+      console.error(error.diagnosticText)
       process.exit(1)
     }
 
@@ -265,7 +267,7 @@ function startRepl () {
 
       undo()
 
-      repl.outputStream.write(`${chalk.bold(name)}\n${comment ? `${comment}\n` : ''}`)
+      repl.outputStream.write(`${name}\n${comment ? `${comment}\n` : ''}`)
       repl.displayPrompt()
     }
   })
@@ -275,7 +277,7 @@ function startRepl () {
  * Eval code from the REPL.
  */
 function replEval (code: string, _context: any, _filename: string, callback: (err?: Error, result?: any) => any) {
-  let err: any
+  let err: Error | undefined
   let result: any
 
   // TODO: Figure out how to handle completion here.
@@ -292,7 +294,8 @@ function replEval (code: string, _context: any, _filename: string, callback: (er
       if (Recoverable && isRecoverable(error)) {
         err = new Recoverable(error)
       } else {
-        err = printError(error)
+        console.error(error.diagnosticText)
+        err = undefined
       }
     } else {
       err = error
@@ -368,18 +371,18 @@ function fileExistsEval (path: string) {
   }
 }
 
-const RECOVERY_CODES: number[] = [
+const RECOVERY_CODES: Set<number> = new Set([
   1003, // "Identifier expected."
   1005, // "')' expected."
   1109, // "Expression expected."
   1126, // "Unexpected end of text."
   1160, // "Unterminated template literal."
   1161 // "Unterminated regular expression literal."
-]
+])
 
 /**
  * Check if a function can recover gracefully.
  */
 function isRecoverable (error: TSError) {
-  return error.diagnostics.every(x => RECOVERY_CODES.indexOf(x.code) > -1)
+  return error.diagnosticCodes.every(code => RECOVERY_CODES.has(code))
 }
