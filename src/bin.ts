@@ -86,6 +86,7 @@ Options:
   -D, --ignoreDiagnostics [code] Ignore TypeScript warnings by diagnostic code
   -O, --compilerOptions [opts]   JSON object to merge with compiler options
 
+  --pretty                       Use pretty diagnostic formatter
   --no-cache                     Disable the local TypeScript Node cache
   --skip-project                 Skip reading \`tsconfig.json\`
   --skip-ignore                  Skip \`--ignore\` checks

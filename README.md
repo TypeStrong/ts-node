@@ -127,6 +127,7 @@ _Environment variable denoted in parentheses._
 * `-C, --compiler [name]` Specify a custom TypeScript compiler (`TS_NODE_COMPILER`)
 * `-D, --ignoreDiagnostics [code]` Ignore TypeScript warnings by diagnostic code (`TS_NODE_IGNORE_DIAGNOSTICS`)
 * `-O, --compilerOptions [opts]` JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
+* `--pretty` Use pretty diagnostic formatter (`TS_NODE_PRETTY`)
 * `--no-cache` Disable the local TypeScript Node cache (`TS_NODE_CACHE`)
 * `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`)
 * `--skip-ignore` Skip ignore checks (`TS_NODE_SKIP_IGNORE`)
