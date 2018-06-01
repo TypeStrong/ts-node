@@ -442,6 +442,7 @@ function fixConfig (ts: TSCommon, config: any) {
   delete config.options.out
   delete config.options.outFile
   delete config.options.declarationDir
+  delete config.options.declarationMap
 
   // Target ES5 output by default (instead of ES3).
   if (config.options.target === undefined) {
