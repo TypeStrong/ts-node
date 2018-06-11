@@ -443,6 +443,7 @@ function fixConfig (ts: TSCommon, config: any) {
   delete config.options.outFile
   delete config.options.declarationDir
   delete config.options.declarationMap
+  delete config.options.emitDeclarationOnly
 
   // Target ES5 output by default (instead of ES3).
   if (config.options.target === undefined) {
