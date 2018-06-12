@@ -19,7 +19,7 @@ npm install -g ts-node
 npm install -g typescript
 ```
 
-**Tip:** Using modules allows you to control the versions through `package.json`.
+**Tip:** Installing modules locally allows you to control and share the versions through `package.json`.
 
 ## Features
 
