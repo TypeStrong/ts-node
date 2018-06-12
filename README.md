@@ -10,17 +10,16 @@
 ## Installation
 
 ```sh
-# Global
-
-npm install -g ts-node
-npm install -g typescript
-
-# Or in your project
-
-cd path/to/my/project
+# Locally in your project
 npm install -D ts-node
 npm install -D typescript
+
+# Or globally (not recommended)
+npm install -g ts-node
+npm install -g typescript
 ```
+
+**Tip:** Using modules allows you to control the versions through `package.json`.
 
 ## Features
 
