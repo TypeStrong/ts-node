@@ -1,4 +1,4 @@
-# TypeScript Node
+# ![TypeScript Node](https://cdn.rawgit.com/TypeStrong/ts-node/master/logo.svg)
 
 [![NPM version][npm-image]][npm-url]
 [![NPM downloads][downloads-image]][downloads-url]
