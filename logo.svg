@@ -7,8 +7,8 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    width="297mm"
-   height="210mm"
-   viewBox="0 0 297 210"
+   height="100mm"
+   viewBox="0 0 297 105"
    version="1.1"
    id="svg8"
    sodipodi:docname="logo.svg">
@@ -20,86 +20,6 @@
       <path
          id="path3727"
          d="M 0,600 H 600 V 0 H 0 Z" />
-    </clipPath>
-    <linearGradient
-       id="linearGradient3779"
-       spreadMethod="pad"
-       gradientTransform="matrix(94.203888,0,0,-94.203888,194.19629,320.19702)"
-       gradientUnits="userSpaceOnUse"
-       y2="0"
-       x2="1"
-       y1="0"
-       x1="0">
-      <stop
-         id="stop3771"
-         offset="0"
-         style="stop-opacity:1;stop-color:#231f20" />
-      <stop
-         id="stop3773"
-         offset="0.00530134"
-         style="stop-opacity:1;stop-color:#231f20" />
-      <stop
-         id="stop3775"
-         offset="0.72538782"
-         style="stop-opacity:1;stop-color:#797b7d" />
-      <stop
-         id="stop3777"
-         offset="1"
-         style="stop-opacity:1;stop-color:#797b7d" />
-    </linearGradient>
-    <clipPath
-       id="clipPath3789"
-       clipPathUnits="userSpaceOnUse">
-      <path
-         id="path3787"
-         d="m 238.766,373.131 -42.03,-24.254 c -1.572,-0.906 -2.539,-2.582 -2.539,-4.397 v 0 -48.546 c 0,-1.814 0.967,-3.489 2.537,-4.397 v 0 l 42.031,-24.274 c 1.571,-0.907 3.506,-0.907 5.077,0 v 0 l 42.02,24.274 c 1.571,0.908 2.538,2.583 2.538,4.397 v 0 48.548 c 0,1.813 -0.967,3.489 -2.538,4.395 v 0 l -42.021,24.254 c -0.785,0.454 -1.661,0.68 -2.538,0.68 v 0 c -0.876,0 -1.752,-0.226 -2.537,-0.68" />
-    </clipPath>
-    <clipPath
-       id="clipPath3797"
-       clipPathUnits="userSpaceOnUse">
-      <path
-         id="path3795"
-         d="m 195.182,373.659 h 91.752 V 266.59 h -91.752 z" />
-    </clipPath>
-    <linearGradient
-       id="linearGradient3827"
-       spreadMethod="pad"
-       gradientTransform="matrix(97.177795,0,0,-97.177795,193.54504,320.26605)"
-       gradientUnits="userSpaceOnUse"
-       y2="0"
-       x2="1"
-       y1="0"
-       x1="0">
-      <stop
-         id="stop3819"
-         offset="0"
-         style="stop-opacity:1;stop-color:#797b7d" />
-      <stop
-         id="stop3821"
-         offset="0.27461227"
-         style="stop-opacity:1;stop-color:#797b7d" />
-      <stop
-         id="stop3823"
-         offset="0.994699"
-         style="stop-opacity:1;stop-color:#231f20" />
-      <stop
-         id="stop3825"
-         offset="1"
-         style="stop-opacity:1;stop-color:#231f20" />
-    </linearGradient>
-    <clipPath
-       id="clipPath3789-5"
-       clipPathUnits="userSpaceOnUse">
-      <path
-         id="path3787-4"
-         d="m 238.766,373.131 -42.03,-24.254 c -1.572,-0.906 -2.539,-2.582 -2.539,-4.397 v 0 -48.546 c 0,-1.814 0.967,-3.489 2.537,-4.397 v 0 l 42.031,-24.274 c 1.571,-0.907 3.506,-0.907 5.077,0 v 0 l 42.02,24.274 c 1.571,0.908 2.538,2.583 2.538,4.397 v 0 48.548 c 0,1.813 -0.967,3.489 -2.538,4.395 v 0 l -42.021,24.254 c -0.785,0.454 -1.661,0.68 -2.538,0.68 v 0 c -0.876,0 -1.752,-0.226 -2.537,-0.68" />
-    </clipPath>
-    <clipPath
-       id="clipPath3797-9"
-       clipPathUnits="userSpaceOnUse">
-      <path
-         id="path3795-6"
-         d="m 195.182,373.659 h 91.752 V 266.59 h -91.752 z" />
     </clipPath>
     <clipPath
        clipPathUnits="userSpaceOnUse"
@@ -131,99 +51,6 @@
     </rdf:RDF>
   </metadata>
   <g
-     id="layer1"
-     style="display:none"
-     transform="translate(0,-87)"
-     sodipodi:insensitive="true">
-    <g
-       transform="matrix(0.33566843,0,0,-0.33566843,-101.92354,248.55564)"
-       id="g3721"
-       style="fill:#ffffff;fill-opacity:1">
-      <g
-         id="g3723"
-         transform="translate(583.1847,-215.39634)"
-         style="fill:#ffffff;fill-opacity:1">
-        <g
-           clip-path="url(#clipPath3729)"
-           id="g3725"
-           style="fill:#ffffff;fill-opacity:1">
-          <g
-             transform="translate(296.6858,164.7731)"
-             id="g3731"
-             style="fill:#ffffff;fill-opacity:1" />
-          <g
-             transform="translate(309.0271,196.5389)"
-             id="g3735"
-             style="fill:#ffffff;fill-opacity:1" />
-          <g
-             transform="translate(357.6771,245.4249)"
-             id="g3739"
-             style="fill:#ffffff;fill-opacity:1" />
-          <g
-             transform="translate(172.9639,345.1672)"
-             id="g3743"
-             style="fill:#ffffff;fill-opacity:1" />
-          <g
-             transform="translate(372.849,310.9881)"
-             id="g3747"
-             style="fill:#ffffff;fill-opacity:1" />
-          <g
-             transform="translate(517.8843,328.2278)"
-             id="g3751"
-             style="fill:#ffffff;fill-opacity:1" />
-          <g
-             transform="translate(472.5912,330.5186)"
-             id="g3755"
-             style="fill:#ffffff;fill-opacity:1" />
-        </g>
-      </g>
-      <g
-         id="g3759"
-         transform="translate(583.1847,-215.39634)"
-         style="fill:#ffffff;fill-opacity:1">
-        <g
-           id="g3761"
-           style="fill:#ffffff;fill-opacity:1">
-          <g
-             id="g3767"
-             style="fill:#ffffff;fill-opacity:1">
-            <g
-               id="g3769"
-               style="fill:#ffffff;fill-opacity:1" />
-          </g>
-        </g>
-      </g>
-      <g
-         id="g3759-5"
-         transform="matrix(2.4211856,0,0,2.4211856,-61.26815,-593.69171)"
-         style="fill:#ffffff;fill-opacity:1">
-        <g
-           id="g3761-6"
-           style="fill:#ffffff;fill-opacity:1">
-          <g
-             id="g3767-3"
-             style="fill:#ffffff;fill-opacity:1">
-            <g
-               id="g3769-7"
-               style="fill:#ffffff;fill-opacity:1" />
-          </g>
-        </g>
-      </g>
-      <text
-         xml:space="preserve"
-         style="font-style:normal;font-weight:normal;font-size:179.62197876px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:4.49055004;stroke-opacity:1"
-         x="422.435"
-         y="-49.655869"
-         id="text4868"
-         transform="scale(1,-1)"><tspan
-           sodipodi:role="line"
-           id="tspan4866"
-           x="422.435"
-           y="-49.655869"
-           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:179.61877441px;font-family:'Neutra Text';-inkscape-font-specification:'Neutra Text, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:4.49055004;stroke-opacity:1">TS</tspan></text>
-    </g>
-  </g>
-  <g
      style="display:inline"
      id="g988"
      sodipodi:insensitive="true">
@@ -231,10 +58,10 @@
        d="m 238.756,373.131 -42.02,-24.254 c -1.572,-0.906 -2.539,-2.582 -2.539,-4.395 v 0 -48.548 c 0,-1.814 0.967,-3.489 2.537,-4.397 v 0 l 42.02,-24.274 c 1.571,-0.907 3.507,-0.907 5.079,0 v 0 l 42.029,24.274 c 1.571,0.908 2.538,2.583 2.538,4.397 v 0 48.546 c 0,1.815 -0.967,3.491 -2.539,4.397 v 0 l -42.03,24.254 c -0.785,0.454 -1.661,0.68 -2.538,0.68 v 0 c -0.876,0 -1.753,-0.226 -2.537,-0.68"
        style="display:inline;fill:#2261a8;fill-opacity:1;stroke:none"
        id="path986"
-       transform="matrix(0.85414046,0,0,-0.85414046,-136.62306,375.68399)" />
+       transform="matrix(0.85414046,0,0,-0.85414046,-136.62306,325.68399)" />
   </g>
   <g
-     transform="translate(0,-87)"
+     transform="translate(0,-137)"
      style="display:inline"
      id="g6024"
    >
@@ -325,12 +152,9 @@
     </g>
   </g>
   <g
-     id="layer3"
-     style="display:inline" />
-  <g
      id="layer2"
      style="display:inline"
-     transform="translate(0,-87)"
+     transform="translate(0,-137)"
      sodipodi:insensitive="true">
     <path
        id="path3745"
