@@ -55,13 +55,6 @@ const argv = minimist<Argv>(process.argv.slice(2), {
     compiler: ['C'],
     ignoreDiagnostics: ['D', 'ignore-diagnostics'],
     compilerOptions: ['O', 'compiler-options']
-  },
-  default: {
-    cache: DEFAULTS.cache,
-    typeCheck: DEFAULTS.typeCheck,
-    transpileOnly: DEFAULTS.transpileOnly,
-    skipIgnore: DEFAULTS.skipIgnore,
-    skipProject: DEFAULTS.skipProject
   }
 })
 
@@ -102,18 +95,18 @@ const isPrinted = argv.print !== undefined
 
 // Register the TypeScript compiler instance.
 const service = register({
-  pretty: argv.pretty,
-  typeCheck: argv.typeCheck,
-  transpileOnly: argv.transpileOnly,
-  cache: argv.cache,
-  cacheDirectory: argv.cacheDirectory,
-  ignore: argv.ignore,
-  project: argv.project,
-  skipIgnore: argv.skipIgnore,
-  skipProject: argv.skipProject,
-  compiler: argv.compiler,
-  ignoreDiagnostics: argv.ignoreDiagnostics,
-  compilerOptions: parse(argv.compilerOptions),
+  pretty: argv.pretty || DEFAULTS.pretty,
+  typeCheck: argv.typeCheck || DEFAULTS.typeCheck,
+  transpileOnly: argv.transpileOnly || DEFAULTS.transpileOnly,
+  cache: argv.cache === false ? false : DEFAULTS.cache,
+  cacheDirectory: argv.cacheDirectory || DEFAULTS.cacheDirectory,
+  ignore: argv.ignore || DEFAULTS.ignore,
+  project: argv.project || DEFAULTS.project,
+  skipIgnore: argv.skipIgnore || DEFAULTS.skipIgnore,
+  skipProject: argv.skipProject || DEFAULTS.skipProject,
+  compiler: argv.compiler || DEFAULTS.compiler,
+  ignoreDiagnostics: argv.ignoreDiagnostics || DEFAULTS.ignoreDiagnostics,
+  compilerOptions: parse(argv.compilerOptions) || DEFAULTS.compilerOptions,
   readFile: isEval ? readFileEval : undefined,
   fileExists: isEval ? fileExistsEval : undefined
 })
