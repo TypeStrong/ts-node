@@ -100,7 +100,7 @@ export interface TypeInfo {
  * Default register options.
  */
 export const DEFAULTS: Options = {
-  files: yn(process.env['TS_NODE_FILES'], { default: true }),
+  files: yn(process.env['TS_NODE_FILES']),
   cache: yn(process.env['TS_NODE_CACHE'], { default: true }),
   pretty: yn(process.env['TS_NODE_PRETTY']),
   cacheDirectory: process.env['TS_NODE_CACHE_DIRECTORY'],
@@ -231,10 +231,18 @@ export function register (opts: Options = {}): Register {
   const config = readConfig(cwd, ts, fileExists, readFile, compilerOptions, project, skipProject)
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
   const extensions = ['.ts', '.tsx']
+  const fileNames = options.files ? config.fileNames : []
 
   const cachedir = join(
     resolve(cwd, cacheDirectory),
-    getCompilerDigest({ version: ts.version, typeCheck, ignoreDiagnostics, config, compiler })
+    getCompilerDigest({
+      version: ts.version,
+      options: config.options,
+      fileNames,
+      typeCheck,
+      ignoreDiagnostics,
+      compiler
+    })
   )
 
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
@@ -262,12 +270,8 @@ export function register (opts: Options = {}): Register {
     extensions.push('.jsx')
   }
 
-  // Add all files into the file hash.
-  if (options.files) {
-    for (const fileName of config.fileNames) {
-      memoryCache.versions[fileName] = 1
-    }
-  }
+  // Initialize files from TypeScript into project.
+  for (const path of fileNames) memoryCache.versions[path] = 1
 
   /**
    * Get the extension for a transpiled file.
@@ -442,7 +446,7 @@ function registerExtension (
 /**
  * Do post-processing on config options to support `ts-node`.
  */
-function fixConfig (ts: TSCommon, config: any) {
+function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine) {
   // Delete options that *should not* be passed through.
   delete config.options.out
   delete config.options.outFile
@@ -474,7 +478,7 @@ function readConfig (
   compilerOptions?: object,
   project?: string | null,
   noProject?: boolean | null
-) {
+): _ts.ParsedCommandLine {
   let config = { compilerOptions: {} }
   let basePath = normalizeSlashes(cwd)
   let configFileName: string | undefined = undefined
@@ -489,7 +493,9 @@ function readConfig (
       const result = ts.readConfigFile(configFileName, readFile)
 
       // Return diagnostics.
-      if (result.error) return { errors: [result.error] }
+      if (result.error) {
+        return { errors: [result.error], fileNames: [], options: {} }
+      }
 
       config = result.config
       basePath = normalizeSlashes(dirname(configFileName))
@@ -586,7 +592,7 @@ function updateSourceMap (sourceMapText: string, fileName: string) {
 function getCacheName (sourceCode: string, fileName: string) {
   return crypto.createHash('sha256')
     .update(extname(fileName), 'utf8')
-    .update('\x001\x00', 'utf8') // Store "cache version" in hash.
+    .update('\x00', 'utf8')
     .update(sourceCode, 'utf8')
     .digest('hex')
 }

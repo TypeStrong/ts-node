@@ -7,6 +7,8 @@
 
 > TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.0`**.
 
+**Tip:** `ts-node` differs slightly from `tsc`. It will not load files from `tsconfig.json` by default. Instead, `ts-node` starts from the input file and discovers the rest of the project tree through imports and references.
+
 ## Installation
 
 ```sh
