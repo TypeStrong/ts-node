@@ -23,6 +23,7 @@ interface Argv {
   pretty?: boolean
   typeCheck?: boolean
   transpileOnly?: boolean
+  files?: boolean
   cache?: boolean
   cacheDirectory?: string
   compiler?: string
@@ -38,7 +39,7 @@ interface Argv {
 const argv = minimist<Argv>(process.argv.slice(2), {
   stopEarly: true,
   string: ['eval', 'print', 'compiler', 'project', 'ignoreDiagnostics', 'require', 'cacheDirectory', 'ignore'],
-  boolean: ['help', 'transpileOnly', 'typeCheck', 'version', 'cache', 'pretty', 'skipProject', 'skipIgnore'],
+  boolean: ['help', 'transpileOnly', 'typeCheck', 'version', 'files', 'cache', 'pretty', 'skipProject', 'skipIgnore'],
   alias: {
     eval: ['e'],
     print: ['p'],
@@ -55,6 +56,10 @@ const argv = minimist<Argv>(process.argv.slice(2), {
     compiler: ['C'],
     ignoreDiagnostics: ['D', 'ignore-diagnostics'],
     compilerOptions: ['O', 'compiler-options']
+  },
+  default: {
+    cache: DEFAULTS.cache,
+    files: DEFAULTS.files
   }
 })
 
@@ -79,6 +84,7 @@ Options:
   -D, --ignoreDiagnostics [code] Ignore TypeScript warnings by diagnostic code
   -O, --compilerOptions [opts]   JSON object to merge with compiler options
 
+  --files                        Load files from \`tsconfig.json\` on startup
   --pretty                       Use pretty diagnostic formatter
   --no-cache                     Disable the local TypeScript Node cache
   --skip-project                 Skip reading \`tsconfig.json\`
@@ -95,10 +101,11 @@ const isPrinted = argv.print !== undefined
 
 // Register the TypeScript compiler instance.
 const service = register({
+  files: argv.files || DEFAULTS.files,
   pretty: argv.pretty || DEFAULTS.pretty,
   typeCheck: argv.typeCheck || DEFAULTS.typeCheck,
   transpileOnly: argv.transpileOnly || DEFAULTS.transpileOnly,
-  cache: argv.cache === false ? false : DEFAULTS.cache,
+  cache: argv.cache || DEFAULTS.cache,
   cacheDirectory: argv.cacheDirectory || DEFAULTS.cacheDirectory,
   ignore: argv.ignore || DEFAULTS.ignore,
   project: argv.project || DEFAULTS.project,

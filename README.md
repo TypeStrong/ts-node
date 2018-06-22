@@ -5,7 +5,7 @@
 [![Build status][travis-image]][travis-url]
 [![Test coverage][coveralls-image]][coveralls-url]
 
-> TypeScript execution and REPL for node. **Works with `typescript@>=2.0`**.
+> TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.0`**.
 
 ## Installation
 
@@ -20,14 +20,6 @@ npm install -g typescript
 ```
 
 **Tip:** Installing modules locally allows you to control and share the versions through `package.json`.
-
-## Features
-
-* Execute TypeScript files with node
-* Interactive REPL
-* Execute (and print) TypeScript through the CLI
-* Source map support
-* Loads compiler options from `tsconfig.json`
 
 ## Usage
 
@@ -134,6 +126,7 @@ _Environment variable denoted in parentheses._
 * `-C, --compiler [name]` Specify a custom TypeScript compiler (`TS_NODE_COMPILER`)
 * `-D, --ignoreDiagnostics [code]` Ignore TypeScript warnings by diagnostic code (`TS_NODE_IGNORE_DIAGNOSTICS`)
 * `-O, --compilerOptions [opts]` JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
+* `--files` Load files from `tsconfig.json` on startup (`TS_NODE_FILES`)
 * `--pretty` Use pretty diagnostic formatter (`TS_NODE_PRETTY`)
 * `--no-cache` Disable the local TypeScript Node cache (`TS_NODE_CACHE`)
 * `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`)

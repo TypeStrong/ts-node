@@ -64,6 +64,7 @@ export interface Options {
   pretty?: boolean | null
   typeCheck?: boolean | null
   transpileOnly?: boolean | null
+  files?: boolean | null
   cache?: boolean | null
   cacheDirectory?: string
   compiler?: string
@@ -99,6 +100,7 @@ export interface TypeInfo {
  * Default register options.
  */
 export const DEFAULTS: Options = {
+  files: yn(process.env['TS_NODE_FILES'], { default: true }),
   cache: yn(process.env['TS_NODE_CACHE'], { default: true }),
   pretty: yn(process.env['TS_NODE_PRETTY']),
   cacheDirectory: process.env['TS_NODE_CACHE_DIRECTORY'],
@@ -261,8 +263,10 @@ export function register (opts: Options = {}): Register {
   }
 
   // Add all files into the file hash.
-  for (const fileName of config.fileNames) {
-    memoryCache.versions[fileName] = 1
+  if (options.files) {
+    for (const fileName of config.fileNames) {
+      memoryCache.versions[fileName] = 1
+    }
   }
 
   /**
