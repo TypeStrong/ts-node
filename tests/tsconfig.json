@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "jsx": "react",
-    "noEmit": true
+    "noEmit": true,
+    "typeRoots": ["./typings", "../node_modules/@types"]
   }
 }

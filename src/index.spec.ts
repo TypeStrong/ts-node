@@ -251,6 +251,14 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    it('should allow custom typings', function (done) {
+      exec(`${BIN_EXEC} tests/custom-types`, function (err, stdout) {
+        expect(err).to.match(/Error: Cannot find module 'does-not-exist'/)
+
+        return done()
+      })
+    })
   })
 
   describe('register', function () {
