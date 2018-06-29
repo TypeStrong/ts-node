@@ -7,7 +7,7 @@
 
 > TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.0`**.
 
-**Tip:** `ts-node` differs slightly from `tsc`. It will not load files from `tsconfig.json` by default. Instead, `ts-node` starts from the input file and discovers the rest of the project tree through imports and references.
+**Tip:** `ts-node` differs slightly from `tsc`. It will not load files/includes/excludes from `tsconfig.json` by default. Instead, `ts-node` starts from the input file and discovers the rest of the project tree through imports and references. TypeScript provides [types](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types) and [path mapping](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping) functionality to resolve definitions.
 
 ## Installation
 
@@ -92,7 +92,11 @@ Create a new node.js configuration, add `-r ts-node/register` to node args and m
 
 ## How It Works
 
-**TypeScript Node** works by registering the TypeScript compiler for `.tsx?` and `.jsx?` extension (when `allowJs == true`). When node.js has an extension registered (via `require.extensions`), it will use the extension internally for module resolution. When an extension is unknown to node.js, it handles the file as `.js` (JavaScript).
+**TypeScript Node** works by registering the TypeScript compiler for `.tsx?` and `.jsx?` (when `allowJs == true`) extensions. When node.js has an extension registered (via `require.extensions`), it will use the extension internally for module resolution. When an extension is unknown to node.js, it handles the file as `.js` (JavaScript). By default, **TypeScript Node** avoids compiling files in `/node_modules/` for three reasons:
+
+1. Modules should always be published in a format node.js can consume
+2. Transpiling the entire dependency tree will make your project slower
+3. Differing behaviours between TypeScript and node.js (e.g. ES2015 modules) can result in a project that works until you decide to support a feature natively from node.js
 
 **P.S.** This means if you don't register an extension, it is compiled as JavaScript. When `ts-node` is used with `allowJs`, JavaScript files are transpiled using the TypeScript compiler.
 
@@ -121,18 +125,18 @@ Supports `--print`, `--eval` and `--require` from [node.js CLI options](https://
 
 _Environment variable denoted in parentheses._
 
-* `-T, --transpileOnly` Use TypeScript's faster `transpileModule` (`TS_NODE_TRANSPILE_ONLY`)
+* `-T, --transpileOnly` Use TypeScript's faster `transpileModule` (`TS_NODE_TRANSPILE_ONLY`, default: `false`)
 * `--cacheDirectory` Configure the output file cache directory (`TS_NODE_CACHE_DIRECTORY`)
-* `-I, --ignore [pattern]` Override the path patterns to skip compilation (`TS_NODE_IGNORE`)
+* `-I, --ignore [pattern]` Override the path patterns to skip compilation (`TS_NODE_IGNORE`, default: `/node_modules/`)
 * `-P, --project [path]` Path to TypeScript JSON project file (`TS_NODE_PROJECT`)
-* `-C, --compiler [name]` Specify a custom TypeScript compiler (`TS_NODE_COMPILER`)
+* `-C, --compiler [name]` Specify a custom TypeScript compiler (`TS_NODE_COMPILER`, default: `typescript`)
 * `-D, --ignoreDiagnostics [code]` Ignore TypeScript warnings by diagnostic code (`TS_NODE_IGNORE_DIAGNOSTICS`)
 * `-O, --compilerOptions [opts]` JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
-* `--files` Load files from `tsconfig.json` on startup (`TS_NODE_FILES`)
-* `--pretty` Use pretty diagnostic formatter (`TS_NODE_PRETTY`)
-* `--no-cache` Disable the local TypeScript Node cache (`TS_NODE_CACHE`)
-* `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`)
-* `--skip-ignore` Skip ignore checks (`TS_NODE_SKIP_IGNORE`)
+* `--files` Load files from `tsconfig.json` on startup (`TS_NODE_FILES`, default: `false`)
+* `--pretty` Use pretty diagnostic formatter (`TS_NODE_PRETTY`, default: `false`)
+* `--no-cache` Disable the local TypeScript Node cache (`TS_NODE_CACHE`, default: `true`)
+* `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`, default: `false`)
+* `--skip-ignore` Skip ignore checks (`TS_NODE_SKIP_IGNORE`, default: `false`)
 
 ### Programmatic Only Options
 
