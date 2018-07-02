@@ -144,6 +144,31 @@ _Environment variable denoted in parentheses._
 * `readFile` Custom TypeScript-compatible file reading function
 * `fileExists` Custom TypeScript-compatible file existence function
 
+### Migration from 6.x
+
+Since `ts-node` ignore `files` of TypeScript configuration. Why? see [gulpjs/interpret#51](https://github.com/gulpjs/interpret/pull/51).
+
+There are two way to upgrade from 6.x:
+
+One is set environment `TS_NODE_FILES=true` before run cli to make ts-node@7 have same behavior as ts-node6.x.
+
+Another is to configure `baseUrl` and `paths`. For example,
+
+We have local declaration files under `typings` folder, we could put configuration in `tsconfig.json`, to let `typescript` and `ts-node` have same logic of type definitions resolving.
+```json
+{
+  "compilerOptions": {
+      "baseUrl": ".",
+      "paths": {
+          "*": [
+              "*",
+              "typings/*"
+          ]
+    }
+  }
+}
+```
+
 ## Watching and Restarting
 
 **TypeScript Node** compiles source code via `require()`, watching files and code reloads are out of scope for the project. If you want to restart the `ts-node` process on file change, existing node.js tools such as [nodemon](https://github.com/remy/nodemon), [onchange](https://github.com/Qard/onchange) and [node-dev](https://github.com/fgnass/node-dev) work.
