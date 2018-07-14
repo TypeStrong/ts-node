@@ -7,8 +7,6 @@
 
 > TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.0`**.
 
-**Tip:** `ts-node` differs slightly from `tsc`. It will not load files/includes/excludes from `tsconfig.json` by default. Instead, `ts-node` starts from the input file and discovers the rest of the project tree through imports and references. TypeScript provides [types](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types) and [path mapping](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping) functionality to resolve definitions.
-
 ## Installation
 
 ```sh
@@ -143,6 +141,38 @@ _Environment variable denoted in parentheses._
 * `transformers` An array of transformers to pass to TypeScript
 * `readFile` Custom TypeScript-compatible file reading function
 * `fileExists` Custom TypeScript-compatible file existence function
+
+## Help! My Types Are Missing!
+
+**TypeScript Node** does _not_ use `files`, `include` or `exclude`, by default. This is because a large majority projects do not use all of the files in a project directory (e.g. `Gulpfile.ts`, runtime vs tests) and parsing every file for types slows startup time. Instead, `ts-node` starts with the script file (e.g. `ts-node index.ts`) and TypeScript resolves dependencies based on imports and references.
+
+For global definitions, you can use [`typeRoots`](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types):
+
+```json
+{
+  "compilerOptions": {
+    "typeRoots" : ["./node_modules/@types", "./typings"]
+  }
+}
+```
+
+> A types package is a folder with a file called `index.d.ts` or a folder with a `package.json` that has a types field.
+> -- <cite>[TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types)</cite>
+
+For module definitions, you can use [`paths`](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping):
+
+```json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "custom-module-type": ["types/custom-module-type"]
+    }
+  }
+}
+```
+
+**Tip:** If you _must_ use `files`, enable `--files` flags or set `TS_NODE_FILES=true`.
 
 ## Watching and Restarting
 
