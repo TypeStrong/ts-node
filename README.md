@@ -7,8 +7,6 @@
 
 > TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.0`**.
 
-**Tip:** `ts-node` differs slightly from `tsc`. It will not load files/includes/excludes from `tsconfig.json` by default. Instead, `ts-node` starts from the input file and discovers the rest of the project tree through imports and references. TypeScript provides [types](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types) and [path mapping](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping) functionality to resolve definitions.
-
 ## Installation
 
 ```sh
@@ -144,30 +142,37 @@ _Environment variable denoted in parentheses._
 * `readFile` Custom TypeScript-compatible file reading function
 * `fileExists` Custom TypeScript-compatible file existence function
 
-### Migration from 6.x
+## Help! My Types Are Missing!
 
-Since `ts-node` ignore `files` of TypeScript configuration. Why? see [gulpjs/interpret#51](https://github.com/gulpjs/interpret/pull/51).
+**TypeScript Node** does _not_ use `files`, `include` or `exclude`, by default. This is because a large majority projects do not use all of the files in a project directory (e.g. `Gulpfile.ts`, runtime vs tests) and parsing every file for types slows startup time. Instead, `ts-node` starts with the script file (e.g. `ts-node index.ts`) and TypeScript resolves dependencies based on imports and references.
 
-There are two way to upgrade from 6.x:
+For global definitions, you can use [`typeRoots`](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types):
 
-One is set environment `TS_NODE_FILES=true` before run cli to make ts-node@7 have same behavior as ts-node6.x.
-
-Another is to configure `baseUrl` and `paths`. For example,
-
-We have local declaration files under `typings` folder, we could put configuration in `tsconfig.json`, to let `typescript` and `ts-node` have same logic of type definitions resolving.
 ```json
 {
   "compilerOptions": {
-      "baseUrl": ".",
-      "paths": {
-          "*": [
-              "*",
-              "typings/*"
-          ]
+    "typeRoots" : ["./node_modules/@types", "./typings"]
+  }
+}
+```
+
+> A types package is a folder with a file called `index.d.ts` or a folder with a `package.json` that has a types field.
+> -- TypeScript Handbook
+
+For module definitions, you can use [`paths`](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping):
+
+```json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "custom-module-type": ["types/custom-module-type"]
     }
   }
 }
 ```
+
+**Tip:** If you _must_ use `files`, enable `--files` flags or set `TS_NODE_FILES=true`.
 
 ## Watching and Restarting
 
