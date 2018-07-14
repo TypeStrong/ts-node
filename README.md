@@ -157,7 +157,7 @@ For global definitions, you can use [`typeRoots`](https://www.typescriptlang.org
 ```
 
 > A types package is a folder with a file called `index.d.ts` or a folder with a `package.json` that has a types field.
-> -- TypeScript Handbook
+> -- <cite>[TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types)</cite>
 
 For module definitions, you can use [`paths`](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping):
 
