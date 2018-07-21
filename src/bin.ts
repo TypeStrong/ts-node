@@ -387,7 +387,8 @@ const RECOVERY_CODES: Set<number> = new Set([
   1109, // "Expression expected."
   1126, // "Unexpected end of text."
   1160, // "Unterminated template literal."
-  1161 // "Unterminated regular expression literal."
+  1161, // "Unterminated regular expression literal."
+  2355 // "A function whose declared type is neither 'void' nor 'any' must return a value."
 ])
 
 /**
