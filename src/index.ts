@@ -450,6 +450,7 @@ function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine) {
   // Delete options that *should not* be passed through.
   delete config.options.out
   delete config.options.outFile
+  delete config.options.composite
   delete config.options.declarationDir
   delete config.options.declarationMap
   delete config.options.emitDeclarationOnly
