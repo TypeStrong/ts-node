@@ -172,6 +172,7 @@ export class TSError extends BaseError {
 export interface Register {
   cwd: string
   extensions: string[]
+  fileNames: string[]
   cachedir: string
   ts: TSCommon
   compile (code: string, fileName: string, lineOffset?: number): string
@@ -396,7 +397,7 @@ export function register (opts: Options = {}): Register {
   }
 
   const compile = readThrough(cachedir, options.cache === true, memoryCache, getOutput, getExtension)
-  const register: Register = { cwd, compile, getTypeInfo, extensions, cachedir, ts }
+  const register: Register = { cwd, fileNames: config.fileNames, compile, getTypeInfo, extensions, cachedir, ts }
 
   // Register the extensions.
   extensions.forEach(extension => {
@@ -427,7 +428,7 @@ function registerExtension (
   const old = require.extensions[ext] || originalHandler
 
   require.extensions[ext] = function (m: any, filename) {
-    if (shouldIgnore(filename, ignore)) {
+    if (shouldIgnore(filename, ignore) || register.fileNames.indexOf(filename) < 0) {
       return old(m, filename)
     }
 
