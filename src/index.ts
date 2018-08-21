@@ -70,6 +70,7 @@ export interface Options {
   compiler?: string
   ignore?: string | string[]
   project?: string
+  scope?: string
   skipIgnore?: boolean | null
   skipProject?: boolean | null
   compilerOptions?: object
@@ -108,6 +109,7 @@ export const DEFAULTS: Options = {
   compilerOptions: parse(process.env['TS_NODE_COMPILER_OPTIONS']),
   ignore: split(process.env['TS_NODE_IGNORE']),
   project: process.env['TS_NODE_PROJECT'],
+  scope: process.env['TS_NODE_SCOPE'],
   skipIgnore: yn(process.env['TS_NODE_SKIP_IGNORE']),
   skipProject: yn(process.env['TS_NODE_SKIP_PROJECT']),
   ignoreDiagnostics: split(process.env['TS_NODE_IGNORE_DIAGNOSTICS']),
@@ -172,11 +174,67 @@ export class TSError extends BaseError {
 export interface Register {
   cwd: string
   extensions: string[]
-  fileNames: string[]
   cachedir: string
   ts: TSCommon
+  enabled: boolean
   compile (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
+}
+
+type RegisterOptions = Pick<Register, Exclude<keyof Register, keyof {enabled: any}>> & {fileNames: string[], ignore: RegExp[]}
+
+class RegisterCompiler implements Register {
+  cwd: string
+  extensions: string[]
+  cachedir: string
+  ts: TSCommon
+  fileNames: string[]
+  ignore: RegExp[]
+  enabled = true
+  registered = false
+  compile: (code: string, fileName: string, lineOffset?: number) => string
+  getTypeInfo: (code: string, fileName: string, position: number) => TypeInfo
+
+  constructor (options: RegisterOptions) {
+    this.cwd = options.cwd
+    this.extensions = options.extensions
+    this.fileNames = options.fileNames
+    this.cachedir = options.cachedir
+    this.ts = options.ts
+    this.compile = options.compile
+    this.getTypeInfo = options.getTypeInfo
+    this.ignore = options.ignore
+  }
+
+  registerExtensions () {
+    if (this.registered) {
+      return
+    }
+    this.registered = true
+    const origJs = require.extensions['.js']
+    for (const ext of this.extensions) {
+      const old = require.extensions[ext] || origJs
+      require.extensions[ext] = (m: any, filename: string) => {
+        if (!this.enabled || this.shouldIgnore(filename)) {
+          return old(m, filename)
+        }
+        const { _compile } = m
+        m._compile = (code: string, filename: string) => {
+          debug('module._compile', filename)
+          return _compile.call(m, this.compile(code, filename), filename)
+        }
+        old(m, filename)
+      }
+    }
+  }
+
+  shouldIgnore (filename: string): boolean {
+    const relname = normalizeSlashes(filename)
+    if (this.ignore.some(x => x.test(relname))) {
+      return true
+    }
+    return this.fileNames.length > 0 && this.fileNames.indexOf(filename) < 0
+  }
 }
 
 /**
@@ -192,9 +250,8 @@ function getTmpDir (): string {
  * Register TypeScript compiler.
  */
 export function register (opts: Options = {}): Register {
-  const options = Object.assign({}, DEFAULTS, opts)
+  const options: Options = Object.assign({}, DEFAULTS, opts)
   const cacheDirectory = options.cacheDirectory || getTmpDir()
-  const originalJsHandler = require.extensions['.js']
 
   const ignoreDiagnostics = arrify(options.ignoreDiagnostics).concat([
     6059, // "'rootDir' is expected to contain all source files."
@@ -221,15 +278,23 @@ export function register (opts: Options = {}): Register {
   })
 
   // Require the TypeScript compiler and configuration.
-  const cwd = process.cwd()
-  const { compilerOptions, project, skipProject } = options
+  const { compilerOptions, project, scope, skipProject } = options
+  const cwd = scope || process.cwd()
   const compiler = options.compiler || 'typescript'
   const typeCheck = options.typeCheck === true || options.transpileOnly !== true
   const ts: typeof _ts = require(compiler)
   const transformers = options.transformers || undefined
   const readFile = options.readFile || ts.sys.readFile
   const fileExists = options.fileExists || ts.sys.fileExists
-  const config = readConfig(cwd, ts, fileExists, readFile, compilerOptions, project, skipProject)
+  const config = readConfig(
+    cwd,
+    ts,
+    fileExists,
+    readFile,
+    compilerOptions,
+    scope ? null : project,
+    scope ? false : skipProject
+  )
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
   const extensions = ['.ts', '.tsx']
   const fileNames = options.files ? config.fileNames : []
@@ -397,51 +462,18 @@ export function register (opts: Options = {}): Register {
   }
 
   const compile = readThrough(cachedir, options.cache === true, memoryCache, getOutput, getExtension)
-  const register: Register = { cwd, fileNames: config.fileNames, compile, getTypeInfo, extensions, cachedir, ts }
-
-  // Register the extensions.
-  extensions.forEach(extension => {
-    registerExtension(extension, ignore, register, originalJsHandler)
+  const registerCompiler = new RegisterCompiler({
+    cwd,
+    fileNames: scope ? config.fileNames : [],
+    compile,
+    getTypeInfo,
+    extensions,
+    cachedir,
+    ts,
+    ignore
   })
-
-  return register
-}
-
-/**
- * Check if the filename should be ignored.
- */
-function shouldIgnore (filename: string, ignore: RegExp[]) {
-  const relname = normalizeSlashes(filename)
-
-  return ignore.some(x => x.test(relname))
-}
-
-/**
- * Register the extension for node.
- */
-function registerExtension (
-  ext: string,
-  ignore: RegExp[],
-  register: Register,
-  originalHandler: (m: NodeModule, filename: string) => any
-) {
-  const old = require.extensions[ext] || originalHandler
-
-  require.extensions[ext] = function (m: any, filename) {
-    if (shouldIgnore(filename, ignore) || register.fileNames.indexOf(filename) < 0) {
-      return old(m, filename)
-    }
-
-    const _compile = m._compile
-
-    m._compile = function (code: string, fileName: string) {
-      debug('module._compile', fileName)
-
-      return _compile.call(this, register.compile(code, fileName), fileName)
-    }
-
-    return old(m, filename)
-  }
+  registerCompiler.registerExtensions()
+  return registerCompiler
 }
 
 /**

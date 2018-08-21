@@ -262,17 +262,40 @@ describe('ts-node', function () {
   })
 
   describe('register', function () {
-    register({
+    const globalCompiler = register({
       project: join(testDir, 'tsconfig.json'),
       compilerOptions: {
         jsx: 'preserve'
       }
     })
 
+    afterEach(function () {
+      globalCompiler.enabled = true
+    })
+
     it('should be able to require typescript', function () {
       const m = require('../tests/module')
 
       expect(m.example('foo')).to.equal('FOO')
+    })
+
+    it('should be able to be disabled', function () {
+      globalCompiler.enabled = false
+      expect(() => require('../tests/disabled')).to.throw()
+    })
+
+    it('should support compiler scope', function () {
+      globalCompiler.enabled = false
+      const compilers = [
+        register({ scope: join(testDir, 'scope/a') }),
+        register({ scope: join(testDir, 'scope/b') })
+      ]
+      try {
+        require('../tests/scope/a')
+        require('../tests/scope/b')
+      } finally {
+        compilers.forEach(c => c.enabled = false)
+      }
     })
 
     it('should compile through js and ts', function () {

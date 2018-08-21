@@ -29,6 +29,7 @@ interface Argv {
   compiler?: string
   ignore?: string | string[]
   project?: string
+  scope?: string
   skipIgnore?: boolean
   skipProject?: boolean
   ignoreDiagnostics?: string | string[]
@@ -38,7 +39,7 @@ interface Argv {
 
 const argv = minimist<Argv>(process.argv.slice(2), {
   stopEarly: true,
-  string: ['eval', 'print', 'compiler', 'project', 'ignoreDiagnostics', 'require', 'cacheDirectory', 'ignore'],
+  string: ['eval', 'print', 'compiler', 'project', 'scope', 'ignoreDiagnostics', 'require', 'cacheDirectory', 'ignore'],
   boolean: ['help', 'transpileOnly', 'typeCheck', 'version', 'files', 'cache', 'pretty', 'skipProject', 'skipIgnore'],
   alias: {
     eval: ['e'],
@@ -51,6 +52,7 @@ const argv = minimist<Argv>(process.argv.slice(2), {
     cacheDirectory: ['cache-directory'],
     ignore: ['I'],
     project: ['P'],
+    scope: ['S'],
     skipIgnore: ['skip-ignore'],
     skipProject: ['skip-project'],
     compiler: ['C'],
@@ -90,6 +92,7 @@ Options:
   --cache-directory              Configure the output file cache directory
   -I, --ignore [pattern]         Override the path patterns to skip compilation
   -P, --project [path]           Path to TypeScript JSON project file
+  -S, --scope [path]             Path to TypeScript project to register
   -C, --compiler [name]          Specify a custom TypeScript compiler
   -D, --ignoreDiagnostics [code] Ignore TypeScript warnings by diagnostic code
   -O, --compilerOptions [opts]   JSON object to merge with compiler options
@@ -119,6 +122,7 @@ const service = register({
   cacheDirectory: argv.cacheDirectory,
   ignore: argv.ignore,
   project: argv.project,
+  scope: argv.scope,
   skipIgnore: argv.skipIgnore,
   skipProject: argv.skipProject,
   compiler: argv.compiler,
