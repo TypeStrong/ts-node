@@ -24,8 +24,6 @@ interface Argv {
   typeCheck?: boolean
   transpileOnly?: boolean
   files?: boolean
-  cache?: boolean
-  cacheDirectory?: string
   compiler?: string
   ignore?: string | string[]
   project?: string
@@ -38,8 +36,8 @@ interface Argv {
 
 const argv = minimist<Argv>(process.argv.slice(2), {
   stopEarly: true,
-  string: ['eval', 'print', 'compiler', 'project', 'ignoreDiagnostics', 'require', 'cacheDirectory', 'ignore'],
-  boolean: ['help', 'transpileOnly', 'typeCheck', 'version', 'files', 'cache', 'pretty', 'skipProject', 'skipIgnore'],
+  string: ['eval', 'print', 'compiler', 'project', 'ignoreDiagnostics', 'require', 'ignore'],
+  boolean: ['help', 'transpileOnly', 'typeCheck', 'version', 'files', 'pretty', 'skipProject', 'skipIgnore'],
   alias: {
     eval: ['e'],
     print: ['p'],
@@ -48,7 +46,6 @@ const argv = minimist<Argv>(process.argv.slice(2), {
     version: ['v'],
     typeCheck: ['type-check'],
     transpileOnly: ['T', 'transpile-only'],
-    cacheDirectory: ['cache-directory'],
     ignore: ['I'],
     project: ['P'],
     skipIgnore: ['skip-ignore'],
@@ -58,12 +55,10 @@ const argv = minimist<Argv>(process.argv.slice(2), {
     compilerOptions: ['O', 'compiler-options']
   },
   default: {
-    cache: DEFAULTS.cache,
     files: DEFAULTS.files,
     pretty: DEFAULTS.pretty,
     typeCheck: DEFAULTS.typeCheck,
     transpileOnly: DEFAULTS.transpileOnly,
-    cacheDirectory: DEFAULTS.cacheDirectory,
     ignore: DEFAULTS.ignore,
     project: DEFAULTS.project,
     skipIgnore: DEFAULTS.skipIgnore,
@@ -87,7 +82,6 @@ Options:
   -v, --version                  Print module version information
 
   -T, --transpile-only           Use TypeScript's faster \`transpileModule\`
-  --cache-directory              Configure the output file cache directory
   -I, --ignore [pattern]         Override the path patterns to skip compilation
   -P, --project [path]           Path to TypeScript JSON project file
   -C, --compiler [name]          Specify a custom TypeScript compiler
@@ -96,7 +90,6 @@ Options:
 
   --files                        Load files from \`tsconfig.json\` on startup
   --pretty                       Use pretty diagnostic formatter
-  --no-cache                     Disable the local TypeScript Node cache
   --skip-project                 Skip reading \`tsconfig.json\`
   --skip-ignore                  Skip \`--ignore\` checks
 `)
@@ -115,8 +108,6 @@ const service = register({
   pretty: argv.pretty,
   typeCheck: argv.typeCheck,
   transpileOnly: argv.transpileOnly,
-  cache: argv.cache,
-  cacheDirectory: argv.cacheDirectory,
   ignore: argv.ignore,
   project: argv.project,
   skipIgnore: argv.skipIgnore,
@@ -133,7 +124,6 @@ if (argv.version) {
   console.log(`ts-node v${VERSION}`)
   console.log(`node ${process.version}`)
   console.log(`typescript v${service.ts.version}`)
-  console.log(`cache ${JSON.stringify(service.cachedir)}`)
   process.exit(0)
 }
 
