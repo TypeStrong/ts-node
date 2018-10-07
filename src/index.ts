@@ -43,8 +43,6 @@ export interface Options {
   typeCheck?: boolean | null
   transpileOnly?: boolean | null
   files?: boolean | null
-  cache?: boolean | null
-  cacheDirectory?: string
   compiler?: string
   ignore?: string | string[]
   project?: string
@@ -79,9 +77,7 @@ export interface TypeInfo {
  */
 export const DEFAULTS: Options = {
   files: yn(process.env['TS_NODE_FILES']),
-  cache: yn(process.env['TS_NODE_CACHE'], { default: true }),
   pretty: yn(process.env['TS_NODE_PRETTY']),
-  cacheDirectory: process.env['TS_NODE_CACHE_DIRECTORY'],
   compiler: process.env['TS_NODE_COMPILER'],
   compilerOptions: parse(process.env['TS_NODE_COMPILER_OPTIONS']),
   ignore: split(process.env['TS_NODE_IGNORE']),
@@ -150,7 +146,6 @@ export class TSError extends BaseError {
 export interface Register {
   cwd: string
   extensions: string[]
-  cachedir: string
   ts: typeof ts
   compile (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
@@ -170,7 +165,6 @@ function getTmpDir (): string {
  */
 export function register (opts: Options = {}): Register {
   const options = Object.assign({}, DEFAULTS, opts)
-  const cacheDirectory = options.cacheDirectory || getTmpDir()
   const originalJsHandler = require.extensions['.js']
 
   const ignoreDiagnostics = arrify(options.ignoreDiagnostics).concat([
@@ -209,18 +203,6 @@ export function register (opts: Options = {}): Register {
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
   const extensions = ['.ts', '.tsx']
   const fileNames = options.files ? config.fileNames : []
-
-  const cachedir = join(
-    resolve(cwd, cacheDirectory),
-    getCompilerDigest({
-      version: ts.version,
-      options: config.options,
-      fileNames,
-      typeCheck,
-      ignoreDiagnostics,
-      compiler
-    })
-  )
 
   const diagnosticHost: ts.FormatDiagnosticsHost = {
     getNewLine: () => EOL,
@@ -372,8 +354,15 @@ export function register (opts: Options = {}): Register {
     }
   }
 
-  const compile = readThrough(cachedir, options.cache === true, memoryCache, getOutput, getExtension)
-  const register: Register = { cwd, compile, getTypeInfo, extensions, cachedir, ts }
+  // Create a simple TypeScript compiler proxy.
+  function compile (code: string, fileName: string, lineOffset?: number) {
+    const [value, sourceMap] = getOutput(code, fileName, lineOffset)
+    const output = updateOutput(value, fileName, sourceMap, getExtension)
+    memoryCache.outputs[fileName] = output
+    return output
+  }
+
+  const register: Register = { cwd, compile, getTypeInfo, extensions, ts }
 
   // Register the extensions.
   extensions.forEach(extension => {
@@ -495,57 +484,6 @@ function readConfig (
 type SourceOutput = [string, string]
 
 /**
- * Wrap the function with caching.
- */
-function readThrough (
-  cachedir: string,
-  shouldCache: boolean,
-  memoryCache: MemoryCache,
-  compile: (code: string, fileName: string, lineOffset?: number) => SourceOutput,
-  getExtension: (fileName: string) => string
-) {
-  if (shouldCache === false) {
-    return function (code: string, fileName: string, lineOffset?: number) {
-      debug('readThrough', fileName)
-
-      const [value, sourceMap] = compile(code, fileName, lineOffset)
-      const output = updateOutput(value, fileName, sourceMap, getExtension)
-
-      memoryCache.outputs[fileName] = output
-
-      return output
-    }
-  }
-
-  // Make sure the cache directory exists before continuing.
-  mkdirp.sync(cachedir)
-
-  return function (code: string, fileName: string, lineOffset?: number) {
-    debug('readThrough', fileName)
-
-    const cachePath = join(cachedir, getCacheName(code, fileName))
-    const extension = getExtension(fileName)
-    const outputPath = `${cachePath}${extension}`
-
-    try {
-      const output = readFileSync(outputPath, 'utf8')
-      if (isValidCacheContent(output)) {
-        memoryCache.outputs[fileName] = output
-        return output
-      }
-    } catch (err) {/* Ignore. */}
-
-    const [value, sourceMap] = compile(code, fileName, lineOffset)
-    const output = updateOutput(value, fileName, sourceMap, getExtension)
-
-    memoryCache.outputs[fileName] = output
-    writeFileSync(outputPath, output)
-
-    return output
-  }
-}
-
-/**
  * Update the output remapping the source map.
  */
 function updateOutput (outputText: string, fileName: string, sourceMap: string, getExtension: (fileName: string) => string) {
@@ -565,25 +503,6 @@ function updateSourceMap (sourceMapText: string, fileName: string) {
   sourceMap.sources = [fileName]
   delete sourceMap.sourceRoot
   return JSON.stringify(sourceMap)
-}
-
-/**
- * Get the file name for the cache entry.
- */
-function getCacheName (sourceCode: string, fileName: string) {
-  return crypto.createHash('sha256')
-    .update(extname(fileName), 'utf8')
-    .update('\x00', 'utf8')
-    .update(sourceCode, 'utf8')
-    .digest('hex')
-}
-
-/**
- * Ensure the given cached content is valid by sniffing for a base64 encoded '}'
- * at the end of the content, which should exist if there is a valid sourceMap present.
- */
-function isValidCacheContent (contents: string) {
-  return /(?:9|0=|Q==)$/.test(contents.slice(-3))
 }
 
 /**
