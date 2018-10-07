@@ -146,19 +146,30 @@ _Environment variable denoted in parentheses._
 
 **TypeScript Node** does _not_ use `files`, `include` or `exclude`, by default. This is because a large majority projects do not use all of the files in a project directory (e.g. `Gulpfile.ts`, runtime vs tests) and parsing every file for types slows startup time. Instead, `ts-node` starts with the script file (e.g. `ts-node index.ts`) and TypeScript resolves dependencies based on imports and references.
 
-For global definitions, you can use [`typeRoots`](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types):
+For global definitions, you can use the `typeRoots` compiler option.  This requires that your type definitions be structured as type packages (not loose TypeScript definition files).  More details on how this works can be found in the [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types).
 
-```json
+Example `tsconfig.json`:
+```
 {
   "compilerOptions": {
     "typeRoots" : ["./node_modules/@types", "./typings"]
   }
 }
 ```
-
-> A types package is a folder with a file called `index.d.ts` or a folder with a `package.json` that has a types field.
-> -- <cite>[TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types)</cite>
-
+Example project structure:
+```
+<projcet_root>/
+-- tsconfig.json
+-- typings/
+  -- <module_name>/
+    -- index.d.ts
+```
+Example module declaration file:
+```
+declare module '<module_name>' {
+    // module definitions go here
+}
+```
 For module definitions, you can use [`paths`](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping):
 
 ```json
