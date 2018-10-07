@@ -96,7 +96,7 @@ export const DEFAULTS: Options = {
 /**
  * Default TypeScript compiler options required by `ts-node`.
  */
-const DEFAULT_COMPILER_OPTIONS = {
+const TS_NODE_COMPILER_OPTIONS = {
   sourceMap: true,
   inlineSourceMap: false,
   inlineSources: true,
@@ -456,7 +456,7 @@ function readConfig (
   project?: string | null,
   noProject?: boolean | null
 ): ts.ParsedCommandLine {
-  let config = { compilerOptions: {} }
+  let config: any = { compilerOptions: {} }
   let basePath = normalizeSlashes(cwd)
   let configFileName: string | undefined = undefined
 
@@ -479,8 +479,12 @@ function readConfig (
     }
   }
 
+  // Remove resolution of "files".
+  config.files = []
+  config.includes = []
+
   // Override default configuration options `ts-node` requires.
-  config.compilerOptions = Object.assign({}, config.compilerOptions, compilerOptions, DEFAULT_COMPILER_OPTIONS)
+  config.compilerOptions = Object.assign({}, config.compilerOptions, compilerOptions, TS_NODE_COMPILER_OPTIONS)
 
   return fixConfig(ts.parseJsonConfigFileContent(config, ts.sys, basePath, undefined, configFileName))
 }
