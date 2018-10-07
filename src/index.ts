@@ -6,7 +6,6 @@ import mkdirp = require('mkdirp')
 import crypto = require('crypto')
 import yn = require('yn')
 import arrify = require('arrify')
-import bufferFrom = require('buffer-from')
 import { BaseError } from 'make-error'
 import * as util from 'util'
 import * as ts from 'typescript'
@@ -549,7 +548,7 @@ function readThrough (
  * Update the output remapping the source map.
  */
 function updateOutput (outputText: string, fileName: string, sourceMap: string, getExtension: (fileName: string) => string) {
-  const base64Map = bufferFrom(updateSourceMap(sourceMap, fileName), 'utf8').toString('base64')
+  const base64Map = Buffer.from(updateSourceMap(sourceMap, fileName), 'utf8').toString('base64')
   const sourceMapContent = `data:application/json;charset=utf-8;base64,${base64Map}`
   const sourceMapLength = `${basename(fileName)}.map`.length + (getExtension(fileName).length - extname(fileName).length)
 
