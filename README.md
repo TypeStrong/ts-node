@@ -129,6 +129,7 @@ _Environment variable denoted in parentheses._
 * `-P, --project [path]` Path to TypeScript JSON project file (`TS_NODE_PROJECT`)
 * `-D, --ignoreDiagnostics [code]` Ignore TypeScript warnings by diagnostic code (`TS_NODE_IGNORE_DIAGNOSTICS`)
 * `-O, --compilerOptions [opts]` JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
+* `-F, --transformers [path]` Path of .js transformers to pass to TypeScript (`TS_NODE_TRANSFORMERS`)
 * `--files` Load files from `tsconfig.json` on startup (`TS_NODE_FILES`, default: `false`)
 * `--pretty` Use pretty diagnostic formatter (`TS_NODE_PRETTY`, default: `false`)
 * `--no-cache` Disable the local TypeScript Node cache (`TS_NODE_CACHE`, default: `true`)

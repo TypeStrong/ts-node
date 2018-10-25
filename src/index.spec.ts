@@ -259,6 +259,72 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    describe('should support custom transformers', function () {
+      it('with out transformers', function (done) {
+        const execBin = `node "${EXEC_PATH}" --project "${testDir}/tsconfig.json"`
+
+        exec(`${execBin} tests/with-transformer`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(JSON.parse(stdout)).to.deep.equal({
+            id: 10,
+            name: 'username'
+          })
+          return done()
+        })
+      })
+
+      it('with alias', function (done) {
+        const execBin = `node "${EXEC_PATH}" -F "./tests/transformers/demo.js" --project "${testDir}/tsconfig.json"`
+
+        exec(`${execBin} tests/with-transformer`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(JSON.parse(stdout)).to.deep.equal({
+            id: 10,
+            name: 'username',
+            interfaceData: {
+              id: 'number',
+              name: 'string'
+            }
+          })
+          return done()
+        })
+      })
+
+      it('with full name', function (done) {
+        const execBin = `node "${EXEC_PATH}" --transformers "./tests/transformers/demo.js" --project "${testDir}/tsconfig.json"`
+
+        exec(`${execBin} tests/with-transformer`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(JSON.parse(stdout)).to.deep.equal({
+            id: 10,
+            name: 'username',
+            interfaceData: {
+              id: 'number',
+              name: 'string'
+            }
+          })
+          return done()
+        })
+      })
+
+      it('with Environment', function (done) {
+        const execBin = `export TS_NODE_TRANSFORMERS="./tests/transformers/demo.js" && node "${EXEC_PATH}" --project "${testDir}/tsconfig.json"`
+
+        exec(`${execBin} tests/with-transformer`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(JSON.parse(stdout)).to.deep.equal({
+            id: 10,
+            name: 'username',
+            interfaceData: {
+              id: 'number',
+              name: 'string'
+            }
+          })
+          return done()
+        })
+      })
+    })
   })
 
   describe('register', function () {

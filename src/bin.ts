@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+import * as ts from 'typescript'
 import { join, resolve } from 'path'
 import { start, Recoverable } from 'repl'
 import { inspect } from 'util'
@@ -31,12 +31,13 @@ interface Argv {
   skipProject?: boolean
   ignoreDiagnostics?: string | string[]
   compilerOptions?: string
+  transformers?: string
   _: string[]
 }
 
 const argv = minimist<Argv>(process.argv.slice(2), {
   stopEarly: true,
-  string: ['eval', 'print', 'compiler', 'project', 'ignoreDiagnostics', 'require', 'ignore'],
+  string: ['eval', 'print', 'compiler', 'project', 'ignoreDiagnostics', 'require', 'ignore', 'transformers'],
   boolean: ['help', 'transpileOnly', 'typeCheck', 'version', 'files', 'pretty', 'skipProject', 'skipIgnore'],
   alias: {
     eval: ['e'],
@@ -52,7 +53,8 @@ const argv = minimist<Argv>(process.argv.slice(2), {
     skipProject: ['skip-project'],
     compiler: ['C'],
     ignoreDiagnostics: ['D', 'ignore-diagnostics'],
-    compilerOptions: ['O', 'compiler-options']
+    compilerOptions: ['O', 'compiler-options'],
+    transformers: ['F']
   },
   default: {
     files: DEFAULTS.files,
@@ -64,6 +66,7 @@ const argv = minimist<Argv>(process.argv.slice(2), {
     skipIgnore: DEFAULTS.skipIgnore,
     skipProject: DEFAULTS.skipProject,
     compiler: DEFAULTS.compiler,
+    transformers: null,
     ignoreDiagnostics: DEFAULTS.ignoreDiagnostics
   }
 })
@@ -74,24 +77,25 @@ Usage: ts-node [options] [ -e script | script.ts ] [arguments]
 
 Options:
 
-  -e, --eval [code]              Evaluate code
-  -p, --print [code]             Evaluate code and print result
-  -r, --require [path]           Require a node module before execution
+-e, --eval [code]              Evaluate code
+-p, --print [code]             Evaluate code and print result
+-r, --require [path]           Require a node module before execution
 
-  -h, --help                     Print CLI usage
-  -v, --version                  Print module version information
+-h, --help                     Print CLI usage
+-v, --version                  Print module version information
 
-  -T, --transpile-only           Use TypeScript's faster \`transpileModule\`
-  -I, --ignore [pattern]         Override the path patterns to skip compilation
-  -P, --project [path]           Path to TypeScript JSON project file
-  -C, --compiler [name]          Specify a custom TypeScript compiler
-  -D, --ignoreDiagnostics [code] Ignore TypeScript warnings by diagnostic code
-  -O, --compilerOptions [opts]   JSON object to merge with compiler options
+-T, --transpile-only           Use TypeScript's faster \`transpileModule\`
+-I, --ignore [pattern]         Override the path patterns to skip compilation
+-P, --project [path]           Path to TypeScript JSON project file
+-C, --compiler [name]          Specify a custom TypeScript compiler
+-D, --ignoreDiagnostics [code] Ignore TypeScript warnings by diagnostic code
+-O, --compilerOptions [opts]   JSON object to merge with compiler options
+-F, --transformers [path]      Path of .js transformers to pass to TypeScript
 
-  --files                        Load files from \`tsconfig.json\` on startup
-  --pretty                       Use pretty diagnostic formatter
-  --skip-project                 Skip reading \`tsconfig.json\`
-  --skip-ignore                  Skip \`--ignore\` checks
+--files                        Load files from \`tsconfig.json\` on startup
+--pretty                       Use pretty diagnostic formatter
+--skip-project                 Skip reading \`tsconfig.json\`
+--skip-ignore                  Skip \`--ignore\` checks
 `)
 
   process.exit(0)
@@ -116,7 +120,8 @@ const service = register({
   ignoreDiagnostics: argv.ignoreDiagnostics,
   compilerOptions: parse(argv.compilerOptions) || DEFAULTS.compilerOptions,
   readFile: isEval ? readFileEval : undefined,
-  fileExists: isEval ? fileExistsEval : undefined
+  fileExists: isEval ? fileExistsEval : undefined,
+  transformers: argv.transformers ? require(join(cwd, argv.transformers)) : DEFAULTS.transformers
 })
 
 // Output project information.

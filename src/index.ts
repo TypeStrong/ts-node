@@ -71,6 +71,11 @@ export interface TypeInfo {
   comment: string
 }
 
+let envTransformer
+if (process.env['TS_NODE_TRANSFORMERS']) {
+  envTransformer = require(join(process.cwd(), process.env['TS_NODE_TRANSFORMERS'] as string))
+}
+
 /**
  * Default register options.
  */
@@ -85,7 +90,8 @@ export const DEFAULTS: Options = {
   skipProject: yn(process.env['TS_NODE_SKIP_PROJECT']),
   ignoreDiagnostics: split(process.env['TS_NODE_IGNORE_DIAGNOSTICS']),
   typeCheck: yn(process.env['TS_NODE_TYPE_CHECK']),
-  transpileOnly: yn(process.env['TS_NODE_TRANSPILE_ONLY'])
+  transpileOnly: yn(process.env['TS_NODE_TRANSPILE_ONLY']),
+  transformers: envTransformer
 }
 
 /**
