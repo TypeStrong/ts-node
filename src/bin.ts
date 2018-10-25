@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-
+import * as ts from 'typescript'
 import { join, resolve } from 'path'
-import { start, Recoverable } from 'repl'
+import { start, Recoverable, REPLEval } from 'repl'
 import { inspect } from 'util'
 import arrify = require('arrify')
 import Module = require('module')
@@ -9,7 +9,7 @@ import minimist = require('minimist')
 import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { readFileSync, statSync } from 'fs'
-import { register, VERSION, DEFAULTS, TSError, parse } from './index'
+import { register, VERSION, DEFAULTS, TSError, parse, parseTransformers } from './index'
 
 interface Argv {
   // Node.js-like options.
@@ -31,12 +31,13 @@ interface Argv {
   skipProject?: boolean
   ignoreDiagnostics?: string | string[]
   compilerOptions?: string
+  transformers?: string | string[]
   _: string[]
 }
 
 const argv = minimist<Argv>(process.argv.slice(2), {
   stopEarly: true,
-  string: ['eval', 'print', 'compiler', 'project', 'ignoreDiagnostics', 'require', 'ignore'],
+  string: ['eval', 'print', 'compiler', 'project', 'ignoreDiagnostics', 'require', 'ignore', 'transformers'],
   boolean: ['help', 'transpileOnly', 'typeCheck', 'version', 'files', 'pretty', 'skipProject', 'skipIgnore'],
   alias: {
     eval: ['e'],
@@ -64,6 +65,7 @@ const argv = minimist<Argv>(process.argv.slice(2), {
     skipIgnore: DEFAULTS.skipIgnore,
     skipProject: DEFAULTS.skipProject,
     compiler: DEFAULTS.compiler,
+    transformers: null,
     ignoreDiagnostics: DEFAULTS.ignoreDiagnostics
   }
 })
@@ -116,7 +118,8 @@ const service = register({
   ignoreDiagnostics: argv.ignoreDiagnostics,
   compilerOptions: parse(argv.compilerOptions) || DEFAULTS.compilerOptions,
   readFile: isEval ? readFileEval : undefined,
-  fileExists: isEval ? fileExistsEval : undefined
+  fileExists: isEval ? fileExistsEval : undefined,
+  transformers: argv.transformers ? parseTransformers(argv.transformers, cwd) : DEFAULTS.transformers
 })
 
 // Output project information.
@@ -237,7 +240,7 @@ function startRepl () {
     input: process.stdin,
     output: process.stdout,
     terminal: process.stdout.isTTY,
-    eval: replEval,
+    eval: replEval as REPLEval,
     useGlobal: true
   })
 

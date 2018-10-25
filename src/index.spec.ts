@@ -4,7 +4,7 @@ import { join } from 'path'
 import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
-import { register, VERSION } from './index'
+import { register, parseTransformers, VERSION } from './index'
 
 const TEST_DIR = join(__dirname, '../tests')
 const EXEC_PATH = join(__dirname, '../dist/bin')
@@ -260,6 +260,97 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    describe('should support custom transformers', function () {
+      beforeEach(function () {
+        if (semver.lt(ts.version, '2.3.0')) {
+          this.skip()
+        }
+      })
+
+      it('with out transformers', function (done) {
+        const execBin = `node "${EXEC_PATH}" --project "${TEST_DIR}/tsconfig.json"`
+
+        exec(`${execBin} tests/with-transformer`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(JSON.parse(stdout)).to.deep.equal({
+            id: 10,
+            name: 'username'
+          })
+          return done()
+        })
+      })
+
+      it('with transformers', function (done) {
+        const execBin = `node "${EXEC_PATH}" --transformers "./tests/transformers/demo.js" --project "${TEST_DIR}/tsconfig.json"`
+
+        exec(`${execBin} tests/with-transformer`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(JSON.parse(stdout)).to.deep.equal({
+            id: 10,
+            name: 'username',
+            interfaceData: {
+              id: 'number',
+              name: 'string'
+            }
+          })
+          return done()
+        })
+      })
+
+      it('with Environment', function (done) {
+        const execBin = `export TS_NODE_TRANSFORMERS="./tests/transformers/demo.js" && node "${EXEC_PATH}" --project "${TEST_DIR}/tsconfig.json"`
+
+        exec(`${execBin} tests/with-transformer`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(JSON.parse(stdout)).to.deep.equal({
+            id: 10,
+            name: 'username',
+            interfaceData: {
+              id: 'number',
+              name: 'string'
+            }
+          })
+          return done()
+        })
+      })
+
+      it('multi transformers', function (done) {
+        const execBin = `node "${EXEC_PATH}" --transformers "./tests/transformers/demo.js" --transformers "./tests/transformers/simple.js" --project "${TEST_DIR}/tsconfig.json"`
+
+        exec(`${execBin} tests/with-transformer`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(JSON.parse(stdout)).to.deep.equal({
+            a: 1000,
+            id: 10,
+            name: 'username',
+            interfaceData: {
+              id: 'number',
+              name: 'string'
+            }
+          })
+          return done()
+        })
+      })
+
+      it('multi transformers with Environment', function (done) {
+        const execBin = `export TS_NODE_TRANSFORMERS="./tests/transformers/demo.js, ./tests/transformers/simple.js" && node "${EXEC_PATH}" --project "${TEST_DIR}/tsconfig.json"`
+
+        exec(`${execBin} tests/with-transformer`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(JSON.parse(stdout)).to.deep.equal({
+            a: 1000,
+            id: 10,
+            name: 'username',
+            interfaceData: {
+              id: 'number',
+              name: 'string'
+            }
+          })
+          return done()
+        })
+      })
+    })
   })
 
   describe('register', function () {
@@ -337,4 +428,17 @@ describe('ts-node', function () {
       })
     })
   })
+
+  describe('parseTransformers', () => {
+    it('should merge multi transformers', function (done) {
+      const result = parseTransformers(['./tests/transformers/demo.js', './tests/transformers/after.js'], TEST_DIR)
+
+      if (result.before) { expect(result.before.length).to.eql(2) }
+      if (result.after) { expect(result.after.length).to.eql(1) }
+      if (result.afterDeclarations) { expect(result.afterDeclarations.length).to.eql(1) }
+
+      done()
+    })
+  })
+
 })

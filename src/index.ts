@@ -71,6 +71,15 @@ export interface TypeInfo {
   comment: string
 }
 
+let envTransformers
+/**
+ * parse transformers from node env (split as commas)
+ * eg: TS_NODE_TRANSFORMERS='a.js, b.js, c.js'
+ */
+if (process.env['TS_NODE_TRANSFORMERS']) {
+  envTransformers = parseTransformers((process.env['TS_NODE_TRANSFORMERS'] || '').split(','), process.cwd())
+}
+
 /**
  * Default register options.
  */
@@ -85,7 +94,8 @@ export const DEFAULTS: Options = {
   skipProject: yn(process.env['TS_NODE_SKIP_PROJECT']),
   ignoreDiagnostics: split(process.env['TS_NODE_IGNORE_DIAGNOSTICS']),
   typeCheck: yn(process.env['TS_NODE_TYPE_CHECK']),
-  transpileOnly: yn(process.env['TS_NODE_TRANSPILE_ONLY'])
+  transpileOnly: yn(process.env['TS_NODE_TRANSPILE_ONLY']),
+  transformers: envTransformers
 }
 
 /**
@@ -369,6 +379,31 @@ export function register (opts: Options = {}): Register {
   })
 
   return register
+}
+
+/**
+ * parse transformer from files
+ * Note: every file should return as ts.CustomTransformers;
+ */
+export function parseTransformers (files: string | string[], cwd: string): ts.CustomTransformers {
+  const transformers = {} as ts.CustomTransformers;
+
+  ([] as string[]).concat(files).map((file: string) => {
+    const filePath = require.resolve(file.trim(), { paths: [ cwd ] })
+    const trans = require(filePath) as ts.CustomTransformers
+
+    if (trans.before) {
+      transformers.before = (transformers.before || []).concat(trans.before)
+    }
+    if (trans.after) {
+      transformers.after = (transformers.after || []).concat(trans.after)
+    }
+    if (trans.afterDeclarations) {
+      transformers.afterDeclarations = (transformers.afterDeclarations || []).concat(trans.afterDeclarations)
+    }
+  })
+
+  return transformers
 }
 
 /**
