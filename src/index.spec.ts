@@ -261,6 +261,12 @@ describe('ts-node', function () {
     })
 
     describe('should support custom transformers', function () {
+      beforeEach(function () {
+        if (semver.lt(ts.version, '2.3.0')) {
+          this.skip()
+        }
+      })
+
       it('with out transformers', function (done) {
         const execBin = `node "${EXEC_PATH}" --project "${testDir}/tsconfig.json"`
 
