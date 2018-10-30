@@ -2,6 +2,10 @@
   "compilerOptions": {
     "jsx": "react",
     "noEmit": true,
-    "typeRoots": ["./typings", "../node_modules/@types"]
+    // Global type definitions.
+    "typeRoots": [
+      "./typings",
+      "../node_modules/@types",
+    ],
   }
 }
