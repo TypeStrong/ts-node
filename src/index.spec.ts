@@ -6,9 +6,10 @@ import ts = require('typescript')
 import proxyquire = require('proxyquire')
 import { register, VERSION } from './index'
 
-const testDir = join(__dirname, '../tests')
+const TEST_DIR = join(__dirname, '../tests')
 const EXEC_PATH = join(__dirname, '../dist/bin')
-const BIN_EXEC = `node "${EXEC_PATH}" --project "${testDir}/tsconfig.json"`
+const PROJECT = join(TEST_DIR, semver.gte(ts.version, '2.5.0') ? 'tsconfig.json5' : 'tsconfig.json')
+const BIN_EXEC = `node "${EXEC_PATH}" --project "${PROJECT}"`
 
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
 
@@ -33,7 +34,7 @@ describe('ts-node', function () {
 
     it('should register via cli', function (done) {
       exec(`node -r ../register hello-world.ts`, {
-        cwd: testDir
+        cwd: TEST_DIR
       }, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\n')
@@ -43,7 +44,7 @@ describe('ts-node', function () {
     })
 
     it('should execute cli with absolute path', function (done) {
-      exec(`${BIN_EXEC} "${join(testDir, 'hello-world')}"`, function (err, stdout) {
+      exec(`${BIN_EXEC} "${join(TEST_DIR, 'hello-world')}"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\n')
 
@@ -263,7 +264,7 @@ describe('ts-node', function () {
 
   describe('register', function () {
     register({
-      project: join(testDir, 'tsconfig.json'),
+      project: PROJECT,
       compilerOptions: {
         jsx: 'preserve'
       }
