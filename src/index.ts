@@ -386,10 +386,9 @@ export function register (opts: Options = {}): Register {
  * Note: every file should return as ts.CustomTransformers;
  */
 export function parseTransformers (files: string | string[], cwd: string): ts.CustomTransformers {
-  const transformers = {} as ts.CustomTransformers;
+  const transformers = {} as ts.CustomTransformers
 
   ([] as string[]).concat(files).map((file: string) => {
-    console.log('>>>>> file: ', file, cwd)
     const filePath = require.resolve(file.trim(), { paths: [ cwd ] })
     const trans = require(filePath) as ts.CustomTransformers
 
