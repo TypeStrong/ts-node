@@ -4,7 +4,9 @@ import { EOL, tmpdir, homedir } from 'os'
 import sourceMapSupport = require('source-map-support')
 import mkdirp = require('mkdirp')
 import crypto = require('crypto')
+const fs = require('fs')
 import yn = require('yn')
+const path = require('path')
 import arrify = require('arrify')
 import { BaseError } from 'make-error'
 import * as util from 'util'
@@ -390,8 +392,7 @@ export function parseTransformers (files: string | string[], cwd: string): ts.Cu
 
   ([] as string[]).concat(files).map((file: string) => {
 
-    process.stdout.write(`>>> file: ${file} cwd: ${cwd}`)
-    process.exit()
+    process.stdout.write(JSON.stringify(fs.statSync(path.join(cwd, file))))
 
     const filePath = require.resolve(file.trim(), { paths: [ cwd ] })
     const trans = require(filePath) as ts.CustomTransformers
