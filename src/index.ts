@@ -389,6 +389,7 @@ export function parseTransformers (files: string | string[], cwd: string): ts.Cu
   const transformers = {} as ts.CustomTransformers;
 
   ([] as string[]).concat(files).map((file: string) => {
+    console.log('>>>>> file: ', file, cwd);
     const filePath = require.resolve(file.trim(), { paths: [ cwd ] })
     const trans = require(filePath) as ts.CustomTransformers
 
