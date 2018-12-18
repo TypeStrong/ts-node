@@ -299,7 +299,7 @@ describe('ts-node', function () {
         })
       })
 
-      it('with Environment', function (done) {
+      it.skip('with Environment', function (done) {
         const execBin = `export TS_NODE_TRANSFORMERS="./tests/transformers/demo.js" && node "${EXEC_PATH}" --project "${TEST_DIR}/tsconfig.json"`
 
         exec(`${execBin} tests/with-transformer`, function (err, stdout) {
@@ -316,7 +316,7 @@ describe('ts-node', function () {
         })
       })
 
-      it('multi transformers', function (done) {
+      it.skip('multi transformers', function (done) {
         const execBin = `node "${EXEC_PATH}" --transformers "./tests/transformers/demo.js" --transformers "./tests/transformers/simple.js" --project "${TEST_DIR}/tsconfig.json"`
 
         exec(`${execBin} tests/with-transformer`, function (err, stdout) {
@@ -334,7 +334,7 @@ describe('ts-node', function () {
         })
       })
 
-      it('multi transformers with Environment', function (done) {
+      it.skip('multi transformers with Environment', function (done) {
         const execBin = `export TS_NODE_TRANSFORMERS="./tests/transformers/demo.js, ./tests/transformers/simple.js" && node "${EXEC_PATH}" --project "${TEST_DIR}/tsconfig.json"`
 
         exec(`${execBin} tests/with-transformer`, function (err, stdout) {
