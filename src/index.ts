@@ -1,8 +1,6 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path'
-import { readFileSync, writeFileSync } from 'fs'
 import { EOL, tmpdir, homedir } from 'os'
 import sourceMapSupport = require('source-map-support')
-import mkdirp = require('mkdirp')
 import crypto = require('crypto')
 import yn = require('yn')
 import arrify = require('arrify')
