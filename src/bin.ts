@@ -10,6 +10,7 @@ import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { readFileSync, statSync } from 'fs'
 import { register, VERSION, DEFAULTS, TSError, parse } from './index'
+import { useHistory } from './history'
 
 interface Argv {
   // Node.js-like options.
@@ -240,6 +241,9 @@ function startRepl () {
     eval: replEval,
     useGlobal: true
   })
+
+  // Initialize the command history.
+  useHistory(repl)
 
   // Bookmark the point where we should reset the REPL state.
   const resetEval = appendEval('')
