@@ -3,79 +3,76 @@
 import { join, resolve } from 'path'
 import { start, Recoverable } from 'repl'
 import { inspect } from 'util'
-import arrify = require('arrify')
 import Module = require('module')
-import minimist = require('minimist')
+import arg = require('arg')
 import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { readFileSync, statSync } from 'fs'
 import { register, VERSION, DEFAULTS, TSError, parse } from './index'
 
-interface Argv {
+const args = arg({
   // Node.js-like options.
-  eval?: string
-  print?: string
-  require?: string | string[]
-  // CLI options.
-  help?: boolean
-  version?: boolean
-  // Register options.
-  pretty?: boolean
-  typeCheck?: boolean
-  transpileOnly?: boolean
-  files?: boolean
-  compiler?: string
-  ignore?: string | string[]
-  project?: string
-  skipIgnore?: boolean
-  skipProject?: boolean
-  ignoreDiagnostics?: string | string[]
-  compilerOptions?: string
-  _: string[]
-}
+  '--eval': String,
+  '--print': Boolean,
+  '--require': [String],
 
-const argv = minimist<Argv>(process.argv.slice(2), {
-  stopEarly: true,
-  string: ['eval', 'print', 'compiler', 'project', 'ignoreDiagnostics', 'require', 'ignore'],
-  boolean: ['help', 'transpileOnly', 'typeCheck', 'version', 'files', 'pretty', 'skipProject', 'skipIgnore'],
-  alias: {
-    eval: ['e'],
-    print: ['p'],
-    require: ['r'],
-    help: ['h'],
-    version: ['v'],
-    typeCheck: ['type-check'],
-    transpileOnly: ['T', 'transpile-only'],
-    ignore: ['I'],
-    project: ['P'],
-    skipIgnore: ['skip-ignore'],
-    skipProject: ['skip-project'],
-    compiler: ['C'],
-    ignoreDiagnostics: ['D', 'ignore-diagnostics'],
-    compilerOptions: ['O', 'compiler-options']
-  },
-  default: {
-    files: DEFAULTS.files,
-    pretty: DEFAULTS.pretty,
-    typeCheck: DEFAULTS.typeCheck,
-    transpileOnly: DEFAULTS.transpileOnly,
-    ignore: DEFAULTS.ignore,
-    project: DEFAULTS.project,
-    skipIgnore: DEFAULTS.skipIgnore,
-    skipProject: DEFAULTS.skipProject,
-    compiler: DEFAULTS.compiler,
-    ignoreDiagnostics: DEFAULTS.ignoreDiagnostics
-  }
+  // CLI options.
+  '--files': Boolean,
+  '--help': Boolean,
+  '--version': arg.COUNT,
+
+  // Project options.
+  '--compiler': String,
+  '--compiler-options': parse,
+  '--project': String,
+  '--ignore-diagnostics': [String],
+  '--ignore': [String],
+  '--transpile-only': Boolean,
+  '--type-check': Boolean,
+  '--pretty': Boolean,
+  '--skip-project': Boolean,
+  '--skip-ignore': Boolean,
+
+  // Aliases.
+  '-e': '--eval',
+  '-p': '--print',
+  '-r': '--require',
+  '-h': '--help',
+  '-v': '--version',
+  '-T': '--transpile-only',
+  '-I': '--ignore',
+  '-P': '--project',
+  '-C': '--compiler',
+  '-D': '--ignore-diagnostics',
+  '-O': '--compiler-options'
+}, {
+  stopAtPositional: true
 })
 
-if (argv.help) {
+const {
+  '--help': help = false,
+  '--version': version = 0,
+  '--files': files = DEFAULTS.files,
+  '--compiler': compiler = DEFAULTS.compiler,
+  '--compiler-options': compilerOptions = DEFAULTS.compilerOptions,
+  '--project': project = DEFAULTS.project,
+  '--ignore-diagnostics': ignoreDiagnostics = DEFAULTS.ignoreDiagnostics,
+  '--ignore': ignore = DEFAULTS.ignore,
+  '--transpile-only': transpileOnly = DEFAULTS.transpileOnly,
+  '--type-check': typeCheck = DEFAULTS.typeCheck,
+  '--pretty': pretty = DEFAULTS.pretty,
+  '--skip-project': skipProject = DEFAULTS.skipProject,
+  '--skip-ignore': skipIgnore = DEFAULTS.skipIgnore
+} = args
+
+if (help) {
   console.log(`
 Usage: ts-node [options] [ -e script | script.ts ] [arguments]
 
 Options:
 
   -e, --eval [code]              Evaluate code
-  -p, --print [code]             Evaluate code and print result
+  -p, --print                    Print result of \`--eval\`
   -r, --require [path]           Require a node module before execution
 
   -h, --help                     Print CLI usage
@@ -85,8 +82,8 @@ Options:
   -I, --ignore [pattern]         Override the path patterns to skip compilation
   -P, --project [path]           Path to TypeScript JSON project file
   -C, --compiler [name]          Specify a custom TypeScript compiler
-  -D, --ignoreDiagnostics [code] Ignore TypeScript warnings by diagnostic code
-  -O, --compilerOptions [opts]   JSON object to merge with compiler options
+  -D, --ignore-diagnostics [code] Ignore TypeScript warnings by diagnostic code
+  -O, --compiler-options [opts]   JSON object to merge with compiler options
 
   --files                        Load files from \`tsconfig.json\` on startup
   --pretty                       Use pretty diagnostic formatter
@@ -97,38 +94,43 @@ Options:
   process.exit(0)
 }
 
+// Output project information.
+if (version === 1) {
+  console.log(`v${VERSION}`)
+  process.exit(0)
+}
+
 const cwd = process.cwd()
-const code = argv.eval === undefined ? argv.print : argv.eval
-const isEval = typeof argv.eval === 'string' || !!argv.print // Minimist struggles with empty strings.
-const isPrinted = argv.print !== undefined
+const code = args['--eval']
+const isPrinted = args['--print'] !== undefined
 
 // Register the TypeScript compiler instance.
 const service = register({
-  files: argv.files,
-  pretty: argv.pretty,
-  typeCheck: argv.typeCheck,
-  transpileOnly: argv.transpileOnly,
-  ignore: argv.ignore,
-  project: argv.project,
-  skipIgnore: argv.skipIgnore,
-  skipProject: argv.skipProject,
-  compiler: argv.compiler,
-  ignoreDiagnostics: argv.ignoreDiagnostics,
-  compilerOptions: parse(argv.compilerOptions) || DEFAULTS.compilerOptions,
-  readFile: isEval ? readFileEval : undefined,
-  fileExists: isEval ? fileExistsEval : undefined
+  files,
+  pretty,
+  typeCheck,
+  transpileOnly,
+  ignore,
+  project,
+  skipIgnore,
+  skipProject,
+  compiler,
+  ignoreDiagnostics,
+  compilerOptions,
+  readFile: code ? readFileEval : undefined,
+  fileExists: code ? fileExistsEval : undefined
 })
 
 // Output project information.
-if (argv.version) {
+if (version >= 2) {
   console.log(`ts-node v${VERSION}`)
   console.log(`node ${process.version}`)
-  console.log(`typescript v${service.ts.version}`)
+  console.log(`compiler v${service.ts.version}`)
   process.exit(0)
 }
 
 // Require specified modules before start-up.
-(Module as any)._preloadModules(arrify(argv.require))
+if (args['--require']) (Module as any)._preloadModules(args['--require'])
 
 /**
  * Eval helpers.
@@ -138,16 +140,16 @@ const EVAL_PATH = join(cwd, EVAL_FILENAME)
 const EVAL_INSTANCE = { input: '', output: '', version: 0, lines: 0 }
 
 // Execute the main contents (either eval, script or piped).
-if (isEval) {
-  evalAndExit(code as string, isPrinted)
+if (code) {
+  evalAndExit(code, isPrinted)
 } else {
-  if (argv._.length) {
-    process.argv = ['node'].concat(resolve(cwd, argv._[0])).concat(argv._.slice(1))
+  if (args._.length) {
+    process.argv = ['node'].concat(resolve(cwd, args._[0])).concat(args._.slice(1))
     process.execArgv.unshift(__filename)
     Module.runMain()
   } else {
     // Piping of execution _only_ occurs when no other script is specified.
-    if ((process.stdin as any).isTTY) {
+    if (process.stdin.isTTY) {
       startRepl()
     } else {
       let code = ''

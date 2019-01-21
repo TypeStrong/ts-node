@@ -53,7 +53,7 @@ describe('ts-node', function () {
     })
 
     it('should print scripts', function (done) {
-      exec(`${BIN_EXEC} -p "import { example } from './tests/complex/index';example()"`, function (err, stdout) {
+      exec(`${BIN_EXEC} -pe "import { example } from './tests/complex/index';example()"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('example\n')
 
@@ -67,7 +67,7 @@ describe('ts-node', function () {
           [
             BIN_EXEC,
             '-O "{\\\"allowJs\\\":true}"',
-            '-p "import { main } from \'./tests/allow-js/run\';main()"'
+            '-pe "import { main } from \'./tests/allow-js/run\';main()"'
           ].join(' '),
           function (err, stdout) {
             expect(err).to.equal(null)
@@ -83,7 +83,7 @@ describe('ts-node', function () {
           [
             BIN_EXEC,
             '-O "{\\\"allowJs\\\":true}"',
-            '-p "import { Foo2 } from \'./tests/allow-js/with-jsx\'; Foo2.sayHi()"'
+            '-pe "import { Foo2 } from \'./tests/allow-js/with-jsx\'; Foo2.sayHi()"'
           ].join(' '),
           function (err, stdout) {
             expect(err).to.equal(null)
@@ -133,7 +133,7 @@ describe('ts-node', function () {
 
     it('should be able to ignore diagnostic', function (done) {
       exec(
-        `${BIN_EXEC} --ignoreDiagnostics 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
+        `${BIN_EXEC} --ignore-diagnostics 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
         function (err) {
           if (err === null) {
             return done('Command was expected to fail, but it succeeded.')
@@ -166,7 +166,7 @@ describe('ts-node', function () {
     })
 
     it.skip('eval should work with source maps', function (done) {
-      exec(`${BIN_EXEC} -p "import './tests/throw'"`, function (err) {
+      exec(`${BIN_EXEC} -pe "import './tests/throw'"`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
@@ -182,7 +182,7 @@ describe('ts-node', function () {
     })
 
     it('should support transpile only mode', function (done) {
-      exec(`${BIN_EXEC} --transpileOnly -p "x"`, function (err) {
+      exec(`${BIN_EXEC} --transpile-only -pe "x"`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
@@ -216,7 +216,7 @@ describe('ts-node', function () {
     })
 
     it('should pipe into an eval script', function (done) {
-      const cp = exec(`${BIN_EXEC} --fast -p 'process.stdin.isTTY'`, function (err, stdout) {
+      const cp = exec(`${BIN_EXEC} --transpile-only -pe 'process.stdin.isTTY'`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('undefined\n')
 
@@ -227,7 +227,7 @@ describe('ts-node', function () {
     })
 
     it('should support require flags', function (done) {
-      exec(`${BIN_EXEC} -r ./tests/hello-world -p "console.log('success')"`, function (err, stdout) {
+      exec(`${BIN_EXEC} -r ./tests/hello-world -pe "console.log('success')"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\nsuccess\nundefined\n')
 
