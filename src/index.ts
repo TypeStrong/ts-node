@@ -1,9 +1,6 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path'
-import { readFileSync, writeFileSync } from 'fs'
-import { EOL, tmpdir, homedir } from 'os'
+import { EOL } from 'os'
 import sourceMapSupport = require('source-map-support')
-import mkdirp = require('mkdirp')
-import crypto = require('crypto')
 import yn = require('yn')
 import arrify = require('arrify')
 import { BaseError } from 'make-error'
@@ -151,15 +148,6 @@ export interface Register {
 }
 
 /**
- * Return a default temp directory based on home directory of user.
- */
-function getTmpDir (): string {
-  const hash = crypto.createHash('sha256').update(homedir(), 'utf8').digest('hex')
-
-  return join(tmpdir(), `ts-node-${hash}`)
-}
-
-/**
  * Register TypeScript compiler.
  */
 export function register (opts: Options = {}): Register {
@@ -193,7 +181,6 @@ export function register (opts: Options = {}): Register {
   // Require the TypeScript compiler and configuration.
   const cwd = process.cwd()
   const { compilerOptions, project, skipProject } = options
-  const compiler = options.compiler || 'typescript'
   const typeCheck = options.typeCheck === true || options.transpileOnly !== true
   const transformers = options.transformers || undefined
   const readFile = options.readFile || ts.sys.readFile
@@ -502,13 +489,6 @@ function updateSourceMap (sourceMapText: string, fileName: string) {
   sourceMap.sources = [fileName]
   delete sourceMap.sourceRoot
   return JSON.stringify(sourceMap)
-}
-
-/**
- * Create a hash of the current configuration.
- */
-function getCompilerDigest (obj: object) {
-  return crypto.createHash('sha256').update(JSON.stringify(obj), 'utf8').digest('hex')
 }
 
 /**
