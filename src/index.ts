@@ -5,7 +5,7 @@ import yn = require('yn')
 import arrify = require('arrify')
 import { BaseError } from 'make-error'
 import * as util from 'util'
-import * as ts from 'typescript'
+import * as _ts from 'typescript'
 
 /**
  * @internal
@@ -25,6 +25,28 @@ const debugFn = shouldDebug ?
     }
   } :
   <T, U> (_: string, fn: (arg: T) => U) => fn
+
+/**
+ * Common TypeScript interfaces between versions.
+ */
+export interface TSCommon {
+  version: typeof _ts.version
+  sys: typeof _ts.sys
+  ScriptSnapshot: typeof _ts.ScriptSnapshot
+  displayPartsToString: typeof _ts.displayPartsToString
+  createLanguageService: typeof _ts.createLanguageService
+  getDefaultLibFilePath: typeof _ts.getDefaultLibFilePath
+  getPreEmitDiagnostics: typeof _ts.getPreEmitDiagnostics
+  flattenDiagnosticMessageText: typeof _ts.flattenDiagnosticMessageText
+  transpileModule: typeof _ts.transpileModule
+  ModuleKind: typeof _ts.ModuleKind
+  ScriptTarget: typeof _ts.ScriptTarget
+  findConfigFile: typeof _ts.findConfigFile
+  readConfigFile: typeof _ts.readConfigFile
+  parseJsonConfigFileContent: typeof _ts.parseJsonConfigFileContent
+  formatDiagnostics: typeof _ts.formatDiagnostics
+  formatDiagnosticsWithColorAndContext: typeof _ts.formatDiagnosticsWithColorAndContext
+}
 
 /**
  * Export the current version.
@@ -48,7 +70,7 @@ export interface Options {
   ignoreDiagnostics?: number | string | Array<number | string>
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
-  transformers?: ts.CustomTransformers
+  transformers?: _ts.CustomTransformers
 }
 
 /**
@@ -142,7 +164,7 @@ export class TSError extends BaseError {
 export interface Register {
   cwd: string
   extensions: string[]
-  ts: typeof ts
+  ts: TSCommon
   compile (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
 }
@@ -182,15 +204,17 @@ export function register (opts: Options = {}): Register {
   const cwd = process.cwd()
   const { compilerOptions, project, skipProject } = options
   const typeCheck = options.typeCheck === true || options.transpileOnly !== true
+  const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd] })
+  const ts: typeof _ts = require(compiler)
   const transformers = options.transformers || undefined
   const readFile = options.readFile || ts.sys.readFile
   const fileExists = options.fileExists || ts.sys.fileExists
-  const config = readConfig(cwd, fileExists, readFile, compilerOptions, project, skipProject)
+  const config = readConfig(cwd, ts, fileExists, readFile, compilerOptions, project, skipProject)
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
   const extensions = ['.ts', '.tsx']
   const fileNames = options.files ? config.fileNames : []
 
-  const diagnosticHost: ts.FormatDiagnosticsHost = {
+  const diagnosticHost: _ts.FormatDiagnosticsHost = {
     getNewLine: () => EOL,
     getCurrentDirectory: () => cwd,
     getCanonicalFileName: (path) => path
@@ -200,7 +224,7 @@ export function register (opts: Options = {}): Register {
     ? ts.formatDiagnosticsWithColorAndContext
     : ts.formatDiagnostics
 
-  function createTSError (diagnostics: ReadonlyArray<ts.Diagnostic>) {
+  function createTSError (diagnostics: ReadonlyArray<_ts.Diagnostic>) {
     const diagnosticText = formatDiagnostics(diagnostics, diagnosticHost)
     const diagnosticCodes = diagnostics.map(x => x.code)
     return new TSError(diagnosticText, diagnosticCodes)
@@ -398,7 +422,7 @@ function registerExtension (
 /**
  * Do post-processing on config options to support `ts-node`.
  */
-function fixConfig (config: ts.ParsedCommandLine) {
+function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine) {
   // Delete options that *should not* be passed through.
   delete config.options.out
   delete config.options.outFile
@@ -425,12 +449,13 @@ function fixConfig (config: ts.ParsedCommandLine) {
  */
 function readConfig (
   cwd: string,
+  ts: TSCommon,
   fileExists: (path: string) => boolean,
   readFile: (path: string) => string | undefined,
   compilerOptions?: object,
   project?: string | null,
   noProject?: boolean | null
-): ts.ParsedCommandLine {
+): _ts.ParsedCommandLine {
   let config: any = { compilerOptions: {} }
   let basePath = normalizeSlashes(cwd)
   let configFileName: string | undefined = undefined
@@ -461,7 +486,7 @@ function readConfig (
   // Override default configuration options `ts-node` requires.
   config.compilerOptions = Object.assign({}, config.compilerOptions, compilerOptions, TS_NODE_COMPILER_OPTIONS)
 
-  return fixConfig(ts.parseJsonConfigFileContent(config, ts.sys, basePath, undefined, configFileName))
+  return fixConfig(ts, ts.parseJsonConfigFileContent(config, ts.sys, basePath, undefined, configFileName))
 }
 
 /**
@@ -494,6 +519,6 @@ function updateSourceMap (sourceMapText: string, fileName: string) {
 /**
  * Filter diagnostics.
  */
-function filterDiagnostics (diagnostics: ts.Diagnostic[], ignore: number[]) {
+function filterDiagnostics (diagnostics: _ts.Diagnostic[], ignore: number[]) {
   return diagnostics.filter(x => ignore.indexOf(x.code) === -1)
 }
