@@ -276,13 +276,13 @@ function startRepl () {
 /**
  * Eval code from the REPL.
  */
-function replEval (code: string, _context: any, _filename: string, callback: (err?: Error, result?: any) => any) {
+function replEval (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any) {
   let err: Error | undefined
   let result: any
 
   // TODO: Figure out how to handle completion here.
   if (code === '.scope') {
-    callback()
+    callback(null)
     return
   }
 
@@ -295,14 +295,13 @@ function replEval (code: string, _context: any, _filename: string, callback: (er
         err = new Recoverable(error)
       } else {
         console.error(error.diagnosticText)
-        err = undefined
       }
     } else {
       err = error
     }
   }
 
-  callback(err, result)
+  callback(err || null, result)
 }
 
 /**
