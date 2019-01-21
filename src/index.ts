@@ -62,12 +62,12 @@ export interface Options {
   transpileOnly?: boolean | null
   files?: boolean | null
   compiler?: string
-  ignore?: string | string[]
+  ignore?: string[]
   project?: string
   skipIgnore?: boolean | null
   skipProject?: boolean | null
   compilerOptions?: object
-  ignoreDiagnostics?: number | string | Array<number | string>
+  ignoreDiagnostics?: Array<number | string>
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
   transformers?: _ts.CustomTransformers
@@ -176,11 +176,12 @@ export function register (opts: Options = {}): Register {
   const options = Object.assign({}, DEFAULTS, opts)
   const originalJsHandler = require.extensions['.js']
 
-  const ignoreDiagnostics = arrify(options.ignoreDiagnostics).concat([
+  const ignoreDiagnostics = [
     6059, // "'rootDir' is expected to contain all source files."
     18002, // "The 'files' list in config file is empty."
-    18003 // "No inputs were found in config file."
-  ]).map(Number)
+    18003, // "No inputs were found in config file."
+    ...(options.ignoreDiagnostics || [])
+  ].map(Number)
 
   const memoryCache: MemoryCache = {
     contents: Object.create(null),
