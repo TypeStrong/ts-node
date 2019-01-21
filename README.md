@@ -109,7 +109,7 @@ Create a new node.js configuration, add `-r ts-node/register` to node args and m
 You can set options by passing them before the script path, via programmatic usage or via environment variables.
 
 ```sh
-ts-node --project src/tsconfig.json hello-world.ts
+ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 ```
 
 ### CLI Options
@@ -127,6 +127,7 @@ _Environment variable denoted in parentheses._
 * `--cacheDirectory` Configure the output file cache directory (`TS_NODE_CACHE_DIRECTORY`)
 * `-I, --ignore [pattern]` Override the path patterns to skip compilation (`TS_NODE_IGNORE`, default: `/node_modules/`)
 * `-P, --project [path]` Path to TypeScript JSON project file (`TS_NODE_PROJECT`)
+* `-C, --compiler [name]` Specify a custom TypeScript compiler (`TS_NODE_COMPILER`, default: `typescript`)
 * `-D, --ignoreDiagnostics [code]` Ignore TypeScript warnings by diagnostic code (`TS_NODE_IGNORE_DIAGNOSTICS`)
 * `-O, --compilerOptions [opts]` JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
 * `--files` Load files from `tsconfig.json` on startup (`TS_NODE_FILES`, default: `false`)
