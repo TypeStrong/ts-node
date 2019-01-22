@@ -10,6 +10,7 @@ before_install:
 
 script:
   - npm run lint
+  - npm run build
   - npm rm tslint
   - npm install $TYPESCRIPT --force
   - npm run test-cov
