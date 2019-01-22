@@ -203,17 +203,16 @@ export function register (opts: Options = {}): Register {
 
   // Require the TypeScript compiler and configuration.
   const cwd = process.cwd()
-  const { compilerOptions, project, skipProject } = options
+  const { compilerOptions, project, skipProject, files } = options
   const typeCheck = options.typeCheck === true || options.transpileOnly !== true
   const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd] })
   const ts: typeof _ts = require(compiler)
   const transformers = options.transformers || undefined
   const readFile = options.readFile || ts.sys.readFile
   const fileExists = options.fileExists || ts.sys.fileExists
-  const config = readConfig(cwd, ts, fileExists, readFile, compilerOptions, project, skipProject)
+  const config = readConfig(cwd, ts, fileExists, readFile, compilerOptions, project, skipProject, files)
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
   const extensions = ['.ts', '.tsx']
-  const fileNames = options.files ? config.fileNames : []
 
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
     getNewLine: () => EOL,
@@ -241,7 +240,7 @@ export function register (opts: Options = {}): Register {
   }
 
   // Initialize files from TypeScript into project.
-  for (const path of fileNames) memoryCache.versions[path] = 1
+  for (const path of config.fileNames) memoryCache.versions[path] = 1
 
   /**
    * Get the extension for a transpiled file.
@@ -454,15 +453,16 @@ function readConfig (
   fileExists: (path: string) => boolean,
   readFile: (path: string) => string | undefined,
   compilerOptions?: object,
-  project?: string | null,
-  noProject?: boolean | null
+  project?: string,
+  skipProject?: boolean | null,
+  includeFiles?: boolean | null
 ): _ts.ParsedCommandLine {
   let config: any = { compilerOptions: {} }
   let basePath = normalizeSlashes(cwd)
   let configFileName: string | undefined = undefined
 
   // Read project configuration when available.
-  if (!noProject) {
+  if (!skipProject) {
     configFileName = project
       ? normalizeSlashes(resolve(cwd, project))
       : ts.findConfigFile(normalizeSlashes(cwd), fileExists)
@@ -481,8 +481,10 @@ function readConfig (
   }
 
   // Remove resolution of "files".
-  config.files = []
-  config.includes = []
+  if (!includeFiles) {
+    config.files = []
+    config.includes = []
+  }
 
   // Override default configuration options `ts-node` requires.
   config.compilerOptions = Object.assign({}, config.compilerOptions, compilerOptions, TS_NODE_COMPILER_OPTIONS)
