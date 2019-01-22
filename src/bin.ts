@@ -140,8 +140,8 @@ const EVAL_PATH = join(cwd, EVAL_FILENAME)
 const EVAL_INSTANCE = { input: '', output: '', version: 0, lines: 0 }
 
 // Prepend `ts-node` arguments to CLI for child processes.
-process.argv = [process.argv[1]].concat(args._.length ? resolve(cwd, args._[0]) : []).concat(args._.slice(1))
 process.execArgv.unshift(__filename, ...process.argv.slice(2, process.argv.length - args._.length))
+process.argv = [process.argv[1]].concat(args._.length ? resolve(cwd, args._[0]) : []).concat(args._.slice(1))
 
 // Execute the main contents (either eval, script or piped).
 if (code) {
