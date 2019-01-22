@@ -260,6 +260,15 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    it('should preserve `ts-node` context with child process', function (done) {
+      exec(`${BIN_EXEC} tests/child-process`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('Hello, world!\n')
+
+        return done()
+      })
+    })
   })
 
   describe('register', function () {
