@@ -1,8 +1,7 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path'
 import { EOL } from 'os'
 import sourceMapSupport = require('source-map-support')
-import yn = require('yn')
-import arrify = require('arrify')
+import yn from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
 import * as _ts from 'typescript'
@@ -189,8 +188,8 @@ export function register (opts: Options = {}): Register {
     outputs: Object.create(null)
   }
 
-  const ignore = options.skipIgnore ? [] : arrify(
-    options.ignore || '/node_modules/'
+  const ignore = options.skipIgnore ? [] : (
+    options.ignore || ['/node_modules/']
   ).map(str => new RegExp(str))
 
   // Install source map support and read from memory cache.

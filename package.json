@@ -48,17 +48,14 @@
   },
   "homepage": "https://github.com/TypeStrong/ts-node",
   "devDependencies": {
-    "@types/arrify": "^1.0.1",
     "@types/chai": "^4.0.4",
     "@types/diff": "^3.2.1",
-    "@types/minimist": "^1.2.0",
     "@types/mocha": "^5.0.0",
     "@types/node": "^10.0.3",
     "@types/proxyquire": "^1.3.28",
     "@types/react": "^16.0.2",
     "@types/semver": "^5.3.34",
     "@types/source-map-support": "^0.4.0",
-    "@types/yn": "types/npm-yn#ca75f6c82940fae6a06fb41d2d37a6aa9b4ea8e9",
     "chai": "^4.0.1",
     "istanbul": "^0.4.0",
     "mocha": "^5.0.1",
@@ -76,10 +73,9 @@
   },
   "dependencies": {
     "arg": "^4.1.0",
-    "arrify": "^1.0.0",
     "diff": "^3.1.0",
     "make-error": "^1.1.1",
     "source-map-support": "^0.5.6",
-    "yn": "^2.0.0"
+    "yn": "^3.0.0"
   }
 }
