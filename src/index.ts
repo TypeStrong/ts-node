@@ -481,8 +481,8 @@ function readConfig (
 
   // Remove resolution of "files".
   if (!includeFiles) {
-    config.files = []
-    config.includes = []
+    delete config.files
+    delete config.includes
   }
 
   // Override default configuration options `ts-node` requires.
