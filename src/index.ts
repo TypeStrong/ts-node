@@ -210,7 +210,7 @@ export function register (opts: Options = {}): Register {
   const fileExists = options.fileExists || ts.sys.fileExists
   const config = readConfig(cwd, ts, fileExists, readFile, options)
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
-  const extensions = ['.ts', '.tsx']
+  const extensions = ['.ts']
 
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
     getNewLine: () => EOL,
@@ -231,11 +231,10 @@ export function register (opts: Options = {}): Register {
   // Render the configuration errors and exit the script.
   if (configDiagnosticList.length) throw createTSError(configDiagnosticList)
 
-  // Enable `allowJs` when flag is set.
-  if (config.options.allowJs) {
-    extensions.push('.js')
-    extensions.push('.jsx')
-  }
+  // Enable additional extensions when JSX or `allowJs` is enabled.
+  if (config.options.jsx) extensions.push('.tsx')
+  if (config.options.allowJs) extensions.push('.js')
+  if (config.options.jsx && config.options.allowJs) extensions.push('.jsx')
 
   // Initialize files from TypeScript into project.
   for (const path of config.fileNames) memoryCache.versions[path] = 1
