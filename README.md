@@ -123,7 +123,6 @@ Supports `--print`, `--eval` and `--require` from [node.js CLI options](https://
 _Environment variable denoted in parentheses._
 
 * `-T, --transpile-only` Use TypeScript's faster `transpileModule` (`TS_NODE_TRANSPILE_ONLY`, default: `false`)
-* `--cacheDirectory` Configure the output file cache directory (`TS_NODE_CACHE_DIRECTORY`)
 * `-I, --ignore [pattern]` Override the path patterns to skip compilation (`TS_NODE_IGNORE`, default: `/node_modules/`)
 * `-P, --project [path]` Path to TypeScript JSON project file (`TS_NODE_PROJECT`)
 * `-C, --compiler [name]` Specify a custom TypeScript compiler (`TS_NODE_COMPILER`, default: `typescript`)
@@ -131,7 +130,6 @@ _Environment variable denoted in parentheses._
 * `-O, --compiler-options [opts]` JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
 * `--files` Load files from `tsconfig.json` on startup (`TS_NODE_FILES`, default: `false`)
 * `--pretty` Use pretty diagnostic formatter (`TS_NODE_PRETTY`, default: `false`)
-* `--no-cache` Disable the local TypeScript Node cache (`TS_NODE_CACHE`, default: `true`)
 * `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`, default: `false`)
 * `--skip-ignore` Skip ignore checks (`TS_NODE_SKIP_IGNORE`, default: `false`)
 
