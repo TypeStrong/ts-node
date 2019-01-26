@@ -202,14 +202,13 @@ export function register (opts: Options = {}): Register {
 
   // Require the TypeScript compiler and configuration.
   const cwd = process.cwd()
-  const { compilerOptions, project, skipProject, files } = options
   const typeCheck = options.typeCheck === true || options.transpileOnly !== true
   const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd] })
   const ts: typeof _ts = require(compiler)
   const transformers = options.transformers || undefined
   const readFile = options.readFile || ts.sys.readFile
   const fileExists = options.fileExists || ts.sys.fileExists
-  const config = readConfig(cwd, ts, fileExists, readFile, compilerOptions, project, skipProject, files)
+  const config = readConfig(cwd, ts, fileExists, readFile, options)
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
   const extensions = ['.ts', '.tsx']
 
@@ -451,19 +450,16 @@ function readConfig (
   ts: TSCommon,
   fileExists: (path: string) => boolean,
   readFile: (path: string) => string | undefined,
-  compilerOptions?: object,
-  project?: string,
-  skipProject?: boolean | null,
-  includeFiles?: boolean | null
+  options: Options
 ): _ts.ParsedCommandLine {
   let config: any = { compilerOptions: {} }
   let basePath = normalizeSlashes(cwd)
   let configFileName: string | undefined = undefined
 
   // Read project configuration when available.
-  if (!skipProject) {
-    configFileName = project
-      ? normalizeSlashes(resolve(cwd, project))
+  if (!options.skipProject) {
+    configFileName = options.project
+      ? normalizeSlashes(resolve(cwd, options.project))
       : ts.findConfigFile(normalizeSlashes(cwd), fileExists)
 
     if (configFileName) {
@@ -480,13 +476,13 @@ function readConfig (
   }
 
   // Remove resolution of "files".
-  if (!includeFiles) {
+  if (!options.files) {
     config.files = []
-    config.includes = []
+    config.include = []
   }
 
   // Override default configuration options `ts-node` requires.
-  config.compilerOptions = Object.assign({}, config.compilerOptions, compilerOptions, TS_NODE_COMPILER_OPTIONS)
+  config.compilerOptions = Object.assign({}, config.compilerOptions, options.compilerOptions, TS_NODE_COMPILER_OPTIONS)
 
   return fixConfig(ts, ts.parseJsonConfigFileContent(config, ts.sys, basePath, undefined, configFileName))
 }
