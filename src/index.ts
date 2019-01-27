@@ -302,7 +302,7 @@ export function register (opts: Options = {}): Register {
       getCustomTransformers: () => transformers
     }
 
-    const registry = ts.createDocumentRegistry(true, cwd)
+    const registry = ts.createDocumentRegistry(ts.sys.useCaseSensitiveFileNames, cwd)
     const service = ts.createLanguageService(serviceHost, registry)
 
     // Set the file contents into cache manually.
