@@ -79,7 +79,9 @@ class MemoryCache {
   fileContents = new Map<string, string>()
   fileVersions = new Map<string, number>()
 
-  constructor (public rootFiles: string[] = []) {}
+  constructor (public rootFileNames: string[] = []) {
+    for (const fileName of rootFileNames) this.fileVersions.set(fileName, 1)
+  }
 }
 
 /**
@@ -269,7 +271,7 @@ export function register (opts: Options = {}): Register {
 
     // Create the compiler host for type checking.
     const serviceHost: _ts.LanguageServiceHost = {
-      getScriptFileNames: () => memoryCache.rootFiles,
+      getScriptFileNames: () => memoryCache.rootFileNames,
       getScriptVersion: (fileName: string) => {
         const version = memoryCache.fileVersions.get(fileName)
         return version === undefined ? '' : version.toString()
@@ -310,7 +312,10 @@ export function register (opts: Options = {}): Register {
       const fileVersion = memoryCache.fileVersions.get(fileName) || 0
 
       // Add to `rootFiles` when discovered for the first time.
-      if (fileVersion === 0) memoryCache.rootFiles.push(fileName)
+      if (fileVersion === 0) memoryCache.rootFileNames.push(fileName)
+
+      // Avoid incrementing cache when nothing has changed.
+      if (memoryCache.fileContents.get(fileName) === contents) return
 
       memoryCache.fileVersions.set(fileName, fileVersion + 1)
       memoryCache.fileContents.set(fileName, contents)
