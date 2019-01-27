@@ -1,5 +1,4 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path'
-import { EOL } from 'os'
 import sourceMapSupport = require('source-map-support')
 import yn from 'yn'
 import { BaseError } from 'make-error'
@@ -18,8 +17,9 @@ const shouldDebug = yn(process.env.TS_NODE_DEBUG)
 const debug = shouldDebug ? console.log.bind(console, 'ts-node') : () => undefined
 const debugFn = shouldDebug ?
   <T, U> (key: string, fn: (arg: T) => U) => {
+    let i = 0
     return (x: T) => {
-      debug(key, x)
+      debug(key, x, ++i)
       return fn(x)
     }
   } :
@@ -75,10 +75,11 @@ export interface Options {
 /**
  * Track the project information.
  */
-interface MemoryCache {
-  contents: { [path: string]: string | undefined }
-  versions: { [path: string]: number | undefined }
-  outputs: { [path: string]: string }
+class MemoryCache {
+  fileContents = new Map<string, string>()
+  fileVersions = new Map<string, number>()
+
+  constructor (public rootFiles: string[] = []) {}
 }
 
 /**
@@ -182,23 +183,9 @@ export function register (opts: Options = {}): Register {
     ...(options.ignoreDiagnostics || [])
   ].map(Number)
 
-  const memoryCache: MemoryCache = {
-    contents: Object.create(null),
-    versions: Object.create(null),
-    outputs: Object.create(null)
-  }
-
   const ignore = options.skipIgnore ? [] : (
     options.ignore || ['/node_modules/']
   ).map(str => new RegExp(str))
-
-  // Install source map support and read from memory cache.
-  sourceMapSupport.install({
-    environment: 'node',
-    retrieveFile (path: string) {
-      return memoryCache.outputs[path]
-    }
-  })
 
   // Require the TypeScript compiler and configuration.
   const cwd = process.cwd()
@@ -211,14 +198,23 @@ export function register (opts: Options = {}): Register {
   const config = readConfig(cwd, ts, fileExists, readFile, options)
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
   const extensions = ['.ts']
+  const outputCache = new Map<string, string>()
 
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
-    getNewLine: () => EOL,
+    getNewLine: () => ts.sys.newLine,
     getCurrentDirectory: () => cwd,
     getCanonicalFileName: (path) => path
   }
 
-  const formatDiagnostics = options.pretty
+  // Install source map support and read from memory cache.
+  sourceMapSupport.install({
+    environment: 'node',
+    retrieveFile (path: string) {
+      return outputCache.get(path) || ''
+    }
+  })
+
+  const formatDiagnostics = process.stdout.isTTY || options.pretty
     ? ts.formatDiagnosticsWithColorAndContext
     : ts.formatDiagnostics
 
@@ -235,9 +231,6 @@ export function register (opts: Options = {}): Register {
   if (config.options.jsx) extensions.push('.tsx')
   if (config.options.allowJs) extensions.push('.js')
   if (config.options.jsx && config.options.allowJs) extensions.push('.jsx')
-
-  // Initialize files from TypeScript into project.
-  for (const path of config.fileNames) memoryCache.versions[path] = 1
 
   /**
    * Get the extension for a transpiled file.
@@ -272,35 +265,27 @@ export function register (opts: Options = {}): Register {
 
   // Use full language services when the fast option is disabled.
   if (typeCheck) {
-    // Set the file contents into cache.
-    const updateMemoryCache = function (code: string, fileName: string) {
-      if (memoryCache.contents[fileName] !== code) {
-        memoryCache.contents[fileName] = code
-        memoryCache.versions[fileName] = (memoryCache.versions[fileName] || 0) + 1
-      }
-    }
+    const memoryCache = new MemoryCache(config.fileNames)
 
     // Create the compiler host for type checking.
-    const serviceHost = {
-      getScriptFileNames: () => Object.keys(memoryCache.versions),
+    const serviceHost: _ts.LanguageServiceHost = {
+      getScriptFileNames: () => memoryCache.rootFiles,
       getScriptVersion: (fileName: string) => {
-        const version = memoryCache.versions[fileName]
-
-        // We need to return `undefined` and not a string here because TypeScript will use
-        // `getScriptVersion` and compare against their own version - which can be `undefined`.
-        // If we don't return `undefined` it results in `undefined === "undefined"` and run
-        // `createProgram` again (which is very slow). Using a `string` assertion here to avoid
-        // TypeScript errors from the function signature (expects `(x: string) => string`).
-        return version === undefined ? undefined as any as string : String(version)
+        const version = memoryCache.fileVersions.get(fileName)
+        return version === undefined ? '' : version.toString()
       },
       getScriptSnapshot (fileName: string) {
+        let contents = memoryCache.fileContents.get(fileName)
+
         // Read contents into TypeScript memory cache.
-        if (!Object.prototype.hasOwnProperty.call(memoryCache.contents, fileName)) {
-          memoryCache.contents[fileName] = readFile(fileName)
+        if (contents === undefined) {
+          contents = readFile(fileName)
+          if (contents === undefined) return
+
+          memoryCache.fileVersions.set(fileName, 1)
+          memoryCache.fileContents.set(fileName, contents)
         }
 
-        const contents = memoryCache.contents[fileName]
-        if (contents === undefined) return
         return ts.ScriptSnapshot.fromString(contents)
       },
       fileExists: debugFn('fileExists', fileExists),
@@ -308,25 +293,37 @@ export function register (opts: Options = {}): Register {
       readDirectory: debugFn('readDirectory', ts.sys.readDirectory),
       getDirectories: debugFn('getDirectories', ts.sys.getDirectories),
       directoryExists: debugFn('directoryExists', ts.sys.directoryExists),
-      getNewLine: () => EOL,
+      realpath: debugFn('realpath', ts.sys.realpath!),
+      getNewLine: () => ts.sys.newLine,
+      useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
       getCurrentDirectory: () => cwd,
       getCompilationSettings: () => config.options,
       getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
       getCustomTransformers: () => transformers
     }
 
-    const service = ts.createLanguageService(serviceHost)
+    const registry = ts.createDocumentRegistry(true, cwd)
+    const service = ts.createLanguageService(serviceHost, registry)
+
+    // Set the file contents into cache manually.
+    const updateMemoryCache = function (contents: string, fileName: string) {
+      const fileVersion = memoryCache.fileVersions.get(fileName) || 0
+
+      // Add to `rootFiles` when discovered for the first time.
+      if (fileVersion === 0) memoryCache.rootFiles.push(fileName)
+
+      memoryCache.fileVersions.set(fileName, fileVersion + 1)
+      memoryCache.fileContents.set(fileName, contents)
+    }
 
     getOutput = function (code: string, fileName: string, lineOffset: number = 0) {
-      // Must set memory cache before attempting to read file.
       updateMemoryCache(code, fileName)
 
       const output = service.getEmitOutput(fileName)
 
       // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.
-      const diagnostics = service.getCompilerOptionsDiagnostics()
+      const diagnostics = service.getSemanticDiagnostics(fileName)
         .concat(service.getSyntacticDiagnostics(fileName))
-        .concat(service.getSemanticDiagnostics(fileName))
 
       const diagnosticList = filterDiagnostics(diagnostics, ignoreDiagnostics)
 
@@ -365,7 +362,7 @@ export function register (opts: Options = {}): Register {
   function compile (code: string, fileName: string, lineOffset?: number) {
     const [value, sourceMap] = getOutput(code, fileName, lineOffset)
     const output = updateOutput(value, fileName, sourceMap, getExtension)
-    memoryCache.outputs[fileName] = output
+    outputCache.set(fileName, output)
     return output
   }
 
