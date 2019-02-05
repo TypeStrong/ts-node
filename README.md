@@ -186,6 +186,36 @@ For module definitions, you can use [`paths`](https://www.typescriptlang.org/doc
 }
 ```
 
+For custom definitions of untyped 3rd-party libraries, consider adding a [triple-slash directive](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html)
+prior the `import` of the module which requires the types. This may be especially helpful when you
+don't manage types said 3rd party libraries like modules (as seen in the above examples) and instead just include
+them in your TypeScript source directories. For example, if your directory structure looked like:
+
+```
+<project_root>/
+-- tsconfig.json
+-- src/
+  -- index.ts
+  -- types/
+    -- untyped_js_lib.d.ts
+```
+
+Inside of `types/untyped_js_lib.d.ts` you might find the following, or something more complex.
+
+```typescript
+declare module "untyped_js_lib";
+```
+
+Lastly, you could then write the triple-slash directive like the code below inside of `index.ts`.
+
+```typescript
+/// <reference types="./types/untyped_js_lib" />
+import UntypedJsLib from "untyped_js_lib"
+```
+
+Though this is not required for `tsc` to function, without the directive, `ts-node` is unable to
+leverage the hand-written type definitions you have created for your project.
+
 **Tip:** If you _must_ use `files`, enable `--files` flags or set `TS_NODE_FILES=true`.
 
 ## Watching and Restarting
