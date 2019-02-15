@@ -186,12 +186,7 @@ For module definitions, you can use [`paths`](https://www.typescriptlang.org/doc
 }
 ```
 
-Lastly, an alternative approach for custom definitions of untyped 3rd-party libraries
-is [triple-slash directives](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html).
-This may be helpful if you prefer not to change your TypeScript `compilerOptions` or
-not to structure your custom type definitions like modules as is required when using
-`typeRoots`. Below is an example of using a triple-slash directive to point to a
-relative path within your project TypeScript sources:
+An alternative approach for definitions of third-party libraries are [triple-slash directives](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html). This may be helpful if you prefer not to change your TypeScript `compilerOptions` or structure your custom type definitions when using `typeRoots`. Below is an example of the triple-slash directive as a relative path within your project:
 
 ```typescript
 /// <reference types="./types/untyped_js_lib" />
