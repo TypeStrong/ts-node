@@ -14,8 +14,7 @@
 npm install -D ts-node
 npm install -D typescript
 
-# Or globally.
-# Note: although ts-node can be installed globally, it still requires a local installation of typescript.
+# Or globally with a local version of TypeScript.
 npm install -g ts-node
 npm install -D typescript
 ```
