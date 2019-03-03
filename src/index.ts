@@ -192,7 +192,7 @@ export function register (opts: Options = {}): Register {
   // Require the TypeScript compiler and configuration.
   const cwd = process.cwd()
   const typeCheck = options.typeCheck === true || options.transpileOnly !== true
-  const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd] })
+  const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
   const ts: typeof _ts = require(compiler)
   const transformers = options.transformers || undefined
   const readFile = options.readFile || ts.sys.readFile
