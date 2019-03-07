@@ -14,12 +14,12 @@
 npm install -D ts-node
 npm install -D typescript
 
-# Or globally with a local version of TypeScript.
+# Or globally with TypeScript.
 npm install -g ts-node
-npm install -D typescript
+npm install -g typescript
 ```
 
-**Tip:** Installing modules locally allows you to control and share the versions through `package.json`.
+**Tip:** Installing modules locally allows you to control and share the versions through `package.json`. TS Node will always resolve the compiler from `cwd` before checking relative to its own installation.
 
 ## Usage
 
