@@ -32,6 +32,7 @@ const args = arg({
   '--pretty': Boolean,
   '--skip-project': Boolean,
   '--skip-ignore': Boolean,
+  '--unsafe-ext-order': Boolean,
 
   // Aliases.
   '-e': '--eval',
@@ -62,6 +63,7 @@ const {
   '--type-check': typeCheck = DEFAULTS.typeCheck,
   '--pretty': pretty = DEFAULTS.pretty,
   '--skip-project': skipProject = DEFAULTS.skipProject,
+  '--unsafe-ext-order': unsafeExtOrder = DEFAULTS.unsafeExtOrder,
   '--skip-ignore': skipIgnore = DEFAULTS.skipIgnore
 } = args
 
@@ -89,6 +91,7 @@ Options:
   --pretty                       Use pretty diagnostic formatter
   --skip-project                 Skip reading \`tsconfig.json\`
   --skip-ignore                  Skip \`--ignore\` checks
+  --unsafe-ext-order             Un-Safe use TypeScript file first instead of JavaScript
 `)
 
   process.exit(0)
@@ -114,6 +117,7 @@ const service = register({
   project,
   skipIgnore,
   skipProject,
+  unsafeExtOrder,
   compiler,
   ignoreDiagnostics,
   compilerOptions,
