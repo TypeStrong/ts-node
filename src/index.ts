@@ -169,6 +169,7 @@ export interface Register {
   ts: TSCommon
   compile (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
+  program?: _ts.Program
 }
 
 /**
@@ -201,6 +202,7 @@ export function register (opts: Options = {}): Register {
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
   const extensions = ['.ts']
   const outputCache = new Map<string, string>()
+  let program
 
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
     getNewLine: () => ts.sys.newLine,
@@ -306,6 +308,7 @@ export function register (opts: Options = {}): Register {
 
     const registry = ts.createDocumentRegistry(ts.sys.useCaseSensitiveFileNames, cwd)
     const service = ts.createLanguageService(serviceHost, registry)
+    program = service.getProgram()
 
     // Set the file contents into cache manually.
     const updateMemoryCache = function (contents: string, fileName: string) {
@@ -371,7 +374,7 @@ export function register (opts: Options = {}): Register {
     return output
   }
 
-  const register: Register = { cwd, compile, getTypeInfo, extensions, ts }
+  const register: Register = { cwd, compile, getTypeInfo, extensions, ts, program }
 
   // Register the extensions.
   extensions.forEach(extension => {
