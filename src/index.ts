@@ -76,9 +76,9 @@ export interface Options {
  * Track the project information.
  */
 class MemoryCache {
-  fileContents    = new Map<string, string>()
-  fileVersions    = new Map<string, number>()
-  fileChecks      = new Map<string, boolean>()
+  fileContents = new Map<string, string>()
+  fileVersions = new Map<string, number>()
+  fileChecks = new Map<string, boolean>()
   directoryChecks = new Map<string, boolean>()
 
   constructor (public rootFileNames: string[] = []) {
@@ -173,14 +173,14 @@ export interface Register {
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
 }
 
-function cached(store: Map<string, boolean>, fun: (arg: string) => boolean): (arg: string) => boolean {
+function cached (store: Map<string, boolean>, fun: (arg: string) => boolean): (arg: string) => boolean {
   return (arg: string) => {
     if (!store.has(arg)) {
       store.set(arg, fun(arg))
     }
 
     return store.get(arg) || false
-  };
+  }
 }
 
 /**
