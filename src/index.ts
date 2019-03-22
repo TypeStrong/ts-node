@@ -76,8 +76,10 @@ export interface Options {
  * Track the project information.
  */
 class MemoryCache {
-  fileContents = new Map<string, string>()
-  fileVersions = new Map<string, number>()
+  fileContents    = new Map<string, string>()
+  fileVersions    = new Map<string, number>()
+  fileChecks      = new Map<string, boolean>()
+  directoryChecks = new Map<string, boolean>()
 
   constructor (public rootFileNames: string[] = []) {
     for (const fileName of rootFileNames) this.fileVersions.set(fileName, 1)
@@ -169,6 +171,16 @@ export interface Register {
   ts: TSCommon
   compile (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
+}
+
+function cached(store: Map<string, boolean>, fun: (arg: string) => boolean): (arg: string) => boolean {
+  return (arg: string) => {
+    if (!store.has(arg)) {
+      store.set(arg, fun(arg))
+    }
+
+    return store.get(arg) || false
+  };
 }
 
 /**
@@ -290,11 +302,11 @@ export function register (opts: Options = {}): Register {
 
         return ts.ScriptSnapshot.fromString(contents)
       },
-      fileExists: debugFn('fileExists', fileExists),
+      fileExists: cached(memoryCache.fileChecks, debugFn('fileExists', fileExists)),
       readFile: debugFn('readFile', readFile),
       readDirectory: debugFn('readDirectory', ts.sys.readDirectory),
       getDirectories: debugFn('getDirectories', ts.sys.getDirectories),
-      directoryExists: debugFn('directoryExists', ts.sys.directoryExists),
+      directoryExists: cached(memoryCache.directoryChecks, debugFn('directoryExists', ts.sys.directoryExists)),
       realpath: debugFn('realpath', ts.sys.realpath!),
       getNewLine: () => ts.sys.newLine,
       useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
