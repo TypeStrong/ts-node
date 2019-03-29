@@ -292,6 +292,7 @@ function replEval (code: string, _context: any, _filename: string, callback: (er
 
   try {
     result = _eval(code)
+    EVAL_INSTANCE.input = ''
   } catch (error) {
     if (error instanceof TSError) {
       // Support recoverable compilations using >= node 6.
