@@ -186,8 +186,10 @@ export function register (opts: Options = {}): Register {
   ].map(Number)
 
   const ignore = options.skipIgnore ? [] : (
-    options.ignore || ['/node_modules/']
-  ).map(str => new RegExp(str))
+    Array.isArray(options.ignore) ? options.ignore :
+    options.ignore ? [options.ignore] :
+    ['/node_modules/']
+  ).map(str => new RegExp(str));
 
   // Require the TypeScript compiler and configuration.
   const cwd = process.cwd()
