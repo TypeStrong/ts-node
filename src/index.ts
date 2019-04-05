@@ -429,6 +429,8 @@ function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine) {
   delete config.options.declarationDir
   delete config.options.declarationMap
   delete config.options.emitDeclarationOnly
+  delete config.options.tsBuildInfoFile
+  delete config.options.incremental
 
   // Target ES5 output by default (instead of ES3).
   if (config.options.target === undefined) {
