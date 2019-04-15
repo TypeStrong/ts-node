@@ -59,6 +59,7 @@ export interface Options {
   pretty?: boolean | null
   typeCheck?: boolean | null
   transpileOnly?: boolean | null
+  logError?: boolean | null
   files?: boolean | null
   compiler?: string
   ignore?: string[]
@@ -106,7 +107,8 @@ export const DEFAULTS: Options = {
   skipProject: yn(process.env['TS_NODE_SKIP_PROJECT']),
   ignoreDiagnostics: split(process.env['TS_NODE_IGNORE_DIAGNOSTICS']),
   typeCheck: yn(process.env['TS_NODE_TYPE_CHECK']),
-  transpileOnly: yn(process.env['TS_NODE_TRANSPILE_ONLY'])
+  transpileOnly: yn(process.env['TS_NODE_TRANSPILE_ONLY']),
+  logError: yn(process.env['TS_NODE_LOG_ERROR'])
 }
 
 /**
@@ -226,8 +228,19 @@ export function register (opts: Options = {}): Register {
     return new TSError(diagnosticText, diagnosticCodes)
   }
 
-  // Render the configuration errors and exit the script.
-  if (configDiagnosticList.length) throw createTSError(configDiagnosticList)
+  function reportTSError (configDiagnosticList: _ts.Diagnostic[]) {
+    const error = createTSError(configDiagnosticList)
+    if (options.logError) {
+      // Print error in red color and continue execution.
+      console.error('\x1b[31m%s\x1b[0m', error)
+    } else {
+      // Throw error and exit the script.
+      throw error
+    }
+  }
+
+  // Render the configuration errors.
+  if (configDiagnosticList.length) reportTSError(configDiagnosticList)
 
   // Enable additional extensions when JSX or `allowJs` is enabled.
   if (config.options.jsx) extensions.push('.tsx')
@@ -256,7 +269,7 @@ export function register (opts: Options = {}): Register {
       filterDiagnostics(result.diagnostics, ignoreDiagnostics) :
       []
 
-    if (diagnosticList.length) throw createTSError(diagnosticList)
+    if (diagnosticList.length) reportTSError(configDiagnosticList)
 
     return [result.outputText, result.sourceMapText as string]
   }
@@ -332,7 +345,7 @@ export function register (opts: Options = {}): Register {
 
       const diagnosticList = filterDiagnostics(diagnostics, ignoreDiagnostics)
 
-      if (diagnosticList.length) throw createTSError(diagnosticList)
+      if (diagnosticList.length) reportTSError(diagnosticList)
 
       if (output.emitSkipped) {
         throw new TypeError(`${relative(cwd, fileName)}: Emit skipped`)

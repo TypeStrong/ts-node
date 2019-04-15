@@ -32,6 +32,7 @@ const args = arg({
   '--pretty': Boolean,
   '--skip-project': Boolean,
   '--skip-ignore': Boolean,
+  '--log-error': Boolean,
 
   // Aliases.
   '-e': '--eval',
@@ -62,7 +63,8 @@ const {
   '--type-check': typeCheck = DEFAULTS.typeCheck,
   '--pretty': pretty = DEFAULTS.pretty,
   '--skip-project': skipProject = DEFAULTS.skipProject,
-  '--skip-ignore': skipIgnore = DEFAULTS.skipIgnore
+  '--skip-ignore': skipIgnore = DEFAULTS.skipIgnore,
+  '--log-error': logError = DEFAULTS.logError
 } = args
 
 if (help) {
@@ -113,6 +115,7 @@ const service = register({
   ignore,
   project,
   skipIgnore,
+  logError,
   skipProject,
   compiler,
   ignoreDiagnostics,
