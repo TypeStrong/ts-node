@@ -173,6 +173,18 @@ export interface Register {
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
 }
 
+function cachedLookup (fn: (arg: string) => boolean): (arg: string) => boolean {
+  const cache = new Map<string, boolean>()
+
+  return (arg: string) => {
+    if (!cache.has(arg)) {
+      cache.set(arg, fn(arg))
+    }
+
+    return cache.get(arg) || false
+  }
+}
+
 /**
  * Register TypeScript compiler.
  */
@@ -303,11 +315,11 @@ export function register (opts: Options = {}): Register {
 
         return ts.ScriptSnapshot.fromString(contents)
       },
-      fileExists: debugFn('fileExists', fileExists),
+      fileExists: cachedLookup(debugFn('fileExists', fileExists)),
       readFile: debugFn('readFile', readFile),
       readDirectory: debugFn('readDirectory', ts.sys.readDirectory),
       getDirectories: debugFn('getDirectories', ts.sys.getDirectories),
-      directoryExists: debugFn('directoryExists', ts.sys.directoryExists),
+      directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
       realpath: debugFn('realpath', ts.sys.realpath!),
       getNewLine: () => ts.sys.newLine,
       useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
