@@ -22,6 +22,10 @@ env:
   - NODE=stable TYPESCRIPT=typescript@next
 
 node_js:
-  - stable
+  - 12
+  - 11
+  - 10
+  - 8
+  - 6
 
 after_script: "npm install coveralls@2 && cat ./coverage/lcov.info | coveralls"
