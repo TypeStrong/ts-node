@@ -320,7 +320,6 @@ export function register (opts: Options = {}): Register {
       readDirectory: debugFn('readDirectory', ts.sys.readDirectory),
       getDirectories: debugFn('getDirectories', ts.sys.getDirectories),
       directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
-      realpath: debugFn('realpath', ts.sys.realpath!),
       getNewLine: () => ts.sys.newLine,
       useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
       getCurrentDirectory: () => cwd,
