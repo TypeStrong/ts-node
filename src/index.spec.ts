@@ -201,7 +201,7 @@ describe('ts-node', function () {
         return done()
       })
 
-      cp.stdin.end("console.log('hello')")
+      cp.stdin!.end("console.log('hello')")
     })
 
     it('should pipe into `ts-node`', function (done) {
@@ -212,7 +212,7 @@ describe('ts-node', function () {
         return done()
       })
 
-      cp.stdin.end('true')
+      cp.stdin!.end('true')
     })
 
     it('should pipe into an eval script', function (done) {
@@ -223,7 +223,7 @@ describe('ts-node', function () {
         return done()
       })
 
-      cp.stdin.end('true')
+      cp.stdin!.end('true')
     })
 
     it('should support require flags', function (done) {
@@ -313,11 +313,11 @@ describe('ts-node', function () {
     })
 
     describe('JSX preserve', () => {
-      let old = require.extensions['.tsx']
+      let old = require.extensions['.tsx'] // tslint:disable-line
       let compiled: string
 
       before(function () {
-        require.extensions['.tsx'] = (m: any, fileName) => {
+        require.extensions['.tsx'] = (m: any, fileName) => { // tslint:disable-line
           const _compile = m._compile
 
           m._compile = (code: string, fileName: string) => {
@@ -330,7 +330,7 @@ describe('ts-node', function () {
       })
 
       after(function () {
-        require.extensions['.tsx'] = old
+        require.extensions['.tsx'] = old // tslint:disable-line
       })
 
       it('should use source maps', function (done) {

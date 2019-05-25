@@ -190,7 +190,7 @@ function cachedLookup (fn: (arg: string) => boolean): (arg: string) => boolean {
  */
 export function register (opts: Options = {}): Register {
   const options = Object.assign({}, DEFAULTS, opts)
-  const originalJsHandler = require.extensions['.js']
+  const originalJsHandler = require.extensions['.js'] // tslint:disable-line
 
   const ignoreDiagnostics = [
     6059, // "'rootDir' is expected to contain all source files."
@@ -423,9 +423,9 @@ function registerExtension (
   register: Register,
   originalHandler: (m: NodeModule, filename: string) => any
 ) {
-  const old = require.extensions[ext] || originalHandler
+  const old = require.extensions[ext] || originalHandler // tslint:disable-line
 
-  require.extensions[ext] = function (m: any, filename) {
+  require.extensions[ext] = function (m: any, filename) { // tslint:disable-line
     if (shouldIgnore(filename, ignore)) {
       return old(m, filename)
     }
