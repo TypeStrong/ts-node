@@ -173,15 +173,18 @@ export interface Register {
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
 }
 
-function cachedLookup (fn: (arg: string) => boolean): (arg: string) => boolean {
-  const cache = new Map<string, boolean>()
+/**
+ * Cached fs operation wrapper.
+ */
+function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
+  const cache = new Map<string, T>()
 
-  return (arg: string) => {
+  return (arg: string): T => {
     if (!cache.has(arg)) {
       cache.set(arg, fn(arg))
     }
 
-    return cache.get(arg) || false
+    return cache.get(arg)!
   }
 }
 
@@ -293,6 +296,7 @@ export function register (opts: Options = {}): Register {
   // Use full language services when the fast option is disabled.
   if (typeCheck) {
     const memoryCache = new MemoryCache(config.fileNames)
+    const cachedReadFile = cachedLookup(debugFn('readFile', readFile))
 
     // Create the compiler host for type checking.
     const serviceHost: _ts.LanguageServiceHost = {
@@ -306,7 +310,7 @@ export function register (opts: Options = {}): Register {
 
         // Read contents into TypeScript memory cache.
         if (contents === undefined) {
-          contents = readFile(fileName)
+          contents = cachedReadFile(fileName)
           if (contents === undefined) return
 
           memoryCache.fileVersions.set(fileName, 1)
@@ -315,10 +319,10 @@ export function register (opts: Options = {}): Register {
 
         return ts.ScriptSnapshot.fromString(contents)
       },
+      readFile: cachedReadFile,
+      readDirectory: cachedLookup(debugFn('readDirectory', ts.sys.readDirectory)),
+      getDirectories: cachedLookup(debugFn('getDirectories', ts.sys.getDirectories)),
       fileExists: cachedLookup(debugFn('fileExists', fileExists)),
-      readFile: debugFn('readFile', readFile),
-      readDirectory: debugFn('readDirectory', ts.sys.readDirectory),
-      getDirectories: debugFn('getDirectories', ts.sys.getDirectories),
       directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
       getNewLine: () => ts.sys.newLine,
       useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
