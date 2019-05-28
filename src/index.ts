@@ -425,28 +425,30 @@ function registerHandler (
   register: Register,
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
-  if (opts.preferTsExts) {
-    // @todo a better way with options
-    ['.ts', '.tsx']
-      .concat(Object.keys(require.extensions), extensions) // tslint:disable-line
-      .filter(function (element, index, array: string[]) {
-        return array.indexOf(element) === index
-      })
-      .forEach(function (ext) {
-        if (extensions.indexOf(ext) !== -1) {
-          registerExtension(ext, ignore, register, originalJsHandler)
-        }
-
-        const old = require.extensions[ext] // tslint:disable-line
-
-        delete require.extensions[ext] // tslint:disable-line
-        require.extensions[ext] = old // tslint:disable-line
-      })
-  } else {
+  if (!opts.preferTsExts) {
     extensions.forEach(function (ext) {
       registerExtension(ext, ignore, register, originalJsHandler)
     })
+
+    return
   }
+
+  // @todo a better way with options
+  ['.ts', '.tsx']
+    .concat(Object.keys(require.extensions), extensions) // tslint:disable-line
+    .filter(function (element, index, array: string[]) {
+      return array.indexOf(element) === index
+    })
+    .forEach(function (ext) {
+      if (extensions.indexOf(ext) !== -1) {
+        registerExtension(ext, ignore, register, originalJsHandler)
+      }
+
+      const old = require.extensions[ext] // tslint:disable-line
+
+      delete require.extensions[ext] // tslint:disable-line
+      require.extensions[ext] = old // tslint:disable-line
+    })
 }
 
 /**
