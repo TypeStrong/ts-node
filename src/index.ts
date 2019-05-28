@@ -426,11 +426,7 @@ function registerHandler (
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
   if (!opts.preferTsExts) {
-    extensions.forEach(ext => {
-      registerExtension(ext, ignore, register, originalJsHandler)
-    })
-
-    return
+    return extensions.forEach(ext => registerExtension(ext, ignore, register, originalJsHandler))
   }
 
   // @todo a better way with options
