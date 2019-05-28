@@ -270,6 +270,15 @@ describe('ts-node', function () {
       })
     })
 
+    it('should import js before ts by default', function (done) {
+      exec(`${BIN_EXEC} tests/import-order/compiled`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('Hello, JavaScript!\n')
+
+        return done()
+      })
+    })
+
     it('should ignore .d.ts files', function (done) {
       exec(`${BIN_EXEC} tests/import-order/importer`, function (err, stdout) {
         expect(err).to.equal(null)
