@@ -401,9 +401,7 @@ export function register (opts: Options = {}): Register {
   const register: Register = { cwd, compile, getTypeInfo, extensions, ts }
 
   // Register the extensions.
-  extensions.forEach(extension => {
-    registerExtension(extension, ignore, register, originalJsHandler)
-  })
+  registerHandler(opts, extensions, ignore, register, originalJsHandler)
 
   return register
 }
@@ -415,6 +413,40 @@ function shouldIgnore (filename: string, ignore: RegExp[]) {
   const relname = normalizeSlashes(filename)
 
   return ignore.some(x => x.test(relname))
+}
+
+/**
+ * unsafe re-order and make .ts > .js
+ */
+function registerHandler (
+  opts: Options,
+  extensions: string[],
+  ignore: RegExp[],
+  register: Register,
+  originalJsHandler: (m: NodeModule, filename: string) => any
+) {
+  if (opts.preferTsExts) {
+    // @todo a better way with options
+    ['.ts', '.tsx']
+      .concat(Object.keys(require.extensions), extensions) // tslint:disable-line
+      .filter(function (element, index, array: string[]) {
+        return array.indexOf(element) === index
+      })
+      .forEach(function (ext) {
+        if (extensions.indexOf(ext) !== -1) {
+          registerExtension(ext, ignore, register, originalJsHandler)
+        }
+
+        const old = require.extensions[ext] // tslint:disable-line
+
+        delete require.extensions[ext] // tslint:disable-line
+        require.extensions[ext] = old // tslint:disable-line
+      })
+  } else {
+    extensions.forEach(function (ext) {
+      registerExtension(ext, ignore, register, originalJsHandler)
+    })
+  }
 }
 
 /**
