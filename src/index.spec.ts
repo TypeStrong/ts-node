@@ -269,6 +269,15 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    it('should ignore .d.ts files', function (done) {
+      exec(`${BIN_EXEC} tests/import-order/importer`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('Hello, World!\n')
+
+        return done()
+      })
+    })
   })
 
   describe('register', function () {
