@@ -438,7 +438,7 @@ function registerHandler (
     .concat(Object.keys(require.extensions), extensions) // tslint:disable-line
     .filter((element, index, array: string[]) => array.indexOf(element) === index)
     .forEach(ext => {
-      if (extensions.indexOf(ext) !== -1) {
+      if (extensions.includes(ext)) {
         registerExtension(ext, ignore, register, originalJsHandler)
       }
 
