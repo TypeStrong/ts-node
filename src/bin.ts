@@ -32,6 +32,7 @@ const args = arg({
   '--pretty': Boolean,
   '--skip-project': Boolean,
   '--skip-ignore': Boolean,
+  '--prefer-ts-exts': Boolean,
   '--log-error': Boolean,
 
   // Aliases.
@@ -64,6 +65,7 @@ const {
   '--pretty': pretty = DEFAULTS.pretty,
   '--skip-project': skipProject = DEFAULTS.skipProject,
   '--skip-ignore': skipIgnore = DEFAULTS.skipIgnore,
+  '--prefer-ts-exts': preferTsExts = DEFAULTS.preferTsExts,
   '--log-error': logError = DEFAULTS.logError
 } = args
 
@@ -91,6 +93,7 @@ Options:
   --pretty                       Use pretty diagnostic formatter
   --skip-project                 Skip reading \`tsconfig.json\`
   --skip-ignore                  Skip \`--ignore\` checks
+  --prefer-ts-exts               Prefer importing TypeScript files over JavaScript files
 `)
 
   process.exit(0)
@@ -115,6 +118,7 @@ const service = register({
   ignore,
   project,
   skipIgnore,
+  preferTsExts,
   logError,
   skipProject,
   compiler,

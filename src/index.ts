@@ -66,6 +66,7 @@ export interface Options {
   project?: string
   skipIgnore?: boolean | null
   skipProject?: boolean | null
+  preferTsExts?: boolean | null
   compilerOptions?: object
   ignoreDiagnostics?: Array<number | string>
   readFile?: (path: string) => string | undefined
@@ -105,6 +106,7 @@ export const DEFAULTS: Options = {
   project: process.env['TS_NODE_PROJECT'],
   skipIgnore: yn(process.env['TS_NODE_SKIP_IGNORE']),
   skipProject: yn(process.env['TS_NODE_SKIP_PROJECT']),
+  preferTsExts: yn(process.env['TS_NODE_PREFER_TS_EXTS']),
   ignoreDiagnostics: split(process.env['TS_NODE_IGNORE_DIAGNOSTICS']),
   typeCheck: yn(process.env['TS_NODE_TYPE_CHECK']),
   transpileOnly: yn(process.env['TS_NODE_TRANSPILE_ONLY']),
