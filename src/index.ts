@@ -426,7 +426,7 @@ function registerHandler (
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
   if (!opts.preferTsExts) {
-    extensions.forEach(function (ext) {
+    extensions.forEach(ext => {
       registerExtension(ext, ignore, register, originalJsHandler)
     })
 
@@ -436,10 +436,8 @@ function registerHandler (
   // @todo a better way with options
   ['.ts', '.tsx']
     .concat(Object.keys(require.extensions), extensions) // tslint:disable-line
-    .filter(function (element, index, array: string[]) {
-      return array.indexOf(element) === index
-    })
-    .forEach(function (ext) {
+    .filter((element, index, array: string[]) => array.indexOf(element) === index)
+    .forEach(ext => {
       if (extensions.indexOf(ext) !== -1) {
         registerExtension(ext, ignore, register, originalJsHandler)
       }
