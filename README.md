@@ -136,6 +136,7 @@ _Environment variable denoted in parentheses._
 * `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`, default: `false`)
 * `--skip-ignore` Skip ignore checks (`TS_NODE_SKIP_IGNORE`, default: `false`)
 * `--log-error` Logs errors of types instead of exit the process (`TS_NODE_LOG_ERROR`, default: `false`)
+* `--prefer-ts-exts` Changes the order of file extensions used when matching file imports so that `.ts` files are preferred over `.js` (`TS_PREFER_TS_EXTS`, default: `false`)
 
 ### Programmatic Only Options
 
