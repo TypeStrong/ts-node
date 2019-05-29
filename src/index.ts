@@ -401,7 +401,7 @@ export function register (opts: Options = {}): Register {
   const register: Register = { cwd, compile, getTypeInfo, extensions, ts }
 
   // Register the extensions.
-  registerHandler(opts, extensions, ignore, register, originalJsHandler)
+  registerExtensions(opts, extensions, ignore, register, originalJsHandler)
 
   return register
 }
@@ -416,9 +416,9 @@ function shouldIgnore (filename: string, ignore: RegExp[]) {
 }
 
 /**
- * unsafe re-order and make .ts > .js
+ * Register the extensions to support when importing files.
  */
-function registerHandler (
+function registerExtensions (
   opts: Options,
   extensions: string[],
   ignore: RegExp[],
