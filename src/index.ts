@@ -416,6 +416,17 @@ function shouldIgnore (filename: string, ignore: RegExp[]) {
 }
 
 /**
+ * "Refreshes" an extension on `require.extentions`.
+ *
+ * @param {string} ext
+ */
+function refreshRequireExtension (ext: string) {
+  const old = require.extensions[ext] // tslint:disable-line
+  delete require.extensions[ext] // tslint:disable-line
+  require.extensions[ext] = old // tslint:disable-line
+}
+
+/**
  * Register the extensions to support when importing files.
  */
 function registerExtensions (
@@ -438,9 +449,7 @@ function registerExtensions (
   ])).forEach(ext => {
     registerExtension(ext, ignore, register, originalJsHandler)
 
-    const old = require.extensions[ext] // tslint:disable-line
-    delete require.extensions[ext] // tslint:disable-line
-    require.extensions[ext] = old // tslint:disable-line
+    if (ext in require.extensions) refreshRequireExtension(ext) // tslint:disable-line
   })
 }
 
