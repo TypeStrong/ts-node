@@ -439,7 +439,6 @@ function registerHandler (
       }
 
       const old = require.extensions[ext] // tslint:disable-line
-
       delete require.extensions[ext] // tslint:disable-line
       require.extensions[ext] = old // tslint:disable-line
     })
