@@ -436,21 +436,21 @@ function registerExtensions (
   register: Register,
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
-  if (!opts.preferTsExts) {
-    return extensions.forEach(ext => registerExtension(ext, ignore, register, originalJsHandler))
+  if (opts.preferTsExts) {
+    extensions.unshift(
+      '.ts',
+      '.tsx',
+      ...Object.keys(require.extensions), // tslint:disable-line
+    )
   }
 
   // @todo a better way with options
-  Array.from(new Set([
-    '.ts',
-    '.tsx',
-    ...Object.keys(require.extensions), // tslint:disable-line
-    ...extensions
-  ])).forEach(ext => {
-    registerExtension(ext, ignore, register, originalJsHandler)
+  Array.from(new Set(extensions))
+       .forEach(ext => {
+         registerExtension(ext, ignore, register, originalJsHandler)
 
-    if (ext in require.extensions) refreshRequireExtension(ext) // tslint:disable-line
-  })
+         if (ext in require.extensions) refreshRequireExtension(ext) // tslint:disable-line
+       })
 }
 
 /**
