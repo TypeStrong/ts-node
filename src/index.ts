@@ -430,18 +430,18 @@ function registerExtensions (
   }
 
   // @todo a better way with options
-  ['.ts', '.tsx']
-    .concat(Object.keys(require.extensions), extensions) // tslint:disable-line
-    .filter((element, index, array: string[]) => array.indexOf(element) === index)
-    .forEach(ext => {
-      if (extensions.includes(ext)) {
-        registerExtension(ext, ignore, register, originalJsHandler)
-      }
+  Array.from(new Set([
+    '.ts',
+    '.tsx',
+    ...Object.keys(require.extensions), // tslint:disable-line
+    ...extensions
+  ])).forEach(ext => {
+    registerExtension(ext, ignore, register, originalJsHandler)
 
-      const old = require.extensions[ext] // tslint:disable-line
-      delete require.extensions[ext] // tslint:disable-line
-      require.extensions[ext] = old // tslint:disable-line
-    })
+    const old = require.extensions[ext] // tslint:disable-line
+    delete require.extensions[ext] // tslint:disable-line
+    require.extensions[ext] = old // tslint:disable-line
+  })
 }
 
 /**
