@@ -109,6 +109,13 @@ const cwd = process.cwd()
 const code = args['--eval']
 const isPrinted = args['--print'] !== undefined
 
+/**
+ * Eval helpers.
+ */
+const EVAL_FILENAME = `[eval].ts`
+const EVAL_PATH = join(cwd, EVAL_FILENAME)
+const EVAL_INSTANCE = { input: '', output: '', version: 0, lines: 0 }
+
 // Register the TypeScript compiler instance.
 const service = register({
   files,
@@ -138,13 +145,6 @@ if (version >= 2) {
 
 // Require specified modules before start-up.
 if (args['--require']) (Module as any)._preloadModules(args['--require'])
-
-/**
- * Eval helpers.
- */
-const EVAL_FILENAME = `[eval].ts`
-const EVAL_PATH = join(cwd, EVAL_FILENAME)
-const EVAL_INSTANCE = { input: '', output: '', version: 0, lines: 0 }
 
 // Prepend `ts-node` arguments to CLI for child processes.
 process.execArgv.unshift(__filename, ...process.argv.slice(2, process.argv.length - args._.length))

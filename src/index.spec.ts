@@ -326,6 +326,12 @@ describe('ts-node', function () {
       expect(m.example()).to.equal('hello')
     })
 
+    it('should work with `require.cache`', function () {
+      const { example1, example2 } = require('../tests/require-cache')
+
+      expect(example1).to.not.equal(example2)
+    })
+
     it('should use source maps', function (done) {
       try {
         require('../tests/throw')

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2015",
     "lib": ["es2015"],
     "rootDir": "src",
     "outDir": "dist",

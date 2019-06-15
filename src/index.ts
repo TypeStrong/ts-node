@@ -420,7 +420,7 @@ function shouldIgnore (filename: string, ignore: RegExp[]) {
  *
  * @param {string} ext
  */
-function refreshRequireExtension (ext: string) {
+function reorderRequireExtension (ext: string) {
   const old = require.extensions[ext] // tslint:disable-line
   delete require.extensions[ext] // tslint:disable-line
   require.extensions[ext] = old // tslint:disable-line
@@ -436,21 +436,17 @@ function registerExtensions (
   register: Register,
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
-  if (opts.preferTsExts) {
-    extensions.unshift(
-      '.ts',
-      '.tsx',
-      ...Object.keys(require.extensions), // tslint:disable-line
-    )
+  // Register new extensions.
+  for (const ext of extensions) {
+    registerExtension(ext, ignore, register, originalJsHandler)
   }
 
-  // @todo a better way with options
-  Array.from(new Set(extensions))
-       .forEach(ext => {
-         registerExtension(ext, ignore, register, originalJsHandler)
+  if (opts.preferTsExts) {
+    // tslint:disable-next-line
+    const preferredExtensions = new Set([...extensions, ...Object.keys(require.extensions)])
 
-         if (ext in require.extensions) refreshRequireExtension(ext) // tslint:disable-line
-       })
+    for (const ext of preferredExtensions) reorderRequireExtension(ext)
+  }
 }
 
 /**
