@@ -66,6 +66,7 @@ export interface Options {
   project?: string
   skipIgnore?: boolean | null
   skipProject?: boolean | null
+  preferTsExts?: boolean | null
   compilerOptions?: object
   ignoreDiagnostics?: Array<number | string>
   readFile?: (path: string) => string | undefined
@@ -105,6 +106,7 @@ export const DEFAULTS: Options = {
   project: process.env['TS_NODE_PROJECT'],
   skipIgnore: yn(process.env['TS_NODE_SKIP_IGNORE']),
   skipProject: yn(process.env['TS_NODE_SKIP_PROJECT']),
+  preferTsExts: yn(process.env['TS_NODE_PREFER_TS_EXTS']),
   ignoreDiagnostics: split(process.env['TS_NODE_IGNORE_DIAGNOSTICS']),
   typeCheck: yn(process.env['TS_NODE_TYPE_CHECK']),
   transpileOnly: yn(process.env['TS_NODE_TRANSPILE_ONLY']),
@@ -399,9 +401,7 @@ export function register (opts: Options = {}): Register {
   const register: Register = { cwd, compile, getTypeInfo, extensions, ts }
 
   // Register the extensions.
-  extensions.forEach(extension => {
-    registerExtension(extension, ignore, register, originalJsHandler)
-  })
+  registerExtensions(opts, extensions, ignore, register, originalJsHandler)
 
   return register
 }
@@ -413,6 +413,44 @@ function shouldIgnore (filename: string, ignore: RegExp[]) {
   const relname = normalizeSlashes(filename)
 
   return ignore.some(x => x.test(relname))
+}
+
+/**
+ * "Refreshes" an extension on `require.extentions`.
+ *
+ * @param {string} ext
+ */
+function refreshRequireExtension (ext: string) {
+  const old = require.extensions[ext] // tslint:disable-line
+  delete require.extensions[ext] // tslint:disable-line
+  require.extensions[ext] = old // tslint:disable-line
+}
+
+/**
+ * Register the extensions to support when importing files.
+ */
+function registerExtensions (
+  opts: Options,
+  extensions: string[],
+  ignore: RegExp[],
+  register: Register,
+  originalJsHandler: (m: NodeModule, filename: string) => any
+) {
+  if (opts.preferTsExts) {
+    extensions.unshift(
+      '.ts',
+      '.tsx',
+      ...Object.keys(require.extensions), // tslint:disable-line
+    )
+  }
+
+  // @todo a better way with options
+  Array.from(new Set(extensions))
+       .forEach(ext => {
+         registerExtension(ext, ignore, register, originalJsHandler)
+
+         if (ext in require.extensions) refreshRequireExtension(ext) // tslint:disable-line
+       })
 }
 
 /**

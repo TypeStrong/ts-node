@@ -269,6 +269,33 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    it('should import js before ts by default', function (done) {
+      exec(`${BIN_EXEC} tests/import-order/compiled`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('Hello, JavaScript!\n')
+
+        return done()
+      })
+    })
+
+    it('should import ts before js when --prefer-ts-exts flag is present', function (done) {
+      exec(`${BIN_EXEC} --prefer-ts-exts tests/import-order/compiled`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('Hello, TypeScript!\n')
+
+        return done()
+      })
+    })
+
+    it('should ignore .d.ts files', function (done) {
+      exec(`${BIN_EXEC} tests/import-order/importer`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('Hello, World!\n')
+
+        return done()
+      })
+    })
   })
 
   describe('register', function () {
