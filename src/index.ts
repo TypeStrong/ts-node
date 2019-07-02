@@ -204,12 +204,13 @@ export function register (opts: Options = {}): Register {
     ...(options.ignoreDiagnostics || [])
   ].map(Number)
 
+  const cwd = process.cwd()
+
   const ignore = options.skipIgnore ? [] : (
-    options.ignore || ['/node_modules/']
+    options.ignore || [cwd + '.*/node_modules/']
   ).map(str => new RegExp(str))
 
   // Require the TypeScript compiler and configuration.
-  const cwd = process.cwd()
   const typeCheck = options.typeCheck === true || options.transpileOnly !== true
   const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
   const ts: typeof _ts = require(compiler)
