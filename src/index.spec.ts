@@ -32,6 +32,26 @@ describe('ts-node', function () {
       })
     })
 
+    it('should provide TS_NODE environment variable', function (done) {
+      exec(`${BIN_EXEC} tests/env`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('true\n')
+
+        return done()
+      })
+    })
+
+    it('should provide TS_NODE environment variable on register', function (done) {
+      exec(`node -r ../register env.ts`, {
+        cwd: TEST_DIR
+      }, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('true\n')
+
+        return done()
+      })
+    })
+
     it('should register via cli', function (done) {
       exec(`node -r ../register hello-world.ts`, {
         cwd: TEST_DIR

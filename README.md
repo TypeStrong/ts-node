@@ -42,6 +42,8 @@ echo "console.log('Hello, world!')" | ts-node
 
 ![TypeScript REPL](https://github.com/TypeStrong/ts-node/raw/master/screenshot.png)
 
+> An environment variable `TS_NODE=true` is provided for conveniance when running with `ts-node` or registering it.
+
 ### Programmatic
 
 You can require `ts-node` and register the loader for future requires by using `require('ts-node').register({ /* options */ })`. You can also use file shortcuts - `node -r ts-node/register` or `node -r ts-node/register/transpile-only` - depending on your preferences.

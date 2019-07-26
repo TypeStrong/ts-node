@@ -11,6 +11,11 @@ import * as _ts from 'typescript'
 export const INSPECT_CUSTOM = util.inspect.custom || 'inspect'
 
 /**
+ * Inject environment variable to check wether ts-node is used
+ */
+process.env.TS_NODE = 'true'
+
+/**
  * Debugging `ts-node`.
  */
 const shouldDebug = yn(process.env.TS_NODE_DEBUG)
