@@ -289,7 +289,7 @@ describe('ts-node', function () {
     })
 
     it('should import ts before js when TS_NODE_PREFER_TS_EXTS env is present', function (done) {
-      exec(`${BIN_EXEC} tests/import-order/compiled`, { env: { TS_NODE_PREFER_TS_EXTS: 'true' } }, function (err, stdout) {
+      exec(`${BIN_EXEC} tests/import-order/compiled`, { env: { ...process.env, TS_NODE_PREFER_TS_EXTS: 'true' } }, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, TypeScript!\n')
 
