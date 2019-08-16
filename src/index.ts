@@ -401,7 +401,7 @@ export function register (opts: Options = {}): Register {
   const register: Register = { cwd, compile, getTypeInfo, extensions, ts }
 
   // Register the extensions.
-  registerExtensions(opts, extensions, ignore, register, originalJsHandler)
+  registerExtensions(options, extensions, ignore, register, originalJsHandler)
 
   return register
 }
