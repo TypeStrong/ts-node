@@ -401,7 +401,7 @@ export function register (opts: Options = {}): Register {
   const register: Register = { cwd, compile, getTypeInfo, extensions, ts }
 
   // Register the extensions.
-  registerExtensions(options, extensions, ignore, register, originalJsHandler)
+  registerExtensions(options.preferTsExts, extensions, ignore, register, originalJsHandler)
 
   return register
 }
@@ -430,7 +430,7 @@ function reorderRequireExtension (ext: string) {
  * Register the extensions to support when importing files.
  */
 function registerExtensions (
-  opts: Options,
+  preferTsExts: boolean | null | undefined,
   extensions: string[],
   ignore: RegExp[],
   register: Register,
@@ -441,7 +441,7 @@ function registerExtensions (
     registerExtension(ext, ignore, register, originalJsHandler)
   }
 
-  if (opts.preferTsExts) {
+  if (preferTsExts) {
     // tslint:disable-next-line
     const preferredExtensions = new Set([...extensions, ...Object.keys(require.extensions)])
 
