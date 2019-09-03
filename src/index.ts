@@ -311,41 +311,35 @@ export function register (opts: Options = {}): Register {
     let program: _ts.Program | undefined = undefined
 
     const getCustomTransformers = (): _ts.CustomTransformers | undefined => {
-      let combinedTransformers: _ts.CustomTransformers | undefined = transformers
-
-      if (programTransformers && program) {
-        const programTransformersData = programTransformers(program)
-
-        if (transformers) {
-          const before = programTransformersData.before && transformers.before
-            ? [...programTransformersData.before, ...transformers.before]
-            : programTransformersData.before
-            ? programTransformersData.before
-            : transformers.before
-
-          const after = programTransformersData.after && transformers.after
-            ? [...programTransformersData.after, ...transformers.after]
-            : programTransformersData.after
-            ? programTransformersData.after
-            : transformers.after
-
-          const afterDeclarations = programTransformersData.afterDeclarations && transformers.afterDeclarations
-            ? [...programTransformersData.afterDeclarations, ...transformers.afterDeclarations]
-            : programTransformersData.afterDeclarations
-            ? programTransformersData.afterDeclarations
-            : transformers.afterDeclarations
-
-          combinedTransformers = {
-            before,
-            after,
-            afterDeclarations
-          }
-        } else {
-          combinedTransformers = programTransformersData
-        }
+      if (!programTransformers || !program) {
+        return transformers
       }
 
-      return combinedTransformers
+      const programTransformersData = programTransformers(program)
+
+      if (!transformers) {
+        return programTransformersData
+      }
+
+      const before = [
+        ...(programTransformersData.before || []),
+        ...(transformers.before || [])
+      ]
+
+      const after = [
+        ...(programTransformersData.after || []),
+        ...(transformers.after || [])
+      ]
+
+      const afterDeclarations = [
+        ...(programTransformersData.afterDeclarations || []),
+        ...(transformers.afterDeclarations || [])
+      ]
+      return {
+        before,
+        after,
+        afterDeclarations
+      }
     }
 
     // Create the compiler host for type checking.
