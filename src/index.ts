@@ -297,7 +297,7 @@ export function register (opts: Options = {}): Register {
     throw new TypeError(`Type information is unavailable without "--type-check"`)
   }
 
-  if (!typeCheck && !!programTransformers) {
+  if (!typeCheck && programTransformers) {
     throw new TypeError(`Program transformers is unavailable without "--type-check"`)
   }
 
