@@ -72,6 +72,7 @@ export interface Options {
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
   transformers?: _ts.CustomTransformers
+  programTransformers?: (p: _ts.Program) => _ts.CustomTransformers
 }
 
 /**
@@ -214,6 +215,7 @@ export function register (opts: Options = {}): Register {
   const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
   const ts: typeof _ts = require(compiler)
   const transformers = options.transformers || undefined
+  const programTransformers = options.programTransformers || undefined
   const readFile = options.readFile || ts.sys.readFile
   const fileExists = options.fileExists || ts.sys.fileExists
   const config = readConfig(cwd, ts, fileExists, readFile, options)
@@ -295,10 +297,56 @@ export function register (opts: Options = {}): Register {
     throw new TypeError(`Type information is unavailable without "--type-check"`)
   }
 
+  if (!typeCheck && !!programTransformers) {
+    throw new TypeError(`Program transformers is unavailable without "--type-check"`)
+  }
+
   // Use full language services when the fast option is disabled.
   if (typeCheck) {
     const memoryCache = new MemoryCache(config.fileNames)
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile))
+
+    // The program isn't available right now
+    // but it will be when we'll create a language service
+    let program: _ts.Program | undefined = undefined
+
+    const getCustomTransformers = (): _ts.CustomTransformers | undefined => {
+      let combinedTransformers: _ts.CustomTransformers | undefined = transformers
+
+      if (programTransformers && program) {
+        const programTransformersData = programTransformers(program)
+
+        if (transformers) {
+          const before = programTransformersData.before && transformers.before
+            ? [...programTransformersData.before, ...transformers.before]
+            : programTransformersData.before
+            ? programTransformersData.before
+            : transformers.before
+
+          const after = programTransformersData.after && transformers.after
+            ? [...programTransformersData.after, ...transformers.after]
+            : programTransformersData.after
+            ? programTransformersData.after
+            : transformers.after
+
+          const afterDeclarations = programTransformersData.afterDeclarations && transformers.afterDeclarations
+            ? [...programTransformersData.afterDeclarations, ...transformers.afterDeclarations]
+            : programTransformersData.afterDeclarations
+            ? programTransformersData.afterDeclarations
+            : transformers.afterDeclarations
+
+          combinedTransformers = {
+            before,
+            after,
+            afterDeclarations
+          }
+        } else {
+          combinedTransformers = programTransformersData
+        }
+      }
+
+      return combinedTransformers
+    }
 
     // Create the compiler host for type checking.
     const serviceHost: _ts.LanguageServiceHost = {
@@ -331,11 +379,12 @@ export function register (opts: Options = {}): Register {
       getCurrentDirectory: () => cwd,
       getCompilationSettings: () => config.options,
       getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
-      getCustomTransformers: () => transformers
+      getCustomTransformers: getCustomTransformers
     }
 
     const registry = ts.createDocumentRegistry(ts.sys.useCaseSensitiveFileNames, cwd)
     const service = ts.createLanguageService(serviceHost, registry)
+    program = service.getProgram()
 
     // Set the file contents into cache manually.
     const updateMemoryCache = function (contents: string, fileName: string) {
