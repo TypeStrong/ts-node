@@ -71,8 +71,7 @@ export interface Options {
   ignoreDiagnostics?: Array<number | string>
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
-  transformers?: _ts.CustomTransformers
-  programTransformers?: (p: _ts.Program) => _ts.CustomTransformers
+  transformers?: _ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)
 }
 
 /**
@@ -215,7 +214,6 @@ export function register (opts: Options = {}): Register {
   const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
   const ts: typeof _ts = require(compiler)
   const transformers = options.transformers || undefined
-  const programTransformers = options.programTransformers || undefined
   const readFile = options.readFile || ts.sys.readFile
   const fileExists = options.fileExists || ts.sys.fileExists
   const config = readConfig(cwd, ts, fileExists, readFile, options)
@@ -279,7 +277,7 @@ export function register (opts: Options = {}): Register {
   let getOutput = function (code: string, fileName: string, lineOffset = 0): SourceOutput {
     const result = ts.transpileModule(code, {
       fileName,
-      transformers,
+      transformers: !isTransformersFunction(transformers) ? transformers : undefined,
       compilerOptions: config.options,
       reportDiagnostics: true
     })
@@ -297,8 +295,8 @@ export function register (opts: Options = {}): Register {
     throw new TypeError(`Type information is unavailable without "--type-check"`)
   }
 
-  if (!typeCheck && programTransformers) {
-    throw new TypeError(`Program transformers is unavailable without "--type-check"`)
+  if (!typeCheck && isTransformersFunction(transformers)) {
+    throw new TypeError(`Transformers function is unavailable without "--type-check"`)
   }
 
   // Use full language services when the fast option is disabled.
@@ -311,35 +309,15 @@ export function register (opts: Options = {}): Register {
     let program: _ts.Program | undefined = undefined
 
     const getCustomTransformers = (): _ts.CustomTransformers | undefined => {
-      if (!programTransformers || !program) {
+      if (!isTransformersFunction(transformers)) {
         return transformers
       }
 
-      const programTransformersData = programTransformers(program)
-
-      if (!transformers) {
-        return programTransformersData
+      if (!program) {
+        return undefined
       }
 
-      const before = [
-        ...(programTransformersData.before || []),
-        ...(transformers.before || [])
-      ]
-
-      const after = [
-        ...(programTransformersData.after || []),
-        ...(transformers.after || [])
-      ]
-
-      const afterDeclarations = [
-        ...(programTransformersData.afterDeclarations || []),
-        ...(transformers.afterDeclarations || [])
-      ]
-      return {
-        before,
-        after,
-        afterDeclarations
-      }
+      return transformers(program)
     }
 
     // Create the compiler host for type checking.
@@ -624,4 +602,13 @@ function updateSourceMap (sourceMapText: string, fileName: string) {
  */
 function filterDiagnostics (diagnostics: _ts.Diagnostic[], ignore: number[]) {
   return diagnostics.filter(x => ignore.indexOf(x.code) === -1)
+}
+
+/**
+ * Check if transformers is a function
+ */
+function isTransformersFunction (
+  transformers: _ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers) | undefined
+): transformers is (p: _ts.Program) => _ts.CustomTransformers {
+  return typeof transformers === 'function'
 }
