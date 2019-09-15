@@ -111,8 +111,10 @@ Create a new node.js configuration, add `-r ts-node/register` to node args and m
 You can set options by passing them before the script path, via programmatic usage or via environment variables.
 
 ```sh
-ts-node --compiler typescript --project src/tsconfig.json hello-world.ts
+ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 ```
+
+**Note:** [`ntypescript`](https://github.com/TypeStrong/ntypescript#readme) is an example of a TypeScript compatible `compiler`.
 
 ### CLI Options
 
