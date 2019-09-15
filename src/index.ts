@@ -71,7 +71,7 @@ export interface Options {
   ignoreDiagnostics?: Array<number | string>
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
-  transformers?: _ts.CustomTransformers
+  transformers?: _ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)
 }
 
 /**
@@ -274,31 +274,22 @@ export function register (opts: Options = {}): Register {
   /**
    * Create the basic required function using transpile mode.
    */
-  let getOutput = function (code: string, fileName: string, lineOffset = 0): SourceOutput {
-    const result = ts.transpileModule(code, {
-      fileName,
-      transformers,
-      compilerOptions: config.options,
-      reportDiagnostics: true
-    })
-
-    const diagnosticList = result.diagnostics ?
-      filterDiagnostics(result.diagnostics, ignoreDiagnostics) :
-      []
-
-    if (diagnosticList.length) reportTSError(configDiagnosticList)
-
-    return [result.outputText, result.sourceMapText as string]
-  }
-
-  let getTypeInfo = function (_code: string, _fileName: string, _position: number): TypeInfo {
-    throw new TypeError(`Type information is unavailable without "--type-check"`)
-  }
+  let getOutput: (code: string, fileName: string, lineOffset: number) => SourceOutput
+  let getTypeInfo: (_code: string, _fileName: string, _position: number) => TypeInfo
 
   // Use full language services when the fast option is disabled.
   if (typeCheck) {
     const memoryCache = new MemoryCache(config.fileNames)
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile))
+
+    const getCustomTransformers = () => {
+      if (typeof transformers === 'function') {
+        const program = service.getProgram()
+        return program ? transformers(program) : undefined
+      }
+
+      return transformers
+    }
 
     // Create the compiler host for type checking.
     const serviceHost: _ts.LanguageServiceHost = {
@@ -331,14 +322,14 @@ export function register (opts: Options = {}): Register {
       getCurrentDirectory: () => cwd,
       getCompilationSettings: () => config.options,
       getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
-      getCustomTransformers: () => transformers
+      getCustomTransformers: getCustomTransformers
     }
 
     const registry = ts.createDocumentRegistry(ts.sys.useCaseSensitiveFileNames, cwd)
     const service = ts.createLanguageService(serviceHost, registry)
 
     // Set the file contents into cache manually.
-    const updateMemoryCache = function (contents: string, fileName: string) {
+    const updateMemoryCache = (contents: string, fileName: string) => {
       const fileVersion = memoryCache.fileVersions.get(fileName) || 0
 
       // Avoid incrementing cache when nothing has changed.
@@ -348,7 +339,7 @@ export function register (opts: Options = {}): Register {
       memoryCache.fileContents.set(fileName, contents)
     }
 
-    getOutput = function (code: string, fileName: string, lineOffset: number = 0) {
+    getOutput = (code: string, fileName: string) => {
       updateMemoryCache(code, fileName)
 
       const output = service.getEmitOutput(fileName)
@@ -379,7 +370,7 @@ export function register (opts: Options = {}): Register {
       return [output.outputFiles[1].text, output.outputFiles[0].text]
     }
 
-    getTypeInfo = function (code: string, fileName: string, position: number) {
+    getTypeInfo = (code: string, fileName: string, position: number) => {
       updateMemoryCache(code, fileName)
 
       const info = service.getQuickInfoAtPosition(fileName, position)
@@ -388,10 +379,35 @@ export function register (opts: Options = {}): Register {
 
       return { name, comment }
     }
+  } else {
+    if (typeof transformers === 'function') {
+      throw new TypeError('Transformers function is unavailable in "--transpile-only"')
+    }
+
+    getOutput = (code: string, fileName: string): SourceOutput => {
+      const result = ts.transpileModule(code, {
+        fileName,
+        transformers,
+        compilerOptions: config.options,
+        reportDiagnostics: true
+      })
+
+      const diagnosticList = result.diagnostics ?
+        filterDiagnostics(result.diagnostics, ignoreDiagnostics) :
+        []
+
+      if (diagnosticList.length) reportTSError(configDiagnosticList)
+
+      return [result.outputText, result.sourceMapText as string]
+    }
+
+    getTypeInfo = () => {
+      throw new TypeError('Type information is unavailable in "--transpile-only"')
+    }
   }
 
   // Create a simple TypeScript compiler proxy.
-  function compile (code: string, fileName: string, lineOffset?: number) {
+  function compile (code: string, fileName: string, lineOffset = 0) {
     const [value, sourceMap] = getOutput(code, fileName, lineOffset)
     const output = updateOutput(value, fileName, sourceMap, getExtension)
     outputCache.set(fileName, output)
