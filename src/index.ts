@@ -81,7 +81,6 @@ export interface Options {
 class MemoryCache {
   fileContents = new Map<string, string>()
   fileVersions = new Map<string, number>()
-  fileOutputs = new Map<string, [string, string]>()
 
   constructor (public rootFileNames: string[] = []) {
     for (const fileName of rootFileNames) this.fileVersions.set(fileName, 1)
@@ -283,11 +282,10 @@ export function register (opts: Options = {}): Register {
   if (typeCheck) {
     const memoryCache = new MemoryCache(config.fileNames)
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile))
-    let tsBuildInfoOutput: [string, string] | undefined
 
     const getCustomTransformers = () => {
       if (typeof transformers === 'function') {
-        return transformers(program.getProgram())
+        return transformers(builderProgram.getProgram())
       }
 
       return transformers
@@ -317,7 +315,7 @@ export function register (opts: Options = {}): Register {
       exit: ts.sys.exit
     })
 
-    let program = ts.createIncrementalProgram({
+    let builderProgram = ts.createIncrementalProgram({
       rootNames: memoryCache.rootFileNames.slice(),
       host: host,
       options: config.options,
@@ -329,7 +327,7 @@ export function register (opts: Options = {}): Register {
       const fileVersion = memoryCache.fileVersions.get(fileName) || 0
 
       // Avoid incrementing cache when nothing has changed.
-      if (memoryCache.fileContents.get(fileName) === contents) return true
+      if (memoryCache.fileContents.get(fileName) === contents) return
 
       memoryCache.fileVersions.set(fileName, fileVersion + 1)
       memoryCache.fileContents.set(fileName, contents)
@@ -339,45 +337,36 @@ export function register (opts: Options = {}): Register {
         memoryCache.rootFileNames.push(fileName)
 
         // Update program when root files change.
-        program = ts.createEmitAndSemanticDiagnosticsBuilderProgram(memoryCache.rootFileNames.slice(), config.options, host, program, config.errors)
+        builderProgram = ts.createEmitAndSemanticDiagnosticsBuilderProgram(memoryCache.rootFileNames.slice(), config.options, host, builderProgram, config.errors)
       }
-
-      return false
     }
 
     getOutput = (code: string, fileName: string) => {
-      const cachedOutput = memoryCache.fileOutputs.get(fileName)
-      const cacheIsValid = updateMemoryCache(code, fileName)
+      let mapFile: string | undefined
+      let jsFile: string | undefined
 
-      if (cacheIsValid && cachedOutput) return cachedOutput
+      updateMemoryCache(code, fileName)
 
-      const output: [string, string] = ['', '']
-      const sourceFile = program.getSourceFile(fileName)
-      const diagnostics = ts.getPreEmitDiagnostics(program.getProgram(), sourceFile)
+      const sourceFile = builderProgram.getSourceFile(fileName)
+      const diagnostics = ts.getPreEmitDiagnostics(builderProgram.getProgram(), sourceFile)
       const diagnosticList = filterDiagnostics(diagnostics, ignoreDiagnostics)
 
       if (diagnosticList.length) reportTSError(diagnosticList)
 
-      while (true) {
-        const result = program.emitNextAffectedFile((path, file) => {
-          if (path.endsWith('.map')) {
-            output[1] = file
-          } else if (path.endsWith('.js') || path.endsWith('.jsx')) {
-            output[0] = file
-          } else if (path.endsWith('.tsbuildinfo')) {
-            tsBuildInfoOutput = [path, file]
-          }
-        })
-
-        if (!result) {
-          throw new TypeError(`${relative(cwd, fileName)}: Emit failed`)
+      const { emitSkipped } = builderProgram.emit(sourceFile, (path, file) => {
+        if (path.endsWith('.map')) {
+          mapFile = file
+        } else {
+          jsFile = file
         }
+      }, undefined, undefined, getCustomTransformers())
 
-        if (result.affected === sourceFile) break
+      if (emitSkipped) {
+        throw new TypeError(`${relative(cwd, fileName)}: Emit skipped`)
       }
 
       // Throw an error when requiring `.d.ts` files.
-      if (!output[0]) {
+      if (mapFile === undefined || jsFile === undefined) {
         throw new TypeError(
           'Unable to require `.d.ts` file.\n' +
           'This is usually the result of a faulty configuration or import. ' +
@@ -387,10 +376,7 @@ export function register (opts: Options = {}): Register {
         )
       }
 
-      // Persist outputs to cache.
-      memoryCache.fileOutputs.set(fileName, output)
-
-      return output
+      return [jsFile, mapFile]
     }
 
     getTypeInfo = (code: string, fileName: string, position: number) => {
@@ -403,11 +389,11 @@ export function register (opts: Options = {}): Register {
       return { name: '', comment: '' }
     }
 
-    process.once('exit', () => {
-      if (tsBuildInfoOutput) {
-        writeFileSync(tsBuildInfoOutput[0], tsBuildInfoOutput[1])
-      }
-    })
+    // process.on('exit', () => {
+    //   (program.getProgram() as any).emitBuildInfo((path: string, file: string) => {
+    //     writeFileSync(path, file)
+    //   })
+    // })
   } else {
     if (typeof transformers === 'function') {
       throw new TypeError('Transformers function is unavailable in "--transpile-only"')
