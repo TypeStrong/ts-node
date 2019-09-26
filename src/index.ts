@@ -80,11 +80,8 @@ export interface Options {
  */
 class MemoryCache {
   fileContents = new Map<string, string>()
-  fileVersions = new Map<string, number>()
 
-  constructor (public rootFileNames: string[] = []) {
-    for (const fileName of rootFileNames) this.fileVersions.set(fileName, 1)
-  }
+  constructor (public rootFileNames: string[]) {}
 }
 
 /**
@@ -319,31 +316,25 @@ export function register (opts: Options = {}): Register {
       rootNames: memoryCache.rootFileNames.slice(),
       host: host,
       options: config.options,
-      configFileParsingDiagnostics: config.errors
+      configFileParsingDiagnostics: config.errors,
+      projectReferences: config.projectReferences
     })
 
     // Set the file contents into cache manually.
     const updateMemoryCache = (contents: string, fileName: string) => {
-      const fileVersion = memoryCache.fileVersions.get(fileName) || 0
-
-      // Avoid incrementing cache when nothing has changed.
-      if (memoryCache.fileContents.get(fileName) === contents) return
-
-      memoryCache.fileVersions.set(fileName, fileVersion + 1)
       memoryCache.fileContents.set(fileName, contents)
 
-      // Add to `rootFiles` when discovered for the first time.
-      if (fileVersion === 0) {
+      // Add to `rootFiles` when discovered by compiler for the first time.
+      if (builderProgram.getSourceFile(fileName) === undefined) {
         memoryCache.rootFileNames.push(fileName)
 
         // Update program when root files change.
-        builderProgram = ts.createEmitAndSemanticDiagnosticsBuilderProgram(memoryCache.rootFileNames.slice(), config.options, host, builderProgram, config.errors)
+        builderProgram = ts.createEmitAndSemanticDiagnosticsBuilderProgram(memoryCache.rootFileNames.slice(), config.options, host, builderProgram, config.errors, config.projectReferences)
       }
     }
 
     getOutput = (code: string, fileName: string) => {
-      let mapFile: string | undefined
-      let jsFile: string | undefined
+      const output: [string, string] = ['', '']
 
       updateMemoryCache(code, fileName)
 
@@ -355,9 +346,9 @@ export function register (opts: Options = {}): Register {
 
       const { emitSkipped } = builderProgram.emit(sourceFile, (path, file) => {
         if (path.endsWith('.map')) {
-          mapFile = file
+          output[1] = file
         } else {
-          jsFile = file
+          output[0] = file
         }
       }, undefined, undefined, getCustomTransformers())
 
@@ -366,7 +357,7 @@ export function register (opts: Options = {}): Register {
       }
 
       // Throw an error when requiring `.d.ts` files.
-      if (mapFile === undefined || jsFile === undefined) {
+      if (output[0] === '') {
         throw new TypeError(
           'Unable to require `.d.ts` file.\n' +
           'This is usually the result of a faulty configuration or import. ' +
@@ -376,7 +367,7 @@ export function register (opts: Options = {}): Register {
         )
       }
 
-      return [jsFile, mapFile]
+      return output
     }
 
     getTypeInfo = (code: string, fileName: string, position: number) => {
