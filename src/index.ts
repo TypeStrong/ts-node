@@ -4,6 +4,7 @@ import yn from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
 import * as _ts from 'typescript'
+import { writeFileSync } from 'fs'
 
 /**
  * @internal
@@ -80,6 +81,7 @@ export interface Options {
 class MemoryCache {
   fileContents = new Map<string, string>()
   fileVersions = new Map<string, number>()
+  fileOutputs = new Map<string, [string, string]>()
 
   constructor (public rootFileNames: string[] = []) {
     for (const fileName of rootFileNames) this.fileVersions.set(fileName, 1)
@@ -281,86 +283,101 @@ export function register (opts: Options = {}): Register {
   if (typeCheck) {
     const memoryCache = new MemoryCache(config.fileNames)
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile))
+    let tsBuildInfoOutput: [string, string] | undefined
 
     const getCustomTransformers = () => {
       if (typeof transformers === 'function') {
-        const program = service.getProgram()
-        return program ? transformers(program) : undefined
+        return transformers(program.getProgram())
       }
 
       return transformers
     }
 
-    // Create the compiler host for type checking.
-    const serviceHost: _ts.LanguageServiceHost = {
-      getScriptFileNames: () => memoryCache.rootFileNames,
-      getScriptVersion: (fileName: string) => {
-        const version = memoryCache.fileVersions.get(fileName)
-        return version === undefined ? '' : version.toString()
-      },
-      getScriptSnapshot (fileName: string) {
-        let contents = memoryCache.fileContents.get(fileName)
-
-        // Read contents into TypeScript memory cache.
-        if (contents === undefined) {
-          contents = cachedReadFile(fileName)
-          if (contents === undefined) return
-
-          memoryCache.fileVersions.set(fileName, 1)
-          memoryCache.fileContents.set(fileName, contents)
+    const host = ts.createIncrementalCompilerHost(config.options, {
+      args: ts.sys.args,
+      newLine: ts.sys.newLine,
+      useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
+      writeFile: ts.sys.writeFile,
+      write: ts.sys.write,
+      readFile: (fileName) => {
+        if (memoryCache.fileContents.has(fileName)) {
+          return memoryCache.fileContents.get(fileName)
         }
 
-        return ts.ScriptSnapshot.fromString(contents)
+        return cachedReadFile(fileName)
       },
-      readFile: cachedReadFile,
       readDirectory: cachedLookup(debugFn('readDirectory', ts.sys.readDirectory)),
       getDirectories: cachedLookup(debugFn('getDirectories', ts.sys.getDirectories)),
       fileExists: cachedLookup(debugFn('fileExists', fileExists)),
       directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
-      getNewLine: () => ts.sys.newLine,
-      useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
+      resolvePath: cachedLookup(debugFn('resolvePath', ts.sys.resolvePath)),
+      createDirectory: ts.sys.createDirectory,
+      getExecutingFilePath: ts.sys.getExecutingFilePath,
       getCurrentDirectory: () => cwd,
-      getCompilationSettings: () => config.options,
-      getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
-      getCustomTransformers: getCustomTransformers
-    }
+      exit: ts.sys.exit
+    })
 
-    const registry = ts.createDocumentRegistry(ts.sys.useCaseSensitiveFileNames, cwd)
-    const service = ts.createLanguageService(serviceHost, registry)
+    let program = ts.createIncrementalProgram({
+      rootNames: memoryCache.rootFileNames.slice(),
+      host: host,
+      options: config.options,
+      configFileParsingDiagnostics: config.errors
+    })
 
     // Set the file contents into cache manually.
     const updateMemoryCache = (contents: string, fileName: string) => {
       const fileVersion = memoryCache.fileVersions.get(fileName) || 0
 
-      // Add to `rootFiles` when discovered for the first time.
-      if (fileVersion === 0) memoryCache.rootFileNames.push(fileName)
-
       // Avoid incrementing cache when nothing has changed.
-      if (memoryCache.fileContents.get(fileName) === contents) return
+      if (memoryCache.fileContents.get(fileName) === contents) return true
 
       memoryCache.fileVersions.set(fileName, fileVersion + 1)
       memoryCache.fileContents.set(fileName, contents)
+
+      // Add to `rootFiles` when discovered for the first time.
+      if (fileVersion === 0) {
+        memoryCache.rootFileNames.push(fileName)
+
+        // Update program when root files change.
+        program = ts.createEmitAndSemanticDiagnosticsBuilderProgram(memoryCache.rootFileNames.slice(), config.options, host, program, config.errors)
+      }
+
+      return false
     }
 
     getOutput = (code: string, fileName: string) => {
-      updateMemoryCache(code, fileName)
+      const cachedOutput = memoryCache.fileOutputs.get(fileName)
+      const cacheIsValid = updateMemoryCache(code, fileName)
 
-      const output = service.getEmitOutput(fileName)
+      if (cacheIsValid && cachedOutput) return cachedOutput
 
-      // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.
-      const diagnostics = service.getSemanticDiagnostics(fileName)
-        .concat(service.getSyntacticDiagnostics(fileName))
-
+      const output: [string, string] = ['', '']
+      const sourceFile = program.getSourceFile(fileName)
+      const diagnostics = ts.getPreEmitDiagnostics(program.getProgram(), sourceFile)
       const diagnosticList = filterDiagnostics(diagnostics, ignoreDiagnostics)
 
       if (diagnosticList.length) reportTSError(diagnosticList)
 
-      if (output.emitSkipped) {
-        throw new TypeError(`${relative(cwd, fileName)}: Emit skipped`)
+      while (true) {
+        const result = program.emitNextAffectedFile((path, file) => {
+          if (path.endsWith('.map')) {
+            output[1] = file
+          } else if (path.endsWith('.js') || path.endsWith('.jsx')) {
+            output[0] = file
+          } else if (path.endsWith('.tsbuildinfo')) {
+            tsBuildInfoOutput = [path, file]
+          }
+        })
+
+        if (!result) {
+          throw new TypeError(`${relative(cwd, fileName)}: Emit failed`)
+        }
+
+        if (result.affected === sourceFile) break
       }
 
       // Throw an error when requiring `.d.ts` files.
-      if (output.outputFiles.length === 0) {
+      if (!output[0]) {
         throw new TypeError(
           'Unable to require `.d.ts` file.\n' +
           'This is usually the result of a faulty configuration or import. ' +
@@ -370,18 +387,27 @@ export function register (opts: Options = {}): Register {
         )
       }
 
-      return [output.outputFiles[1].text, output.outputFiles[0].text]
+      // Persist outputs to cache.
+      memoryCache.fileOutputs.set(fileName, output)
+
+      return output
     }
 
     getTypeInfo = (code: string, fileName: string, position: number) => {
       updateMemoryCache(code, fileName)
 
-      const info = service.getQuickInfoAtPosition(fileName, position)
-      const name = ts.displayPartsToString(info ? info.displayParts : [])
-      const comment = ts.displayPartsToString(info ? info.documentation : [])
+      // const info = service.getQuickInfoAtPosition(fileName, position)
+      // const name = ts.displayPartsToString(info ? info.displayParts : [])
+      // const comment = ts.displayPartsToString(info ? info.documentation : [])
 
-      return { name, comment }
+      return { name: '', comment: '' }
     }
+
+    process.once('exit', () => {
+      if (tsBuildInfoOutput) {
+        writeFileSync(tsBuildInfoOutput[0], tsBuildInfoOutput[1])
+      }
+    })
   } else {
     if (typeof transformers === 'function') {
       throw new TypeError('Transformers function is unavailable in "--transpile-only"')
@@ -499,7 +525,7 @@ function registerExtension (
 /**
  * Do post-processing on config options to support `ts-node`.
  */
-function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine) {
+function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine, cwd: string) {
   // Delete options that *should not* be passed through.
   delete config.options.out
   delete config.options.outFile
@@ -519,6 +545,10 @@ function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine) {
   if (config.options.module === undefined) {
     config.options.module = ts.ModuleKind.CommonJS
   }
+
+  // Enable incremental mode.
+  config.options.incremental = true
+  config.options.tsBuildInfoFile = join(cwd, 'ts-node.tsbuildinfo')
 
   return config
 }
@@ -565,7 +595,7 @@ function readConfig (
   // Override default configuration options `ts-node` requires.
   config.compilerOptions = Object.assign({}, config.compilerOptions, options.compilerOptions, TS_NODE_COMPILER_OPTIONS)
 
-  return fixConfig(ts, ts.parseJsonConfigFileContent(config, ts.sys, basePath, undefined, configFileName))
+  return fixConfig(ts, ts.parseJsonConfigFileContent(config, ts.sys, basePath, undefined, configFileName), cwd)
 }
 
 /**
@@ -598,6 +628,6 @@ function updateSourceMap (sourceMapText: string, fileName: string) {
 /**
  * Filter diagnostics.
  */
-function filterDiagnostics (diagnostics: _ts.Diagnostic[], ignore: number[]) {
+function filterDiagnostics (diagnostics: readonly _ts.Diagnostic[], ignore: number[]) {
   return diagnostics.filter(x => ignore.indexOf(x.code) === -1)
 }
