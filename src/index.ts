@@ -120,7 +120,7 @@ const TS_NODE_COMPILER_OPTIONS = {
   inlineSources: true,
   declaration: false,
   noEmit: false,
-  outDir: '$$ts-node$$'
+  outDir: '.ts-node'
 }
 
 /**
@@ -306,6 +306,7 @@ export function register (opts: Options = {}): Register {
       fileExists: cachedLookup(debugFn('fileExists', fileExists)),
       directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
       resolvePath: cachedLookup(debugFn('resolvePath', ts.sys.resolvePath)),
+      realpath: ts.sys.realpath ? cachedLookup(debugFn('realpath', ts.sys.realpath)) : undefined,
       createDirectory: ts.sys.createDirectory,
       getExecutingFilePath: ts.sys.getExecutingFilePath,
       getCurrentDirectory: () => cwd,
@@ -329,7 +330,14 @@ export function register (opts: Options = {}): Register {
         memoryCache.rootFileNames.push(fileName)
 
         // Update program when root files change.
-        builderProgram = ts.createEmitAndSemanticDiagnosticsBuilderProgram(memoryCache.rootFileNames.slice(), config.options, host, builderProgram, config.errors, config.projectReferences)
+        builderProgram = ts.createEmitAndSemanticDiagnosticsBuilderProgram(
+          memoryCache.rootFileNames.slice(),
+          config.options,
+          host,
+          builderProgram,
+          config.errors,
+          config.projectReferences
+        )
       }
     }
 
@@ -344,7 +352,7 @@ export function register (opts: Options = {}): Register {
 
       if (diagnosticList.length) reportTSError(diagnosticList)
 
-      const { emitSkipped } = builderProgram.emit(sourceFile, (path, file) => {
+      const result = builderProgram.emit(sourceFile, (path, file) => {
         if (path.endsWith('.map')) {
           output[1] = file
         } else {
@@ -352,7 +360,7 @@ export function register (opts: Options = {}): Register {
         }
       }, undefined, undefined, getCustomTransformers())
 
-      if (emitSkipped) {
+      if (result.emitSkipped) {
         throw new TypeError(`${relative(cwd, fileName)}: Emit skipped`)
       }
 
@@ -381,9 +389,7 @@ export function register (opts: Options = {}): Register {
     }
 
     // process.on('exit', () => {
-    //   (program.getProgram() as any).emitBuildInfo((path: string, file: string) => {
-    //     writeFileSync(path, file)
-    //   })
+    //   (builderProgram.getProgram() as any).emitBuildInfo()
     // })
   } else {
     if (typeof transformers === 'function') {
@@ -510,8 +516,6 @@ function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine, cwd: string) {
   delete config.options.declarationDir
   delete config.options.declarationMap
   delete config.options.emitDeclarationOnly
-  delete config.options.tsBuildInfoFile
-  delete config.options.incremental
 
   // Target ES5 output by default (instead of ES3).
   if (config.options.target === undefined) {
@@ -522,10 +526,6 @@ function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine, cwd: string) {
   if (config.options.module === undefined) {
     config.options.module = ts.ModuleKind.CommonJS
   }
-
-  // Enable incremental mode.
-  config.options.incremental = true
-  config.options.tsBuildInfoFile = join(cwd, 'ts-node.tsbuildinfo')
 
   return config
 }
