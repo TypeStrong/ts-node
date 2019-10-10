@@ -288,7 +288,7 @@ export function register (opts: Options = {}): Register {
       return transformers
     }
 
-    const host = ts.createIncrementalCompilerHost(config.options, {
+    const host = (ts.createIncrementalCompilerHost || ts.createCompilerHost)(config.options, {
       args: ts.sys.args,
       newLine: ts.sys.newLine,
       useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
@@ -313,7 +313,7 @@ export function register (opts: Options = {}): Register {
       exit: ts.sys.exit
     })
 
-    let builderProgram = ts.createIncrementalProgram({
+    let builderProgram = (ts.createIncrementalProgram || ts.createProgram)({
       rootNames: memoryCache.rootFileNames.slice(),
       host: host,
       options: config.options,
