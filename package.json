@@ -21,7 +21,7 @@
     "prepare": "npm run build"
   },
   "engines": {
-    "node": ">=4.2.0"
+    "node": ">=6.0.0"
   },
   "repository": {
     "type": "git",
@@ -64,10 +64,10 @@
     "semver": "^6.1.0",
     "tslint": "^5.11.0",
     "tslint-config-standard": "^8.0.1",
-    "typescript": "^3.6.3"
+    "typescript": "^3.6.4"
   },
   "peerDependencies": {
-    "typescript": ">=2.0"
+    "typescript": ">=2.7"
   },
   "dependencies": {
     "arg": "^4.1.0",

@@ -313,7 +313,8 @@ export function register (opts: Options = {}): Register {
       exit: ts.sys.exit
     })
 
-    let builderProgram = (ts.createIncrementalProgram || ts.createProgram)({
+    // Fallback for older TypeScript releases without incremental API.
+    let builderProgram = (ts.createIncrementalProgram || ts.createSemanticDiagnosticsBuilderProgram)({
       rootNames: memoryCache.rootFileNames.slice(),
       host: host,
       options: config.options,
@@ -388,9 +389,12 @@ export function register (opts: Options = {}): Register {
       return { name: '', comment: '' }
     }
 
-    // process.on('exit', () => {
-    //   (builderProgram.getProgram() as any).emitBuildInfo()
-    // })
+    if (config.options.incremental) {
+      process.on('exit', () => {
+        // Emits `.tsbuildinfo` to filesystem.
+        (builderProgram.getProgram() as any).emitBuildInfo()
+      })
+    }
   } else {
     if (typeof transformers === 'function') {
       throw new TypeError('Transformers function is unavailable in "--transpile-only"')
