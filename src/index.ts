@@ -314,13 +314,22 @@ export function register (opts: Options = {}): Register {
     })
 
     // Fallback for older TypeScript releases without incremental API.
-    let builderProgram = (ts.createIncrementalProgram || ts.createSemanticDiagnosticsBuilderProgram)({
-      rootNames: memoryCache.rootFileNames.slice(),
-      host: host,
-      options: config.options,
-      configFileParsingDiagnostics: config.errors,
-      projectReferences: config.projectReferences
-    })
+    let builderProgram = ts.createIncrementalProgram
+      ? ts.createIncrementalProgram({
+        rootNames: memoryCache.rootFileNames.slice(),
+        options: config.options,
+        host: host,
+        configFileParsingDiagnostics: config.errors,
+        projectReferences: config.projectReferences
+      })
+      : ts.createEmitAndSemanticDiagnosticsBuilderProgram(
+        memoryCache.rootFileNames.slice(),
+        config.options,
+        host,
+        undefined,
+        config.errors,
+        config.projectReferences
+      )
 
     // Set the file contents into cache manually.
     const updateMemoryCache = (contents: string, fileName: string) => {
