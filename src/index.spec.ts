@@ -379,7 +379,7 @@ describe('ts-node', function () {
         try {
           require('../tests/with-jsx.tsx')
         } catch (error) {
-          expect(error.stack).to.contain('SyntaxError: Unexpected token <\n')
+          expect(error.stack).to.contain('SyntaxError: Unexpected token')
         }
 
         expect(compiled).to.match(SOURCE_MAP_REGEXP)
