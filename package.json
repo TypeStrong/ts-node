@@ -49,7 +49,7 @@
     "@types/chai": "^4.0.4",
     "@types/diff": "^4.0.2",
     "@types/mocha": "^5.0.0",
-    "@types/node": "^12.0.2",
+    "@types/node": "^12.7.12",
     "@types/proxyquire": "^1.3.28",
     "@types/react": "^16.0.2",
     "@types/semver": "^6.0.0",
