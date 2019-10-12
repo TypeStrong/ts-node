@@ -543,7 +543,7 @@ function registerExtension (
 /**
  * Do post-processing on config options to support `ts-node`.
  */
-function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine, cwd: string) {
+function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine) {
   // Delete options that *should not* be passed through.
   delete config.options.out
   delete config.options.outFile
@@ -607,7 +607,7 @@ function readConfig (
   // Override default configuration options `ts-node` requires.
   config.compilerOptions = Object.assign({}, config.compilerOptions, options.compilerOptions, TS_NODE_COMPILER_OPTIONS)
 
-  return fixConfig(ts, ts.parseJsonConfigFileContent(config, ts.sys, basePath, undefined, configFileName), cwd)
+  return fixConfig(ts, ts.parseJsonConfigFileContent(config, ts.sys, basePath, undefined, configFileName))
 }
 
 /**
