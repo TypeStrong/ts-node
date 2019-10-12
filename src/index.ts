@@ -288,16 +288,10 @@ export function register (opts: Options = {}): Register {
     }
 
     const sys = {
-      args: ts.sys.args,
-      newLine: ts.sys.newLine,
-      useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
-      writeFile: ts.sys.writeFile,
-      write: ts.sys.write,
+      ...ts.sys,
       readFile: (fileName: string) => {
-        if (memoryCache.fileContents.has(fileName)) {
-          return memoryCache.fileContents.get(fileName)
-        }
-
+        const cacheContents = memoryCache.fileContents.get(fileName)
+        if (cacheContents !== undefined) return cacheContents
         return cachedReadFile(fileName)
       },
       readDirectory: cachedLookup(debugFn('readDirectory', ts.sys.readDirectory)),
@@ -306,16 +300,24 @@ export function register (opts: Options = {}): Register {
       directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
       resolvePath: cachedLookup(debugFn('resolvePath', ts.sys.resolvePath)),
       realpath: ts.sys.realpath ? cachedLookup(debugFn('realpath', ts.sys.realpath)) : undefined,
-      createDirectory: ts.sys.createDirectory,
-      getExecutingFilePath: ts.sys.getExecutingFilePath,
-      getCurrentDirectory: () => cwd,
-      exit: ts.sys.exit,
-      createHash: ts.sys.createHash
+      getCurrentDirectory: () => cwd
     }
 
     const host: _ts.CompilerHost = ts.createIncrementalCompilerHost
       ? ts.createIncrementalCompilerHost(config.options, sys)
-      : (ts as any).createCompilerHostWorker(config.options, undefined, sys)
+      : {
+        ...sys,
+        getSourceFile: (fileName, languageVersion) => {
+          const contents = sys.readFile(fileName)
+          if (contents === undefined) return
+          return ts.createSourceFile(fileName, contents, languageVersion)
+        },
+        getDefaultLibLocation: () => normalizeSlashes(dirname(compiler)),
+        getDefaultLibFileName: () => normalizeSlashes(join(dirname(compiler), ts.getDefaultLibFileName(config.options))),
+        getCanonicalFileName: sys.useCaseSensitiveFileNames ? x => x : x => x.toLowerCase(),
+        getNewLine: () => sys.newLine,
+        useCaseSensitiveFileNames: () => sys.useCaseSensitiveFileNames
+      }
 
     // Fallback for older TypeScript releases without incremental API.
     let builderProgram = ts.createIncrementalProgram
