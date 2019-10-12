@@ -8,7 +8,7 @@ import { register, VERSION } from './index'
 
 const TEST_DIR = join(__dirname, '../tests')
 const EXEC_PATH = join(__dirname, '../dist/bin')
-const PROJECT = join(TEST_DIR, semver.gte(ts.version, '2.5.0') ? 'tsconfig.json5' : 'tsconfig.json')
+const PROJECT = join(TEST_DIR, 'tsconfig.json')
 const BIN_EXEC = `node "${EXEC_PATH}" --project "${PROJECT}"`
 
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
@@ -165,7 +165,7 @@ describe('ts-node', function () {
       })
     })
 
-    it.skip('eval should work with source maps', function (done) {
+    it('eval should work with source maps', function (done) {
       exec(`${BIN_EXEC} -pe "import './tests/throw'"`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
@@ -301,6 +301,15 @@ describe('ts-node', function () {
       exec(`${BIN_EXEC} tests/import-order/importer`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, World!\n')
+
+        return done()
+      })
+    })
+
+    it('should compile ts in node_modules', function (done) {
+      exec(`${BIN_EXEC} tests/node_modules/test`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('node_modules\n')
 
         return done()
       })

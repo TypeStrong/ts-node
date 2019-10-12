@@ -56,6 +56,7 @@ export const VERSION = require('../package.json').version
  * Registration options.
  */
 export interface Options {
+  build?: boolean | null
   pretty?: boolean | null
   typeCheck?: boolean | null
   transpileOnly?: boolean | null
@@ -64,7 +65,6 @@ export interface Options {
   compiler?: string
   ignore?: string[]
   project?: string
-  skipIgnore?: boolean | null
   skipProject?: boolean | null
   preferTsExts?: boolean | null
   compilerOptions?: object
@@ -95,19 +95,19 @@ export interface TypeInfo {
  * Default register options.
  */
 export const DEFAULTS: Options = {
-  files: yn(process.env['TS_NODE_FILES']),
-  pretty: yn(process.env['TS_NODE_PRETTY']),
-  compiler: process.env['TS_NODE_COMPILER'],
-  compilerOptions: parse(process.env['TS_NODE_COMPILER_OPTIONS']),
-  ignore: split(process.env['TS_NODE_IGNORE']),
-  project: process.env['TS_NODE_PROJECT'],
-  skipIgnore: yn(process.env['TS_NODE_SKIP_IGNORE']),
-  skipProject: yn(process.env['TS_NODE_SKIP_PROJECT']),
-  preferTsExts: yn(process.env['TS_NODE_PREFER_TS_EXTS']),
-  ignoreDiagnostics: split(process.env['TS_NODE_IGNORE_DIAGNOSTICS']),
-  typeCheck: yn(process.env['TS_NODE_TYPE_CHECK']),
-  transpileOnly: yn(process.env['TS_NODE_TRANSPILE_ONLY']),
-  logError: yn(process.env['TS_NODE_LOG_ERROR'])
+  files: yn(process.env.TS_NODE_FILES),
+  pretty: yn(process.env.TS_NODE_PRETTY),
+  compiler: process.env.TS_NODE_COMPILER,
+  compilerOptions: parse(process.env.TS_NODE_COMPILER_OPTIONS),
+  ignore: split(process.env.TS_NODE_IGNORE),
+  project: process.env.TS_NODE_PROJECT,
+  skipProject: yn(process.env.TS_NODE_SKIP_PROJECT),
+  preferTsExts: yn(process.env.TS_NODE_PREFER_TS_EXTS),
+  ignoreDiagnostics: split(process.env.TS_NODE_IGNORE_DIAGNOSTICS),
+  typeCheck: yn(process.env.TS_NODE_TYPE_CHECK),
+  transpileOnly: yn(process.env.TS_NODE_TRANSPILE_ONLY),
+  logError: yn(process.env.TS_NODE_LOG_ERROR),
+  build: yn(process.env.TS_NODE_BUILD)
 }
 
 /**
@@ -201,9 +201,7 @@ export function register (opts: Options = {}): Register {
     ...(options.ignoreDiagnostics || [])
   ].map(Number)
 
-  const ignore = options.skipIgnore ? [] : (
-    options.ignore || ['/node_modules/']
-  ).map(str => new RegExp(str))
+  const ignore = (options.ignore || []).map(str => new RegExp(str))
 
   // Require the TypeScript compiler and configuration.
   const cwd = process.cwd()
@@ -420,7 +418,8 @@ export function register (opts: Options = {}): Register {
       }
     }
 
-    if (config.options.incremental) {
+    // Write `.tsbuildinfo` when `--build` is enabled.
+    if (options.build && config.options.incremental) {
       process.on('exit', () => {
         // Emits `.tsbuildinfo` to filesystem.
         (builderProgram.getProgram() as any).emitBuildInfo()

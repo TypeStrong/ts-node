@@ -1,10 +1,12 @@
 {
   "compilerOptions": {
+    "incremental": true,
     "jsx": "react",
     "noEmit": true,
+    // Global type definitions.
     "typeRoots": [
       "./typings",
-      "../node_modules/@types"
-    ]
+      "../node_modules/@types",
+    ],
   }
 }
