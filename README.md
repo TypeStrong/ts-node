@@ -5,7 +5,7 @@
 [![Build status][travis-image]][travis-url]
 [![Test coverage][coveralls-image]][coveralls-url]
 
-> TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.0`**.
+> TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.7`**.
 
 ## Installation
 

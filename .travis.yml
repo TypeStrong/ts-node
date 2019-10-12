@@ -18,7 +18,7 @@ script:
 env:
   - NODE=6 TYPESCRIPT=typescript@latest
   - NODE=stable TYPESCRIPT=typescript@latest
-  - NODE=stable TYPESCRIPT=typescript@2.0
+  - NODE=stable TYPESCRIPT=typescript@2.7
   - NODE=stable TYPESCRIPT=typescript@next
 
 node_js:
