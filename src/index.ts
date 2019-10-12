@@ -4,7 +4,6 @@ import yn from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
 import * as _ts from 'typescript'
-import { writeFileSync } from 'fs'
 
 /**
  * @internal
@@ -288,13 +287,13 @@ export function register (opts: Options = {}): Register {
       return transformers
     }
 
-    const host = (ts.createIncrementalCompilerHost || ts.createCompilerHost)(config.options, {
+    const sys = {
       args: ts.sys.args,
       newLine: ts.sys.newLine,
       useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
       writeFile: ts.sys.writeFile,
       write: ts.sys.write,
-      readFile: (fileName) => {
+      readFile: (fileName: string) => {
         if (memoryCache.fileContents.has(fileName)) {
           return memoryCache.fileContents.get(fileName)
         }
@@ -310,8 +309,13 @@ export function register (opts: Options = {}): Register {
       createDirectory: ts.sys.createDirectory,
       getExecutingFilePath: ts.sys.getExecutingFilePath,
       getCurrentDirectory: () => cwd,
-      exit: ts.sys.exit
-    })
+      exit: ts.sys.exit,
+      createHash: ts.sys.createHash
+    }
+
+    const host: _ts.CompilerHost = ts.createIncrementalCompilerHost
+      ? ts.createIncrementalCompilerHost(config.options, sys)
+      : (ts as any).createCompilerHostWorker(config.options, undefined, sys)
 
     // Fallback for older TypeScript releases without incremental API.
     let builderProgram = ts.createIncrementalProgram
@@ -333,13 +337,17 @@ export function register (opts: Options = {}): Register {
 
     // Set the file contents into cache manually.
     const updateMemoryCache = (contents: string, fileName: string) => {
+      const sourceFile = builderProgram.getSourceFile(fileName)
+
       memoryCache.fileContents.set(fileName, contents)
 
       // Add to `rootFiles` when discovered by compiler for the first time.
-      if (builderProgram.getSourceFile(fileName) === undefined) {
+      if (sourceFile === undefined) {
         memoryCache.rootFileNames.push(fileName)
+      }
 
-        // Update program when root files change.
+      // Update program when file changes.
+      if (sourceFile === undefined || sourceFile.text !== contents) {
         builderProgram = ts.createEmitAndSemanticDiagnosticsBuilderProgram(
           memoryCache.rootFileNames.slice(),
           config.options,
@@ -357,6 +365,8 @@ export function register (opts: Options = {}): Register {
       updateMemoryCache(code, fileName)
 
       const sourceFile = builderProgram.getSourceFile(fileName)
+      if (!sourceFile) throw new TypeError(`Unable to read file: ${fileName}`)
+
       const diagnostics = ts.getPreEmitDiagnostics(builderProgram.getProgram(), sourceFile)
       const diagnosticList = filterDiagnostics(diagnostics, ignoreDiagnostics)
 
@@ -391,11 +401,21 @@ export function register (opts: Options = {}): Register {
     getTypeInfo = (code: string, fileName: string, position: number) => {
       updateMemoryCache(code, fileName)
 
-      // const info = service.getQuickInfoAtPosition(fileName, position)
-      // const name = ts.displayPartsToString(info ? info.displayParts : [])
-      // const comment = ts.displayPartsToString(info ? info.documentation : [])
+      const sourceFile = builderProgram.getSourceFile(fileName)
+      if (!sourceFile) throw new TypeError(`Unable to read file: ${fileName}`)
 
-      return { name: '', comment: '' }
+      const node = getTokenAtPosition(ts, sourceFile, position)
+      const checker = builderProgram.getProgram().getTypeChecker()
+      const type = checker.getTypeAtLocation(node)
+      const documentation = type.symbol ? type.symbol.getDocumentationComment(checker) : []
+
+      // Invalid type.
+      if (!type.symbol) return { name: '', comment: '' }
+
+      return {
+        name: checker.typeToString(type),
+        comment: ts.displayPartsToString(documentation)
+      }
     }
 
     if (config.options.incremental) {
@@ -620,4 +640,28 @@ function updateSourceMap (sourceMapText: string, fileName: string) {
  */
 function filterDiagnostics (diagnostics: readonly _ts.Diagnostic[], ignore: number[]) {
   return diagnostics.filter(x => ignore.indexOf(x.code) === -1)
+}
+
+/**
+ * Get token at file position.
+ *
+ * Reference: https://github.com/microsoft/TypeScript/blob/fcd9334f57d85b73dd66ad2d21c02e84822f4841/src/services/utilities.ts#L705-L731
+ */
+function getTokenAtPosition (ts: typeof _ts, sourceFile: _ts.SourceFile, position: number): _ts.Node {
+  let current: _ts.Node = sourceFile
+
+  outer: while (true) {
+    for (const child of current.getChildren(sourceFile)) {
+      const start = child.getFullStart()
+      if (start > position) break
+
+      const end = child.getEnd()
+      if (position <= end) {
+        current = child
+        continue outer
+      }
+    }
+
+    return current
+  }
 }

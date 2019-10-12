@@ -278,7 +278,8 @@ function startRepl () {
 
       undo()
 
-      repl.outputStream.write(`${name}\n${comment ? `${comment}\n` : ''}`)
+      if (name) repl.outputStream.write(`${name}\n`)
+      if (comment) repl.outputStream.write(`${comment}\n`)
       repl.displayPrompt()
     }
   })
