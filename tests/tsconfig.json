@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "incremental": true,
     "jsx": "react",
     "noEmit": true,
     // Global type definitions.

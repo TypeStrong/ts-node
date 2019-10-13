@@ -305,15 +305,6 @@ describe('ts-node', function () {
         return done()
       })
     })
-
-    it('should compile ts in node_modules', function (done) {
-      exec(`${BIN_EXEC} tests/node_modules/test`, function (err, stdout) {
-        expect(err).to.equal(null)
-        expect(stdout).to.equal('node_modules\n')
-
-        return done()
-      })
-    })
   })
 
   describe('register', function () {

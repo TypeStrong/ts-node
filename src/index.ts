@@ -66,6 +66,7 @@ export interface Options {
   ignore?: string[]
   project?: string
   skipProject?: boolean | null
+  skipIgnore?: boolean | null
   preferTsExts?: boolean | null
   compilerOptions?: object
   ignoreDiagnostics?: Array<number | string>
@@ -102,6 +103,7 @@ export const DEFAULTS: Options = {
   ignore: split(process.env.TS_NODE_IGNORE),
   project: process.env.TS_NODE_PROJECT,
   skipProject: yn(process.env.TS_NODE_SKIP_PROJECT),
+  skipIgnore: yn(process.env.TS_NODE_SKIP_IGNORE),
   preferTsExts: yn(process.env.TS_NODE_PREFER_TS_EXTS),
   ignoreDiagnostics: split(process.env.TS_NODE_IGNORE_DIAGNOSTICS),
   typeCheck: yn(process.env.TS_NODE_TYPE_CHECK),
@@ -201,7 +203,7 @@ export function register (opts: Options = {}): Register {
     ...(options.ignoreDiagnostics || [])
   ].map(Number)
 
-  const ignore = (options.ignore || []).map(str => new RegExp(str))
+  const ignore = options.skipIgnore ? [] : (options.ignore || ['/node_modules/']).map(str => new RegExp(str))
 
   // Require the TypeScript compiler and configuration.
   const cwd = process.cwd()
@@ -387,11 +389,10 @@ export function register (opts: Options = {}): Register {
       // Throw an error when requiring `.d.ts` files.
       if (output[0] === '') {
         throw new TypeError(
-          'Unable to require `.d.ts` file.\n' +
+          `Unable to require file: ${relative(cwd, fileName)}\n` +
           'This is usually the result of a faulty configuration or import. ' +
-          'Make sure there is a `.js`, `.json` or another executable extension and ' +
-          'loader (attached before `ts-node`) available alongside ' +
-          `\`${basename(fileName)}\`.`
+          'Make sure there is a `.js`, `.json` or other executable extension with ' +
+          'loader attached before `ts-node` available.'
         )
       }
 
