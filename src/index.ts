@@ -56,6 +56,7 @@ export const VERSION = require('../package.json').version
  * Registration options.
  */
 export interface Options {
+  build?: boolean | null
   pretty?: boolean | null
   typeCheck?: boolean | null
   transpileOnly?: boolean | null
@@ -64,8 +65,8 @@ export interface Options {
   compiler?: string
   ignore?: string[]
   project?: string
-  skipIgnore?: boolean | null
   skipProject?: boolean | null
+  skipIgnore?: boolean | null
   preferTsExts?: boolean | null
   compilerOptions?: object
   ignoreDiagnostics?: Array<number | string>
@@ -95,19 +96,20 @@ export interface TypeInfo {
  * Default register options.
  */
 export const DEFAULTS: Options = {
-  files: yn(process.env['TS_NODE_FILES']),
-  pretty: yn(process.env['TS_NODE_PRETTY']),
-  compiler: process.env['TS_NODE_COMPILER'],
-  compilerOptions: parse(process.env['TS_NODE_COMPILER_OPTIONS']),
-  ignore: split(process.env['TS_NODE_IGNORE']),
-  project: process.env['TS_NODE_PROJECT'],
-  skipIgnore: yn(process.env['TS_NODE_SKIP_IGNORE']),
-  skipProject: yn(process.env['TS_NODE_SKIP_PROJECT']),
-  preferTsExts: yn(process.env['TS_NODE_PREFER_TS_EXTS']),
-  ignoreDiagnostics: split(process.env['TS_NODE_IGNORE_DIAGNOSTICS']),
-  typeCheck: yn(process.env['TS_NODE_TYPE_CHECK']),
-  transpileOnly: yn(process.env['TS_NODE_TRANSPILE_ONLY']),
-  logError: yn(process.env['TS_NODE_LOG_ERROR'])
+  files: yn(process.env.TS_NODE_FILES),
+  pretty: yn(process.env.TS_NODE_PRETTY),
+  compiler: process.env.TS_NODE_COMPILER,
+  compilerOptions: parse(process.env.TS_NODE_COMPILER_OPTIONS),
+  ignore: split(process.env.TS_NODE_IGNORE),
+  project: process.env.TS_NODE_PROJECT,
+  skipProject: yn(process.env.TS_NODE_SKIP_PROJECT),
+  skipIgnore: yn(process.env.TS_NODE_SKIP_IGNORE),
+  preferTsExts: yn(process.env.TS_NODE_PREFER_TS_EXTS),
+  ignoreDiagnostics: split(process.env.TS_NODE_IGNORE_DIAGNOSTICS),
+  typeCheck: yn(process.env.TS_NODE_TYPE_CHECK),
+  transpileOnly: yn(process.env.TS_NODE_TRANSPILE_ONLY),
+  logError: yn(process.env.TS_NODE_LOG_ERROR),
+  build: yn(process.env.TS_NODE_BUILD)
 }
 
 /**
@@ -191,7 +193,7 @@ function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
  * Register TypeScript compiler.
  */
 export function register (opts: Options = {}): Register {
-  const options = Object.assign({}, DEFAULTS, opts)
+  const options = { ...DEFAULTS, ...opts }
   const originalJsHandler = require.extensions['.js'] // tslint:disable-line
 
   const ignoreDiagnostics = [
@@ -201,9 +203,7 @@ export function register (opts: Options = {}): Register {
     ...(options.ignoreDiagnostics || [])
   ].map(Number)
 
-  const ignore = options.skipIgnore ? [] : (
-    options.ignore || ['/node_modules/']
-  ).map(str => new RegExp(str))
+  const ignore = options.skipIgnore ? [] : (options.ignore || ['/node_modules/']).map(str => new RegExp(str))
 
   // Require the TypeScript compiler and configuration.
   const cwd = process.cwd()
@@ -369,31 +369,37 @@ export function register (opts: Options = {}): Register {
       const sourceFile = builderProgram.getSourceFile(fileName)
       if (!sourceFile) throw new TypeError(`Unable to read file: ${fileName}`)
 
-      const diagnostics = ts.getPreEmitDiagnostics(builderProgram.getProgram(), sourceFile)
+      const program = builderProgram.getProgram()
+      const diagnostics = ts.getPreEmitDiagnostics(program, sourceFile)
       const diagnosticList = filterDiagnostics(diagnostics, ignoreDiagnostics)
 
       if (diagnosticList.length) reportTSError(diagnosticList)
 
-      const result = builderProgram.emit(sourceFile, (path, file) => {
+      const result = builderProgram.emit(sourceFile, (path, file, writeByteOrderMark) => {
         if (path.endsWith('.map')) {
           output[1] = file
         } else {
           output[0] = file
         }
+
+        if (options.build) sys.writeFile(path, file, writeByteOrderMark)
       }, undefined, undefined, getCustomTransformers())
 
       if (result.emitSkipped) {
         throw new TypeError(`${relative(cwd, fileName)}: Emit skipped`)
       }
 
-      // Throw an error when requiring `.d.ts` files.
+      // Throw an error when requiring files that cannot be compiled.
       if (output[0] === '') {
+        if (program.isSourceFileFromExternalLibrary(sourceFile)) {
+          throw new TypeError(`Unable to compile file from external library: ${relative(cwd, fileName)}`)
+        }
+
         throw new TypeError(
-          'Unable to require `.d.ts` file.\n' +
+          `Unable to require file: ${relative(cwd, fileName)}\n` +
           'This is usually the result of a faulty configuration or import. ' +
-          'Make sure there is a `.js`, `.json` or another executable extension and ' +
-          'loader (attached before `ts-node`) available alongside ' +
-          `\`${basename(fileName)}\`.`
+          'Make sure there is a `.js`, `.json` or other executable extension with ' +
+          'loader attached before `ts-node` available.'
         )
       }
 
@@ -420,7 +426,8 @@ export function register (opts: Options = {}): Register {
       }
     }
 
-    if (config.options.incremental) {
+    // Write `.tsbuildinfo` when `--build` is enabled.
+    if (options.build && config.options.incremental) {
       process.on('exit', () => {
         // Emits `.tsbuildinfo` to filesystem.
         (builderProgram.getProgram() as any).emitBuildInfo()

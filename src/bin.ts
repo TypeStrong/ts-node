@@ -34,6 +34,7 @@ const args = arg({
   '--skip-ignore': Boolean,
   '--prefer-ts-exts': Boolean,
   '--log-error': Boolean,
+  '--build': Boolean,
 
   // Aliases.
   '-e': '--eval',
@@ -41,6 +42,7 @@ const args = arg({
   '-r': '--require',
   '-h': '--help',
   '-v': '--version',
+  '-B': '--build',
   '-T': '--transpile-only',
   '-I': '--ignore',
   '-P': '--project',
@@ -66,7 +68,8 @@ const {
   '--skip-project': skipProject = DEFAULTS.skipProject,
   '--skip-ignore': skipIgnore = DEFAULTS.skipIgnore,
   '--prefer-ts-exts': preferTsExts = DEFAULTS.preferTsExts,
-  '--log-error': logError = DEFAULTS.logError
+  '--log-error': logError = DEFAULTS.logError,
+  '--build': build = DEFAULTS.build
 } = args
 
 if (help) {
@@ -118,16 +121,17 @@ const EVAL_INSTANCE = { input: '', output: '', version: 0, lines: 0 }
 
 // Register the TypeScript compiler instance.
 const service = register({
+  build,
   files,
   pretty,
   typeCheck,
   transpileOnly,
   ignore,
   project,
-  skipIgnore,
   preferTsExts,
   logError,
   skipProject,
+  skipIgnore,
   compiler,
   ignoreDiagnostics,
   compilerOptions,
