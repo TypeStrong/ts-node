@@ -13,6 +13,7 @@ import { register, VERSION, DEFAULTS, TSError, parse } from './index'
 const args = arg({
   // Node.js-like options.
   '--eval': String,
+  '--interactive': Boolean,
   '--print': Boolean,
   '--require': [String],
 
@@ -37,6 +38,7 @@ const args = arg({
 
   // Aliases.
   '-e': '--eval',
+  '-i': '--interactive',
   '-p': '--print',
   '-r': '--require',
   '-h': '--help',
@@ -60,6 +62,7 @@ const {
   '--project': project = DEFAULTS.project,
   '--ignore-diagnostics': ignoreDiagnostics = DEFAULTS.ignoreDiagnostics,
   '--ignore': ignore = DEFAULTS.ignore,
+  '--interactive': interactive = DEFAULTS.interactive,
   '--transpile-only': transpileOnly = DEFAULTS.transpileOnly,
   '--type-check': typeCheck = DEFAULTS.typeCheck,
   '--pretty': pretty = DEFAULTS.pretty,
@@ -94,6 +97,7 @@ Options:
   --skip-project                 Skip reading \`tsconfig.json\`
   --skip-ignore                  Skip \`--ignore\` checks
   --prefer-ts-exts               Prefer importing TypeScript files over JavaScript files
+  --interactive                  Opens the REPL even if stdin does not appear to be a terminal
 `)
 
   process.exit(0)
@@ -151,7 +155,7 @@ process.execArgv.unshift(__filename, ...process.argv.slice(2, process.argv.lengt
 process.argv = [process.argv[1]].concat(args._.length ? resolve(cwd, args._[0]) : []).concat(args._.slice(1))
 
 // Execute the main contents (either eval, script or piped).
-if (code) {
+if (code && !interactive) {
   evalAndExit(code, isPrinted)
 } else {
   if (args._.length) {
@@ -159,11 +163,11 @@ if (code) {
   } else {
     // Piping of execution _only_ occurs when no other script is specified.
     if (process.stdin.isTTY) {
-      startRepl()
+      startRepl(code)
     } else {
-      let code = ''
-      process.stdin.on('data', (chunk: Buffer) => code += chunk)
-      process.stdin.on('end', () => evalAndExit(code, isPrinted))
+      let buffer = code || ''
+      process.stdin.on('data', (chunk: Buffer) => buffer += chunk)
+      process.stdin.on('end', () => evalAndExit(buffer, isPrinted))
     }
   }
 }
@@ -188,7 +192,7 @@ function evalAndExit (code: string, isPrinted: boolean) {
     result = _eval(code)
   } catch (error) {
     if (error instanceof TSError) {
-      console.error(error.diagnosticText)
+      console.error(error)
       process.exit(1)
     }
 
@@ -242,7 +246,17 @@ function exec (code: string, filename: string) {
 /**
  * Start a CLI REPL.
  */
-function startRepl () {
+function startRepl (code?: string) {
+  // Eval incoming code before the REPL starts.
+  if (code) {
+    try {
+      _eval(`${code}\n`)
+    } catch (err) {
+      console.error(err)
+      process.exit(1)
+    }
+  }
+
   const repl = start({
     prompt: '> ',
     input: process.stdin,
