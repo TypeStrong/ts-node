@@ -389,8 +389,12 @@ export function register (opts: Options = {}): Register {
         throw new TypeError(`${relative(cwd, fileName)}: Emit skipped`)
       }
 
-      // Throw an error when requiring `.d.ts` files.
+      // Throw an error when requiring files that cannot be compiled.
       if (output[0] === '') {
+        if (program.isSourceFileFromExternalLibrary(sourceFile)) {
+          throw new TypeError(`Unable to compile file from external library: ${relative(cwd, fileName)}`)
+        }
+
         throw new TypeError(
           `Unable to require file: ${relative(cwd, fileName)}\n` +
           'This is usually the result of a faulty configuration or import. ' +

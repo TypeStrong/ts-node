@@ -305,6 +305,16 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    it('should give ts error for invalid node_modules', function (done) {
+      exec(`${BIN_EXEC} --skip-ignore tests/from-node-modules`, function (err, stdout) {
+        if (err === null) return done('Expected an error')
+
+        expect(err.message).to.contain('Unable to compile file from external library')
+
+        return done()
+      })
+    })
   })
 
   describe('register', function () {
