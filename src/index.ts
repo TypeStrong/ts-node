@@ -64,6 +64,7 @@ export interface Options {
   files?: boolean | null
   compiler?: string
   ignore?: string[]
+  interactive?: boolean | null
   project?: string
   skipProject?: boolean | null
   skipIgnore?: boolean | null
@@ -109,7 +110,8 @@ export const DEFAULTS: Options = {
   ignoreDiagnostics: split(process.env.TS_NODE_IGNORE_DIAGNOSTICS),
   transpileOnly: yn(process.env.TS_NODE_TRANSPILE_ONLY),
   logError: yn(process.env.TS_NODE_LOG_ERROR),
-  build: yn(process.env.TS_NODE_BUILD)
+  build: yn(process.env.TS_NODE_BUILD),
+  interactive: yn(process.env.TS_NODE_INTERACTIVE)
 }
 
 /**

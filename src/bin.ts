@@ -13,6 +13,7 @@ import { register, VERSION, DEFAULTS, TSError, parse } from './index'
 const args = arg({
   // Node.js-like options.
   '--eval': String,
+  '--interactive': Boolean,
   '--print': Boolean,
   '--require': [String],
 
@@ -38,6 +39,7 @@ const args = arg({
 
   // Aliases.
   '-e': '--eval',
+  '-i': '--interactive',
   '-p': '--print',
   '-r': '--require',
   '-h': '--help',
@@ -63,6 +65,7 @@ const {
   '--project': project = DEFAULTS.project,
   '--ignore-diagnostics': ignoreDiagnostics = DEFAULTS.ignoreDiagnostics,
   '--ignore': ignore = DEFAULTS.ignore,
+  '--interactive': interactive = DEFAULTS.interactive,
   '--transpile-only': transpileOnly = DEFAULTS.transpileOnly,
   '--pretty': pretty = DEFAULTS.pretty,
   '--skip-project': skipProject = DEFAULTS.skipProject,
@@ -97,6 +100,7 @@ Options:
   --skip-project                 Skip reading \`tsconfig.json\`
   --skip-ignore                  Skip \`--ignore\` checks
   --prefer-ts-exts               Prefer importing TypeScript files over JavaScript files
+  --interactive                  Opens the REPL even if stdin does not appear to be a terminal.
 `)
 
   process.exit(0)
@@ -154,7 +158,7 @@ process.execArgv.unshift(__filename, ...process.argv.slice(2, process.argv.lengt
 process.argv = [process.argv[1]].concat(args._.length ? resolve(cwd, args._[0]) : []).concat(args._.slice(1))
 
 // Execute the main contents (either eval, script or piped).
-if (code) {
+if (code && !interactive) {
   evalAndExit(code, isPrinted)
 } else {
   if (args._.length) {
@@ -162,7 +166,7 @@ if (code) {
   } else {
     // Piping of execution _only_ occurs when no other script is specified.
     if (process.stdin.isTTY) {
-      startRepl()
+      startRepl(code)
     } else {
       let code = ''
       process.stdin.on('data', (chunk: Buffer) => code += chunk)
@@ -245,7 +249,7 @@ function exec (code: string, filename: string) {
 /**
  * Start a CLI REPL.
  */
-function startRepl () {
+function startRepl (code?: string) {
   const repl = start({
     prompt: '> ',
     input: process.stdin,
@@ -267,6 +271,11 @@ function startRepl () {
 
   reset()
   repl.on('reset', reset)
+
+  if (code) {
+    // Force newline so incoming instructions do not concatinate with --eval code
+    appendEval(code + '\n')
+  }
 
   repl.defineCommand('type', {
     help: 'Check the type of a TypeScript identifier',
