@@ -414,15 +414,13 @@ export function register (opts: Options = {}): Register {
 
       const node = getTokenAtPosition(ts, sourceFile, position)
       const checker = builderProgram.getProgram().getTypeChecker()
-      const type = checker.getTypeAtLocation(node)
-      const documentation = type.symbol ? type.symbol.getDocumentationComment(checker) : []
+      const symbol = checker.getSymbolAtLocation(node)
 
-      // Invalid type.
-      if (!type.symbol) return { name: '', comment: '' }
+      if (!symbol) return { name: '', comment: '' }
 
       return {
-        name: checker.typeToString(type),
-        comment: ts.displayPartsToString(documentation)
+        name: checker.typeToString(checker.getTypeOfSymbolAtLocation(symbol, node)),
+        comment: ts.displayPartsToString(symbol ? symbol.getDocumentationComment(checker) : [])
       }
     }
 
