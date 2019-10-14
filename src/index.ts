@@ -59,7 +59,6 @@ export interface Options {
   cwd?: string | null
   build?: boolean | null
   pretty?: boolean | null
-  typeCheck?: boolean | null
   transpileOnly?: boolean | null
   logError?: boolean | null
   files?: boolean | null
@@ -108,7 +107,6 @@ export const DEFAULTS: Options = {
   skipIgnore: yn(process.env.TS_NODE_SKIP_IGNORE),
   preferTsExts: yn(process.env.TS_NODE_PREFER_TS_EXTS),
   ignoreDiagnostics: split(process.env.TS_NODE_IGNORE_DIAGNOSTICS),
-  typeCheck: yn(process.env.TS_NODE_TYPE_CHECK),
   transpileOnly: yn(process.env.TS_NODE_TRANSPILE_ONLY),
   logError: yn(process.env.TS_NODE_LOG_ERROR),
   build: yn(process.env.TS_NODE_BUILD)
@@ -209,7 +207,7 @@ export function register (opts: Options = {}): Register {
 
   // Require the TypeScript compiler and configuration.
   const cwd = options.cwd || process.cwd()
-  const typeCheck = options.typeCheck === true || options.transpileOnly !== true
+  const transpileOnly = options.transpileOnly === true
   const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
   const ts: typeof _ts = require(compiler)
   const transformers = options.transformers || undefined
@@ -277,7 +275,7 @@ export function register (opts: Options = {}): Register {
   let getTypeInfo: (_code: string, _fileName: string, _position: number) => TypeInfo
 
   // Use full language services when the fast option is disabled.
-  if (typeCheck) {
+  if (!transpileOnly) {
     const memoryCache = new MemoryCache(config.fileNames)
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile))
 
