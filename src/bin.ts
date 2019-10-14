@@ -23,6 +23,7 @@ const args = arg({
   '--version': arg.COUNT,
 
   // Project options.
+  '--cwd': String,
   '--compiler': String,
   '--compiler-options': parse,
   '--project': String,
@@ -54,6 +55,7 @@ const args = arg({
 })
 
 const {
+  '--cwd': cwd = DEFAULTS.cwd || process.cwd(),
   '--help': help = false,
   '--version': version = 0,
   '--files': files = DEFAULTS.files,
@@ -92,6 +94,7 @@ Options:
   -D, --ignore-diagnostics [code] Ignore TypeScript warnings by diagnostic code
   -O, --compiler-options [opts]   JSON object to merge with compiler options
 
+  --cwd                          Specify working directory for config resolution
   --files                        Load files from \`tsconfig.json\` on startup
   --pretty                       Use pretty diagnostic formatter
   --skip-project                 Skip reading \`tsconfig.json\`
@@ -109,7 +112,6 @@ if (version === 1) {
   process.exit(0)
 }
 
-const cwd = process.cwd()
 const code = args['--eval']
 const isPrinted = args['--print'] !== undefined
 
@@ -122,6 +124,7 @@ const EVAL_INSTANCE = { input: '', output: '', version: 0, lines: 0 }
 
 // Register the TypeScript compiler instance.
 const service = register({
+  cwd,
   files,
   pretty,
   typeCheck,

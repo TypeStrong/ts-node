@@ -79,6 +79,7 @@ export const VERSION = require('../package.json').version
  * Registration options.
  */
 export interface Options {
+  cwd?: string | null
   pretty?: boolean | null
   typeCheck?: boolean | null
   transpileOnly?: boolean | null
@@ -122,6 +123,7 @@ export interface TypeInfo {
  * Default register options.
  */
 export const DEFAULTS: Options = {
+  cwd: process.env.TS_NODE_CWD,
   files: yn(process.env['TS_NODE_FILES']),
   pretty: yn(process.env['TS_NODE_PRETTY']),
   compiler: process.env['TS_NODE_COMPILER'],
@@ -236,7 +238,7 @@ export function register (opts: Options = {}): Register {
   ).map(str => new RegExp(str))
 
   // Require the TypeScript compiler and configuration.
-  const cwd = process.cwd()
+  const cwd = options.cwd || process.cwd()
   const typeCheck = options.typeCheck === true || options.transpileOnly !== true
   const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
   const ts: typeof _ts = require(compiler)
@@ -251,7 +253,7 @@ export function register (opts: Options = {}): Register {
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
     getNewLine: () => ts.sys.newLine,
     getCurrentDirectory: () => cwd,
-    getCanonicalFileName: (path) => path
+    getCanonicalFileName: ts.sys.useCaseSensitiveFileNames ? x => x : x => x.toLowerCase()
   }
 
   // Install source map support and read from memory cache.
@@ -468,7 +470,7 @@ function shouldIgnore (filename: string, ignore: RegExp[]) {
 }
 
 /**
- * "Refreshes" an extension on `require.extentions`.
+ * "Refreshes" an extension on `require.extensions`.
  *
  * @param {string} ext
  */
