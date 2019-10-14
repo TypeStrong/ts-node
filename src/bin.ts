@@ -22,6 +22,7 @@ const args = arg({
   '--version': arg.COUNT,
 
   // Project options.
+  '--cwd': String,
   '--compiler': String,
   '--compiler-options': parse,
   '--project': String,
@@ -54,6 +55,7 @@ const args = arg({
 })
 
 const {
+  '--cwd': cwd = DEFAULTS.cwd || process.cwd(),
   '--help': help = false,
   '--version': version = 0,
   '--files': files = DEFAULTS.files,
@@ -108,7 +110,6 @@ if (version === 1) {
   process.exit(0)
 }
 
-const cwd = process.cwd()
 const code = args['--eval']
 const isPrinted = args['--print'] !== undefined
 
@@ -121,6 +122,7 @@ const EVAL_INSTANCE = { input: '', output: '', version: 0, lines: 0 }
 
 // Register the TypeScript compiler instance.
 const service = register({
+  cwd,
   build,
   files,
   pretty,
