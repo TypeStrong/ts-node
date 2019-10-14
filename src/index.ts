@@ -193,7 +193,7 @@ function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
  * Register TypeScript compiler.
  */
 export function register (opts: Options = {}): Register {
-  const options = Object.assign({}, DEFAULTS, opts)
+  const options = { ...DEFAULTS, ...opts }
   const originalJsHandler = require.extensions['.js'] // tslint:disable-line
 
   const ignoreDiagnostics = [
@@ -369,17 +369,20 @@ export function register (opts: Options = {}): Register {
       const sourceFile = builderProgram.getSourceFile(fileName)
       if (!sourceFile) throw new TypeError(`Unable to read file: ${fileName}`)
 
-      const diagnostics = ts.getPreEmitDiagnostics(builderProgram.getProgram(), sourceFile)
+      const program = builderProgram.getProgram()
+      const diagnostics = ts.getPreEmitDiagnostics(program, sourceFile)
       const diagnosticList = filterDiagnostics(diagnostics, ignoreDiagnostics)
 
       if (diagnosticList.length) reportTSError(diagnosticList)
 
-      const result = builderProgram.emit(sourceFile, (path, file) => {
+      const result = builderProgram.emit(sourceFile, (path, file, writeByteOrderMark) => {
         if (path.endsWith('.map')) {
           output[1] = file
         } else {
           output[0] = file
         }
+
+        if (options.build) sys.writeFile(path, file, writeByteOrderMark)
       }, undefined, undefined, getCustomTransformers())
 
       if (result.emitSkipped) {
