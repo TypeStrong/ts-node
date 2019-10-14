@@ -418,8 +418,11 @@ export function register (opts: Options = {}): Register {
 
       if (!symbol) return { name: '', comment: '' }
 
+      const type = checker.getTypeOfSymbolAtLocation(symbol, node)
+      const signatures = [...type.getConstructSignatures(), ...type.getCallSignatures()]
+
       return {
-        name: checker.typeToString(checker.getTypeOfSymbolAtLocation(symbol, node)),
+        name: signatures.length ? signatures.map(x => checker.signatureToString(x)).join('\n') : checker.typeToString(type),
         comment: ts.displayPartsToString(symbol ? symbol.getDocumentationComment(checker) : [])
       }
     }
