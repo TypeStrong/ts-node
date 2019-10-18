@@ -34,12 +34,14 @@ const args = arg({
   '--skip-ignore': Boolean,
   '--prefer-ts-exts': Boolean,
   '--log-error': Boolean,
+  '--script-mode': Boolean,
 
   // Aliases.
   '-e': '--eval',
   '-p': '--print',
   '-r': '--require',
   '-h': '--help',
+  '-s': '--script-mode',
   '-v': '--version',
   '-T': '--transpile-only',
   '-I': '--ignore',
@@ -66,7 +68,8 @@ const {
   '--skip-project': skipProject = DEFAULTS.skipProject,
   '--skip-ignore': skipIgnore = DEFAULTS.skipIgnore,
   '--prefer-ts-exts': preferTsExts = DEFAULTS.preferTsExts,
-  '--log-error': logError = DEFAULTS.logError
+  '--log-error': logError = DEFAULTS.logError,
+  '--script-mode': scriptMode = DEFAULTS.scriptMode
 } = args
 
 if (help) {
@@ -116,6 +119,8 @@ const EVAL_FILENAME = `[eval].ts`
 const EVAL_PATH = join(cwd, EVAL_FILENAME)
 const EVAL_INSTANCE = { input: '', output: '', version: 0, lines: 0 }
 
+const fileToExecute = args._.length ? resolve(cwd, args._[0]) : undefined
+
 // Register the TypeScript compiler instance.
 const service = register({
   files,
@@ -127,6 +132,8 @@ const service = register({
   skipIgnore,
   preferTsExts,
   logError,
+  scriptMode,
+  fileToExecute,
   skipProject,
   compiler,
   ignoreDiagnostics,
@@ -148,7 +155,7 @@ if (args['--require']) (Module as any)._preloadModules(args['--require'])
 
 // Prepend `ts-node` arguments to CLI for child processes.
 process.execArgv.unshift(__filename, ...process.argv.slice(2, process.argv.length - args._.length))
-process.argv = [process.argv[1]].concat(args._.length ? resolve(cwd, args._[0]) : []).concat(args._.slice(1))
+process.argv = [process.argv[1]].concat(fileToExecute || []).concat(args._.slice(1))
 
 // Execute the main contents (either eval, script or piped).
 if (code) {

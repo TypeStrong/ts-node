@@ -60,6 +60,8 @@ export interface Options {
   typeCheck?: boolean | null
   transpileOnly?: boolean | null
   logError?: boolean | null
+  scriptMode?: boolean | null
+  fileToExecute?: string
   files?: boolean | null
   compiler?: string
   ignore?: string[]
@@ -539,9 +541,13 @@ function readConfig (
 
   // Read project configuration when available.
   if (!options.skipProject) {
+    const searchFrom = options.scriptMode && options.fileToExecute
+      ? resolve(cwd, options.fileToExecute)
+      : cwd
+
     configFileName = options.project
       ? normalizeSlashes(resolve(cwd, options.project))
-      : ts.findConfigFile(normalizeSlashes(cwd), fileExists)
+      : ts.findConfigFile(normalizeSlashes(searchFrom), fileExists)
 
     if (configFileName) {
       const result = ts.readConfigFile(configFileName, readFile)
