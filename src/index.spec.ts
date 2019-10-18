@@ -7,9 +7,9 @@ import proxyquire = require('proxyquire')
 import { register, VERSION } from './index'
 
 const TEST_DIR = join(__dirname, '../tests')
-const EXEC_PATH = join(__dirname, '../dist/bin')
 const PROJECT = join(TEST_DIR, semver.gte(ts.version, '2.5.0') ? 'tsconfig.json5' : 'tsconfig.json')
-const BIN_EXEC = `node "${EXEC_PATH}" --project "${PROJECT}"`
+const BIN_EXEC = `node "${join(__dirname, '../dist/bin')}" --project "${PROJECT}"`
+const SCRIPT_EXEC = `node "${join(__dirname, '../dist/script')}"`
 
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
 
@@ -325,6 +325,17 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    if (semver.gte(ts.version, '2.7.0')) {
+      it('should support script mode', function (done) {
+        exec(`${SCRIPT_EXEC} tests/scope/a/log`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('.ts\n')
+
+          return done()
+        })
+      })
+    }
   })
 
   describe('register', function () {
