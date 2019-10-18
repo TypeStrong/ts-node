@@ -22,18 +22,19 @@ const args = arg({
   '--version': arg.COUNT,
 
   // Project options.
+  '--cwd': String,
   '--compiler': String,
   '--compiler-options': parse,
   '--project': String,
   '--ignore-diagnostics': [String],
   '--ignore': [String],
   '--transpile-only': Boolean,
-  '--type-check': Boolean,
   '--pretty': Boolean,
   '--skip-project': Boolean,
   '--skip-ignore': Boolean,
   '--prefer-ts-exts': Boolean,
   '--log-error': Boolean,
+  '--build': Boolean,
   '--script-mode': Boolean,
 
   // Aliases.
@@ -43,6 +44,7 @@ const args = arg({
   '-h': '--help',
   '-s': '--script-mode',
   '-v': '--version',
+  '-B': '--build',
   '-T': '--transpile-only',
   '-I': '--ignore',
   '-P': '--project',
@@ -54,6 +56,7 @@ const args = arg({
 })
 
 const {
+  '--cwd': cwd = DEFAULTS.cwd || process.cwd(),
   '--help': help = false,
   '--version': version = 0,
   '--files': files = DEFAULTS.files,
@@ -63,12 +66,12 @@ const {
   '--ignore-diagnostics': ignoreDiagnostics = DEFAULTS.ignoreDiagnostics,
   '--ignore': ignore = DEFAULTS.ignore,
   '--transpile-only': transpileOnly = DEFAULTS.transpileOnly,
-  '--type-check': typeCheck = DEFAULTS.typeCheck,
   '--pretty': pretty = DEFAULTS.pretty,
   '--skip-project': skipProject = DEFAULTS.skipProject,
   '--skip-ignore': skipIgnore = DEFAULTS.skipIgnore,
   '--prefer-ts-exts': preferTsExts = DEFAULTS.preferTsExts,
   '--log-error': logError = DEFAULTS.logError,
+  '--build': build = DEFAULTS.build,
   '--script-mode': scriptMode = DEFAULTS.scriptMode
 } = args
 
@@ -108,7 +111,6 @@ if (version === 1) {
   process.exit(0)
 }
 
-const cwd = process.cwd()
 const code = args['--eval']
 const isPrinted = args['--print'] !== undefined
 
@@ -123,18 +125,19 @@ const fileToExecute = args._.length ? resolve(cwd, args._[0]) : undefined
 
 // Register the TypeScript compiler instance.
 const service = register({
+  cwd,
+  build,
   files,
   pretty,
-  typeCheck,
   transpileOnly,
   ignore,
   project,
-  skipIgnore,
   preferTsExts,
   logError,
   scriptMode,
   fileToExecute,
   skipProject,
+  skipIgnore,
   compiler,
   ignoreDiagnostics,
   compilerOptions,
@@ -285,7 +288,8 @@ function startRepl () {
 
       undo()
 
-      repl.outputStream.write(`${name}\n${comment ? `${comment}\n` : ''}`)
+      if (name) repl.outputStream.write(`${name}\n`)
+      if (comment) repl.outputStream.write(`${comment}\n`)
       repl.displayPrompt()
     }
   })

@@ -56,8 +56,9 @@ export const VERSION = require('../package.json').version
  * Registration options.
  */
 export interface Options {
+  cwd?: string | null
+  build?: boolean | null
   pretty?: boolean | null
-  typeCheck?: boolean | null
   transpileOnly?: boolean | null
   logError?: boolean | null
   scriptMode?: boolean | null
@@ -66,8 +67,8 @@ export interface Options {
   compiler?: string
   ignore?: string[]
   project?: string
-  skipIgnore?: boolean | null
   skipProject?: boolean | null
+  skipIgnore?: boolean | null
   preferTsExts?: boolean | null
   compilerOptions?: object
   ignoreDiagnostics?: Array<number | string>
@@ -81,11 +82,8 @@ export interface Options {
  */
 class MemoryCache {
   fileContents = new Map<string, string>()
-  fileVersions = new Map<string, number>()
 
-  constructor (public rootFileNames: string[] = []) {
-    for (const fileName of rootFileNames) this.fileVersions.set(fileName, 1)
-  }
+  constructor (public rootFileNames: string[]) {}
 }
 
 /**
@@ -100,19 +98,20 @@ export interface TypeInfo {
  * Default register options.
  */
 export const DEFAULTS: Options = {
-  files: yn(process.env['TS_NODE_FILES']),
-  pretty: yn(process.env['TS_NODE_PRETTY']),
-  compiler: process.env['TS_NODE_COMPILER'],
-  compilerOptions: parse(process.env['TS_NODE_COMPILER_OPTIONS']),
-  ignore: split(process.env['TS_NODE_IGNORE']),
-  project: process.env['TS_NODE_PROJECT'],
-  skipIgnore: yn(process.env['TS_NODE_SKIP_IGNORE']),
-  skipProject: yn(process.env['TS_NODE_SKIP_PROJECT']),
-  preferTsExts: yn(process.env['TS_NODE_PREFER_TS_EXTS']),
-  ignoreDiagnostics: split(process.env['TS_NODE_IGNORE_DIAGNOSTICS']),
-  typeCheck: yn(process.env['TS_NODE_TYPE_CHECK']),
-  transpileOnly: yn(process.env['TS_NODE_TRANSPILE_ONLY']),
-  logError: yn(process.env['TS_NODE_LOG_ERROR'])
+  cwd: process.env.TS_NODE_CWD,
+  files: yn(process.env.TS_NODE_FILES),
+  pretty: yn(process.env.TS_NODE_PRETTY),
+  compiler: process.env.TS_NODE_COMPILER,
+  compilerOptions: parse(process.env.TS_NODE_COMPILER_OPTIONS),
+  ignore: split(process.env.TS_NODE_IGNORE),
+  project: process.env.TS_NODE_PROJECT,
+  skipProject: yn(process.env.TS_NODE_SKIP_PROJECT),
+  skipIgnore: yn(process.env.TS_NODE_SKIP_IGNORE),
+  preferTsExts: yn(process.env.TS_NODE_PREFER_TS_EXTS),
+  ignoreDiagnostics: split(process.env.TS_NODE_IGNORE_DIAGNOSTICS),
+  transpileOnly: yn(process.env.TS_NODE_TRANSPILE_ONLY),
+  logError: yn(process.env.TS_NODE_LOG_ERROR),
+  build: yn(process.env.TS_NODE_BUILD)
 }
 
 /**
@@ -124,7 +123,7 @@ const TS_NODE_COMPILER_OPTIONS = {
   inlineSources: true,
   declaration: false,
   noEmit: false,
-  outDir: '$$ts-node$$'
+  outDir: '.ts-node'
 }
 
 /**
@@ -196,7 +195,7 @@ function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
  * Register TypeScript compiler.
  */
 export function register (opts: Options = {}): Register {
-  const options = Object.assign({}, DEFAULTS, opts)
+  const options = { ...DEFAULTS, ...opts }
   const originalJsHandler = require.extensions['.js'] // tslint:disable-line
 
   const ignoreDiagnostics = [
@@ -206,13 +205,11 @@ export function register (opts: Options = {}): Register {
     ...(options.ignoreDiagnostics || [])
   ].map(Number)
 
-  const ignore = options.skipIgnore ? [] : (
-    options.ignore || ['/node_modules/']
-  ).map(str => new RegExp(str))
+  const ignore = options.skipIgnore ? [] : (options.ignore || ['/node_modules/']).map(str => new RegExp(str))
 
   // Require the TypeScript compiler and configuration.
-  const cwd = process.cwd()
-  const typeCheck = options.typeCheck === true || options.transpileOnly !== true
+  const cwd = options.cwd || process.cwd()
+  const transpileOnly = options.transpileOnly === true
   const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
   const ts: typeof _ts = require(compiler)
   const transformers = options.transformers || undefined
@@ -226,7 +223,7 @@ export function register (opts: Options = {}): Register {
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
     getNewLine: () => ts.sys.newLine,
     getCurrentDirectory: () => cwd,
-    getCanonicalFileName: (path) => path
+    getCanonicalFileName: ts.sys.useCaseSensitiveFileNames ? x => x : x => x.toLowerCase()
   }
 
   // Install source map support and read from memory cache.
@@ -280,109 +277,162 @@ export function register (opts: Options = {}): Register {
   let getTypeInfo: (_code: string, _fileName: string, _position: number) => TypeInfo
 
   // Use full language services when the fast option is disabled.
-  if (typeCheck) {
+  if (!transpileOnly) {
     const memoryCache = new MemoryCache(config.fileNames)
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile))
 
     const getCustomTransformers = () => {
       if (typeof transformers === 'function') {
-        const program = service.getProgram()
-        return program ? transformers(program) : undefined
+        return transformers(builderProgram.getProgram())
       }
 
       return transformers
     }
 
-    // Create the compiler host for type checking.
-    const serviceHost: _ts.LanguageServiceHost = {
-      getScriptFileNames: () => memoryCache.rootFileNames,
-      getScriptVersion: (fileName: string) => {
-        const version = memoryCache.fileVersions.get(fileName)
-        return version === undefined ? '' : version.toString()
+    const sys = {
+      ...ts.sys,
+      ...diagnosticHost,
+      readFile: (fileName: string) => {
+        const cacheContents = memoryCache.fileContents.get(fileName)
+        if (cacheContents !== undefined) return cacheContents
+        return cachedReadFile(fileName)
       },
-      getScriptSnapshot (fileName: string) {
-        let contents = memoryCache.fileContents.get(fileName)
-
-        // Read contents into TypeScript memory cache.
-        if (contents === undefined) {
-          contents = cachedReadFile(fileName)
-          if (contents === undefined) return
-
-          memoryCache.fileVersions.set(fileName, 1)
-          memoryCache.fileContents.set(fileName, contents)
-        }
-
-        return ts.ScriptSnapshot.fromString(contents)
-      },
-      readFile: cachedReadFile,
       readDirectory: cachedLookup(debugFn('readDirectory', ts.sys.readDirectory)),
       getDirectories: cachedLookup(debugFn('getDirectories', ts.sys.getDirectories)),
       fileExists: cachedLookup(debugFn('fileExists', fileExists)),
       directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
-      getNewLine: () => ts.sys.newLine,
-      useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
-      getCurrentDirectory: () => cwd,
-      getCompilationSettings: () => config.options,
-      getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
-      getCustomTransformers: getCustomTransformers
+      resolvePath: cachedLookup(debugFn('resolvePath', ts.sys.resolvePath)),
+      realpath: ts.sys.realpath ? cachedLookup(debugFn('realpath', ts.sys.realpath)) : undefined
     }
 
-    const registry = ts.createDocumentRegistry(ts.sys.useCaseSensitiveFileNames, cwd)
-    const service = ts.createLanguageService(serviceHost, registry)
+    const host: _ts.CompilerHost = ts.createIncrementalCompilerHost
+      ? ts.createIncrementalCompilerHost(config.options, sys)
+      : {
+        ...sys,
+        getSourceFile: (fileName, languageVersion) => {
+          const contents = sys.readFile(fileName)
+          if (contents === undefined) return
+          return ts.createSourceFile(fileName, contents, languageVersion)
+        },
+        getDefaultLibLocation: () => normalizeSlashes(dirname(compiler)),
+        getDefaultLibFileName: () => normalizeSlashes(join(dirname(compiler), ts.getDefaultLibFileName(config.options))),
+        useCaseSensitiveFileNames: () => sys.useCaseSensitiveFileNames
+      }
+
+    // Fallback for older TypeScript releases without incremental API.
+    let builderProgram = ts.createIncrementalProgram
+      ? ts.createIncrementalProgram({
+        rootNames: memoryCache.rootFileNames.slice(),
+        options: config.options,
+        host: host,
+        configFileParsingDiagnostics: config.errors,
+        projectReferences: config.projectReferences
+      })
+      : ts.createEmitAndSemanticDiagnosticsBuilderProgram(
+        memoryCache.rootFileNames.slice(),
+        config.options,
+        host,
+        undefined,
+        config.errors,
+        config.projectReferences
+      )
 
     // Set the file contents into cache manually.
     const updateMemoryCache = (contents: string, fileName: string) => {
-      const fileVersion = memoryCache.fileVersions.get(fileName) || 0
+      const sourceFile = builderProgram.getSourceFile(fileName)
 
-      // Add to `rootFiles` when discovered for the first time.
-      if (fileVersion === 0) memoryCache.rootFileNames.push(fileName)
-
-      // Avoid incrementing cache when nothing has changed.
-      if (memoryCache.fileContents.get(fileName) === contents) return
-
-      memoryCache.fileVersions.set(fileName, fileVersion + 1)
       memoryCache.fileContents.set(fileName, contents)
+
+      // Add to `rootFiles` when discovered by compiler for the first time.
+      if (sourceFile === undefined) {
+        memoryCache.rootFileNames.push(fileName)
+      }
+
+      // Update program when file changes.
+      if (sourceFile === undefined || sourceFile.text !== contents) {
+        builderProgram = ts.createEmitAndSemanticDiagnosticsBuilderProgram(
+          memoryCache.rootFileNames.slice(),
+          config.options,
+          host,
+          builderProgram,
+          config.errors,
+          config.projectReferences
+        )
+      }
     }
 
     getOutput = (code: string, fileName: string) => {
+      const output: [string, string] = ['', '']
+
       updateMemoryCache(code, fileName)
 
-      const output = service.getEmitOutput(fileName)
+      const sourceFile = builderProgram.getSourceFile(fileName)
+      if (!sourceFile) throw new TypeError(`Unable to read file: ${fileName}`)
 
-      // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.
-      const diagnostics = service.getSemanticDiagnostics(fileName)
-        .concat(service.getSyntacticDiagnostics(fileName))
-
+      const program = builderProgram.getProgram()
+      const diagnostics = ts.getPreEmitDiagnostics(program, sourceFile)
       const diagnosticList = filterDiagnostics(diagnostics, ignoreDiagnostics)
 
       if (diagnosticList.length) reportTSError(diagnosticList)
 
-      if (output.emitSkipped) {
+      const result = builderProgram.emit(sourceFile, (path, file, writeByteOrderMark) => {
+        if (path.endsWith('.map')) {
+          output[1] = file
+        } else {
+          output[0] = file
+        }
+
+        if (options.build) sys.writeFile(path, file, writeByteOrderMark)
+      }, undefined, undefined, getCustomTransformers())
+
+      if (result.emitSkipped) {
         throw new TypeError(`${relative(cwd, fileName)}: Emit skipped`)
       }
 
-      // Throw an error when requiring `.d.ts` files.
-      if (output.outputFiles.length === 0) {
+      // Throw an error when requiring files that cannot be compiled.
+      if (output[0] === '') {
+        if (program.isSourceFileFromExternalLibrary(sourceFile)) {
+          throw new TypeError(`Unable to compile file from external library: ${relative(cwd, fileName)}`)
+        }
+
         throw new TypeError(
-          'Unable to require `.d.ts` file.\n' +
+          `Unable to require file: ${relative(cwd, fileName)}\n` +
           'This is usually the result of a faulty configuration or import. ' +
-          'Make sure there is a `.js`, `.json` or another executable extension and ' +
-          'loader (attached before `ts-node`) available alongside ' +
-          `\`${basename(fileName)}\`.`
+          'Make sure there is a `.js`, `.json` or other executable extension with ' +
+          'loader attached before `ts-node` available.'
         )
       }
 
-      return [output.outputFiles[1].text, output.outputFiles[0].text]
+      return output
     }
 
     getTypeInfo = (code: string, fileName: string, position: number) => {
       updateMemoryCache(code, fileName)
 
-      const info = service.getQuickInfoAtPosition(fileName, position)
-      const name = ts.displayPartsToString(info ? info.displayParts : [])
-      const comment = ts.displayPartsToString(info ? info.documentation : [])
+      const sourceFile = builderProgram.getSourceFile(fileName)
+      if (!sourceFile) throw new TypeError(`Unable to read file: ${fileName}`)
 
-      return { name, comment }
+      const node = getTokenAtPosition(ts, sourceFile, position)
+      const checker = builderProgram.getProgram().getTypeChecker()
+      const symbol = checker.getSymbolAtLocation(node)
+
+      if (!symbol) return { name: '', comment: '' }
+
+      const type = checker.getTypeOfSymbolAtLocation(symbol, node)
+      const signatures = [...type.getConstructSignatures(), ...type.getCallSignatures()]
+
+      return {
+        name: signatures.length ? signatures.map(x => checker.signatureToString(x)).join('\n') : checker.typeToString(type),
+        comment: ts.displayPartsToString(symbol ? symbol.getDocumentationComment(checker) : [])
+      }
+    }
+
+    // Write `.tsbuildinfo` when `--build` is enabled.
+    if (options.build && config.options.incremental) {
+      process.on('exit', () => {
+        // Emits `.tsbuildinfo` to filesystem.
+        (builderProgram.getProgram() as any).emitBuildInfo()
+      })
     }
   } else {
     if (typeof transformers === 'function') {
@@ -509,8 +559,6 @@ function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine) {
   delete config.options.declarationDir
   delete config.options.declarationMap
   delete config.options.emitDeclarationOnly
-  delete config.options.tsBuildInfoFile
-  delete config.options.incremental
 
   // Target ES5 output by default (instead of ES3).
   if (config.options.target === undefined) {
@@ -604,6 +652,30 @@ function updateSourceMap (sourceMapText: string, fileName: string) {
 /**
  * Filter diagnostics.
  */
-function filterDiagnostics (diagnostics: _ts.Diagnostic[], ignore: number[]) {
+function filterDiagnostics (diagnostics: readonly _ts.Diagnostic[], ignore: number[]) {
   return diagnostics.filter(x => ignore.indexOf(x.code) === -1)
+}
+
+/**
+ * Get token at file position.
+ *
+ * Reference: https://github.com/microsoft/TypeScript/blob/fcd9334f57d85b73dd66ad2d21c02e84822f4841/src/services/utilities.ts#L705-L731
+ */
+function getTokenAtPosition (ts: typeof _ts, sourceFile: _ts.SourceFile, position: number): _ts.Node {
+  let current: _ts.Node = sourceFile
+
+  outer: while (true) {
+    for (const child of current.getChildren(sourceFile)) {
+      const start = child.getFullStart()
+      if (start > position) break
+
+      const end = child.getEnd()
+      if (position <= end) {
+        current = child
+        continue outer
+      }
+    }
+
+    return current
+  }
 }

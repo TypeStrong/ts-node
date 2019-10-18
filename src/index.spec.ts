@@ -8,7 +8,7 @@ import { register, VERSION } from './index'
 
 const TEST_DIR = join(__dirname, '../tests')
 const EXEC_PATH = join(__dirname, '../dist/bin')
-const PROJECT = join(TEST_DIR, semver.gte(ts.version, '2.5.0') ? 'tsconfig.json5' : 'tsconfig.json')
+const PROJECT = join(TEST_DIR, 'tsconfig.json')
 const BIN_EXEC = `node "${EXEC_PATH}" --project "${PROJECT}"`
 
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
@@ -165,7 +165,7 @@ describe('ts-node', function () {
       })
     })
 
-    it.skip('eval should work with source maps', function (done) {
+    it('eval should work with source maps', function (done) {
       exec(`${BIN_EXEC} -pe "import './tests/throw'"`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
@@ -305,6 +305,16 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    it('should give ts error for invalid node_modules', function (done) {
+      exec(`${BIN_EXEC} --skip-ignore tests/from-node-modules`, function (err, stdout) {
+        if (err === null) return done('Expected an error')
+
+        expect(err.message).to.contain('Unable to compile file from external library')
+
+        return done()
+      })
+    })
   })
 
   describe('register', function () {
@@ -379,7 +389,7 @@ describe('ts-node', function () {
         try {
           require('../tests/with-jsx.tsx')
         } catch (error) {
-          expect(error.stack).to.contain('SyntaxError: Unexpected token <\n')
+          expect(error.stack).to.contain('SyntaxError: Unexpected token')
         }
 
         expect(compiled).to.match(SOURCE_MAP_REGEXP)

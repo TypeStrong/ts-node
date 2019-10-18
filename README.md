@@ -5,7 +5,7 @@
 [![Build status][travis-image]][travis-url]
 [![Test coverage][coveralls-image]][coveralls-url]
 
-> TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.0`**.
+> TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.7`**.
 
 ## Installation
 
@@ -138,6 +138,7 @@ _Environment variable denoted in parentheses._
 * `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`, default: `false`)
 * `--skip-ignore` Skip ignore checks (`TS_NODE_SKIP_IGNORE`, default: `false`)
 * `--log-error` Logs errors of types instead of exit the process (`TS_NODE_LOG_ERROR`, default: `false`)
+* `--build` Emit output files into `.ts-node` directory (`TS_NODE_BUILD`, default: `false`)
 * `--prefer-ts-exts` Re-order file extensions so that TypeScript imports are preferred (`TS_NODE_PREFER_TS_EXTS`, default: `false`)
 
 ### Programmatic Only Options
