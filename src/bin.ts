@@ -45,7 +45,7 @@ export function main (argv: string[]) {
     '--version': arg.COUNT,
 
     // Project options.
-    '--cwd': String,
+    '--dir': String,
     '--files': Boolean,
     '--compiler': String,
     '--compiler-options': parse,
@@ -79,7 +79,7 @@ export function main (argv: string[]) {
   })
 
   const {
-    '--cwd': cwd = DEFAULTS.cwd || process.cwd(),
+    '--dir': dir = DEFAULTS.dir,
     '--help': help = false,
     '--script-mode': scriptMode = false,
     '--version': version = 0,
@@ -139,12 +139,13 @@ export function main (argv: string[]) {
     process.exit(0)
   }
 
+  const cwd = dir || process.cwd()
   const scriptPath = args._.length ? resolve(cwd, args._[0]) : undefined
   const state = new EvalState(scriptPath || join(cwd, EVAL_FILENAME))
 
   // Register the TypeScript compiler instance.
   const service = register({
-    cwd: getCwd(cwd, scriptMode, scriptPath),
+    dir: getCwd(dir, scriptMode, scriptPath),
     files,
     pretty,
     transpileOnly,
@@ -222,17 +223,21 @@ export function main (argv: string[]) {
 /**
  * Get project path from args.
  */
-function getCwd (cwd: string, scriptMode?: boolean, scriptPath?: string) {
+function getCwd (dir?: string, scriptMode?: boolean, scriptPath?: string) {
   // Validate `--script-mode` usage is correct.
   if (scriptMode) {
     if (!scriptPath) {
       throw new TypeError('Script mode must be used with a script name, e.g. `ts-node -s <script.ts>`')
     }
 
+    if (dir) {
+      throw new TypeError('Script mode cannot be combined with `--dir`')
+    }
+
     return dirname(scriptPath)
   }
 
-  return cwd
+  return dir
 }
 
 /**

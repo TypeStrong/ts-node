@@ -72,7 +72,7 @@ export const VERSION = require('../package.json').version
  * Options for creating a new TypeScript compiler instance.
  */
 export interface CreateOptions {
-  cwd?: string
+  dir?: string
   scope?: boolean | null
   pretty?: boolean | null
   typeCheck?: boolean | null
@@ -123,7 +123,7 @@ export interface TypeInfo {
  * Default register options.
  */
 export const DEFAULTS: RegisterOptions = {
-  cwd: process.env.TS_NODE_CWD,
+  dir: process.env.TS_NODE_DIR,
   scope: yn(process.env.TS_NODE_SCOPE),
   files: yn(process.env['TS_NODE_FILES']),
   pretty: yn(process.env['TS_NODE_PRETTY']),
@@ -195,7 +195,6 @@ export class TSError extends BaseError {
  * Return type for registering `ts-node`.
  */
 export interface Register {
-  cwd: string
   ts: TSCommon
   config: _ts.ParsedCommandLine
   enabled (enabled?: boolean): boolean
@@ -258,7 +257,7 @@ export function create (options: CreateOptions = {}): Register {
   ).map(str => new RegExp(str))
 
   // Require the TypeScript compiler and configuration.
-  const cwd = options.cwd ? resolve(options.cwd) : process.cwd()
+  const cwd = options.dir ? resolve(options.dir) : process.cwd()
   const isScoped = options.scope ? (fileName: string) => relative(cwd, fileName).charAt(0) !== '.' : () => true
   const typeCheck = options.typeCheck === true || options.transpileOnly !== true
   const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
@@ -465,7 +464,7 @@ export function create (options: CreateOptions = {}): Register {
   const enabled = (enabled?: boolean) => enabled === undefined ? active : (active = !!enabled)
   const ignored = (fileName: string) => !active || !isScoped(fileName) || shouldIgnore(fileName, ignore)
 
-  return { cwd, ts, config, compile, getTypeInfo, ignored, enabled }
+  return { ts, config, compile, getTypeInfo, ignored, enabled }
 }
 
 /**
