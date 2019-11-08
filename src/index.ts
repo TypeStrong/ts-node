@@ -6,6 +6,29 @@ import * as util from 'util'
 import * as _ts from 'typescript'
 
 /**
+ * Registered `ts-node` instance information.
+ */
+export const REGISTER_INSTANCE = Symbol.for('ts-node.register.instance')
+
+/**
+ * Expose `ts-node` instance information globally for consumers.
+ */
+export interface RegisterInstance {
+  config: _ts.ParsedCommandLine
+}
+
+/**
+ * Expose `TS_NODE_INSTANCE` on node.js `process`.
+ */
+declare global {
+  namespace NodeJS {
+    interface Process {
+      [REGISTER_INSTANCE]?: RegisterInstance
+    }
+  }
+}
+
+/**
  * @internal
  */
 export const INSPECT_CUSTOM = util.inspect.custom || 'inspect'
@@ -420,6 +443,9 @@ export function register (opts: Options = {}): Register {
   }
 
   const register: Register = { cwd, compile, getTypeInfo, extensions, ts }
+
+  // Expose registered instance globally
+  process[REGISTER_INSTANCE] = { config }
 
   // Register the extensions.
   registerExtensions(options.preferTsExts, extensions, ignore, register, originalJsHandler)

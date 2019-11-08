@@ -61,6 +61,26 @@ describe('ts-node', function () {
       })
     })
 
+    it('should provide registered information globally', function (done) {
+      exec(`${BIN_EXEC} tests/env`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('object\n')
+
+        return done()
+      })
+    })
+
+    it('should provide registered information on register', function (done) {
+      exec(`node -r ../register env.ts`, {
+        cwd: TEST_DIR
+      }, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('object\n')
+
+        return done()
+      })
+    })
+
     if (semver.gte(ts.version, '1.8.0')) {
       it('should allow js', function (done) {
         exec(
