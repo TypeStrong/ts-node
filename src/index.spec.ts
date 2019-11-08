@@ -347,17 +347,27 @@ describe('ts-node', function () {
     })
 
     it('should support dynamically disabling', function () {
+      const path = require.resolve('../tests/module')
+
+      delete require.cache[path]
+
       expect(registered.enabled(false)).to.equal(false)
-      expect(() => require('../tests/module')).to.throw(/Unexpected token/)
+      expect(() => require(path)).to.throw(/Unexpected token/)
+
+      delete require.cache[path]
 
       expect(registered.enabled()).to.equal(false)
-      expect(() => require('../tests/module')).to.throw(/Unexpected token/)
+      expect(() => require(path)).to.throw(/Unexpected token/)
+
+      delete require.cache[path]
 
       expect(registered.enabled(true)).to.equal(true)
-      expect(() => require('../tests/module')).to.not.throw()
+      expect(() => require(path)).to.not.throw()
+
+      delete require.cache[path]
 
       expect(registered.enabled()).to.equal(true)
-      expect(() => require('../tests/module')).to.not.throw()
+      expect(() => require(path)).to.not.throw()
     })
 
     it('should compile through js and ts', function () {
