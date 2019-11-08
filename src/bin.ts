@@ -40,12 +40,13 @@ export function main (argv: string[]) {
     '--require': [String],
 
     // CLI options.
-    '--files': Boolean,
     '--help': Boolean,
+    '--script-mode': Boolean,
     '--version': arg.COUNT,
 
     // Project options.
     '--cwd': String,
+    '--files': Boolean,
     '--compiler': String,
     '--compiler-options': parse,
     '--project': String,
@@ -57,7 +58,6 @@ export function main (argv: string[]) {
     '--skip-ignore': Boolean,
     '--prefer-ts-exts': Boolean,
     '--log-error': Boolean,
-    '--script-mode': Boolean,
 
     // Aliases.
     '-e': '--eval',
@@ -86,13 +86,13 @@ export function main (argv: string[]) {
     '--require': requires = [],
     '--eval': code = undefined,
     '--print': print = false,
+    '--interactive': interactive = false,
     '--files': files = DEFAULTS.files,
     '--compiler': compiler = DEFAULTS.compiler,
     '--compiler-options': compilerOptions = DEFAULTS.compilerOptions,
     '--project': project = DEFAULTS.project,
     '--ignore-diagnostics': ignoreDiagnostics = DEFAULTS.ignoreDiagnostics,
     '--ignore': ignore = DEFAULTS.ignore,
-    '--interactive': interactive = DEFAULTS.interactive,
     '--transpile-only': transpileOnly = DEFAULTS.transpileOnly,
     '--pretty': pretty = DEFAULTS.pretty,
     '--skip-project': skipProject = DEFAULTS.skipProject,
