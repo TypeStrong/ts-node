@@ -19,12 +19,13 @@ const EVAL_FILENAME = `[eval].ts`
 /**
  * Eval state management.
  */
-interface EvalState {
-  path: string
-  input: string
-  output: string
-  version: number
-  lines: number
+class EvalState {
+  input = ''
+  output = ''
+  version = 0
+  lines = 0
+
+  constructor (public path: string) {}
 }
 
 /**
@@ -82,6 +83,9 @@ export function main (argv: string[]) {
     '--help': help = false,
     '--script-mode': scriptMode = false,
     '--version': version = 0,
+    '--require': requires = [],
+    '--eval': code = undefined,
+    '--print': print = false,
     '--files': files = DEFAULTS.files,
     '--compiler': compiler = DEFAULTS.compiler,
     '--compiler-options': compilerOptions = DEFAULTS.compilerOptions,
@@ -135,10 +139,8 @@ export function main (argv: string[]) {
     process.exit(0)
   }
 
-  const code = args['--eval']
-  const isPrinted = args['--print'] !== undefined
   const scriptPath = args._.length ? resolve(cwd, args._[0]) : undefined
-  const state = { path: join(cwd, EVAL_FILENAME), input: '', output: '', version: 0, lines: 0 }
+  const state = new EvalState(scriptPath || join(cwd, EVAL_FILENAME))
 
   // Register the TypeScript compiler instance.
   const service = register({
@@ -186,8 +188,13 @@ export function main (argv: string[]) {
     process.exit(0)
   }
 
+  // Create a local module instance based on `cwd`.
+  const module = new Module(state.path)
+  module.filename = state.path
+  module.paths = (Module as any)._nodeModulePaths(cwd)
+
   // Require specified modules before start-up.
-  if (args['--require']) (Module as any)._preloadModules(args['--require'])
+  for (const id of requires) module.require(id)
 
   // Prepend `ts-node` arguments to CLI for child processes.
   process.execArgv.unshift(__filename, ...process.argv.slice(2, process.argv.length - args._.length))
@@ -195,7 +202,7 @@ export function main (argv: string[]) {
 
   // Execute the main contents (either eval, script or piped).
   if (code !== undefined && !interactive) {
-    evalAndExit(service, state, cwd, code, isPrinted)
+    evalAndExit(service, state, module, code, print)
   } else {
     if (args._.length) {
       Module.runMain()
@@ -206,7 +213,7 @@ export function main (argv: string[]) {
       } else {
         let buffer = code || ''
         process.stdin.on('data', (chunk: Buffer) => buffer += chunk)
-        process.stdin.on('end', () => evalAndExit(service, state, cwd, buffer, isPrinted))
+        process.stdin.on('end', () => evalAndExit(service, state, module, buffer, print))
       }
     }
   }
@@ -231,18 +238,14 @@ function getCwd (cwd: string, scriptMode?: boolean, scriptPath?: string) {
 /**
  * Evaluate a script.
  */
-function evalAndExit (service: Register, state: EvalState, cwd: string, code: string, isPrinted: boolean) {
-  const module = new Module(EVAL_FILENAME)
-  module.filename = EVAL_FILENAME
-  module.paths = (Module as any)._nodeModulePaths(cwd)
+function evalAndExit (service: Register, state: EvalState, module: Module, code: string, isPrinted: boolean) {
+  let result: any
 
-  ;(global as any).__filename = EVAL_FILENAME
-  ;(global as any).__dirname = cwd
+  ;(global as any).__filename = module.filename
+  ;(global as any).__dirname = dirname(module.filename)
   ;(global as any).exports = module.exports
   ;(global as any).module = module
   ;(global as any).require = module.require.bind(module)
-
-  let result: any
 
   try {
     result = _eval(service, state, code)
@@ -286,7 +289,7 @@ function _eval (service: Register, state: EvalState, input: string) {
   }
 
   return changes.reduce((result, change) => {
-    return change.added ? exec(change.value, EVAL_FILENAME) : result
+    return change.added ? exec(change.value, state.path) : result
   }, undefined)
 }
 
@@ -360,7 +363,7 @@ function startRepl (service: Register, state: EvalState, code?: string) {
     resetEval()
 
     // Hard fix for TypeScript forcing `Object.defineProperty(exports, ...)`.
-    exec('exports = module.exports', EVAL_FILENAME)
+    exec('exports = module.exports', state.path)
   }
 
   reset()
