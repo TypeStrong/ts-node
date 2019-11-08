@@ -18,7 +18,7 @@ export interface RegisterInstance {
 }
 
 /**
- * Expose `TS_NODE_INSTANCE` on node.js `process`.
+ * Expose `REGISTER_INSTANCE` information on node.js `process`.
  */
 declare global {
   namespace NodeJS {
