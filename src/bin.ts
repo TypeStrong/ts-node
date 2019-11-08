@@ -110,9 +110,11 @@ export function main (argv: string[]) {
     -e, --eval [code]              Evaluate code
     -p, --print                    Print result of \`--eval\`
     -r, --require [path]           Require a node module before execution
+    -i, --interactive              Opens the REPL even if stdin does not appear to be a terminal
 
     -h, --help                     Print CLI usage
     -v, --version                  Print module version information
+    -s, --script-mode              Use cwd from <script.ts> instead of current directory
 
     -T, --transpile-only           Use TypeScript's faster \`transpileModule\`
     -I, --ignore [pattern]         Override the path patterns to skip compilation
@@ -121,13 +123,14 @@ export function main (argv: string[]) {
     -D, --ignore-diagnostics [code] Ignore TypeScript warnings by diagnostic code
     -O, --compiler-options [opts]   JSON object to merge with compiler options
 
+    --dir                          Specify working directory for config resolution
+    --scope                        Scope compiler to files within \`cwd\` only
     --files                        Load files from \`tsconfig.json\` on startup
     --pretty                       Use pretty diagnostic formatter (usually enabled by default)
-    --script-mode                  Use cwd from <script.ts> instead of current directory
     --skip-project                 Skip reading \`tsconfig.json\`
     --skip-ignore                  Skip \`--ignore\` checks
     --prefer-ts-exts               Prefer importing TypeScript files over JavaScript files
-    --interactive                  Opens the REPL even if stdin does not appear to be a terminal
+    --log-error                    Logs TypeScript errors to stderr instead of throwing exceptions
   `)
 
     process.exit(0)
