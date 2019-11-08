@@ -8,6 +8,7 @@ import arg = require('arg')
 import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { readFileSync, statSync } from 'fs'
+import { homedir } from 'os'
 import { register, VERSION, DEFAULTS, TSError, parse } from './index'
 
 const args = arg({
@@ -304,6 +305,18 @@ function startRepl (code?: string) {
       repl.displayPrompt()
     }
   })
+
+  // Set up REPL history when available natively via node.js >= 11.
+  if (repl.setupHistory) {
+    const historyPath = process.env.TS_NODE_HISTORY || join(homedir(), '.ts_node_repl_history')
+
+    repl.setupHistory(historyPath, err => {
+      if (!err) return
+
+      console.error(err)
+      process.exit(1)
+    })
+  }
 }
 
 /**
