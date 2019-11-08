@@ -268,7 +268,7 @@ export function register (opts: Options = {}): Register {
   })
 
   const formatDiagnostics = process.stdout.isTTY || options.pretty
-    ? ts.formatDiagnosticsWithColorAndContext
+    ? (ts.formatDiagnosticsWithColorAndContext || ts.formatDiagnostics)
     : ts.formatDiagnostics
 
   function createTSError (diagnostics: ReadonlyArray<_ts.Diagnostic>) {
