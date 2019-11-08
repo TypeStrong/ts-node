@@ -4,7 +4,7 @@ import { join } from 'path'
 import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
-import { register, VERSION } from './index'
+import { register, create, VERSION } from './index'
 
 const TEST_DIR = join(__dirname, '../tests')
 const PROJECT = join(TEST_DIR, semver.gte(ts.version, '2.5.0') ? 'tsconfig.json5' : 'tsconfig.json')
@@ -484,6 +484,15 @@ describe('ts-node', function () {
 
         done()
       })
+    })
+  })
+
+  describe('create', () => {
+    it('should create generic compiler instances', () => {
+      const service = create({ compilerOptions: { target: 'es5' }, skipProject: true })
+      const output = service.compile('const x = 10', 'test.ts')
+
+      expect(output).to.contain('var x = 10;')
     })
   })
 })
