@@ -335,39 +335,39 @@ describe('ts-node', function () {
       }
     })
 
+    const moduleTestPath = require.resolve('../tests/module')
+
     afterEach(() => {
       // Re-enable project after every test.
       registered.enabled(true)
     })
 
     it('should be able to require typescript', function () {
-      const m = require('../tests/module')
+      const m = require(moduleTestPath)
 
       expect(m.example('foo')).to.equal('FOO')
     })
 
     it('should support dynamically disabling', function () {
-      const path = require.resolve('../tests/module')
-
-      delete require.cache[path]
+      delete require.cache[moduleTestPath]
 
       expect(registered.enabled(false)).to.equal(false)
-      expect(() => require(path)).to.throw(/Unexpected token/)
+      expect(() => require(moduleTestPath)).to.throw(/Unexpected token/)
 
-      delete require.cache[path]
+      delete require.cache[moduleTestPath]
 
       expect(registered.enabled()).to.equal(false)
-      expect(() => require(path)).to.throw(/Unexpected token/)
+      expect(() => require(moduleTestPath)).to.throw(/Unexpected token/)
 
-      delete require.cache[path]
+      delete require.cache[moduleTestPath]
 
       expect(registered.enabled(true)).to.equal(true)
-      expect(() => require(path)).to.not.throw()
+      expect(() => require(moduleTestPath)).to.not.throw()
 
-      delete require.cache[path]
+      delete require.cache[moduleTestPath]
 
       expect(registered.enabled()).to.equal(true)
-      expect(() => require(path)).to.not.throw()
+      expect(() => require(moduleTestPath)).to.not.throw()
     })
 
     it('should support compiler scopes', function () {
@@ -401,7 +401,9 @@ describe('ts-node', function () {
         join(TEST_DIR, 'scope/b/index.ts')
       ])
 
-      expect(() => require('../tests/module')).to.throw()
+      delete require.cache[moduleTestPath]
+
+      expect(() => require(moduleTestPath)).to.throw()
     })
 
     it('should compile through js and ts', function () {
