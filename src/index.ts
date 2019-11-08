@@ -196,6 +196,8 @@ export interface Register {
   cwd: string
   extensions: string[]
   ts: TSCommon
+  enabled (enabled?: boolean): boolean
+  ignored (fileName: string): boolean
   compile (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
 }
@@ -442,13 +444,16 @@ export function register (opts: Options = {}): Register {
     return output
   }
 
-  const register: Register = { cwd, compile, getTypeInfo, extensions, ts }
+  let active = true
+  const enabled = (enabled?: boolean) => enabled === undefined ? active : (active = !!enabled)
+  const ignored = (fileName: string) => !active || shouldIgnore(fileName, ignore)
+  const register: Register = { cwd, compile, getTypeInfo, extensions, ts, ignored, enabled }
 
   // Expose registered instance globally
   process[REGISTER_INSTANCE] = { config }
 
   // Register the extensions.
-  registerExtensions(options.preferTsExts, extensions, ignore, register, originalJsHandler)
+  registerExtensions(options.preferTsExts, extensions, register, originalJsHandler)
 
   return register
 }
@@ -479,13 +484,12 @@ function reorderRequireExtension (ext: string) {
 function registerExtensions (
   preferTsExts: boolean | null | undefined,
   extensions: string[],
-  ignore: RegExp[],
   register: Register,
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
   // Register new extensions.
   for (const ext of extensions) {
-    registerExtension(ext, ignore, register, originalJsHandler)
+    registerExtension(ext, register, originalJsHandler)
   }
 
   if (preferTsExts) {
@@ -501,16 +505,13 @@ function registerExtensions (
  */
 function registerExtension (
   ext: string,
-  ignore: RegExp[],
   register: Register,
   originalHandler: (m: NodeModule, filename: string) => any
 ) {
   const old = require.extensions[ext] || originalHandler // tslint:disable-line
 
   require.extensions[ext] = function (m: any, filename) { // tslint:disable-line
-    if (shouldIgnore(filename, ignore)) {
-      return old(m, filename)
-    }
+    if (register.ignored(filename)) return old(m, filename)
 
     const _compile = m._compile
 

@@ -328,17 +328,36 @@ describe('ts-node', function () {
   })
 
   describe('register', function () {
-    register({
+    const registered = register({
       project: PROJECT,
       compilerOptions: {
         jsx: 'preserve'
       }
     })
 
+    afterEach(() => {
+      // Re-enable project after every test.
+      registered.enabled(true)
+    })
+
     it('should be able to require typescript', function () {
       const m = require('../tests/module')
 
       expect(m.example('foo')).to.equal('FOO')
+    })
+
+    it('should support dynamically disabling', function () {
+      expect(registered.enabled(false)).to.equal(false)
+      expect(() => require('../tests/module')).to.throw(/Unexpected token/)
+
+      expect(registered.enabled()).to.equal(false)
+      expect(() => require('../tests/module')).to.throw(/Unexpected token/)
+
+      expect(registered.enabled(true)).to.equal(true)
+      expect(() => require('../tests/module')).to.not.throw()
+
+      expect(registered.enabled()).to.equal(true)
+      expect(() => require('../tests/module')).to.not.throw()
     })
 
     it('should compile through js and ts', function () {
