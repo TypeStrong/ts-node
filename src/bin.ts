@@ -18,6 +18,7 @@ const args = arg({
   '--require': [String],
 
   // CLI options.
+  '--scope': Boolean,
   '--files': Boolean,
   '--help': Boolean,
   '--version': arg.COUNT,
@@ -42,6 +43,7 @@ const args = arg({
   '-i': '--interactive',
   '-p': '--print',
   '-r': '--require',
+  '-s': '--scope',
   '-h': '--help',
   '-v': '--version',
   '-T': '--transpile-only',
@@ -56,6 +58,7 @@ const args = arg({
 
 const {
   '--cwd': cwd = DEFAULTS.cwd || process.cwd(),
+  '--scope': scope = DEFAULTS.scope,
   '--help': help = false,
   '--version': version = 0,
   '--files': files = DEFAULTS.files,
@@ -95,6 +98,7 @@ Options:
   -O, --compiler-options [opts]   JSON object to merge with compiler options
 
   --cwd                          Specify working directory for config resolution
+  --scope                        Scope compiler to files within \`cwd\`
   --files                        Load files from \`tsconfig.json\` on startup
   --pretty                       Use pretty diagnostic formatter
   --skip-project                 Skip reading \`tsconfig.json\`
@@ -125,6 +129,7 @@ const EVAL_INSTANCE = { input: '', output: '', version: 0, lines: 0 }
 // Register the TypeScript compiler instance.
 const service = register({
   cwd,
+  scope,
   files,
   pretty,
   typeCheck,

@@ -80,6 +80,7 @@ export const VERSION = require('../package.json').version
  */
 export interface Options {
   cwd?: string | null
+  scope?: boolean | null
   pretty?: boolean | null
   typeCheck?: boolean | null
   transpileOnly?: boolean | null
@@ -124,6 +125,7 @@ export interface TypeInfo {
  */
 export const DEFAULTS: Options = {
   cwd: process.env.TS_NODE_CWD,
+  scope: yn(process.env.TS_NODE_SCOPE),
   files: yn(process.env['TS_NODE_FILES']),
   pretty: yn(process.env['TS_NODE_PRETTY']),
   compiler: process.env['TS_NODE_COMPILER'],
@@ -238,7 +240,8 @@ export function register (opts: Options = {}): Register {
   ).map(str => new RegExp(str))
 
   // Require the TypeScript compiler and configuration.
-  const cwd = options.cwd || process.cwd()
+  const cwd = options.cwd ? resolve(options.cwd) : process.cwd()
+  const isScoped = options.scope ? (fileName: string) => relative(cwd, fileName).charAt(0) !== '.' : () => true
   const typeCheck = options.typeCheck === true || options.transpileOnly !== true
   const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
   const ts: typeof _ts = require(compiler)
@@ -448,10 +451,10 @@ export function register (opts: Options = {}): Register {
 
   let active = true
   const enabled = (enabled?: boolean) => enabled === undefined ? active : (active = !!enabled)
-  const ignored = (fileName: string) => !active || shouldIgnore(fileName, ignore)
+  const ignored = (fileName: string) => !active || !isScoped(fileName) || shouldIgnore(fileName, ignore)
   const register: Register = { cwd, compile, getTypeInfo, extensions, ts, ignored, enabled }
 
-  // Expose registered instance globally
+  // Expose registered instance globally.
   process[REGISTER_INSTANCE] = { config }
 
   // Register the extensions.

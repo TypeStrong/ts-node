@@ -370,6 +370,40 @@ describe('ts-node', function () {
       expect(() => require(path)).to.not.throw()
     })
 
+    it('should support compiler scopes', function () {
+      const calls: string[] = []
+
+      registered.enabled(false)
+
+      const compilers = [
+        register({ cwd: join(TEST_DIR, 'scope/a'), scope: true }),
+        register({ cwd: join(TEST_DIR, 'scope/b'), scope: true })
+      ]
+
+      compilers.forEach(c => {
+        const old = c.compile
+        c.compile = (code, fileName, lineOffset) => {
+          calls.push(fileName)
+
+          return old(code, fileName, lineOffset)
+        }
+      })
+
+      try {
+        expect(require('../tests/scope/a').ext).to.equal('.ts')
+        expect(require('../tests/scope/b').ext).to.equal('.ts')
+      } finally {
+        compilers.forEach(c => c.enabled(false))
+      }
+
+      expect(calls).to.deep.equal([
+        join(TEST_DIR, 'scope/a/index.ts'),
+        join(TEST_DIR, 'scope/b/index.ts')
+      ])
+
+      expect(() => require('../tests/module')).to.throw()
+    })
+
     it('should compile through js and ts', function () {
       const m = require('../tests/complex')
 
