@@ -58,7 +58,7 @@ export function main (argv: string[]) {
     '--skip-ignore': Boolean,
     '--prefer-ts-exts': Boolean,
     '--log-error': Boolean,
-    '--build': Boolean,
+    '--emit': Boolean,
 
     // Aliases.
     '-e': '--eval',
@@ -68,7 +68,6 @@ export function main (argv: string[]) {
     '-h': '--help',
     '-s': '--script-mode',
     '-v': '--version',
-    '-B': '--build',
     '-T': '--transpile-only',
     '-I': '--ignore',
     '-P': '--project',
@@ -101,7 +100,7 @@ export function main (argv: string[]) {
     '--skip-ignore': skipIgnore = DEFAULTS.skipIgnore,
     '--prefer-ts-exts': preferTsExts = DEFAULTS.preferTsExts,
     '--log-error': logError = DEFAULTS.logError,
-    '--build': build = DEFAULTS.build
+    '--emit': emit = DEFAULTS.emit
   } = args
 
   if (help) {
@@ -152,6 +151,7 @@ export function main (argv: string[]) {
   // Register the TypeScript compiler instance.
   const service = register({
     dir: getCwd(dir, scriptMode, scriptPath),
+    emit,
     files,
     pretty,
     transpileOnly,

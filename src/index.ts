@@ -73,7 +73,7 @@ export const VERSION = require('../package.json').version
  */
 export interface CreateOptions {
   dir?: string
-  build?: boolean | null
+  emit?: boolean | null
   scope?: boolean | null
   pretty?: boolean | null
   transpileOnly?: boolean | null
@@ -121,7 +121,7 @@ export interface TypeInfo {
  */
 export const DEFAULTS: RegisterOptions = {
   dir: process.env.TS_NODE_DIR,
-  build: yn(process.env.TS_NODE_BUILD),
+  emit: yn(process.env.TS_NODE_EMIT),
   scope: yn(process.env.TS_NODE_SCOPE),
   files: yn(process.env.TS_NODE_FILES),
   pretty: yn(process.env.TS_NODE_PRETTY),
@@ -421,7 +421,7 @@ export function create (options: CreateOptions = {}): Register {
           output[0] = file
         }
 
-        if (options.build) sys.writeFile(path, file, writeByteOrderMark)
+        if (options.emit) sys.writeFile(path, file, writeByteOrderMark)
       }, undefined, undefined, getCustomTransformers())
 
       if (result.emitSkipped) {
@@ -467,7 +467,7 @@ export function create (options: CreateOptions = {}): Register {
     }
 
     // Write `.tsbuildinfo` when `--build` is enabled.
-    if (options.build && config.options.incremental) {
+    if (options.emit && config.options.incremental) {
       process.on('exit', () => {
         // Emits `.tsbuildinfo` to filesystem.
         (builderProgram.getProgram() as any).emitBuildInfo()

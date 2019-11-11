@@ -143,7 +143,7 @@ _Environment variable denoted in parentheses._
 * `--pretty` Use pretty diagnostic formatter (`TS_NODE_PRETTY`, default: `false`)
 * `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`, default: `false`)
 * `--skip-ignore` Skip ignore checks (`TS_NODE_SKIP_IGNORE`, default: `false`)
-* `--build` Emit output files into `.ts-node` directory (`TS_NODE_BUILD`, default: `false`)
+* `--emit` Emit output files into `.ts-node` directory (`TS_NODE_EMIT`, default: `false`)
 * `--prefer-ts-exts` Re-order file extensions so that TypeScript imports are preferred (`TS_NODE_PREFER_TS_EXTS`, default: `false`)
 * `--log-error` Logs TypeScript errors to stderr instead of throwing exceptions (`TS_NODE_LOG_ERROR`, default: `false`)
 
