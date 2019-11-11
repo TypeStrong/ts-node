@@ -6,6 +6,22 @@ import * as util from 'util'
 import * as _ts from 'typescript'
 
 /**
+ * Registered `ts-node` instance information.
+ */
+export const REGISTER_INSTANCE = Symbol.for('ts-node.register.instance')
+
+/**
+ * Expose `REGISTER_INSTANCE` information on node.js `process`.
+ */
+declare global {
+  namespace NodeJS {
+    interface Process {
+      [REGISTER_INSTANCE]?: Register
+    }
+  }
+}
+
+/**
  * @internal
  */
 export const INSPECT_CUSTOM = util.inspect.custom || 'inspect'
@@ -53,11 +69,12 @@ export interface TSCommon {
 export const VERSION = require('../package.json').version
 
 /**
- * Registration options.
+ * Options for creating a new TypeScript compiler instance.
  */
-export interface Options {
-  cwd?: string | null
+export interface CreateOptions {
+  dir?: string
   build?: boolean | null
+  scope?: boolean | null
   pretty?: boolean | null
   transpileOnly?: boolean | null
   logError?: boolean | null
@@ -73,6 +90,13 @@ export interface Options {
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
   transformers?: _ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)
+}
+
+/**
+ * Options for registering a TypeScript compiler instance globally.
+ */
+export interface RegisterOptions extends CreateOptions {
+  preferTsExts?: boolean | null
 }
 
 /**
@@ -95,8 +119,10 @@ export interface TypeInfo {
 /**
  * Default register options.
  */
-export const DEFAULTS: Options = {
-  cwd: process.env.TS_NODE_CWD,
+export const DEFAULTS: RegisterOptions = {
+  dir: process.env.TS_NODE_DIR,
+  build: yn(process.env.TS_NODE_BUILD),
+  scope: yn(process.env.TS_NODE_SCOPE),
   files: yn(process.env.TS_NODE_FILES),
   pretty: yn(process.env.TS_NODE_PRETTY),
   compiler: process.env.TS_NODE_COMPILER,
@@ -108,8 +134,7 @@ export const DEFAULTS: Options = {
   preferTsExts: yn(process.env.TS_NODE_PREFER_TS_EXTS),
   ignoreDiagnostics: split(process.env.TS_NODE_IGNORE_DIAGNOSTICS),
   transpileOnly: yn(process.env.TS_NODE_TRANSPILE_ONLY),
-  logError: yn(process.env.TS_NODE_LOG_ERROR),
-  build: yn(process.env.TS_NODE_BUILD)
+  logError: yn(process.env.TS_NODE_LOG_ERROR)
 }
 
 /**
@@ -167,9 +192,10 @@ export class TSError extends BaseError {
  * Return type for registering `ts-node`.
  */
 export interface Register {
-  cwd: string
-  extensions: string[]
   ts: TSCommon
+  config: _ts.ParsedCommandLine
+  enabled (enabled?: boolean): boolean
+  ignored (fileName: string): boolean
   compile (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
 }
@@ -190,12 +216,32 @@ function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
 }
 
 /**
- * Register TypeScript compiler.
+ * Register TypeScript compiler instance onto node.js
  */
-export function register (opts: Options = {}): Register {
+export function register (opts: RegisterOptions = {}): Register {
   const options = { ...DEFAULTS, ...opts }
   const originalJsHandler = require.extensions['.js'] // tslint:disable-line
+  const service = create(options)
+  const extensions = ['.ts']
 
+  // Enable additional extensions when JSX or `allowJs` is enabled.
+  if (service.config.options.jsx) extensions.push('.tsx')
+  if (service.config.options.allowJs) extensions.push('.js')
+  if (service.config.options.jsx && service.config.options.allowJs) extensions.push('.jsx')
+
+  // Expose registered instance globally.
+  process[REGISTER_INSTANCE] = service
+
+  // Register the extensions.
+  registerExtensions(options.preferTsExts, extensions, service, originalJsHandler)
+
+  return service
+}
+
+/**
+ * Create TypeScript compiler instance.
+ */
+export function create (options: CreateOptions = {}): Register {
   const ignoreDiagnostics = [
     6059, // "'rootDir' is expected to contain all source files."
     18002, // "The 'files' list in config file is empty."
@@ -206,7 +252,8 @@ export function register (opts: Options = {}): Register {
   const ignore = options.skipIgnore ? [] : (options.ignore || ['/node_modules/']).map(str => new RegExp(str))
 
   // Require the TypeScript compiler and configuration.
-  const cwd = options.cwd || process.cwd()
+  const cwd = options.dir ? resolve(options.dir) : process.cwd()
+  const isScoped = options.scope ? (fileName: string) => relative(cwd, fileName).charAt(0) !== '.' : () => true
   const transpileOnly = options.transpileOnly === true
   const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
   const ts: typeof _ts = require(compiler)
@@ -215,7 +262,6 @@ export function register (opts: Options = {}): Register {
   const fileExists = options.fileExists || ts.sys.fileExists
   const config = readConfig(cwd, ts, fileExists, readFile, options)
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
-  const extensions = ['.ts']
   const outputCache = new Map<string, string>()
 
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
@@ -233,7 +279,7 @@ export function register (opts: Options = {}): Register {
   })
 
   const formatDiagnostics = process.stdout.isTTY || options.pretty
-    ? ts.formatDiagnosticsWithColorAndContext
+    ? (ts.formatDiagnosticsWithColorAndContext || ts.formatDiagnostics)
     : ts.formatDiagnostics
 
   function createTSError (diagnostics: ReadonlyArray<_ts.Diagnostic>) {
@@ -255,11 +301,6 @@ export function register (opts: Options = {}): Register {
 
   // Render the configuration errors.
   if (configDiagnosticList.length) reportTSError(configDiagnosticList)
-
-  // Enable additional extensions when JSX or `allowJs` is enabled.
-  if (config.options.jsx) extensions.push('.tsx')
-  if (config.options.allowJs) extensions.push('.js')
-  if (config.options.jsx && config.options.allowJs) extensions.push('.jsx')
 
   /**
    * Get the extension for a transpiled file.
@@ -467,12 +508,11 @@ export function register (opts: Options = {}): Register {
     return output
   }
 
-  const register: Register = { cwd, compile, getTypeInfo, extensions, ts }
+  let active = true
+  const enabled = (enabled?: boolean) => enabled === undefined ? active : (active = !!enabled)
+  const ignored = (fileName: string) => !active || !isScoped(fileName) || shouldIgnore(fileName, ignore)
 
-  // Register the extensions.
-  registerExtensions(options.preferTsExts, extensions, ignore, register, originalJsHandler)
-
-  return register
+  return { ts, config, compile, getTypeInfo, ignored, enabled }
 }
 
 /**
@@ -485,7 +525,7 @@ function shouldIgnore (filename: string, ignore: RegExp[]) {
 }
 
 /**
- * "Refreshes" an extension on `require.extentions`.
+ * "Refreshes" an extension on `require.extensions`.
  *
  * @param {string} ext
  */
@@ -501,13 +541,12 @@ function reorderRequireExtension (ext: string) {
 function registerExtensions (
   preferTsExts: boolean | null | undefined,
   extensions: string[],
-  ignore: RegExp[],
   register: Register,
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
   // Register new extensions.
   for (const ext of extensions) {
-    registerExtension(ext, ignore, register, originalJsHandler)
+    registerExtension(ext, register, originalJsHandler)
   }
 
   if (preferTsExts) {
@@ -523,16 +562,13 @@ function registerExtensions (
  */
 function registerExtension (
   ext: string,
-  ignore: RegExp[],
   register: Register,
   originalHandler: (m: NodeModule, filename: string) => any
 ) {
   const old = require.extensions[ext] || originalHandler // tslint:disable-line
 
   require.extensions[ext] = function (m: any, filename) { // tslint:disable-line
-    if (shouldIgnore(filename, ignore)) {
-      return old(m, filename)
-    }
+    if (register.ignored(filename)) return old(m, filename)
 
     const _compile = m._compile
 
@@ -579,7 +615,7 @@ function readConfig (
   ts: TSCommon,
   fileExists: (path: string) => boolean,
   readFile: (path: string) => string | undefined,
-  options: Options
+  options: CreateOptions
 ): _ts.ParsedCommandLine {
   let config: any = { compilerOptions: {} }
   let basePath = normalizeSlashes(cwd)

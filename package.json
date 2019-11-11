@@ -1,11 +1,12 @@
 {
   "name": "ts-node",
-  "version": "8.4.1",
+  "version": "8.5.0",
   "description": "TypeScript execution environment and REPL for node.js, with source map support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "ts-node": "dist/bin.js"
+    "ts-node": "dist/bin.js",
+    "ts-script": "dist/script.js"
   },
   "files": [
     "dist/",

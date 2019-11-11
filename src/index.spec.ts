@@ -4,12 +4,12 @@ import { join } from 'path'
 import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
-import { register, VERSION } from './index'
+import { register, create, VERSION } from './index'
 
 const TEST_DIR = join(__dirname, '../tests')
-const EXEC_PATH = join(__dirname, '../dist/bin')
 const PROJECT = join(TEST_DIR, 'tsconfig.json')
-const BIN_EXEC = `node "${EXEC_PATH}" --project "${PROJECT}"`
+const BIN_EXEC = `node "${join(__dirname, '../dist/bin')}" --project "${PROJECT}"`
+const SCRIPT_EXEC = `node "${join(__dirname, '../dist/script')}"`
 
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
 
@@ -56,6 +56,26 @@ describe('ts-node', function () {
       exec(`${BIN_EXEC} -pe "import { example } from './tests/complex/index';example()"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('example\n')
+
+        return done()
+      })
+    })
+
+    it('should provide registered information globally', function (done) {
+      exec(`${BIN_EXEC} tests/env`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('object\n')
+
+        return done()
+      })
+    })
+
+    it('should provide registered information on register', function (done) {
+      exec(`node -r ../register env.ts`, {
+        cwd: TEST_DIR
+      }, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('object\n')
 
         return done()
       })
@@ -315,21 +335,99 @@ describe('ts-node', function () {
         return done()
       })
     })
+
+    if (semver.gte(ts.version, '2.7.0')) {
+      it('should support script mode', function (done) {
+        exec(`${SCRIPT_EXEC} tests/scope/a/log`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('.ts\n')
+
+          return done()
+        })
+      })
+    }
   })
 
   describe('register', function () {
-    register({
+    const registered = register({
       project: PROJECT,
       compilerOptions: {
         jsx: 'preserve'
       }
     })
 
+    const moduleTestPath = require.resolve('../tests/module')
+
+    afterEach(() => {
+      // Re-enable project after every test.
+      registered.enabled(true)
+    })
+
     it('should be able to require typescript', function () {
-      const m = require('../tests/module')
+      const m = require(moduleTestPath)
 
       expect(m.example('foo')).to.equal('FOO')
     })
+
+    it('should support dynamically disabling', function () {
+      delete require.cache[moduleTestPath]
+
+      expect(registered.enabled(false)).to.equal(false)
+      expect(() => require(moduleTestPath)).to.throw(/Unexpected token/)
+
+      delete require.cache[moduleTestPath]
+
+      expect(registered.enabled()).to.equal(false)
+      expect(() => require(moduleTestPath)).to.throw(/Unexpected token/)
+
+      delete require.cache[moduleTestPath]
+
+      expect(registered.enabled(true)).to.equal(true)
+      expect(() => require(moduleTestPath)).to.not.throw()
+
+      delete require.cache[moduleTestPath]
+
+      expect(registered.enabled()).to.equal(true)
+      expect(() => require(moduleTestPath)).to.not.throw()
+    })
+
+    if (semver.gte(ts.version, '2.7.0')) {
+      it('should support compiler scopes', function () {
+        const calls: string[] = []
+
+        registered.enabled(false)
+
+        const compilers = [
+          register({ dir: join(TEST_DIR, 'scope/a'), scope: true }),
+          register({ dir: join(TEST_DIR, 'scope/b'), scope: true })
+        ]
+
+        compilers.forEach(c => {
+          const old = c.compile
+          c.compile = (code, fileName, lineOffset) => {
+            calls.push(fileName)
+
+            return old(code, fileName, lineOffset)
+          }
+        })
+
+        try {
+          expect(require('../tests/scope/a').ext).to.equal('.ts')
+          expect(require('../tests/scope/b').ext).to.equal('.ts')
+        } finally {
+          compilers.forEach(c => c.enabled(false))
+        }
+
+        expect(calls).to.deep.equal([
+          join(TEST_DIR, 'scope/a/index.ts'),
+          join(TEST_DIR, 'scope/b/index.ts')
+        ])
+
+        delete require.cache[moduleTestPath]
+
+        expect(() => require(moduleTestPath)).to.throw()
+      })
+    }
 
     it('should compile through js and ts', function () {
       const m = require('../tests/complex')
@@ -396,6 +494,15 @@ describe('ts-node', function () {
 
         done()
       })
+    })
+  })
+
+  describe('create', () => {
+    it('should create generic compiler instances', () => {
+      const service = create({ compilerOptions: { target: 'es5' }, skipProject: true })
+      const output = service.compile('const x = 10', 'test.ts')
+
+      expect(output).to.contain('var x = 10;')
     })
   })
 })

@@ -48,6 +48,10 @@ You can require `ts-node` and register the loader for future requires by using `
 
 **Note:** If you need to use advanced node.js CLI arguments (e.g. `--inspect`), use them with `node -r ts-node/register` instead of the `ts-node` CLI.
 
+#### Developers
+
+**TS Node** exports a `create()` function that can be used to initialize a TypeScript compiler that isn't registered to `require.extensions`, and it uses the same code as `register`.
+
 ### Mocha
 
 ```sh
@@ -118,7 +122,7 @@ ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 
 ### CLI Options
 
-Supports `--print`, `--eval` and `--require` from [node.js CLI options](https://nodejs.org/api/cli.html).
+Supports `--print`, `--eval`, `--require` and `--interactive` similar to the [node.js CLI options](https://nodejs.org/api/cli.html).
 
 * `--help` Prints help text
 * `--version` Prints version information
@@ -133,13 +137,15 @@ _Environment variable denoted in parentheses._
 * `-C, --compiler [name]` Specify a custom TypeScript compiler (`TS_NODE_COMPILER`, default: `typescript`)
 * `-D, --ignore-diagnostics [code]` Ignore TypeScript warnings by diagnostic code (`TS_NODE_IGNORE_DIAGNOSTICS`)
 * `-O, --compiler-options [opts]` JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
+* `--dir` Specify working directory for config resolution (`TS_NODE_CWD`, default: `process.cwd()`)
+* `--scope` Scope compiler to files within `cwd` (`TS_NODE_SCOPE`, default: `false`)
 * `--files` Load files from `tsconfig.json` on startup (`TS_NODE_FILES`, default: `false`)
 * `--pretty` Use pretty diagnostic formatter (`TS_NODE_PRETTY`, default: `false`)
 * `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`, default: `false`)
 * `--skip-ignore` Skip ignore checks (`TS_NODE_SKIP_IGNORE`, default: `false`)
-* `--log-error` Logs errors of types instead of exit the process (`TS_NODE_LOG_ERROR`, default: `false`)
 * `--build` Emit output files into `.ts-node` directory (`TS_NODE_BUILD`, default: `false`)
 * `--prefer-ts-exts` Re-order file extensions so that TypeScript imports are preferred (`TS_NODE_PREFER_TS_EXTS`, default: `false`)
+* `--log-error` Logs TypeScript errors to stderr instead of throwing exceptions (`TS_NODE_LOG_ERROR`, default: `false`)
 
 ### Programmatic Only Options
 
