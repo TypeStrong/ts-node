@@ -64,8 +64,8 @@
     "rimraf": "^3.0.0",
     "semver": "^6.1.0",
     "tslint": "^5.11.0",
-    "tslint-config-standard": "^8.0.1",
-    "typescript": "^3.6.4"
+    "tslint-config-standard": "^9.0.0",
+    "typescript": "^3.7.2"
   },
   "peerDependencies": {
     "typescript": ">=2.7"
