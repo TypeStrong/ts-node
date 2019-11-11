@@ -418,7 +418,7 @@ function appendEval (state: EvalState, input: string) {
   const undoLines = state.lines
 
   // Handle ASI issues with TypeScript re-evaluation.
-  if (undoInput.charAt(undoInput.length - 1) === '\n' && /^\s*[\[\(\`]/.test(input) && !/;\s*$/.test(undoInput)) {
+  if (undoInput.charAt(undoInput.length - 1) === '\n' && /^\s*[\/\[(`]/.test(input) && !/;\s*$/.test(undoInput)) {
     state.input = `${state.input.slice(0, -1)};\n`
   }
 
