@@ -442,7 +442,7 @@ export function create (options: CreateOptions = {}): Register {
         filterDiagnostics(result.diagnostics, ignoreDiagnostics) :
         []
 
-      if (diagnosticList.length) reportTSError(configDiagnosticList)
+      if (diagnosticList.length) reportTSError(diagnosticList)
 
       return [result.outputText, result.sourceMapText as string]
     }
