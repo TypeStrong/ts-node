@@ -213,6 +213,18 @@ describe('ts-node', function () {
       })
     })
 
+    it('should throw error even in transpileOnly mode', function (done) {
+      exec(`${BIN_EXEC} --transpile-only -pe "console."`, function (err) {
+        if (err === null) {
+          return done('Command was expected to fail, but it succeeded.')
+        }
+
+        expect(err.message).to.contain('error TS1003: Identifier expected')
+
+        return done()
+      })
+    })
+
     it('should pipe into `ts-node` and evaluate', function (done) {
       const cp = exec(BIN_EXEC, function (err, stdout) {
         expect(err).to.equal(null)
