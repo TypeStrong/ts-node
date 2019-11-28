@@ -266,7 +266,7 @@ export function create (options: CreateOptions = {}): Register {
 
   const isScoped = options.scope ? (relname: string) => relname.charAt(0) !== '.' : () => true
   const shouldIgnore = createIgnore(options.skipIgnore ? [] : (
-    options.ignore || ['/node_modules/']
+    options.ignore || ['(?:^|/)node_modules/']
   ).map(str => new RegExp(str)))
 
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
