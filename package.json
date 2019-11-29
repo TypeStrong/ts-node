@@ -11,11 +11,16 @@
   "files": [
     "dist/",
     "register/",
-    "LICENSE"
+    "LICENSE",
+    "tsconfig.schema.json",
+    "tsconfig.schemastore-schema.json"
   ],
   "scripts": {
     "lint": "tslint \"src/**/*.ts\" --project tsconfig.json",
-    "build": "rimraf dist && tsc",
+    "clean": "rimraf dist && rimraf tsconfig.schema.json && rimraf tsconfig.schemastore-schema.json",
+    "build": "npm run clean && npm run build:tsc && npm run build:configSchema",
+    "build:tsc": "tsc",
+    "build:configSchema": "typescript-json-schema --topRef --refs --validationKeywords allOf --out tsconfig.schema.json tsconfig.json TsConfigSchema && node --require ./register ./scripts/create-merged-schema",
     "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
     "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- \"dist/**/*.spec.js\" -R spec --bail",
     "test": "npm run build && npm run lint && npm run test-cov",
@@ -55,6 +60,7 @@
     "@types/react": "^16.0.2",
     "@types/semver": "^6.0.0",
     "@types/source-map-support": "^0.5.0",
+    "axios": "^0.19.0",
     "chai": "^4.0.1",
     "istanbul": "^0.4.0",
     "mocha": "^6.1.4",
@@ -65,7 +71,8 @@
     "semver": "^6.1.0",
     "tslint": "^5.11.0",
     "tslint-config-standard": "^9.0.0",
-    "typescript": "^3.7.2"
+    "typescript": "^3.7.2",
+    "typescript-json-schema": "0.40.0"
   },
   "peerDependencies": {
     "typescript": ">=2.7"

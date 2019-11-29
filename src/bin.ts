@@ -9,7 +9,7 @@ import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { readFileSync, statSync } from 'fs'
 import { homedir } from 'os'
-import { register, VERSION, DEFAULTS, TSError, parse, Register } from './index'
+import { registerInternal, VERSION, DEFAULTS, TSError, parse, Register } from './index'
 
 /**
  * Eval filename for REPL/debug.
@@ -149,42 +149,45 @@ export function main (argv: string[]) {
   const state = new EvalState(scriptPath || join(cwd, EVAL_FILENAME))
 
   // Register the TypeScript compiler instance.
-  const service = register({
-    dir: getCwd(dir, scriptMode, scriptPath),
-    emit,
-    files,
-    pretty,
-    transpileOnly,
-    ignore,
-    preferTsExts,
-    logError,
-    project,
-    skipProject,
-    skipIgnore,
-    compiler,
-    ignoreDiagnostics,
-    compilerOptions,
-    readFile: code !== undefined
-      ? (path: string) => {
-        if (path === state.path) return state.input
+  const service = registerInternal({
+    explicitOpts: {
+      dir: getCwd(dir, scriptMode, scriptPath),
+      emit,
+      files,
+      pretty,
+      transpileOnly,
+      ignore,
+      preferTsExts,
+      logError,
+      project,
+      skipProject,
+      skipIgnore,
+      compiler,
+      ignoreDiagnostics,
+      compilerOptions,
+      readFile: code !== undefined
+        ? (path: string) => {
+          if (path === state.path) return state.input
 
-        try {
-          return readFileSync(path, 'utf8')
-        } catch (err) {/* Ignore. */}
-      }
-      : undefined,
-    fileExists: code !== undefined
-      ? (path: string) => {
-        if (path === state.path) return true
-
-        try {
-          const stats = statSync(path)
-          return stats.isFile() || stats.isFIFO()
-        } catch (err) {
-          return false
+          try {
+            return readFileSync(path, 'utf8')
+          } catch (err) {/* Ignore. */}
         }
-      }
-      : undefined
+        : undefined,
+      fileExists: code !== undefined
+        ? (path: string) => {
+          if (path === state.path) return true
+
+          try {
+            const stats = statSync(path)
+            return stats.isFile() || stats.isFIFO()
+          } catch (err) {
+            return false
+          }
+        }
+        : undefined
+    },
+    defaultOpts: {}
   })
 
   // Output project information.
