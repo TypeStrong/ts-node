@@ -153,6 +153,14 @@ _Environment variable denoted in parentheses._
 * `readFile` Custom TypeScript-compatible file reading function
 * `fileExists` Custom TypeScript-compatible file existence function
 
+## SyntaxError
+
+Any error that is not a `TSError` is from node.js (e.g. `SyntaxError`), and cannot be fixed by TypeScript or `ts-node`. These are runtime issues with your code.
+
+### Import Statements
+
+Current node.js stable releases do not support ES modules. Additionally, `ts-node` does not have the required hooks into node.js to support ES modules. You will need to set `"module": "commonjs"` in your `tsconfig.json` for your code to work.
+
 ## Help! My Types Are Missing!
 
 **TypeScript Node** does _not_ use `files`, `include` or `exclude`, by default. This is because a large majority projects do not use all of the files in a project directory (e.g. `Gulpfile.ts`, runtime vs tests) and parsing every file for types slows startup time. Instead, `ts-node` starts with the script file (e.g. `ts-node index.ts`) and TypeScript resolves dependencies based on imports and references.
