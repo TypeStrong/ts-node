@@ -176,6 +176,7 @@ export interface TsConfigSchema {
    */
   'ts-node': TsConfigOptions
 }
+
 export interface TsConfigOptions
   extends Omit<RegisterOptions,
     | 'transformers'
@@ -184,7 +185,52 @@ export interface TsConfigOptions
     | 'skipProject'
     | 'project'
     | 'dir'
-  > {}
+  > {
+    requires?: Array<string>
+  }
+
+/**
+ * Helper for obtaining ts-node options from multiple sources and merging them.
+ * @internal
+ */
+export class OptionsHelper {
+  constructor(fields: Partial<OptionsHelper>) {
+    Object.assign(this, fields)
+  }
+
+  /**
+   * Options specified explicitly via --flags or options object passed to ts-node's public API.
+   * They should override everything else.
+   */
+  public explicitOptions: RegisterOptions = {}
+
+  /**
+   * Default options that are overridden by all other sources. Env vars fall into this category.
+   */
+  public defaultOptions: RegisterOptions = DEFAULTS
+
+  /** Options pulled from tsconfig.json */
+  public tsconfigOptions: RegisterOptions = {}
+
+  merge(): RegisterOptions {
+    return defaults(this.defaultOptions, this.tsconfigOptions, this.explicitOptions);
+  }
+}
+
+/**
+ * Like Object.assign or splatting, but never overwrites with `undefined`.
+ * This matches the behavior for argument and destructuring defaults.
+ * @internal
+ */
+export function defaults<T>(...sources: Array<T>): T {
+  const merged: any = {}
+  for(const source of sources) {
+    for(const [key, value] of Object.entries(source)) {
+      if(value !== undefined) merged[key] = value
+    }
+  }
+  return merged
+}
 
 /**
  * Track the project information.
@@ -282,6 +328,7 @@ export class TSError extends BaseError {
 export interface Register {
   ts: TSCommon
   config: _ts.ParsedCommandLine
+  options: RegisterOptions & TsConfigOptions
   enabled (enabled?: boolean): boolean
   ignored (fileName: string): boolean
   compile (code: string, fileName: string, lineOffset?: number): string
@@ -307,10 +354,10 @@ function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
  * Register TypeScript compiler instance onto node.js
  */
 export function register (opts: RegisterOptions = {}): Register {
-  return registerInternal({
-    defaultOpts: DEFAULTS,
-    explicitOpts: opts
-  })
+  return registerInternal(new OptionsHelper({
+    defaultOptions: DEFAULTS,
+    explicitOptions: opts
+  }))
 }
 
 /**
@@ -318,16 +365,9 @@ export function register (opts: RegisterOptions = {}): Register {
  * default options separately, to allow more advanced config merging behavior.
  * @internal
  */
-export function registerInternal (args: {
-  defaultOpts: RegisterOptions,
-  explicitOpts: RegisterOptions
-}): Register {
-  const { defaultOpts, explicitOpts } = args
+export function registerInternal (optionsHelper: OptionsHelper): Register {
   const originalJsHandler = require.extensions['.js'] // tslint:disable-line
-  const { register: service, options } = createInternal({
-    defaultOptions: defaultOpts,
-    explicitOptions: explicitOpts
-  })
+  const service = createInternal(optionsHelper)
   const extensions = ['.ts']
 
   // Enable additional extensions when JSX or `allowJs` is enabled.
@@ -339,7 +379,7 @@ export function registerInternal (args: {
   process[REGISTER_INSTANCE] = service
 
   // Register the extensions.
-  registerExtensions(options.preferTsExts, extensions, service, originalJsHandler)
+  registerExtensions(service.options.preferTsExts, extensions, service, originalJsHandler)
 
   return service
 }
@@ -348,17 +388,13 @@ export function registerInternal (args: {
  * Create TypeScript compiler instance.
  */
 export function create (options: CreateOptions = {}): Register {
-  return createInternal({ explicitOptions: options, defaultOptions: {} }).register
+  return createInternal(new OptionsHelper({
+    explicitOptions: options
+  }))
 }
 
-function createInternal (args: {
-  /** Explicitly set options, via --flags or passed to the API */
-  explicitOptions: CreateOptions
-  /** Default options, including those pulled from environment variables */
-  defaultOptions: CreateOptions
-}): {register: Register, options: RegisterOptions} {
-  const { explicitOptions, defaultOptions } = args
-  let options: RegisterOptions = { ...defaultOptions, ...explicitOptions }
+function createInternal (optionsHelper: OptionsHelper): Register {
+  let options = optionsHelper.merge()
   const ignoreDiagnostics = [
     6059, // "'rootDir' is expected to contain all source files."
     18002, // "The 'files' list in config file is empty."
@@ -387,10 +423,12 @@ function createInternal (args: {
   let { cwd, isScoped, compiler, ts, fileExists, readFile } = recomputedOptions()
 
   // Read config file
-  const { config, options: optionsFromTsconfig } = readConfig(cwd, ts, fileExists, readFile, options)
+  const { config, options: tsconfigOptions } = readConfig(cwd, ts, fileExists, readFile, options)
+  if(tsconfigOptions)
+    optionsHelper.tsconfigOptions = tsconfigOptions
 
   // Merge default options, tsconfig options, and explicit --flag options
-  options = { ...defaultOptions, ...optionsFromTsconfig, ...explicitOptions }
+  options = optionsHelper.merge()
 
   // Re-compute based on options from tsconfig
   ;({ cwd, isScoped, compiler, ts, readFile, fileExists } = recomputedOptions())
@@ -650,8 +688,7 @@ function createInternal (args: {
   const ignored = (fileName: string) => !active || !isScoped(fileName) || shouldIgnore(fileName, ignore)
 
   return {
-    register: { ts, config, compile, getTypeInfo, ignored, enabled },
-    options
+    ts, config, compile, getTypeInfo, ignored, enabled, options
   }
 }
 
@@ -796,13 +833,26 @@ function readConfig (
   config.compilerOptions = Object.assign(
     {},
     config.compilerOptions,
-    config['ts-node'].compilerOptions,
+    config['ts-node']?.compilerOptions,
     options.compilerOptions,
     TS_NODE_COMPILER_OPTIONS
   )
 
   const fixedConfig = fixConfig(ts, ts.parseJsonConfigFileContent(config, ts.sys, basePath, undefined, configFileName))
-  return { config: fixedConfig, options: config['ts-node'] }
+
+  // Fix ts-node options that come from tsconfig.json
+  const tsconfigOptions: TsConfigOptions = {
+    ...config['ts-node']
+  }
+  if(tsconfigOptions.requires) {
+    // Relative paths are relative to the tsconfig's parent directory, not the `dir` option
+    tsconfigOptions.requires = tsconfigOptions.requires.map((path: string) => {
+      if(path.startsWith('.')) return resolve(configFileName!, '..', path)
+      return path
+    })
+  }
+
+  return { config: fixedConfig, options: tsconfigOptions }
 }
 
 /**
