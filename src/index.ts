@@ -225,7 +225,8 @@ export class OptionsHelper {
 export function defaults<T> (...sources: Array<T>): T {
   const merged: any = {}
   for (const source of sources) {
-    for (const [key, value] of Object.entries(source)) {
+    for (const key of Object.keys(source)) {
+      const value = (source as any)[key]
       if (value !== undefined) merged[key] = value
     }
   }
