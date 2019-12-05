@@ -7,7 +7,7 @@
  */
 
 import axios from 'axios';
-import * as Path from 'path';
+import {resolve} from 'path';
 import * as fs from 'fs';
 
 async function main() {
@@ -50,7 +50,7 @@ async function main() {
     ]
   };
   fs.writeFileSync(
-    Path.resolve(__dirname, '../tsconfig.schemastore-schema.json'),
+    resolve(__dirname, '../tsconfig.schemastore-schema.json'),
     JSON.stringify(mergedSchema, null, 2)
   );
 }

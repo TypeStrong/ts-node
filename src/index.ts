@@ -158,25 +158,6 @@ export interface RegisterOptions extends CreateOptions {
   preferTsExts?: boolean | null
 }
 
-/*
- * This interface exists solely for generating a JSON schema for tsconfig.json.
- * We do *not* extend the compiler's tsconfig interface.  Instead we handle that
- * on a schema level, via "allOf", so we pull in the same schema that VSCode
- * already uses.
- */
-/**
- * tsconfig schema which includes "ts-node" options.
- * @allOf [{"$ref": "https://schemastore.azurewebsites.net/schemas/json/tsconfig.json"}]
- */
-export interface TsConfigSchema {
-  /**
-   * ts-node options.  See also: https://github.com/TypeStrong/ts-node#configuration-options
-   *
-   * ts-node offers TypeScript execution and REPL for node.js, with source map support.
-   */
-  'ts-node': TsConfigOptions
-}
-
 export interface TsConfigOptions
   extends Omit<RegisterOptions,
     | 'transformers'
@@ -405,23 +386,23 @@ function createInternal (optionsHelper: OptionsHelper): Register {
 
   // Require the TypeScript compiler and configuration.
 
+  const cwd = options.dir ? resolve(options.dir) : process.cwd()
+
   /**
    * Compute options that must be computed before *and* after loading tsconfig
    * They are required to successfully parse tsconfig, but might be changed by
    * ts-node options specified in the config file.
    */
-  function recomputedOptions () {
-    const cwd = options.dir ? resolve(options.dir) : process.cwd()
-    const isScoped = options.scope ? (fileName: string) => relative(cwd, fileName).charAt(0) !== '.' : () => true
+  function loadCompiler () {
     const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
     const ts: typeof _ts = require(compiler)
     const readFile = options.readFile || ts.sys.readFile
     const fileExists = options.fileExists || ts.sys.fileExists
-    return { cwd, isScoped, compiler, ts, readFile, fileExists }
+    return { compiler, ts, readFile, fileExists }
   }
 
   // compute enough options to read the config file
-  let { cwd, isScoped, compiler, ts, fileExists, readFile } = recomputedOptions()
+  let { compiler, ts, fileExists, readFile } = loadCompiler()
 
   // Read config file
   const { config, options: tsconfigOptions } = readConfig(cwd, ts, fileExists, readFile, options)
@@ -433,8 +414,9 @@ function createInternal (optionsHelper: OptionsHelper): Register {
   options = optionsHelper.merge()
 
   // Re-compute based on options from tsconfig
-  ;({ cwd, isScoped, compiler, ts, readFile, fileExists } = recomputedOptions())
+  ;({ compiler, ts, readFile, fileExists } = loadCompiler())
 
+  const isScoped = options.scope ? (fileName: string) => relative(cwd, fileName).charAt(0) !== '.' : () => true
   const ignore = options.skipIgnore ? [] : (options.ignore || ['/node_modules/']).map(str => new RegExp(str))
   const transpileOnly = options.transpileOnly === true
   const transformers = options.transformers || undefined

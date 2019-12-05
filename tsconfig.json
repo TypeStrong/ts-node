@@ -1,6 +1,5 @@
 {
   "$schema": "./tsconfig.schemastore-schema.json",
-  "ts-node": {},
   "compilerOptions": {
     "target": "es2015",
     "lib": ["es2015"],
