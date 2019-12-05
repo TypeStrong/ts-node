@@ -186,15 +186,15 @@ export interface TsConfigOptions
     | 'project'
     | 'dir'
   > {
-    requires?: Array<string>
-  }
+  requires?: Array<string>
+}
 
 /**
  * Helper for obtaining ts-node options from multiple sources and merging them.
  * @internal
  */
 export class OptionsHelper {
-  constructor(fields: Partial<OptionsHelper>) {
+  constructor (fields: Partial<OptionsHelper>) {
     Object.assign(this, fields)
   }
 
@@ -212,8 +212,8 @@ export class OptionsHelper {
   /** Options pulled from tsconfig.json */
   public tsconfigOptions: RegisterOptions = {}
 
-  merge(): RegisterOptions {
-    return defaults(this.defaultOptions, this.tsconfigOptions, this.explicitOptions);
+  merge (): RegisterOptions {
+    return defaults(this.defaultOptions, this.tsconfigOptions, this.explicitOptions)
   }
 }
 
@@ -222,11 +222,11 @@ export class OptionsHelper {
  * This matches the behavior for argument and destructuring defaults.
  * @internal
  */
-export function defaults<T>(...sources: Array<T>): T {
+export function defaults<T> (...sources: Array<T>): T {
   const merged: any = {}
-  for(const source of sources) {
-    for(const [key, value] of Object.entries(source)) {
-      if(value !== undefined) merged[key] = value
+  for (const source of sources) {
+    for (const [key, value] of Object.entries(source)) {
+      if (value !== undefined) merged[key] = value
     }
   }
   return merged
@@ -424,8 +424,9 @@ function createInternal (optionsHelper: OptionsHelper): Register {
 
   // Read config file
   const { config, options: tsconfigOptions } = readConfig(cwd, ts, fileExists, readFile, options)
-  if(tsconfigOptions)
+  if (tsconfigOptions) {
     optionsHelper.tsconfigOptions = tsconfigOptions
+  }
 
   // Merge default options, tsconfig options, and explicit --flag options
   options = optionsHelper.merge()
@@ -844,10 +845,10 @@ function readConfig (
   const tsconfigOptions: TsConfigOptions = {
     ...config['ts-node']
   }
-  if(tsconfigOptions.requires) {
+  if (tsconfigOptions.requires) {
     // Relative paths are relative to the tsconfig's parent directory, not the `dir` option
     tsconfigOptions.requires = tsconfigOptions.requires.map((path: string) => {
-      if(path.startsWith('.')) return resolve(configFileName!, '..', path)
+      if (path.startsWith('.')) return resolve(configFileName!, '..', path)
       return path
     })
   }

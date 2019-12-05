@@ -346,6 +346,52 @@ describe('ts-node', function () {
         })
       })
     }
+
+    describe('should read ts-node options from tsconfig.json', function () {
+      const BIN_EXEC = `node "${join(__dirname, '../dist/bin')}" --project tests/tsconfig-options/tsconfig.json`
+      it('options pulled from tsconfig.json', function (done) {
+        exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, function (err, stdout) {
+          expect(err).to.equal(null)
+          const { options, config } = JSON.parse(stdout)
+          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
+          expect(config.options.sourceRoot).to.equal('tsconfig-tsnode-sourceRoot')
+          expect(options.pretty).to.equal(null)
+          expect(options.transpileOnly).to.equal(true)
+          expect(options.requires).to.deep.equal(['./required'])
+          return done()
+        })
+      })
+      it('flags override tsconfig', function (done) {
+        exec(`${BIN_EXEC} --transpile-only=false --compiler-options '{"sourceRoot": "flags-sourceRoot"}' tests/tsconfig-options/log-options.js`, function (err, stdout) {
+          expect(err).to.equal(null)
+          const { options, config } = JSON.parse(stdout)
+          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
+          expect(config.options.sourceRoot).to.equal('flags-sourceRoot')
+          expect(options.pretty).to.equal(null)
+          expect(options.transpileOnly).to.equal(false)
+          expect(options.requires).to.deep.equal(['./required'])
+          return done()
+        })
+      })
+      it('tsconfig overrides env vars', function (done) {
+        exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, {
+          env: {
+            ...process.env,
+            TS_NODE_PRETTY: 'true',
+            TS_NODE_TRANSPILE_ONLY: 'false'
+          }
+        }, function (err, stdout) {
+          expect(err).to.equal(null)
+          const { options, config } = JSON.parse(stdout)
+          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
+          expect(config.options.sourceRoot).to.equal('tsconfig-tsnode-sourceRoot')
+          expect(options.pretty).to.equal(true)
+          expect(options.transpileOnly).to.equal(true)
+          expect(options.requires).to.deep.equal(['./required'])
+          return done()
+        })
+      })
+    })
   })
 
   describe('register', function () {

@@ -134,7 +134,7 @@ export function main (argv: string[]) {
       skipIgnore = defaultOptions.skipIgnore,
       preferTsExts = defaultOptions.preferTsExts,
       logError = defaultOptions.logError,
-      emit = defaultOptions.emit,
+      emit = defaultOptions.emit
     } = flagOptions
     return {
       dir, help, scriptMode, version, requires, code, print, interactive,
@@ -143,7 +143,7 @@ export function main (argv: string[]) {
       emit
     }
   })()
-  const {help, version, dir, scriptMode, code, interactive, print} = options
+  const { help, version, dir, scriptMode, code, interactive, print } = options
 
   if (help) {
     console.log(`
@@ -220,7 +220,7 @@ export function main (argv: string[]) {
     defaultOptions
   }))
 
-  const {requires = []} = service.options
+  const { requires = [] } = service.options
 
   // Output project information.
   if (version >= 2) {
