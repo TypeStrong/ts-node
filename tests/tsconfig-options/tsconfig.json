@@ -2,14 +2,14 @@
   "extends": "../tsconfig.json",
   "ts-node": {
     "compilerOptions": {
-      "sourceRoot": "tsconfig-tsnode-sourceRoot"
+      "types": ["tsconfig-tsnode-types"]
     },
     "transpileOnly": true,
     "requires": ["./required"],
     "skipIgnore": false
   },
   "compilerOptions": {
-    "sourceRoot": "tsconfig-sourceRoot",
     "typeRoots": ["tsconfig-typeroots"],
+    "types": ["tsconfig-types"]
   }
 }

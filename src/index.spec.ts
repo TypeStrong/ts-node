@@ -354,7 +354,7 @@ describe('ts-node', function () {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
           expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
-          expect(config.options.sourceRoot).to.equal('tsconfig-tsnode-sourceRoot')
+          expect(config.options.types).to.deep.equal(['tsconfig-tsnode-types'])
           expect(options.pretty).to.equal(null)
           expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
@@ -363,11 +363,11 @@ describe('ts-node', function () {
         })
       })
       it('flags override tsconfig', function (done) {
-        exec(`${BIN_EXEC} --skip-ignore --compiler-options '{"sourceRoot": "flags-sourceRoot"}' tests/tsconfig-options/log-options.js`, function (err, stdout) {
+        exec(`${BIN_EXEC} --skip-ignore --compiler-options '{"types": ["flags-types"]}' tests/tsconfig-options/log-options.js`, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
           expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
-          expect(config.options.sourceRoot).to.equal('flags-sourceRoot')
+          expect(config.options.types).to.deep.equal(['flags-types'])
           expect(options.pretty).to.equal(null)
           expect(options.skipIgnore).to.equal(true)
           expect(options.transpileOnly).to.equal(true)
@@ -386,7 +386,7 @@ describe('ts-node', function () {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
           expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
-          expect(config.options.sourceRoot).to.equal('tsconfig-tsnode-sourceRoot')
+          expect(config.options.types).to.deep.equal(['tsconfig-tsnode-types'])
           expect(options.pretty).to.equal(true)
           expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
