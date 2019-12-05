@@ -17,6 +17,7 @@
   ],
   "scripts": {
     "lint": "tslint \"src/**/*.ts\" --project tsconfig.json",
+    "lint:fix": "tslint \"src/**/*.ts\" --project tsconfig.json --fix",
     "clean": "rimraf dist && rimraf tsconfig.schema.json && rimraf tsconfig.schemastore-schema.json",
     "build": "npm run clean && npm run build:tsc && npm run build:configSchema",
     "build:tsc": "tsc",

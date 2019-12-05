@@ -356,20 +356,22 @@ describe('ts-node', function () {
           expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
           expect(config.options.sourceRoot).to.equal('tsconfig-tsnode-sourceRoot')
           expect(options.pretty).to.equal(null)
+          expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
-          expect(options.requires).to.deep.equal(['./required'])
+          expect(options.requires).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required')])
           return done()
         })
       })
       it('flags override tsconfig', function (done) {
-        exec(`${BIN_EXEC} --transpile-only=false --compiler-options '{"sourceRoot": "flags-sourceRoot"}' tests/tsconfig-options/log-options.js`, function (err, stdout) {
+        exec(`${BIN_EXEC} --skip-ignore --compiler-options '{"sourceRoot": "flags-sourceRoot"}' tests/tsconfig-options/log-options.js`, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
           expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
           expect(config.options.sourceRoot).to.equal('flags-sourceRoot')
           expect(options.pretty).to.equal(null)
-          expect(options.transpileOnly).to.equal(false)
-          expect(options.requires).to.deep.equal(['./required'])
+          expect(options.skipIgnore).to.equal(true)
+          expect(options.transpileOnly).to.equal(true)
+          expect(options.requires).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required')])
           return done()
         })
       })
@@ -378,7 +380,7 @@ describe('ts-node', function () {
           env: {
             ...process.env,
             TS_NODE_PRETTY: 'true',
-            TS_NODE_TRANSPILE_ONLY: 'false'
+            TS_NODE_SKIP_IGNORE: 'true'
           }
         }, function (err, stdout) {
           expect(err).to.equal(null)
@@ -386,8 +388,9 @@ describe('ts-node', function () {
           expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
           expect(config.options.sourceRoot).to.equal('tsconfig-tsnode-sourceRoot')
           expect(options.pretty).to.equal(true)
+          expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
-          expect(options.requires).to.deep.equal(['./required'])
+          expect(options.requires).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required')])
           return done()
         })
       })
