@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "ts-node": {
+    "compilerOptions": {
+      "sourceRoot": "tsconfig-tsnode-sourceRoot"
+    },
+    "transpileOnly": true,
+    "requires": ["./required"],
+    "skipIgnore": false
+  },
+  "compilerOptions": {
+    "sourceRoot": "tsconfig-sourceRoot",
+    "typeRoots": ["tsconfig-typeroots"],
+  }
+}
