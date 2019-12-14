@@ -166,9 +166,7 @@ export interface TsConfigOptions
     | 'skipProject'
     | 'project'
     | 'dir'
-  > {
-  requires?: Array<string>
-}
+  > {}
 
 /**
  * Like Object.assign or splatting, but never overwrites with `undefined`.
@@ -790,14 +788,6 @@ function readConfig (
     readDirectory: ts.sys.readDirectory,
     useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
   }, basePath, undefined, configFileName))
-
-  if (tsconfigOptions.requires) {
-    // Relative paths are relative to the tsconfig's parent directory, not the `dir` option
-    tsconfigOptions.requires = tsconfigOptions.requires.map((path: string) => {
-      if (path.startsWith('.')) return resolve(configFileName!, '..', path)
-      return path
-    })
-  }
 
   return { config: fixedConfig, options: tsconfigOptions }
 }

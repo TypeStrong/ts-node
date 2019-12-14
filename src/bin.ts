@@ -87,7 +87,7 @@ export function main (argv: string[]) {
     '--help': help = false,
     '--script-mode': scriptMode = false,
     '--version': version = 0,
-    '--require': argsRequire = [],
+    '--require': requires = [],
     '--eval': code = undefined,
     '--print': print = false,
     '--interactive': interactive = false,
@@ -189,8 +189,6 @@ export function main (argv: string[]) {
       }
       : undefined
   })
-
-  const requires = argsRequire.length !== 0 ? argsRequire : service.options.requires || []
 
   // Output project information.
   if (version >= 2) {
