@@ -9,7 +9,7 @@ import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { readFileSync, statSync } from 'fs'
 import { homedir } from 'os'
-import { registerInternal, VERSION, DEFAULTS, TSError, parse, Register, OptionsHelper, RegisterOptions, register } from './index'
+import { VERSION, DEFAULTS, TSError, parse, Register, RegisterOptions, register } from './index'
 
 /**
  * Eval filename for REPL/debug.

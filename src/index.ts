@@ -171,34 +171,6 @@ export interface TsConfigOptions
 }
 
 /**
- * Helper for obtaining ts-node options from multiple sources and merging them.
- * @internal
- */
-export class OptionsHelper {
-  constructor (fields: Partial<OptionsHelper>) {
-    Object.assign(this, fields)
-  }
-
-  /**
-   * Options specified explicitly via --flags or options object passed to ts-node's public API.
-   * They should override everything else.
-   */
-  public explicitOptions: RegisterOptions = {}
-
-  /**
-   * Default options that are overridden by all other sources. Env vars fall into this category.
-   */
-  public defaultOptions: RegisterOptions = DEFAULTS
-
-  /** Options pulled from tsconfig.json */
-  public tsconfigOptions: RegisterOptions = {}
-
-  merge (): RegisterOptions {
-    return defaults(this.defaultOptions, this.tsconfigOptions, this.explicitOptions)
-  }
-}
-
-/**
  * Like Object.assign or splatting, but never overwrites with `undefined`.
  * This matches the behavior for argument and destructuring defaults.
  * @internal
@@ -336,20 +308,8 @@ function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
  * Register TypeScript compiler instance onto node.js
  */
 export function register (opts: RegisterOptions = {}): Register {
-  return registerInternal(new OptionsHelper({
-    defaultOptions: DEFAULTS,
-    explicitOptions: opts
-  }))
-}
-
-/**
- * Implementation of `register()` which allows passing explicit options and
- * default options separately, to allow more advanced config merging behavior.
- * @internal
- */
-export function registerInternal (optionsHelper: OptionsHelper): Register {
   const originalJsHandler = require.extensions['.js'] // tslint:disable-line
-  const service = createInternal(optionsHelper)
+  const service = create(opts)
   const extensions = ['.ts']
 
   // Enable additional extensions when JSX or `allowJs` is enabled.
@@ -370,23 +330,13 @@ export function registerInternal (optionsHelper: OptionsHelper): Register {
  * Create TypeScript compiler instance.
  */
 export function create (options: CreateOptions = {}): Register {
-  return createInternal(new OptionsHelper({
-    explicitOptions: options
-  }))
-}
-
-function createInternal (optionsHelper: OptionsHelper): Register {
-  let options = optionsHelper.merge()
-  const ignoreDiagnostics = [
-    6059, // "'rootDir' is expected to contain all source files."
-    18002, // "The 'files' list in config file is empty."
-    18003, // "No inputs were found in config file."
-    ...(options.ignoreDiagnostics || [])
-  ].map(Number)
+  const optionsWithoutDefaults = options
+  options = defaults(options, DEFAULTS)
 
   // Require the TypeScript compiler and configuration.
 
   const cwd = options.dir ? resolve(options.dir) : process.cwd()
+  const compilerBefore = options.compiler
 
   /**
    * Compute options that must be computed before *and* after loading tsconfig
@@ -406,20 +356,25 @@ function createInternal (optionsHelper: OptionsHelper): Register {
 
   // Read config file
   const { config, options: tsconfigOptions } = readConfig(cwd, ts, fileExists, readFile, options)
-  if (tsconfigOptions) {
-    optionsHelper.tsconfigOptions = tsconfigOptions
+
+  // Merge default options, tsconfig options, and explicit options
+  options = defaults(optionsWithoutDefaults, tsconfigOptions || {}, DEFAULTS)
+
+  // If `compiler` option changed based on tsconfig, re-load the compiler
+  if(options.compiler !== compilerBefore) {
+    ({ compiler, ts, readFile, fileExists } = loadCompiler())
   }
-
-  // Merge default options, tsconfig options, and explicit --flag options
-  options = optionsHelper.merge()
-
-  // Re-compute based on options from tsconfig
-  ;({ compiler, ts, readFile, fileExists } = loadCompiler())
 
   const isScoped = options.scope ? (fileName: string) => relative(cwd, fileName).charAt(0) !== '.' : () => true
   const ignore = options.skipIgnore ? [] : (options.ignore || ['/node_modules/']).map(str => new RegExp(str))
   const transpileOnly = options.transpileOnly === true
   const transformers = options.transformers || undefined
+  const ignoreDiagnostics = [
+    6059, // "'rootDir' is expected to contain all source files."
+    18002, // "The 'files' list in config file is empty."
+    18003, // "No inputs were found in config file."
+    ...(options.ignoreDiagnostics || [])
+  ].map(Number)
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
   const outputCache = new Map<string, string>()
 
