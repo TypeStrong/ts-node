@@ -184,6 +184,15 @@ export function defaults<T> (...sources: Array<T>): T {
   return merged
 }
 
+/** Like `defaults` but for single values, not objects */
+export function defaultValue<T>(...values: Array<T>): T {
+  let merged: T = undefined as any as T
+  for (const value of values) {
+    if (value !== undefined) merged = value
+  }
+  return merged
+}
+
 /**
  * Track the project information.
  */
@@ -350,7 +359,7 @@ export function create (options: CreateOptions = {}): Register {
   let { compiler, ts } = loadCompiler()
 
   // Read config file
-  const { config, options: tsconfigOptions } = readConfig(cwd, ts, options)
+  const { config, options: tsconfigOptions } = readConfig(cwd, ts, optionsWithoutDefaults)
 
   // Merge default options, tsconfig options, and explicit options
   options = defaults(DEFAULTS, tsconfigOptions || {}, optionsWithoutDefaults)
@@ -738,13 +747,15 @@ function readConfig (
 
   const {
     fileExists = ts.sys.fileExists,
-    readFile = ts.sys.readFile
+    readFile = ts.sys.readFile,
+    skipProject = DEFAULTS.skipProject,
+    project = DEFAULTS.project
   } = options
 
   // Read project configuration when available.
-  if (!options.skipProject) {
-    configFileName = options.project
-      ? normalizeSlashes(resolve(cwd, options.project))
+  if (!skipProject) {
+    configFileName = project
+      ? normalizeSlashes(resolve(cwd, project))
       : ts.findConfigFile(normalizeSlashes(cwd), fileExists)
 
     if (configFileName) {
@@ -766,7 +777,7 @@ function readConfig (
   }
 
   // Remove resolution of "files".
-  const filesOption = options.files !== undefined ? options.files : tsconfigOptions.files
+  const filesOption = defaultValue(DEFAULTS.files, tsconfigOptions.files, options.files)
   if (!filesOption) {
     config.files = []
     config.include = []
@@ -775,6 +786,7 @@ function readConfig (
   // Override default configuration options `ts-node` requires.
   config.compilerOptions = Object.assign(
     {},
+    DEFAULTS.compilerOptions,
     config.compilerOptions,
     config['ts-node']?.compilerOptions,
     options.compilerOptions,
