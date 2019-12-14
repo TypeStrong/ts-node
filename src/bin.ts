@@ -9,7 +9,7 @@ import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { readFileSync, statSync } from 'fs'
 import { homedir } from 'os'
-import { VERSION, DEFAULTS, TSError, parse, Register, RegisterOptions, register } from './index'
+import { VERSION, TSError, parse, Register, register } from './index'
 
 /**
  * Eval filename for REPL/debug.
@@ -80,7 +80,8 @@ export function main (argv: string[]) {
   })
 
   // Only setting defaults for CLI-specific flags
-  // Anything on RegisterOptions can be passed as `undefined` to `register()`
+  // Anything passed to `register()` can be `undefined`; `create()` will apply
+  // defaults.
   const {
     '--dir': dir,
     '--help': help = false,
