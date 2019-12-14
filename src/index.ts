@@ -185,7 +185,7 @@ export function defaults<T> (...sources: Array<T>): T {
 }
 
 /** Like `defaults` but for single values, not objects */
-export function defaultValue<T>(...values: Array<T>): T {
+export function defaultValue<T> (...values: Array<T>): T {
   let merged: T = undefined as any as T
   for (const value of values) {
     if (value !== undefined) merged = value
