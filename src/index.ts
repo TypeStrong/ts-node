@@ -331,7 +331,7 @@ export function register (opts: RegisterOptions = {}): Register {
  */
 export function create (options: CreateOptions = {}): Register {
   const optionsWithoutDefaults = options
-  options = defaults(options, DEFAULTS)
+  options = defaults(DEFAULTS, options)
 
   // Require the TypeScript compiler and configuration.
 
@@ -346,25 +346,25 @@ export function create (options: CreateOptions = {}): Register {
   function loadCompiler () {
     const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
     const ts: typeof _ts = require(compiler)
-    const readFile = options.readFile || ts.sys.readFile
-    const fileExists = options.fileExists || ts.sys.fileExists
-    return { compiler, ts, readFile, fileExists }
+    return { compiler, ts }
   }
 
   // compute enough options to read the config file
-  let { compiler, ts, fileExists, readFile } = loadCompiler()
+  let { compiler, ts } = loadCompiler()
 
   // Read config file
-  const { config, options: tsconfigOptions } = readConfig(cwd, ts, fileExists, readFile, options)
+  const { config, options: tsconfigOptions } = readConfig(cwd, ts, options)
 
   // Merge default options, tsconfig options, and explicit options
-  options = defaults(optionsWithoutDefaults, tsconfigOptions || {}, DEFAULTS)
+  options = defaults(DEFAULTS, tsconfigOptions || {}, optionsWithoutDefaults)
 
   // If `compiler` option changed based on tsconfig, re-load the compiler
   if (options.compiler !== compilerBefore) {
-    ({ compiler, ts, readFile, fileExists } = loadCompiler())
+    ({ compiler, ts } = loadCompiler())
   }
 
+  const readFile = options.readFile || ts.sys.readFile
+  const fileExists = options.fileExists || ts.sys.fileExists
   const isScoped = options.scope ? (fileName: string) => relative(cwd, fileName).charAt(0) !== '.' : () => true
   const ignore = options.skipIgnore ? [] : (options.ignore || ['/node_modules/']).map(str => new RegExp(str))
   const transpileOnly = options.transpileOnly === true
@@ -626,9 +626,7 @@ export function create (options: CreateOptions = {}): Register {
   const enabled = (enabled?: boolean) => enabled === undefined ? active : (active = !!enabled)
   const ignored = (fileName: string) => !active || !isScoped(fileName) || shouldIgnore(fileName, ignore)
 
-  return {
-    ts, config, compile, getTypeInfo, ignored, enabled, options
-  }
+  return { ts, config, compile, getTypeInfo, ignored, enabled, options }
 }
 
 /**
@@ -730,8 +728,6 @@ function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine) {
 function readConfig (
   cwd: string,
   ts: TSCommon,
-  fileExists: (path: string) => boolean,
-  readFile: (path: string) => string | undefined,
   options: CreateOptions
 ): {
   /** Parsed TypeScript configuration */
@@ -742,6 +738,11 @@ function readConfig (
   let config: any = { compilerOptions: {} }
   let basePath = normalizeSlashes(cwd)
   let configFileName: string | undefined = undefined
+
+  const {
+    fileExists = ts.sys.fileExists,
+    readFile = ts.sys.readFile
+  } = options
 
   // Read project configuration when available.
   if (!options.skipProject) {
@@ -762,8 +763,14 @@ function readConfig (
     }
   }
 
+  // Fix ts-node options that come from tsconfig.json
+  const tsconfigOptions: TsConfigOptions = {
+    ...config['ts-node']
+  }
+
   // Remove resolution of "files".
-  if (!options.files) {
+  const filesOption = options.files !== undefined ? options.files : tsconfigOptions.files;
+  if (!filesOption) {
     config.files = []
     config.include = []
   }
@@ -777,12 +784,13 @@ function readConfig (
     TS_NODE_COMPILER_OPTIONS
   )
 
-  const fixedConfig = fixConfig(ts, ts.parseJsonConfigFileContent(config, ts.sys, basePath, undefined, configFileName))
+  const fixedConfig = fixConfig(ts, ts.parseJsonConfigFileContent(config, {
+    fileExists,
+    readFile,
+    readDirectory: ts.sys.readDirectory,
+    useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
+  }, basePath, undefined, configFileName))
 
-  // Fix ts-node options that come from tsconfig.json
-  const tsconfigOptions: TsConfigOptions = {
-    ...config['ts-node']
-  }
   if (tsconfigOptions.requires) {
     // Relative paths are relative to the tsconfig's parent directory, not the `dir` option
     tsconfigOptions.requires = tsconfigOptions.requires.map((path: string) => {
