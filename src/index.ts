@@ -1,6 +1,6 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path'
 import sourceMapSupport = require('source-map-support')
-import yn from 'yn'
+import * as yn from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
 import * as _ts from 'typescript'
@@ -339,9 +339,9 @@ export function create (options: CreateOptions = {}): Register {
   const compilerBefore = options.compiler
 
   /**
-   * Compute options that must be computed before *and* after loading tsconfig
-   * They are required to successfully parse tsconfig, but might be changed by
-   * ts-node options specified in the config file.
+   * Load the typescript compiler.  It is required to parse the tsconfig, but
+   * might be changed by options specified in the tsconfig, so we might need to
+   * do this twice if the `compiler` option changes.
    */
   function loadCompiler () {
     const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
@@ -361,7 +361,7 @@ export function create (options: CreateOptions = {}): Register {
   options = defaults(optionsWithoutDefaults, tsconfigOptions || {}, DEFAULTS)
 
   // If `compiler` option changed based on tsconfig, re-load the compiler
-  if(options.compiler !== compilerBefore) {
+  if (options.compiler !== compilerBefore) {
     ({ compiler, ts, readFile, fileExists } = loadCompiler())
   }
 

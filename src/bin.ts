@@ -189,7 +189,7 @@ export function main (argv: string[]) {
       : undefined
   })
 
-  const requires = argsRequire !== undefined ? argsRequire : service.options.requires || []
+  const requires = argsRequire.length !== 0 ? argsRequire : service.options.requires || []
 
   // Output project information.
   if (version >= 2) {
