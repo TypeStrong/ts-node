@@ -9,7 +9,7 @@ import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { readFileSync, statSync } from 'fs'
 import { homedir } from 'os'
-import { registerInternal, VERSION, DEFAULTS, TSError, parse, Register, OptionsHelper, RegisterOptions } from './index'
+import { registerInternal, VERSION, DEFAULTS, TSError, parse, Register, OptionsHelper, RegisterOptions, register } from './index'
 
 /**
  * Eval filename for REPL/debug.
@@ -79,71 +79,31 @@ export function main (argv: string[]) {
     stopAtPositional: true
   })
 
-  const flagOptions = {
-    dir: args['--dir'],
-    help: args['--help'],
-    scriptMode: args['--script-mode'],
-    version: args['--version'],
-    requires: args['--require'],
-    code: args['--eval'],
-    print: args['--print'],
-    interactive: args['--interactive'],
-    files: args['--files'],
-    compiler: args['--compiler'],
-    compilerOptions: args['--compiler-options'],
-    project: args['--project'],
-    ignoreDiagnostics: args['--ignore-diagnostics'],
-    ignore: args['--ignore'],
-    transpileOnly: args['--transpile-only'],
-    pretty: args['--pretty'],
-    skipProject: args['--skip-project'],
-    skipIgnore: args['--skip-ignore'],
-    preferTsExts: args['--prefer-ts-exts'],
-    logError: args['--log-error'],
-    emit: args['--emit']
-  }
-  const defaultOptions = {
-    ...DEFAULTS,
-    help: false,
-    scriptMode: false,
-    version: 0,
-    requires: [],
-    code: undefined,
-    print: false,
-    interactive: false
-  }
-  let options = (() => {
-    const {
-      dir = defaultOptions.dir,
-      help = defaultOptions.help,
-      scriptMode = defaultOptions.scriptMode,
-      version = defaultOptions.version,
-      requires = defaultOptions.requires,
-      code = defaultOptions.code,
-      print = defaultOptions.print,
-      interactive = defaultOptions.interactive,
-      files = defaultOptions.files,
-      compiler = defaultOptions.compiler,
-      compilerOptions = defaultOptions.compilerOptions,
-      project = defaultOptions.project,
-      ignoreDiagnostics = defaultOptions.ignoreDiagnostics,
-      ignore = defaultOptions.ignore,
-      transpileOnly = defaultOptions.transpileOnly,
-      pretty = defaultOptions.pretty,
-      skipProject = defaultOptions.skipProject,
-      skipIgnore = defaultOptions.skipIgnore,
-      preferTsExts = defaultOptions.preferTsExts,
-      logError = defaultOptions.logError,
-      emit = defaultOptions.emit
-    } = flagOptions
-    return {
-      dir, help, scriptMode, version, requires, code, print, interactive,
-      files, compiler, compilerOptions, project, ignoreDiagnostics, ignore,
-      transpileOnly, pretty, skipProject, skipIgnore, preferTsExts, logError,
-      emit
-    }
-  })()
-  const { help, version, dir, scriptMode, code, interactive, print } = options
+  // Only setting defaults for CLI-specific flags
+  // Anything on RegisterOptions can be passed as `undefined` to `register()`
+  const {
+    '--dir': dir,
+    '--help': help = false,
+    '--script-mode': scriptMode = false,
+    '--version': version = 0,
+    '--require': argsRequire = [],
+    '--eval': code = undefined,
+    '--print': print = false,
+    '--interactive': interactive = false,
+    '--files': files,
+    '--compiler': compiler,
+    '--compiler-options': compilerOptions,
+    '--project': project,
+    '--ignore-diagnostics': ignoreDiagnostics,
+    '--ignore': ignore,
+    '--transpile-only': transpileOnly,
+    '--pretty': pretty,
+    '--skip-project': skipProject,
+    '--skip-ignore': skipIgnore,
+    '--prefer-ts-exts': preferTsExts,
+    '--log-error': logError,
+    '--emit': emit
+  } = args
 
   if (help) {
     console.log(`
@@ -191,36 +151,45 @@ export function main (argv: string[]) {
   const state = new EvalState(scriptPath || join(cwd, EVAL_FILENAME))
 
   // Register the TypeScript compiler instance.
-  const service = registerInternal(new OptionsHelper({
-    explicitOptions: {
-      ...flagOptions,
-      dir: getCwd(dir, scriptMode, scriptPath),
-      readFile: code !== undefined
-        ? (path: string) => {
-          if (path === state.path) return state.input
+  const service = register({
+    dir: getCwd(dir, scriptMode, scriptPath),
+    emit,
+    files,
+    pretty,
+    transpileOnly,
+    ignore,
+    preferTsExts,
+    logError,
+    project,
+    skipProject,
+    skipIgnore,
+    compiler,
+    ignoreDiagnostics,
+    compilerOptions,
+    readFile: code !== undefined
+      ? (path: string) => {
+        if (path === state.path) return state.input
 
-          try {
-            return readFileSync(path, 'utf8')
-          } catch (err) {/* Ignore. */}
+        try {
+          return readFileSync(path, 'utf8')
+        } catch (err) {/* Ignore. */}
+      }
+      : undefined,
+    fileExists: code !== undefined
+      ? (path: string) => {
+        if (path === state.path) return true
+
+        try {
+          const stats = statSync(path)
+          return stats.isFile() || stats.isFIFO()
+        } catch (err) {
+          return false
         }
-        : undefined,
-      fileExists: code !== undefined
-        ? (path: string) => {
-          if (path === state.path) return true
+      }
+      : undefined
+  })
 
-          try {
-            const stats = statSync(path)
-            return stats.isFile() || stats.isFIFO()
-          } catch (err) {
-            return false
-          }
-        }
-        : undefined
-    },
-    defaultOptions
-  }))
-
-  const { requires = [] } = service.options
+  const requires = argsRequire !== undefined ? argsRequire : service.options.requires || []
 
   // Output project information.
   if (version >= 2) {

@@ -8,7 +8,7 @@
 
 import axios from 'axios';
 import {resolve} from 'path';
-import * as fs from 'fs';
+import {writeFileSync} from 'fs';
 
 async function main() {
   /** schemastore definition */
@@ -49,7 +49,7 @@ async function main() {
       ...schemastoreSchema.allOf.slice(4),
     ]
   };
-  fs.writeFileSync(
+  writeFileSync(
     resolve(__dirname, '../tsconfig.schemastore-schema.json'),
     JSON.stringify(mergedSchema, null, 2)
   );
