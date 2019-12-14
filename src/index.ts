@@ -767,7 +767,7 @@ function readConfig (
   }
 
   // Remove resolution of "files".
-  const filesOption = options.files !== undefined ? options.files : tsconfigOptions.files;
+  const filesOption = options.files !== undefined ? options.files : tsconfigOptions.files
   if (!filesOption) {
     config.files = []
     config.include = []
@@ -786,7 +786,7 @@ function readConfig (
     fileExists,
     readFile,
     readDirectory: ts.sys.readDirectory,
-    useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
+    useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames
   }, basePath, undefined, configFileName))
 
   return { config: fixedConfig, options: tsconfigOptions }
