@@ -44,6 +44,8 @@ async function main() {
       },
     },
     allOf: [
+      // Splice into the allOf array at a spot that looks good.  Does not affect
+      // behavior of the schema, but looks nicer if we want to submit as a PR to schemastore.
       ...schemastoreSchema.allOf.slice(0, 4),
       { "$ref": "#/definitions/tsNodeDefinition" },
       ...schemastoreSchema.allOf.slice(4),
