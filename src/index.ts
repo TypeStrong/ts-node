@@ -337,9 +337,8 @@ export function create (options: CreateOptions = {}): Register {
   const compilerBefore = options.compiler
 
   /**
-   * Load the typescript compiler.  It is required to parse the tsconfig, but
-   * might be changed by options specified in the tsconfig, so we might need to
-   * do this twice if the `compiler` option changes.
+   * Load the typescript compiler.  It is required to load the tsconfig but might
+   * be changed by the tsconfig, so we sometimes have to do this twice.
    */
   function loadCompiler () {
     const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
