@@ -127,7 +127,7 @@ export function main (argv: string[]) {
 
     --dir                          Specify working directory for config resolution
     --scope                        Scope compiler to files within \`cwd\` only
-    --files                        Load files from \`tsconfig.json\` on startup
+    --files                        Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
     --pretty                       Use pretty diagnostic formatter (usually enabled by default)
     --skip-project                 Skip reading \`tsconfig.json\`
     --skip-ignore                  Skip \`--ignore\` checks
