@@ -158,25 +158,28 @@ export interface RegisterOptions extends CreateOptions {
   preferTsExts?: boolean | null
 }
 
-export type TsConfigOptions = Omit<RegisterOptions,
+/**
+ * Must be an interface to support `typescript-json-schema`.
+ */
+export interface TsConfigOptions extends Omit<RegisterOptions,
   | 'transformers'
   | 'readFile'
   | 'fileExists'
   | 'skipProject'
   | 'project'
   | 'dir'
->
+> {}
 
 /**
  * Like Object.assign or splatting, but never overwrites with `undefined`.
  * This matches the behavior for argument and destructuring defaults.
  */
-function defaults <T> (defaultValue: T, ...sources: Array<T>): T {
-  const merged: T = defaultValue
+function defaults <T> (...sources: Array<T>): T {
+  const merged: T = Object.create(null)
   for (const source of sources) {
-    for (const key of Object.keys(source) as Array<keyof T>) {
-      const value = source[key]
-      if (value !== undefined) merged[key] = value
+    for (const key of Object.keys(source)) {
+      const value = (source as any)[key]
+      if (value !== undefined) (merged as any)[key] = value
     }
   }
   return merged
@@ -185,8 +188,8 @@ function defaults <T> (defaultValue: T, ...sources: Array<T>): T {
 /**
  * Like `defaults` but for single values, not objects.
  */
-export function defaultValue <T> (defaultValue: T, ...values: Array<T>): T {
-  let result: T = defaultValue
+export function defaultValue <T> (...values: Array<T>): T | undefined {
+  let result: T | undefined = undefined
   for (const value of values) {
     if (value !== undefined) result = value
   }
