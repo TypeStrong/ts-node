@@ -369,8 +369,6 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
   const readFile = options.readFile || ts.sys.readFile
   const fileExists = options.fileExists || ts.sys.fileExists
-  const isScoped = options.scope ? (fileName: string) => relative(cwd, fileName).charAt(0) !== '.' : () => true
-  const ignore = options.skipIgnore ? [] : (options.ignore || ['/node_modules/']).map(str => new RegExp(str))
   const transpileOnly = options.transpileOnly === true
   const transformers = options.transformers || undefined
   const ignoreDiagnostics = [
@@ -379,8 +377,14 @@ export function create (rawOptions: CreateOptions = {}): Register {
     18003, // "No inputs were found in config file."
     ...(options.ignoreDiagnostics || [])
   ].map(Number)
+
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
   const outputCache = new Map<string, string>()
+
+  const isScoped = options.scope ? (relname: string) => relname.charAt(0) !== '.' : () => true
+  const shouldIgnore = createIgnore(options.skipIgnore ? [] : (
+    options.ignore || ['(?:^|/)node_modules/']
+  ).map(str => new RegExp(str)))
 
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
     getNewLine: () => ts.sys.newLine,
@@ -608,7 +612,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
         filterDiagnostics(result.diagnostics, ignoreDiagnostics) :
         []
 
-      if (diagnosticList.length) reportTSError(configDiagnosticList)
+      if (diagnosticList.length) reportTSError(diagnosticList)
 
       return [result.outputText, result.sourceMapText as string]
     }
@@ -628,7 +632,11 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
   let active = true
   const enabled = (enabled?: boolean) => enabled === undefined ? active : (active = !!enabled)
-  const ignored = (fileName: string) => !active || !isScoped(fileName) || shouldIgnore(fileName, ignore)
+  const ignored = (fileName: string) => {
+    if (!active) return true
+    const relname = relative(cwd, fileName)
+    return !isScoped(relname) || shouldIgnore(relname)
+  }
 
   return { ts, config, compile, getTypeInfo, ignored, enabled, options }
 }
@@ -636,10 +644,12 @@ export function create (rawOptions: CreateOptions = {}): Register {
 /**
  * Check if the filename should be ignored.
  */
-function shouldIgnore (filename: string, ignore: RegExp[]) {
-  const relname = normalizeSlashes(filename)
+function createIgnore (ignore: RegExp[]) {
+  return (relname: string) => {
+    const path = normalizeSlashes(relname)
 
-  return ignore.some(x => x.test(relname))
+    return ignore.some(x => x.test(path))
+  }
 }
 
 /**

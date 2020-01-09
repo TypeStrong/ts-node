@@ -204,7 +204,7 @@ export function main (argv: string[]) {
   module.paths = (Module as any)._nodeModulePaths(cwd)
 
   // Require specified modules before start-up.
-  for (const id of requires) module.require(id)
+  ;(Module as any)._preloadModules(requires)
 
   // Prepend `ts-node` arguments to CLI for child processes.
   process.execArgv.unshift(__filename, ...process.argv.slice(2, process.argv.length - args._.length))
