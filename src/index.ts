@@ -338,13 +338,13 @@ export function register (opts: RegisterOptions = {}): Register {
  */
 export function create (rawOptions: CreateOptions = {}): Register {
   const inputOptions = defaults(DEFAULTS, rawOptions)
-  const cwd = options.dir ? resolve(options.dir) : process.cwd()
+  const cwd = inputOptions.dir ? resolve(inputOptions.dir) : process.cwd()
 
   /**
    * Load the typescript compiler. It is required to load the tsconfig but might
    * be changed by the tsconfig, so we sometimes have to do this twice.
    */
-  function loadCompiler (name: string) {
+  function loadCompiler (name: string | undefined) {
     const compiler = require.resolve(name || 'typescript', { paths: [cwd, __dirname] })
     const ts: typeof _ts = require(compiler)
     return { compiler, ts }
