@@ -1,4 +1,5 @@
 {
+  "$schema": "./tsconfig.schemastore-schema.json",
   "compilerOptions": {
     "target": "es2015",
     "lib": ["es2015"],
@@ -10,7 +11,8 @@
     "declaration": true,
     "sourceMap": true,
     "inlineSources": true,
-    "types": ["node", "mocha"]
+    "types": ["node", "mocha"],
+    "stripInternal": true
   },
   "include": [
     "src/**/*"

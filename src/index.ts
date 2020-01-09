@@ -1,6 +1,6 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path'
 import sourceMapSupport = require('source-map-support')
-import yn from 'yn'
+import * as yn from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
 import * as _ts from 'typescript'
@@ -72,20 +72,79 @@ export const VERSION = require('../package.json').version
  * Options for creating a new TypeScript compiler instance.
  */
 export interface CreateOptions {
+  /**
+   * Specify working directory for config resolution
+   * @default process.cwd()
+   */
   dir?: string
+  /**
+   * Emit output files into `.ts-node` directory
+   * @default false
+   */
   emit?: boolean | null
+  /**
+   * Scope compiler to files within `cwd`
+   * @default false
+   */
   scope?: boolean | null
+  /**
+   * Use pretty diagnostic formatter
+   * @default false
+   */
   pretty?: boolean | null
+  /**
+   * Use TypeScript's faster `transpileModule`
+   * @default false
+   */
   transpileOnly?: boolean | null
+  /**
+   * Logs TypeScript errors to stderr instead of throwing exceptions
+   * @default false
+   */
   logError?: boolean | null
+  /**
+   * Load files from `tsconfig.json` on startup
+   * @default false
+   */
   files?: boolean | null
+  /**
+   * Specify a custom TypeScript compiler
+   * @default "typescript"
+   */
   compiler?: string
+  /**
+   * Override the path patterns to skip compilation
+   * @default /node_modules/
+   * @docsDefault "/node_modules/"
+   */
   ignore?: string[]
+  /**
+   * Path to TypeScript JSON project file
+   */
   project?: string
+  /**
+   * Skip project config resolution and loading
+   * @default false
+   */
   skipProject?: boolean | null
+  /**
+   * Skip ignore check
+   * @default false
+   */
   skipIgnore?: boolean | null
+  /**
+   * Re-order file extensions so that TypeScript imports are preferred
+   * @default false
+   */
   preferTsExts?: boolean | null
+  /**
+   * JSON object to merge with compiler options
+   * @allOf [{"$ref": "https://schemastore.azurewebsites.net/schemas/json/tsconfig.json#definitions/compilerOptionsDefinition/properties/compilerOptions"}]
+   */
   compilerOptions?: object
+  /**
+   * Ignore TypeScript warnings by diagnostic code
+   */
   ignoreDiagnostics?: Array<number | string>
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
@@ -97,6 +156,44 @@ export interface CreateOptions {
  */
 export interface RegisterOptions extends CreateOptions {
   preferTsExts?: boolean | null
+}
+
+/**
+ * Must be an interface to support `typescript-json-schema`.
+ */
+export interface TsConfigOptions extends Omit<RegisterOptions,
+  | 'transformers'
+  | 'readFile'
+  | 'fileExists'
+  | 'skipProject'
+  | 'project'
+  | 'dir'
+> {}
+
+/**
+ * Like Object.assign or splatting, but never overwrites with `undefined`.
+ * This matches the behavior for argument and destructuring defaults.
+ */
+function defaults <T> (...sources: Array<T>): T {
+  const merged: T = Object.create(null)
+  for (const source of sources) {
+    for (const key of Object.keys(source)) {
+      const value = (source as any)[key]
+      if (value !== undefined) (merged as any)[key] = value
+    }
+  }
+  return merged
+}
+
+/**
+ * Like `defaults` but for single values, not objects.
+ */
+export function defaultValue <T> (...values: Array<T>): T | undefined {
+  let result: T | undefined = undefined
+  for (const value of values) {
+    if (value !== undefined) result = value
+  }
+  return result
 }
 
 /**
@@ -117,7 +214,8 @@ export interface TypeInfo {
 }
 
 /**
- * Default register options.
+ * Default register options, including values specified via environment
+ * variables.
  */
 export const DEFAULTS: RegisterOptions = {
   dir: process.env.TS_NODE_DIR,
@@ -194,6 +292,7 @@ export class TSError extends BaseError {
 export interface Register {
   ts: TSCommon
   config: _ts.ParsedCommandLine
+  options: RegisterOptions & TsConfigOptions
   enabled (enabled?: boolean): boolean
   ignored (fileName: string): boolean
   compile (code: string, fileName: string, lineOffset?: number): string
@@ -219,9 +318,8 @@ function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
  * Register TypeScript compiler instance onto node.js
  */
 export function register (opts: RegisterOptions = {}): Register {
-  const options = { ...DEFAULTS, ...opts }
   const originalJsHandler = require.extensions['.js'] // tslint:disable-line
-  const service = create(options)
+  const service = create(opts)
   const extensions = ['.ts']
 
   // Enable additional extensions when JSX or `allowJs` is enabled.
@@ -233,7 +331,7 @@ export function register (opts: RegisterOptions = {}): Register {
   process[REGISTER_INSTANCE] = service
 
   // Register the extensions.
-  registerExtensions(options.preferTsExts, extensions, service, originalJsHandler)
+  registerExtensions(service.options.preferTsExts, extensions, service, originalJsHandler)
 
   return service
 }
@@ -241,26 +339,46 @@ export function register (opts: RegisterOptions = {}): Register {
 /**
  * Create TypeScript compiler instance.
  */
-export function create (options: CreateOptions = {}): Register {
+export function create (rawOptions: CreateOptions = {}): Register {
+  const inputOptions = defaults(DEFAULTS, rawOptions)
+  const cwd = inputOptions.dir ? resolve(inputOptions.dir) : process.cwd()
+
+  /**
+   * Load the typescript compiler. It is required to load the tsconfig but might
+   * be changed by the tsconfig, so we sometimes have to do this twice.
+   */
+  function loadCompiler (name: string | undefined) {
+    const compiler = require.resolve(name || 'typescript', { paths: [cwd, __dirname] })
+    const ts: typeof _ts = require(compiler)
+    return { compiler, ts }
+  }
+
+  // Compute minimum options to read the config file.
+  let { compiler, ts } = loadCompiler(inputOptions.compiler)
+
+  // Read config file.
+  const { config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
+
+  // Merge default options, tsconfig options, and explicit options.
+  const options = defaults<CreateOptions>(DEFAULTS, tsconfigOptions || {}, rawOptions)
+
+  // If `compiler` option changed based on tsconfig, re-load the compiler.
+  if (options.compiler !== inputOptions.compiler) {
+    ({ compiler, ts } = loadCompiler(options.compiler))
+  }
+
+  const readFile = options.readFile || ts.sys.readFile
+  const fileExists = options.fileExists || ts.sys.fileExists
+  const isScoped = options.scope ? (fileName: string) => relative(cwd, fileName).charAt(0) !== '.' : () => true
+  const ignore = options.skipIgnore ? [] : (options.ignore || ['/node_modules/']).map(str => new RegExp(str))
+  const transpileOnly = options.transpileOnly === true
+  const transformers = options.transformers || undefined
   const ignoreDiagnostics = [
     6059, // "'rootDir' is expected to contain all source files."
     18002, // "The 'files' list in config file is empty."
     18003, // "No inputs were found in config file."
     ...(options.ignoreDiagnostics || [])
   ].map(Number)
-
-  const ignore = options.skipIgnore ? [] : (options.ignore || ['/node_modules/']).map(str => new RegExp(str))
-
-  // Require the TypeScript compiler and configuration.
-  const cwd = options.dir ? resolve(options.dir) : process.cwd()
-  const isScoped = options.scope ? (fileName: string) => relative(cwd, fileName).charAt(0) !== '.' : () => true
-  const transpileOnly = options.transpileOnly === true
-  const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
-  const ts: typeof _ts = require(compiler)
-  const transformers = options.transformers || undefined
-  const readFile = options.readFile || ts.sys.readFile
-  const fileExists = options.fileExists || ts.sys.fileExists
-  const config = readConfig(cwd, ts, fileExists, readFile, options)
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
   const outputCache = new Map<string, string>()
 
@@ -512,7 +630,7 @@ export function create (options: CreateOptions = {}): Register {
   const enabled = (enabled?: boolean) => enabled === undefined ? active : (active = !!enabled)
   const ignored = (fileName: string) => !active || !isScoped(fileName) || shouldIgnore(fileName, ignore)
 
-  return { ts, config, compile, getTypeInfo, ignored, enabled }
+  return { ts, config, compile, getTypeInfo, ignored, enabled, options }
 }
 
 /**
@@ -608,23 +726,34 @@ function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine) {
 }
 
 /**
- * Load TypeScript configuration.
+ * Load TypeScript configuration.  Returns both a parsed typescript config and
+ * any ts-node options specified in the config file.
  */
 function readConfig (
   cwd: string,
   ts: TSCommon,
-  fileExists: (path: string) => boolean,
-  readFile: (path: string) => string | undefined,
   options: CreateOptions
-): _ts.ParsedCommandLine {
+): {
+  /** Parsed TypeScript configuration */
+  config: _ts.ParsedCommandLine
+  /** ts-node options pulled from tsconfig */
+  options?: TsConfigOptions
+} {
   let config: any = { compilerOptions: {} }
   let basePath = normalizeSlashes(cwd)
   let configFileName: string | undefined = undefined
 
+  const {
+    fileExists = ts.sys.fileExists,
+    readFile = ts.sys.readFile,
+    skipProject = DEFAULTS.skipProject,
+    project = DEFAULTS.project
+  } = options
+
   // Read project configuration when available.
-  if (!options.skipProject) {
-    configFileName = options.project
-      ? normalizeSlashes(resolve(cwd, options.project))
+  if (!skipProject) {
+    configFileName = project
+      ? normalizeSlashes(resolve(cwd, project))
       : ts.findConfigFile(normalizeSlashes(cwd), fileExists)
 
     if (configFileName) {
@@ -632,7 +761,7 @@ function readConfig (
 
       // Return diagnostics.
       if (result.error) {
-        return { errors: [result.error], fileNames: [], options: {} }
+        return { config: { errors: [result.error], fileNames: [], options: {} } }
       }
 
       config = result.config
@@ -640,16 +769,36 @@ function readConfig (
     }
   }
 
+  // Fix ts-node options that come from tsconfig.json
+  const tsconfigOptions: TsConfigOptions = {
+    ...config['ts-node']
+  }
+
   // Remove resolution of "files".
-  if (!options.files) {
+  const filesOption = defaultValue(DEFAULTS.files, tsconfigOptions.files, options.files)
+  if (!filesOption) {
     config.files = []
     config.include = []
   }
 
   // Override default configuration options `ts-node` requires.
-  config.compilerOptions = Object.assign({}, config.compilerOptions, options.compilerOptions, TS_NODE_COMPILER_OPTIONS)
+  config.compilerOptions = Object.assign(
+    {},
+    DEFAULTS.compilerOptions,
+    config.compilerOptions,
+    config['ts-node']?.compilerOptions,
+    options.compilerOptions,
+    TS_NODE_COMPILER_OPTIONS
+  )
 
-  return fixConfig(ts, ts.parseJsonConfigFileContent(config, ts.sys, basePath, undefined, configFileName))
+  const fixedConfig = fixConfig(ts, ts.parseJsonConfigFileContent(config, {
+    fileExists,
+    readFile,
+    readDirectory: ts.sys.readDirectory,
+    useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames
+  }, basePath, undefined, configFileName))
+
+  return { config: fixedConfig, options: tsconfigOptions }
 }
 
 /**

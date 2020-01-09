@@ -346,6 +346,55 @@ describe('ts-node', function () {
         })
       })
     }
+
+    describe('should read ts-node options from tsconfig.json', function () {
+      const BIN_EXEC = `node "${join(__dirname, '../dist/bin')}" --project tests/tsconfig-options/tsconfig.json`
+
+      it('options pulled from tsconfig.json', function (done) {
+        exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, function (err, stdout) {
+          expect(err).to.equal(null)
+          const { options, config } = JSON.parse(stdout)
+          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
+          expect(config.options.types).to.deep.equal(['tsconfig-tsnode-types'])
+          expect(options.pretty).to.equal(undefined)
+          expect(options.skipIgnore).to.equal(false)
+          expect(options.transpileOnly).to.equal(true)
+          return done()
+        })
+      })
+
+      it('flags override tsconfig', function (done) {
+        exec(`${BIN_EXEC} --skip-ignore --compiler-options '{"types": ["flags-types"]}' tests/tsconfig-options/log-options.js`, function (err, stdout) {
+          expect(err).to.equal(null)
+          const { options, config } = JSON.parse(stdout)
+          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
+          expect(config.options.types).to.deep.equal(['flags-types'])
+          expect(options.pretty).to.equal(undefined)
+          expect(options.skipIgnore).to.equal(true)
+          expect(options.transpileOnly).to.equal(true)
+          return done()
+        })
+      })
+
+      it('tsconfig overrides env vars', function (done) {
+        exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, {
+          env: {
+            ...process.env,
+            TS_NODE_PRETTY: 'true',
+            TS_NODE_SKIP_IGNORE: 'true'
+          }
+        }, function (err, stdout) {
+          expect(err).to.equal(null)
+          const { options, config } = JSON.parse(stdout)
+          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
+          expect(config.options.types).to.deep.equal(['tsconfig-tsnode-types'])
+          expect(options.pretty).to.equal(true)
+          expect(options.skipIgnore).to.equal(false)
+          expect(options.transpileOnly).to.equal(true)
+          return done()
+        })
+      })
+    })
   })
 
   describe('register', function () {

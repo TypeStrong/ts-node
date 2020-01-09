@@ -9,7 +9,7 @@ import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { readFileSync, statSync } from 'fs'
 import { homedir } from 'os'
-import { register, VERSION, DEFAULTS, TSError, parse, Register } from './index'
+import { VERSION, TSError, parse, Register, register } from './index'
 
 /**
  * Eval filename for REPL/debug.
@@ -79,8 +79,11 @@ export function main (argv: string[]) {
     stopAtPositional: true
   })
 
+  // Only setting defaults for CLI-specific flags
+  // Anything passed to `register()` can be `undefined`; `create()` will apply
+  // defaults.
   const {
-    '--dir': dir = DEFAULTS.dir,
+    '--dir': dir,
     '--help': help = false,
     '--script-mode': scriptMode = false,
     '--version': version = 0,
@@ -88,19 +91,19 @@ export function main (argv: string[]) {
     '--eval': code = undefined,
     '--print': print = false,
     '--interactive': interactive = false,
-    '--files': files = DEFAULTS.files,
-    '--compiler': compiler = DEFAULTS.compiler,
-    '--compiler-options': compilerOptions = DEFAULTS.compilerOptions,
-    '--project': project = DEFAULTS.project,
-    '--ignore-diagnostics': ignoreDiagnostics = DEFAULTS.ignoreDiagnostics,
-    '--ignore': ignore = DEFAULTS.ignore,
-    '--transpile-only': transpileOnly = DEFAULTS.transpileOnly,
-    '--pretty': pretty = DEFAULTS.pretty,
-    '--skip-project': skipProject = DEFAULTS.skipProject,
-    '--skip-ignore': skipIgnore = DEFAULTS.skipIgnore,
-    '--prefer-ts-exts': preferTsExts = DEFAULTS.preferTsExts,
-    '--log-error': logError = DEFAULTS.logError,
-    '--emit': emit = DEFAULTS.emit
+    '--files': files,
+    '--compiler': compiler,
+    '--compiler-options': compilerOptions,
+    '--project': project,
+    '--ignore-diagnostics': ignoreDiagnostics,
+    '--ignore': ignore,
+    '--transpile-only': transpileOnly,
+    '--pretty': pretty,
+    '--skip-project': skipProject,
+    '--skip-ignore': skipIgnore,
+    '--prefer-ts-exts': preferTsExts,
+    '--log-error': logError,
+    '--emit': emit
   } = args
 
   if (help) {
