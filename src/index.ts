@@ -171,21 +171,21 @@ export type TsConfigOptions = Omit<RegisterOptions,
  * Like Object.assign or splatting, but never overwrites with `undefined`.
  * This matches the behavior for argument and destructuring defaults.
  */
-function defaults<T> (...sources: Array<T>): T {
-  const merged: any = {}
+function defaults <T> (defaultValue: T, ...sources: Array<T>): T {
+  const merged: T = defaultValue
   for (const source of sources) {
-    for (const key of Object.keys(source)) {
-      const value = (source as any)[key]
+    for (const key of Object.keys(source) as Array<keyof T>) {
+      const value = source[key]
       if (value !== undefined) merged[key] = value
     }
   }
   return merged
 }
 
-/** 
+/**
  * Like `defaults` but for single values, not objects.
  */
-export function defaultValue<T> (defaultValue: T, ...values: Array<T>): T {
+export function defaultValue <T> (defaultValue: T, ...values: Array<T>): T {
   let result: T = defaultValue
   for (const value of values) {
     if (value !== undefined) result = value
@@ -357,7 +357,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
   const { config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
 
   // Merge default options, tsconfig options, and explicit options.
-  const options = defaults(DEFAULTS, tsconfigOptions || {}, rawOptions)
+  const options = defaults<CreateOptions>(DEFAULTS, tsconfigOptions || {}, rawOptions)
 
   // If `compiler` option changed based on tsconfig, re-load the compiler.
   if (options.compiler !== inputOptions.compiler) {
