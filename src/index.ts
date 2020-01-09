@@ -158,22 +158,20 @@ export interface RegisterOptions extends CreateOptions {
   preferTsExts?: boolean | null
 }
 
-export interface TsConfigOptions
-  extends Omit<RegisterOptions,
-    | 'transformers'
-    | 'readFile'
-    | 'fileExists'
-    | 'skipProject'
-    | 'project'
-    | 'dir'
-  > {}
+export type TsConfigOptions = Omit<RegisterOptions,
+  | 'transformers'
+  | 'readFile'
+  | 'fileExists'
+  | 'skipProject'
+  | 'project'
+  | 'dir'
+>
 
 /**
  * Like Object.assign or splatting, but never overwrites with `undefined`.
  * This matches the behavior for argument and destructuring defaults.
- * @internal
  */
-export function defaults<T> (...sources: Array<T>): T {
+function defaults<T> (...sources: Array<T>): T {
   const merged: any = {}
   for (const source of sources) {
     for (const key of Object.keys(source)) {
@@ -184,13 +182,15 @@ export function defaults<T> (...sources: Array<T>): T {
   return merged
 }
 
-/** Like `defaults` but for single values, not objects */
-export function defaultValue<T> (...values: Array<T>): T {
-  let merged: T = undefined as any as T
+/** 
+ * Like `defaults` but for single values, not objects.
+ */
+export function defaultValue<T> (defaultValue: T, ...values: Array<T>): T {
+  let result: T = defaultValue
   for (const value of values) {
-    if (value !== undefined) merged = value
+    if (value !== undefined) result = value
   }
-  return merged
+  return result
 }
 
 /**
@@ -336,37 +336,32 @@ export function register (opts: RegisterOptions = {}): Register {
 /**
  * Create TypeScript compiler instance.
  */
-export function create (options: CreateOptions = {}): Register {
-  const optionsWithoutDefaults = options
-  options = defaults(DEFAULTS, options)
-
-  // Require the TypeScript compiler and configuration.
-
+export function create (rawOptions: CreateOptions = {}): Register {
+  const inputOptions = defaults(DEFAULTS, rawOptions)
   const cwd = options.dir ? resolve(options.dir) : process.cwd()
-  const compilerBefore = options.compiler
 
   /**
-   * Load the typescript compiler.  It is required to load the tsconfig but might
+   * Load the typescript compiler. It is required to load the tsconfig but might
    * be changed by the tsconfig, so we sometimes have to do this twice.
    */
-  function loadCompiler () {
-    const compiler = require.resolve(options.compiler || 'typescript', { paths: [cwd, __dirname] })
+  function loadCompiler (name: string) {
+    const compiler = require.resolve(name || 'typescript', { paths: [cwd, __dirname] })
     const ts: typeof _ts = require(compiler)
     return { compiler, ts }
   }
 
-  // compute enough options to read the config file
-  let { compiler, ts } = loadCompiler()
+  // Compute minimum options to read the config file.
+  let { compiler, ts } = loadCompiler(inputOptions.compiler)
 
-  // Read config file
-  const { config, options: tsconfigOptions } = readConfig(cwd, ts, optionsWithoutDefaults)
+  // Read config file.
+  const { config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
 
-  // Merge default options, tsconfig options, and explicit options
-  options = defaults(DEFAULTS, tsconfigOptions || {}, optionsWithoutDefaults)
+  // Merge default options, tsconfig options, and explicit options.
+  const options = defaults(DEFAULTS, tsconfigOptions || {}, rawOptions)
 
-  // If `compiler` option changed based on tsconfig, re-load the compiler
-  if (options.compiler !== compilerBefore) {
-    ({ compiler, ts } = loadCompiler())
+  // If `compiler` option changed based on tsconfig, re-load the compiler.
+  if (options.compiler !== inputOptions.compiler) {
+    ({ compiler, ts } = loadCompiler(options.compiler))
   }
 
   const readFile = options.readFile || ts.sys.readFile
