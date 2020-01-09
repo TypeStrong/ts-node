@@ -349,6 +349,7 @@ describe('ts-node', function () {
 
     describe('should read ts-node options from tsconfig.json', function () {
       const BIN_EXEC = `node "${join(__dirname, '../dist/bin')}" --project tests/tsconfig-options/tsconfig.json`
+      
       it('options pulled from tsconfig.json', function (done) {
         exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, function (err, stdout) {
           expect(err).to.equal(null)
@@ -361,6 +362,7 @@ describe('ts-node', function () {
           return done()
         })
       })
+      
       it('flags override tsconfig', function (done) {
         exec(`${BIN_EXEC} --skip-ignore --compiler-options '{"types": ["flags-types"]}' tests/tsconfig-options/log-options.js`, function (err, stdout) {
           expect(err).to.equal(null)
@@ -373,6 +375,7 @@ describe('ts-node', function () {
           return done()
         })
       })
+      
       it('tsconfig overrides env vars', function (done) {
         exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, {
           env: {
