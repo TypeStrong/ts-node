@@ -864,7 +864,7 @@ function readConfig (
   options?: TsConfigOptions
 } {
   let config: any = { compilerOptions: {} }
-  let basePath = normalizeSlashes(cwd)
+  let basePath = cwd
   let configFileName: string | undefined = undefined
 
   const {
@@ -877,8 +877,8 @@ function readConfig (
   // Read project configuration when available.
   if (!skipProject) {
     configFileName = project
-      ? normalizeSlashes(resolve(cwd, project))
-      : ts.findConfigFile(normalizeSlashes(cwd), fileExists)
+      ? resolve(cwd, project)
+      : ts.findConfigFile(cwd, fileExists)
 
     if (configFileName) {
       const result = ts.readConfigFile(configFileName, readFile)
@@ -889,7 +889,7 @@ function readConfig (
       }
 
       config = result.config
-      basePath = normalizeSlashes(dirname(configFileName))
+      basePath = dirname(configFileName)
     }
   }
 
