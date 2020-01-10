@@ -352,7 +352,20 @@ describe('ts-node', function () {
     describe('should read ts-node options from tsconfig.json', function () {
       const BIN_EXEC = `node "${join(__dirname, '../dist/bin')}" --project tests/tsconfig-options/tsconfig.json`
 
-      it('options pulled from tsconfig.json', function (done) {
+      it('should override compiler options from env', function (done) {
+        exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, {
+          env: {
+            TS_NODE_COMPILER_OPTIONS: '{"typeRoots": ["env-typeroots"]}'
+          }
+        }, function (err, stdout) {
+          expect(err).to.equal(null)
+          const { config } = JSON.parse(stdout)
+          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/env-typeroots')])
+          return done()
+        })
+      })
+
+      it('should use options from `tsconfig.json`', function (done) {
         exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
@@ -365,7 +378,7 @@ describe('ts-node', function () {
         })
       })
 
-      it('flags override tsconfig', function (done) {
+      it('should have flags override `tsconfig.json`', function (done) {
         exec(`${BIN_EXEC} --skip-ignore --compiler-options '{"types": ["flags-types"]}' tests/tsconfig-options/log-options.js`, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
@@ -378,7 +391,7 @@ describe('ts-node', function () {
         })
       })
 
-      it('tsconfig overrides env vars', function (done) {
+      it('should have `tsconfig.json` override environment', function (done) {
         exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, {
           env: {
             ...process.env,

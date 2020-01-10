@@ -195,29 +195,16 @@ export interface TsConfigOptions extends Omit<RegisterOptions,
 > {}
 
 /**
- * Like Object.assign or splatting, but never overwrites with `undefined`.
- * This matches the behavior for argument and destructuring defaults.
+ * Like `Object.assign`, but ignores `undefined` properties.
  */
-function defaults <T> (...sources: Array<T>): T {
-  const merged: T = Object.create(null)
+function assign <T extends object> (initialValue: T, ...sources: Array<T>): T {
   for (const source of sources) {
     for (const key of Object.keys(source)) {
       const value = (source as any)[key]
-      if (value !== undefined) (merged as any)[key] = value
+      if (value !== undefined) (initialValue as any)[key] = value
     }
   }
-  return merged
-}
-
-/**
- * Like `defaults` but for single values, not objects.
- */
-export function defaultValue <T> (...values: Array<T>): T | undefined {
-  let result: T | undefined = undefined
-  for (const value of values) {
-    if (value !== undefined) result = value
-  }
-  return result
+  return initialValue
 }
 
 /**
@@ -357,8 +344,9 @@ export function register (opts: RegisterOptions = {}): Register {
  * Create TypeScript compiler instance.
  */
 export function create (rawOptions: CreateOptions = {}): Register {
-  const inputOptions = defaults(DEFAULTS, rawOptions)
-  const cwd = inputOptions.dir ? resolve(inputOptions.dir) : process.cwd()
+  const dir = rawOptions.dir ?? DEFAULTS.dir
+  const compilerName = rawOptions.compiler ?? DEFAULTS.compiler
+  const cwd = dir ? resolve(dir) : process.cwd()
 
   /**
    * Load the typescript compiler. It is required to load the tsconfig but might
@@ -371,16 +359,14 @@ export function create (rawOptions: CreateOptions = {}): Register {
   }
 
   // Compute minimum options to read the config file.
-  let { compiler, ts } = loadCompiler(inputOptions.compiler)
+  let { compiler, ts } = loadCompiler(compilerName)
 
-  // Read config file.
+  // Read config file and merge new options between env and CLI options.
   const { config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
-
-  // Merge default options, tsconfig options, and explicit options.
-  const options = defaults<CreateOptions>(DEFAULTS, tsconfigOptions || {}, rawOptions)
+  const options = assign<CreateOptions>({}, DEFAULTS, tsconfigOptions || {}, rawOptions)
 
   // If `compiler` option changed based on tsconfig, re-load the compiler.
-  if (options.compiler !== inputOptions.compiler) {
+  if (options.compiler !== compilerName) {
     ({ compiler, ts } = loadCompiler(options.compiler))
   }
 
@@ -850,18 +836,18 @@ function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine) {
 }
 
 /**
- * Load TypeScript configuration.  Returns both a parsed typescript config and
- * any ts-node options specified in the config file.
+ * Load TypeScript configuration. Returns the parsed TypeScript config and
+ * any `ts-node` options specified in the config file.
  */
 function readConfig (
   cwd: string,
   ts: TSCommon,
-  options: CreateOptions
+  rawOptions: CreateOptions
 ): {
-  /** Parsed TypeScript configuration */
+  // Parsed TypeScript configuration.
   config: _ts.ParsedCommandLine
-  /** ts-node options pulled from tsconfig */
-  options?: TsConfigOptions
+  // Options pulled from `tsconfig.json`.
+  options: TsConfigOptions
 } {
   let config: any = { compilerOptions: {} }
   let basePath = cwd
@@ -872,7 +858,7 @@ function readConfig (
     readFile = ts.sys.readFile,
     skipProject = DEFAULTS.skipProject,
     project = DEFAULTS.project
-  } = options
+  } = rawOptions
 
   // Read project configuration when available.
   if (!skipProject) {
@@ -885,7 +871,10 @@ function readConfig (
 
       // Return diagnostics.
       if (result.error) {
-        return { config: { errors: [result.error], fileNames: [], options: {} } }
+        return {
+          config: { errors: [result.error], fileNames: [], options: {} },
+          options: {}
+        }
       }
 
       config = result.config
@@ -894,13 +883,11 @@ function readConfig (
   }
 
   // Fix ts-node options that come from tsconfig.json
-  const tsconfigOptions: TsConfigOptions = {
-    ...config['ts-node']
-  }
+  const tsconfigOptions: TsConfigOptions = Object.assign({}, config['ts-node'])
 
   // Remove resolution of "files".
-  const filesOption = defaultValue(DEFAULTS.files, tsconfigOptions.files, options.files)
-  if (!filesOption) {
+  const files = rawOptions.files ?? tsconfigOptions.files ?? DEFAULTS.files
+  if (!files) {
     config.files = []
     config.include = []
   }
@@ -908,10 +895,10 @@ function readConfig (
   // Override default configuration options `ts-node` requires.
   config.compilerOptions = Object.assign(
     {},
-    DEFAULTS.compilerOptions,
     config.compilerOptions,
-    config['ts-node']?.compilerOptions,
-    options.compilerOptions,
+    DEFAULTS.compilerOptions,
+    tsconfigOptions.compilerOptions,
+    rawOptions.compilerOptions,
     TS_NODE_COMPILER_OPTIONS
   )
 
