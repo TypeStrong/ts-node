@@ -53,6 +53,8 @@ export function main (argv: string[]) {
     '--ignore-diagnostics': [String],
     '--ignore': [String],
     '--transpile-only': Boolean,
+    '--type-check': Boolean,
+    '--compiler-host': Boolean,
     '--pretty': Boolean,
     '--skip-project': Boolean,
     '--skip-ignore': Boolean,
@@ -69,6 +71,7 @@ export function main (argv: string[]) {
     '-s': '--script-mode',
     '-v': '--version',
     '-T': '--transpile-only',
+    '-H': '--compiler-host',
     '-I': '--ignore',
     '-P': '--project',
     '-C': '--compiler',
@@ -98,6 +101,8 @@ export function main (argv: string[]) {
     '--ignore-diagnostics': ignoreDiagnostics,
     '--ignore': ignore,
     '--transpile-only': transpileOnly,
+    '--type-check': typeCheck,
+    '--compiler-host': compilerHost,
     '--pretty': pretty,
     '--skip-project': skipProject,
     '--skip-ignore': skipIgnore,
@@ -122,6 +127,7 @@ export function main (argv: string[]) {
     -s, --script-mode              Use cwd from <script.ts> instead of current directory
 
     -T, --transpile-only           Use TypeScript's faster \`transpileModule\`
+    -H, --compiler-host            Use TypeScript's compiler host API
     -I, --ignore [pattern]         Override the path patterns to skip compilation
     -P, --project [path]           Path to TypeScript JSON project file
     -C, --compiler [name]          Specify a custom TypeScript compiler
@@ -158,6 +164,8 @@ export function main (argv: string[]) {
     files,
     pretty,
     transpileOnly,
+    typeCheck,
+    compilerHost,
     ignore,
     preferTsExts,
     logError,

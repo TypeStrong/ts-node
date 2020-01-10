@@ -338,16 +338,6 @@ describe('ts-node', function () {
       })
     })
 
-    it('should give ts error for invalid node_modules', function (done) {
-      exec(`${BIN_EXEC} --skip-ignore tests/from-node-modules`, function (err, stdout) {
-        if (err === null) return done('Expected an error')
-
-        expect(err.message).to.contain('Unable to compile file from external library')
-
-        return done()
-      })
-    })
-
     if (semver.gte(ts.version, '2.7.0')) {
       it('should support script mode', function (done) {
         exec(`${SCRIPT_EXEC} tests/scope/a/log`, function (err, stdout) {
@@ -403,6 +393,27 @@ describe('ts-node', function () {
           expect(options.pretty).to.equal(true)
           expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
+          return done()
+        })
+      })
+    })
+
+    describe('compiler host', function () {
+      it('should execute cli', function (done) {
+        exec(`${BIN_EXEC} --compiler-host tests/hello-world`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('Hello, world!\n')
+
+          return done()
+        })
+      })
+
+      it('should give ts error for invalid node_modules', function (done) {
+        exec(`${BIN_EXEC} --compiler-host --skip-ignore tests/from-node-modules`, function (err, stdout) {
+          if (err === null) return done('Expected an error')
+
+          expect(err.message).to.contain('Unable to compile file from external library')
+
           return done()
         })
       })
