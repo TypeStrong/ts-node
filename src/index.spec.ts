@@ -355,6 +355,7 @@ describe('ts-node', function () {
       it('should override compiler options from env', function (done) {
         exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, {
           env: {
+            ...process.env,
             TS_NODE_COMPILER_OPTIONS: '{"typeRoots": ["env-typeroots"]}'
           }
         }, function (err, stdout) {
