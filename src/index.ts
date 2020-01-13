@@ -1,6 +1,6 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path'
 import sourceMapSupport = require('source-map-support')
-import * as yn from 'yn'
+import * as ynModule from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
 import * as _ts from 'typescript'
@@ -25,6 +25,15 @@ declare global {
  * @internal
  */
 export const INSPECT_CUSTOM = util.inspect.custom || 'inspect'
+
+/**
+ * Wrapper around yn module that returns `undefined` instead of `null`.
+ * This is implemented by yn v4, but we're staying on v3 to avoid v4's node 10 requirement.
+ */
+function yn (value: string | undefined) {
+  const parsed = ynModule(value)
+  return parsed === null ? undefined : parsed
+}
 
 /**
  * Debugging `ts-node`.
