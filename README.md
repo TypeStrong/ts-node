@@ -37,7 +37,7 @@ ts-node -e 'console.log("Hello, world!")'
 ts-node -p -e '"Hello, world!"'
 
 # Pipe scripts to execute with TypeScript.
-echo "console.log('Hello, world')" | ts-node
+echo 'console.log("Hello, world!")' | ts-node
 ```
 
 ![TypeScript REPL](https://github.com/TypeStrong/ts-node/raw/master/screenshot.png)
