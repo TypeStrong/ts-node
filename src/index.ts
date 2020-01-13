@@ -31,8 +31,7 @@ export const INSPECT_CUSTOM = util.inspect.custom || 'inspect'
  * This is implemented by yn v4, but we're staying on v3 to avoid v4's node 10 requirement.
  */
 function yn (value: string | undefined) {
-  const parsed = ynModule(value)
-  return parsed === null ? undefined : parsed
+  return ynModule(value) ?? undefined
 }
 
 /**
