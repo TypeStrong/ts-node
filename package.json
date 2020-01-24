@@ -7,7 +7,7 @@
   "bin": {
     "ts-node": "dist/bin.js",
     "ts-script": "dist/script.js",
-    "ts-transpile": "dist/transpile.js"
+    "ts-node-transpile-only": "dist/transpile.js"
   },
   "files": [
     "dist/",
