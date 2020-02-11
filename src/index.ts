@@ -190,18 +190,6 @@ export interface RegisterOptions extends CreateOptions {
   preferTsExts?: boolean
 }
 
-export interface TsConfigOptions
-  extends Omit<RegisterOptions,
-    | 'transformers'
-    | 'readFile'
-    | 'fileExists'
-    | 'skipProject'
-    | 'project'
-    | 'dir'
-  > {
-  requires?: Array<string>
-}
-
 /**
  * Like Object.assign or splatting, but never overwrites with `undefined`.
  * This matches the behavior for argument and destructuring defaults.
@@ -228,7 +216,9 @@ export interface TsConfigOptions extends Omit<RegisterOptions,
   | 'skipProject'
   | 'project'
   | 'dir'
-> {}
+> {
+  requires?: Array<string>
+}
 
 /**
  * Like `Object.assign`, but ignores `undefined` properties.
