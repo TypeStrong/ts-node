@@ -213,6 +213,18 @@ describe('ts-node', function () {
       })
     })
 
+    it('should throw error even in transpileOnly mode', function (done) {
+      exec(`${BIN_EXEC} --transpile-only -pe "console."`, function (err) {
+        if (err === null) {
+          return done('Command was expected to fail, but it succeeded.')
+        }
+
+        expect(err.message).to.contain('error TS1003: Identifier expected')
+
+        return done()
+      })
+    })
+
     it('should pipe into `ts-node` and evaluate', function (done) {
       const cp = exec(BIN_EXEC, function (err, stdout) {
         expect(err).to.equal(null)
@@ -326,16 +338,6 @@ describe('ts-node', function () {
       })
     })
 
-    it('should give ts error for invalid node_modules', function (done) {
-      exec(`${BIN_EXEC} --skip-ignore tests/from-node-modules`, function (err, stdout) {
-        if (err === null) return done('Expected an error')
-
-        expect(err.message).to.contain('Unable to compile file from external library')
-
-        return done()
-      })
-    })
-
     if (semver.gte(ts.version, '2.7.0')) {
       it('should support script mode', function (done) {
         exec(`${SCRIPT_EXEC} tests/scope/a/log`, function (err, stdout) {
@@ -349,33 +351,50 @@ describe('ts-node', function () {
 
     describe('should read ts-node options from tsconfig.json', function () {
       const BIN_EXEC = `node "${join(__dirname, '../dist/bin')}" --project tests/tsconfig-options/tsconfig.json`
-      it('options pulled from tsconfig.json', function (done) {
+
+      it('should override compiler options from env', function (done) {
+        exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, {
+          env: {
+            ...process.env,
+            TS_NODE_COMPILER_OPTIONS: '{"typeRoots": ["env-typeroots"]}'
+          }
+        }, function (err, stdout) {
+          expect(err).to.equal(null)
+          const { config } = JSON.parse(stdout)
+          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/env-typeroots')])
+          return done()
+        })
+      })
+
+      it('should use options from `tsconfig.json`', function (done) {
         exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
           expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
           expect(config.options.types).to.deep.equal(['tsconfig-tsnode-types'])
-          expect(options.pretty).to.equal(null)
+          expect(options.pretty).to.equal(undefined)
           expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
           expect(options.requires).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required')])
           return done()
         })
       })
-      it('flags override tsconfig', function (done) {
+
+      it('should have flags override `tsconfig.json`', function (done) {
         exec(`${BIN_EXEC} --skip-ignore --compiler-options '{"types": ["flags-types"]}' tests/tsconfig-options/log-options.js`, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
           expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots')])
           expect(config.options.types).to.deep.equal(['flags-types'])
-          expect(options.pretty).to.equal(null)
+          expect(options.pretty).to.equal(undefined)
           expect(options.skipIgnore).to.equal(true)
           expect(options.transpileOnly).to.equal(true)
           expect(options.requires).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required')])
           return done()
         })
       })
-      it('tsconfig overrides env vars', function (done) {
+
+      it('should have `tsconfig.json` override environment', function (done) {
         exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, {
           env: {
             ...process.env,
@@ -391,6 +410,27 @@ describe('ts-node', function () {
           expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
           expect(options.requires).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required')])
+          return done()
+        })
+      })
+    })
+
+    describe('compiler host', function () {
+      it('should execute cli', function (done) {
+        exec(`${BIN_EXEC} --compiler-host tests/hello-world`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('Hello, world!\n')
+
+          return done()
+        })
+      })
+
+      it('should give ts error for invalid node_modules', function (done) {
+        exec(`${BIN_EXEC} --compiler-host --skip-ignore tests/from-node-modules`, function (err, stdout) {
+          if (err === null) return done('Expected an error')
+
+          expect(err.message).to.contain('Unable to compile file from external library')
+
           return done()
         })
       })

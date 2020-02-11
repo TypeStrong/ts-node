@@ -139,7 +139,7 @@ _Environment variable denoted in parentheses._
 * `-O, --compiler-options [opts]` JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
 * `--dir` Specify working directory for config resolution (`TS_NODE_CWD`, default: `process.cwd()`)
 * `--scope` Scope compiler to files within `cwd` (`TS_NODE_SCOPE`, default: `false`)
-* `--files` Load files from `tsconfig.json` on startup (`TS_NODE_FILES`, default: `false`)
+* `--files` Load `files`, `include` and `exclude` from `tsconfig.json` on startup (`TS_NODE_FILES`, default: `false`)
 * `--pretty` Use pretty diagnostic formatter (`TS_NODE_PRETTY`, default: `false`)
 * `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`, default: `false`)
 * `--skip-ignore` Skip ignore checks (`TS_NODE_SKIP_IGNORE`, default: `false`)
@@ -152,6 +152,14 @@ _Environment variable denoted in parentheses._
 * `transformers` `_ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)` An object with transformers or a function that accepts a program and returns an transformers object to pass to TypeScript. Function isn't available with `transpileOnly` flag
 * `readFile` Custom TypeScript-compatible file reading function
 * `fileExists` Custom TypeScript-compatible file existence function
+
+## SyntaxError
+
+Any error that is not a `TSError` is from node.js (e.g. `SyntaxError`), and cannot be fixed by TypeScript or `ts-node`. These are runtime issues with your code.
+
+### Import Statements
+
+Current node.js stable releases do not support ES modules. Additionally, `ts-node` does not have the required hooks into node.js to support ES modules. You will need to set `"module": "commonjs"` in your `tsconfig.json` for your code to work.
 
 ## Help! My Types Are Missing!
 
@@ -207,7 +215,7 @@ An alternative approach for definitions of third-party libraries are [triple-sla
 import UntypedJsLib from "untyped_js_lib"
 ```
 
-**Tip:** If you _must_ use `files`, enable `--files` flags or set `TS_NODE_FILES=true`.
+**Tip:** If you _must_ use `files`, `include`, or `exclude`, enable `--files` flags or set `TS_NODE_FILES=true`.
 
 ## Watching and Restarting
 
