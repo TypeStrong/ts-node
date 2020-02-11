@@ -938,6 +938,8 @@ function readConfig (
   if (tsconfigOptions.requires) {
     // Relative paths are relative to the tsconfig's parent directory, not the `dir` option
     tsconfigOptions.requires = tsconfigOptions.requires.map((path: string) => {
+      // TODO this is not good enough.
+      // We also need to resolve node_modules relative to the tsconfig.json
       if (path.startsWith('.')) return resolve(dirname(configFileName!), path)
       return path
     })
