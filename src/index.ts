@@ -191,22 +191,6 @@ export interface RegisterOptions extends CreateOptions {
 }
 
 /**
- * Like Object.assign or splatting, but never overwrites with `undefined`.
- * This matches the behavior for argument and destructuring defaults.
- * @internal
- */
-export function defaults<T> (...sources: Array<T>): T {
-  const merged: any = {}
-  for (const source of sources) {
-    for (const key of Object.keys(source)) {
-      const value = (source as any)[key]
-      if (value !== undefined) merged[key] = value
-    }
-  }
-  return merged
-}
-
-/**
  * Must be an interface to support `typescript-json-schema`.
  */
 export interface TsConfigOptions extends Omit<RegisterOptions,
