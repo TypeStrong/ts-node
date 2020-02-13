@@ -94,6 +94,20 @@ Create a new node.js configuration, add `-r ts-node/register` to node args and m
 
 **Note:** If you are using the `--project <tsconfig.json>` command line argument as per the [Configuration Options](#configuration-options), and want to apply this same behavior when launching in VS Code, add an "env" key into the launch configuration: `"env": { "TS_NODE_PROJECT": "<tsconfig.json>" }`.
 
+### Intellij (and Webstorm)
+
+Run > Edit Configurations > click the plus icon at the top left > Node.js
+
+Node interpreter: node.js (the default should be fine)
+Node parameters: `--inspect=0.0.0.0:9229 --require ts-node/register --require tsconfig-paths/register`
+Working directory: default should be fine
+Javascript file: select the main ts file you want to run. eg: `server\index.ts`
+Application parameters: Extra options for the ts_node process. eg: `--project tsconfig.json --r`
+Environment variables: `TS_NODE_TRANSPILE_ONLY=true`
+
+Apply and OK
+Click the green triangle at the top of the intellij window to run or the green bug icon to debug
+
 ## How It Works
 
 **TypeScript Node** works by registering the TypeScript compiler for `.tsx?` and `.jsx?` (when `allowJs == true`) extensions. When node.js has an extension registered (via `require.extensions`), it will use the extension internally for module resolution. When an extension is unknown to node.js, it handles the file as `.js` (JavaScript). By default, **TypeScript Node** avoids compiling files in `/node_modules/` for three reasons:
