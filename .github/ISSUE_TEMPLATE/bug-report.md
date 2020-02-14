@@ -1,3 +1,6 @@
+name: 'Bug report'
+---
+
 ### Expected Behavior
 
 
@@ -25,7 +28,7 @@ https://github.com/TypeStrong/ts-node-repros
 
 ### Specifications
 
-* ts-node version: 
-* node version: 
-* Operating system and version: 
-* If Windows, are you using WSL or WSL2?: 
+* ts-node version:
+* node version:
+* Operating system and version:
+* If Windows, are you using WSL or WSL2?:
