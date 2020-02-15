@@ -6,7 +6,7 @@
   "types": "dist/index.d.ts",
   "bin": {
     "ts-node": "dist/bin.js",
-    "ts-script": "dist/script-deprecated.js",
+    "ts-script": "dist/bin-script-deprecated.js",
     "ts-node-script": "dist/bin-script.js",
     "ts-node-transpile-only": "dist/bin-transpile.js"
   },
