@@ -9,7 +9,7 @@ import { register, create, VERSION } from './index'
 const TEST_DIR = join(__dirname, '../tests')
 const PROJECT = join(TEST_DIR, 'tsconfig.json')
 const BIN_EXEC = `node "${join(__dirname, '../dist/bin')}" --project "${PROJECT}"`
-const SCRIPT_EXEC = `node "${join(__dirname, '../dist/script')}"`
+const SCRIPT_EXEC = `node "${join(__dirname, '../dist/bin-script')}"`
 
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
 
