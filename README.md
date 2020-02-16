@@ -94,19 +94,11 @@ Create a new node.js configuration, add `-r ts-node/register` to node args and m
 
 **Note:** If you are using the `--project <tsconfig.json>` command line argument as per the [Configuration Options](#configuration-options), and want to apply this same behavior when launching in VS Code, add an "env" key into the launch configuration: `"env": { "TS_NODE_PROJECT": "<tsconfig.json>" }`.
 
-### Intellij (and Webstorm)
+### IntelliJ (and WebStorm)
 
-Run > Edit Configurations > click the plus icon at the top left > Node.js
+Create a new Node.js configuration and add `-r ts-node/register` to "Node parameters."
 
-Node interpreter: node.js (the default should be fine)
-Node parameters: `--inspect=0.0.0.0:9229 --require ts-node/register`
-Working directory: default should be fine
-Javascript file: select the main ts file you want to run. eg: `server/index.ts`
-Application parameters: Extra options for the ts-node process. eg: `--project tsconfig.json`
-Environment variables: `TS_NODE_TRANSPILE_ONLY=true`
-
-Apply and OK
-Click the green triangle at the top of the IntelliJ window to run or the green bug icon to debug.
+**Note:** If you are using the `--project <tsconfig.json>` command line argument as per the [Configuration Options](#configuration-options), and want to apply this same behavior when launching in IntelliJ, specify under "Environment Variables": `TS_NODE_PROJECT=<tsconfig.json>`.
 
 ## How It Works
 
