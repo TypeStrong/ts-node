@@ -456,6 +456,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
     // Use language services by default (TODO: invert next major version).
     if (!options.compilerHost) {
+      let projectVersion = 1
       const fileVersions = new Map<string, number>()
 
       const getCustomTransformers = () => {
@@ -469,6 +470,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
       // Create the compiler host for type checking.
       const serviceHost: _ts.LanguageServiceHost = {
+        getProjectVersion: () => `${ projectVersion }`,
         getScriptFileNames: () => rootFileNames,
         getScriptVersion: (fileName: string) => {
           const version = fileVersions.get(fileName)
@@ -505,26 +507,50 @@ export function create (rawOptions: CreateOptions = {}): Register {
       const service = ts.createLanguageService(serviceHost, registry)
 
       const updateMemoryCache = (contents: string, fileName: string) => {
+        let shouldIncrementProjectVersion = false
         const fileVersion = fileVersions.get(fileName) || 0
+        const isFileInCache = fileVersion !== 0
 
         // Add to `rootFiles` when discovered for the first time.
-        if (fileVersion === 0) rootFileNames.push(fileName)
+        if (!isFileInCache) {
+          rootFileNames.push(fileName)
+          // Modifying rootFileNames means a project change
+          shouldIncrementProjectVersion = true
+        }
 
+        const previousContents = fileContents.get(fileName)
         // Avoid incrementing cache when nothing has changed.
-        if (fileContents.get(fileName) === contents) return
+        if (previousContents !== contents) {
+          fileVersions.set(fileName, fileVersion + 1)
+          fileContents.set(fileName, contents)
+          // Only bump project version when file is modified in cache, not when discovered for the first time
+          if (isFileInCache) {
+            shouldIncrementProjectVersion = true
+          }
+        }
 
-        fileVersions.set(fileName, fileVersion + 1)
-        fileContents.set(fileName, contents)
+        if (shouldIncrementProjectVersion) projectVersion++
       }
+
+      let previousProgram: _ts.Program | undefined = undefined
 
       getOutput = (code: string, fileName: string) => {
         updateMemoryCache(code, fileName)
+
+        const programBefore = service.getProgram()
+        if (programBefore !== previousProgram)
+        debug(`compiler rebuilt Program instance when getting output for ${ fileName }`)
 
         const output = service.getEmitOutput(fileName)
 
         // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.
         const diagnostics = service.getSemanticDiagnostics(fileName)
           .concat(service.getSyntacticDiagnostics(fileName))
+
+        const programAfter = service.getProgram()
+        debug('invariant: Is service.getProject() identical before and after getting emit output and diagnostics? (should always be true) ', programBefore === programAfter)
+
+        previousProgram = programAfter
 
         const diagnosticList = filterDiagnostics(diagnostics, ignoreDiagnostics)
         if (diagnosticList.length) reportTSError(diagnosticList)
