@@ -538,8 +538,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
         updateMemoryCache(code, fileName)
 
         const programBefore = service.getProgram()
-        if (programBefore !== previousProgram)
-        debug(`compiler rebuilt Program instance when getting output for ${ fileName }`)
+        if (programBefore !== previousProgram) {
+          debug(`compiler rebuilt Program instance when getting output for ${ fileName }`)
+        }
 
         const output = service.getEmitOutput(fileName)
 
