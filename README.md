@@ -99,14 +99,14 @@ Create a new node.js configuration, add `-r ts-node/register` to node args and m
 Run > Edit Configurations > click the plus icon at the top left > Node.js
 
 Node interpreter: node.js (the default should be fine)
-Node parameters: `--inspect=0.0.0.0:9229 --require ts-node/register --require tsconfig-paths/register`
+Node parameters: `--inspect=0.0.0.0:9229 --require ts-node/register`
 Working directory: default should be fine
-Javascript file: select the main ts file you want to run. eg: `server\index.ts`
-Application parameters: Extra options for the ts_node process. eg: `--project tsconfig.json --r`
+Javascript file: select the main ts file you want to run. eg: `server/index.ts`
+Application parameters: Extra options for the ts-node process. eg: `--project tsconfig.json`
 Environment variables: `TS_NODE_TRANSPILE_ONLY=true`
 
 Apply and OK
-Click the green triangle at the top of the intellij window to run or the green bug icon to debug
+Click the green triangle at the top of the IntelliJ window to run or the green bug icon to debug.
 
 ## How It Works
 
