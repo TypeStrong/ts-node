@@ -76,14 +76,14 @@ export interface TSCommon {
  */
 interface TSInternal {
   // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906-L1909
-  createGetCanonicalFileName(useCaseSensitiveFileNames: boolean): TSInternal.GetCanonicalFileName
+  createGetCanonicalFileName (useCaseSensitiveFileNames: boolean): TSInternal.GetCanonicalFileName
 
   // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1430-L1445
-  toFileNameLowerCase(x: string): string
+  toFileNameLowerCase (x: string): string
 }
 namespace TSInternal {
   // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906
-  export type GetCanonicalFileName = (fileName: string) => string;
+  export type GetCanonicalFileName = (fileName: string) => string
 }
 
 /**
@@ -517,27 +517,27 @@ export function create (rawOptions: CreateOptions = {}): Register {
         getCompilationSettings: () => config.options,
         getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
         getCustomTransformers: getCustomTransformers,
-        resolveModuleNames(moduleNames: string[], containingFile: string, reusedNames: string[] | undefined, redirectedReference: _ts.ResolvedProjectReference | undefined, options: _ts.CompilerOptions): (_ts.ResolvedModule | undefined)[] {
+        resolveModuleNames (moduleNames: string[], containingFile: string, reusedNames: string[] | undefined, redirectedReference: _ts.ResolvedProjectReference | undefined, options: _ts.CompilerOptions): (_ts.ResolvedModule | undefined)[] {
           return moduleNames.map(moduleName => {
-            const {resolvedModule} = ts.resolveModuleName(moduleName, containingFile, options, serviceHost, moduleResolutionCache, redirectedReference)
-            if(resolvedModule) fixupResolvedModule(resolvedModule)
+            const { resolvedModule } = ts.resolveModuleName(moduleName, containingFile, options, serviceHost, moduleResolutionCache, redirectedReference)
+            if (resolvedModule) fixupResolvedModule(resolvedModule)
             return resolvedModule
           })
         },
-        getResolvedModuleWithFailedLookupLocationsFromCache(moduleName, containingFile): _ts.ResolvedModuleWithFailedLookupLocations | undefined {
+        getResolvedModuleWithFailedLookupLocationsFromCache (moduleName, containingFile): _ts.ResolvedModuleWithFailedLookupLocations | undefined {
           const ret = ts.resolveModuleNameFromCache(moduleName, containingFile, moduleResolutionCache)
-          if(ret && ret.resolvedModule) {
+          if (ret && ret.resolvedModule) {
             fixupResolvedModule(ret.resolvedModule)
           }
           return ret
-        },
+        }
       }
       /**
        * If we need to emit JS for a file, force TS to consider it non-external
        */
-      function fixupResolvedModule(resolvedModule: _ts.ResolvedModule) {
+      const fixupResolvedModule = (resolvedModule: _ts.ResolvedModule) => {
         const canonical = getCanonicalFileName(resolvedModule.resolvedFileName)
-        if(rootFileNames.some(rootFileName => canonical === getCanonicalFileName(rootFileName))) {
+        if (rootFileNames.some(rootFileName => canonical === getCanonicalFileName(rootFileName))) {
           resolvedModule.isExternalLibraryImport = false
         }
       }
