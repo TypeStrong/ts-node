@@ -517,9 +517,14 @@ export function create (rawOptions: CreateOptions = {}): Register {
         getCompilationSettings: () => config.options,
         getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
         getCustomTransformers: getCustomTransformers,
+        /*
+         * NOTE:
+         * Older ts versions do not pass `redirectedReference` nor `options`.
+         * We must pass `redirectedReference` to newer ts versions, but cannot rely on `options`
+         */
         resolveModuleNames (moduleNames: string[], containingFile: string, reusedNames: string[] | undefined, redirectedReference: _ts.ResolvedProjectReference | undefined, options: _ts.CompilerOptions): (_ts.ResolvedModule | undefined)[] {
           return moduleNames.map(moduleName => {
-            const { resolvedModule } = ts.resolveModuleName(moduleName, containingFile, options, serviceHost, moduleResolutionCache, redirectedReference)
+            const { resolvedModule } = ts.resolveModuleName(moduleName, containingFile, config.options, serviceHost, moduleResolutionCache, redirectedReference)
             if (resolvedModule) fixupResolvedModule(resolvedModule)
             return resolvedModule
           })
