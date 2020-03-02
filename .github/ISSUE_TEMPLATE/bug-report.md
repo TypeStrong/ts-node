@@ -29,6 +29,11 @@ https://github.com/TypeStrong/ts-node-repros
 ### Specifications
 
 * ts-node version:
+* TypeScript version:
+* tsconfig.json, if you're using one:
+```
+{}
+```
 * node version:
 * Operating system and version:
 * If Windows, are you using WSL or WSL2?:
