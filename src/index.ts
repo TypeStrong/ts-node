@@ -470,7 +470,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
       // Create the compiler host for type checking.
       const serviceHost: _ts.LanguageServiceHost = {
-        getProjectVersion: () => `${ projectVersion }`,
+        getProjectVersion: () => String(projectVersion),
         getScriptFileNames: () => rootFileNames,
         getScriptVersion: (fileName: string) => {
           const version = fileVersions.get(fileName)
