@@ -13,13 +13,13 @@ jobs:
             node: 6
             typescript: typescript@latest
           - flavor: 2
-            node: stable
+            node: 13
             typescript: typescript@latest
           - flavor: 3
-            node: stable
+            node: 13
             typescript: typescript@2.7
           - flavor: 4
-            node: stable
+            node: 13
             typescript: typescript@next
     steps:
       # checkout code
