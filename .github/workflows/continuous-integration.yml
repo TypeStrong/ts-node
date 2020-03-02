@@ -1,0 +1,37 @@
+name: Continuous Integration
+on: [push]
+jobs:
+  test:
+    name: Test ${{ matrix.flavor }} ${{ matrix.node }} ${{ matrix.typescript }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [1, 2, 3, 4]
+        include:
+          - flavor: 1
+            node: 6
+            typescript: typescript@latest
+          - flavor: 2
+            node: stable
+            typescript: typescript@latest
+          - flavor: 3
+            node: stable
+            typescript: typescript@2.7
+          - flavor: 4
+            node: stable
+            typescript: typescript@next
+    steps:
+      # checkout code
+      - uses: actions/checkout@v2
+      # install node
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node }}
+      # lint, build, test
+      - run: npm install
+      - run: npm run build
+      - run: npm rm tslint
+      - run: npm install ${{ matrix.typescript }}
+      - run: npm run test-cov
