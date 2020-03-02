@@ -564,7 +564,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
           if (cacheContents !== undefined) return cacheContents
           return cachedReadFile(fileName)
         },
-        readDirectory: cachedLookup(debugFn('readDirectory', ts.sys.readDirectory)),
+        readDirectory: ts.sys.readDirectory,
         getDirectories: cachedLookup(debugFn('getDirectories', ts.sys.getDirectories)),
         fileExists: cachedLookup(debugFn('fileExists', fileExists)),
         directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
