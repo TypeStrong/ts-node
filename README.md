@@ -65,7 +65,7 @@ mocha --require ts-node/register --watch-extensions ts,tsx "test/**/*.{ts,tsx}" 
 Mocha 7
 
 ```sh
-mocha --require ts-node/register --extensions ts,tsx --watch --watch-files src 'tests/**/*.{ts,tsx}' [...args]
+mocha --require ts-node/register --extensions ts,tsx --watch --watch-files src, 'tests/**/*.{ts,tsx}' [...args]
 ```
 
 ### Tape
