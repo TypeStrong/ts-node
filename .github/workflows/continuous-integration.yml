@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       # lint, build, test
-      - name: 
+      - name: Build, Lint, and Test
       - run: matrix_typescript="${{ matrix.typescript }}" ./.github/workflows/continuous-integration.sh
       # Report coverage
       - name: Coveralls Parallel
@@ -39,7 +39,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel: true
           path-to-lcov: ./.nyc_output/lcov.info
-
       - name: Coveralls Finished
         uses: coverallsapp/github-action@master
         with:
