@@ -2,7 +2,7 @@ name: Continuous Integration
 on: ["push", "pull_request"]
 jobs:
   test:
-    name: Test Node v${{ matrix.node }}, TypeScript v${{ matrix.typescript }}
+    name: Test Node v${{ matrix.node }}, ${{ matrix.typescript }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
