@@ -31,7 +31,7 @@ jobs:
           node-version: ${{ matrix.node }}
       # lint, build, test
       - name: Build, Lint, and Test
-      - run: matrix_typescript="${{ matrix.typescript }}" ./.github/workflows/continuous-integration.sh
+        run: matrix_typescript="${{ matrix.typescript }}" ./.github/workflows/continuous-integration.sh
       # Report coverage
       - name: Coveralls Parallel
         uses: coverallsapp/github-action@master
