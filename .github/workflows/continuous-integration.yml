@@ -1,8 +1,8 @@
 name: Continuous Integration
-on: [push]
+on: ["push", "pull_request"]
 jobs:
   test:
-    name: Test ${{ matrix.flavor }} ${{ matrix.node }} ${{ matrix.typescript }}
+    name: Test Node v${{ matrix.node }}, TypeScript v${{ matrix.typescript }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -29,5 +29,19 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node }}
-      # lint, build, test, report coverage
+      # lint, build, test
+      - name: 
       - run: matrix_typescript="${{ matrix.typescript }}" ./.github/workflows/continuous-integration.sh
+      # Report coverage
+      - name: Coveralls Parallel
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel: true
+          path-to-lcov: ./.nyc_output/lcov.info
+
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true

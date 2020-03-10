@@ -27,7 +27,7 @@
     "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
     "test-cov": "nyc node_modules/mocha/bin/_mocha \"dist/**/*.spec.js\" -R spec --bail",
     "test": "npm run build && npm run lint && npm run test-cov",
-    "upload-coverage": "nyc report --reporter=text-lcov | coveralls",
+    "lcov": "nyc report --reporter=text-lcov > ./.nyc_output/lcov.info",
     "prepare": "npm run build"
   },
   "engines": {
