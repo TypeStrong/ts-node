@@ -29,9 +29,5 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node }}
-      # lint, build, test
-      - run: npm install
-      - run: npm run build
-      - run: npm rm tslint
-      - run: npm install ${{ matrix.typescript }}
-      - run: npm run test-cov
+      # lint, build, test, report coverage
+      - run: matrix_typescript="${{ matrix.typescript }}" ./.github/workflows/continuous-integration.sh
