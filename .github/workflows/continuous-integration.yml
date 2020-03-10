@@ -1,5 +1,5 @@
 name: Continuous Integration
-on: ["push", "pull_request"]
+on: [push]
 jobs:
   test:
     name: Test Node v${{ matrix.node }}, ${{ matrix.typescript }}
@@ -33,14 +33,8 @@ jobs:
       - name: Build, Lint, and Test
         run: matrix_typescript="${{ matrix.typescript }}" ./.github/workflows/continuous-integration.sh
       # Report coverage
-      - name: Coveralls Parallel
+      - name: Coveralls
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel: true
           path-to-lcov: ./.nyc_output/lcov.info
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          parallel-finished: true
