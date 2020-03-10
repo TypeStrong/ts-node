@@ -10,7 +10,7 @@ jobs:
         flavor: [1, 2, 3, 4]
         include:
           - flavor: 1
-            node: 6
+            node: 8
             typescript: typescript@latest
           - flavor: 2
             node: 13
