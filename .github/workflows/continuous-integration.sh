@@ -13,7 +13,6 @@ exit_code="$?"
 set -e
 
 # Report coverage
-npm install coveralls@2
-cat ./coverage/lcov.info | ./node_modules/.bin/coveralls
+npm run upload-coverage
 
 exit "$exit_code"
