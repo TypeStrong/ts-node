@@ -14,6 +14,6 @@ set -e
 
 # Report coverage
 npm install coveralls@2
-cat ./coverage/lcov.info | coveralls
+cat ./coverage/lcov.info | ./node_modules/.bin/coveralls
 
 exit "$exit_code"
