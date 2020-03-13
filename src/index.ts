@@ -427,7 +427,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
     const stackLines = error.stack.split('\n')
     const lastLine = stackLines.findIndex(line => line.includes('ts-node'))
     if (lastLine !== -1) {
-      error.stack = stackLines.slice(0, lastLine).join('\n');
+      error.stack = stackLines.slice(0, lastLine).join('\n')
     }
 
     if (options.logError) {
