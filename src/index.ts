@@ -838,7 +838,18 @@ function registerExtension (
     m._compile = function (code: string, fileName: string) {
       debug('module._compile', fileName)
 
-      return _compile.call(this, register.compile(code, fileName), fileName)
+      let emittedText: string
+      try {
+        emittedText = register.compile(code, fileName)
+      } catch (e) {
+        // Re-construct TSErrors here so that the reported call stack is shorter, yet still
+        // attributed to ts-node
+        if (e instanceof TSError) {
+          throw new TSError(e.diagnosticText, e.diagnosticCodes)
+        }
+        throw e
+      }
+      return _compile.call(this, emittedText, fileName)
     }
 
     return old(m, filename)
