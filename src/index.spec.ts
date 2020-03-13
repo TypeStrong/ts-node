@@ -151,6 +151,20 @@ describe('ts-node', function () {
       })
     })
 
+    it('should shorten call-stack from ts-node', function (done) {
+      exec(`${BIN_EXEC} tests/compiler-error.ts`, function (err) {
+        if (err === null) {
+          return done('Command was expected to fail, but it succeeded.')
+        }
+
+        expect(err.message).to.match(
+          /\n\n {4}at Module\.m\._compile \(.*?ts-node\/src\/index\.ts:\d+:\d+\)/
+        )
+
+        return done()
+      })
+    })
+
     it('should be able to ignore diagnostic', function (done) {
       exec(
         `${BIN_EXEC} --ignore-diagnostics 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
