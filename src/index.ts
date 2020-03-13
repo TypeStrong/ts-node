@@ -423,6 +423,13 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
   function reportTSError (configDiagnosticList: _ts.Diagnostic[]) {
     const error = createTSError(configDiagnosticList)
+
+    const stackLines = error.stack.split('\n')
+    const lastLine = stackLines.findIndex(line => line.includes('ts-node'))
+    if (lastLine !== -1) {
+      error.stack = stackLines.slice(0, lastLine).join('\n');
+    }
+
     if (options.logError) {
       // Print error in red color and continue execution.
       console.error('\x1b[31m%s\x1b[0m', error)
