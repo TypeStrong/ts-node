@@ -471,7 +471,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
       // Create the compiler host for type checking.
       const serviceHost: _ts.LanguageServiceHost = {
         getProjectVersion: () => String(projectVersion),
-        getScriptFileNames: () => rootFileNames,
+        getScriptFileNames: () => Array.from(fileContents.keys()),
         getScriptVersion: (fileName: string) => {
           const version = fileVersions.get(fileName)
           return version === undefined ? '' : version.toString()
@@ -507,15 +507,11 @@ export function create (rawOptions: CreateOptions = {}): Register {
       const service = ts.createLanguageService(serviceHost, registry)
 
       const updateMemoryCache = (contents: string, fileName: string) => {
-        let shouldIncrementProjectVersion = false
         const fileVersion = fileVersions.get(fileName) || 0
-        const isFileInCache = fileVersion !== 0
 
         // Add to `rootFiles` when discovered for the first time.
-        if (!isFileInCache) {
+        if (fileVersion === 0) {
           rootFileNames.push(fileName)
-          // Modifying rootFileNames means a project change
-          shouldIncrementProjectVersion = true
         }
 
         const previousContents = fileContents.get(fileName)
@@ -523,13 +519,8 @@ export function create (rawOptions: CreateOptions = {}): Register {
         if (previousContents !== contents) {
           fileVersions.set(fileName, fileVersion + 1)
           fileContents.set(fileName, contents)
-          // Only bump project version when file is modified in cache, not when discovered for the first time
-          if (isFileInCache) {
-            shouldIncrementProjectVersion = true
-          }
+          projectVersion++
         }
-
-        if (shouldIncrementProjectVersion) projectVersion++
       }
 
       let previousProgram: _ts.Program | undefined = undefined
@@ -539,7 +530,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
         const programBefore = service.getProgram()
         if (programBefore !== previousProgram) {
-          debug(`compiler rebuilt Program instance when getting output for ${ fileName }`)
+          debug(`compiler rebuilt Program instance when getting output for ${fileName}`)
         }
 
         const output = service.getEmitOutput(fileName)
@@ -549,7 +540,11 @@ export function create (rawOptions: CreateOptions = {}): Register {
           .concat(service.getSyntacticDiagnostics(fileName))
 
         const programAfter = service.getProgram()
-        debug('invariant: Is service.getProject() identical before and after getting emit output and diagnostics? (should always be true) ', programBefore === programAfter)
+
+        debug(
+          'invariant: Is service.getProject() identical before and after getting emit output and diagnostics? (should always be true) ',
+          programBefore === programAfter
+        )
 
         previousProgram = programAfter
 
