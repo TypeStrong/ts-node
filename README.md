@@ -1,4 +1,4 @@
-# ![TypeScript Node](logo.svg)
+# ![TypeScript Node](logo.svg?sanitize=true)
 
 [![NPM version][npm-image]][npm-url]
 [![NPM downloads][downloads-image]][downloads-url]
