@@ -507,29 +507,21 @@ export function create (rawOptions: CreateOptions = {}): Register {
       const service = ts.createLanguageService(serviceHost, registry)
 
       const updateMemoryCache = (contents: string, fileName: string) => {
-        let shouldIncrementProjectVersion = false
         const fileVersion = fileVersions.get(fileName) || 0
-        const isFileInCache = fileVersion !== 0
 
         // Add to `rootFiles` when discovered for the first time.
-        if (!isFileInCache) {
+        if (fileVersion === 0) {
           rootFileNames.push(fileName)
-          // Modifying rootFileNames means a project change
-          shouldIncrementProjectVersion = true
         }
 
         const previousContents = fileContents.get(fileName)
         // Avoid incrementing cache when nothing has changed.
-        if (previousContents !== contents) {
+        if (contents !== previousContents) {
           fileVersions.set(fileName, fileVersion + 1)
           fileContents.set(fileName, contents)
-          // Only bump project version when file is modified in cache, not when discovered for the first time
-          if (isFileInCache) {
-            shouldIncrementProjectVersion = true
-          }
+          // Increment project version for every file change.
+          projectVersion++
         }
-
-        if (shouldIncrementProjectVersion) projectVersion++
       }
 
       let previousProgram: _ts.Program | undefined = undefined
