@@ -8,12 +8,14 @@ import { register, create, VERSION } from './index'
 
 const TEST_DIR = join(__dirname, '../tests')
 const PROJECT = join(TEST_DIR, 'tsconfig.json')
-const BIN_EXEC = `node "${join(__dirname, '../dist/bin')}" --project "${PROJECT}"`
-const SCRIPT_EXEC = `node "${join(__dirname, '../dist/bin-script')}"`
+const BIN_PATH = join(__dirname, '../dist/bin')
+const BIN_SCRIPT_PATH = join(__dirname, '../dist/bin-script')
 
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
 
 describe('ts-node', function () {
+  const cmd = `node "${BIN_PATH}" --project "${PROJECT}"`
+
   this.timeout(10000)
 
   it('should export the correct version', function () {
@@ -24,7 +26,7 @@ describe('ts-node', function () {
     this.slow(1000)
 
     it('should execute cli', function (done) {
-      exec(`${BIN_EXEC} tests/hello-world`, function (err, stdout) {
+      exec(`${cmd} tests/hello-world`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\n')
 
@@ -44,7 +46,7 @@ describe('ts-node', function () {
     })
 
     it('should execute cli with absolute path', function (done) {
-      exec(`${BIN_EXEC} "${join(TEST_DIR, 'hello-world')}"`, function (err, stdout) {
+      exec(`${cmd} "${join(TEST_DIR, 'hello-world')}"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\n')
 
@@ -53,7 +55,7 @@ describe('ts-node', function () {
     })
 
     it('should print scripts', function (done) {
-      exec(`${BIN_EXEC} -pe "import { example } from './tests/complex/index';example()"`, function (err, stdout) {
+      exec(`${cmd} -pe "import { example } from './tests/complex/index';example()"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('example\n')
 
@@ -62,7 +64,7 @@ describe('ts-node', function () {
     })
 
     it('should provide registered information globally', function (done) {
-      exec(`${BIN_EXEC} tests/env`, function (err, stdout) {
+      exec(`${cmd} tests/env`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('object\n')
 
@@ -85,7 +87,7 @@ describe('ts-node', function () {
       it('should allow js', function (done) {
         exec(
           [
-            BIN_EXEC,
+            cmd,
             '-O "{\\\"allowJs\\\":true}"',
             '-pe "import { main } from \'./tests/allow-js/run\';main()"'
           ].join(' '),
@@ -101,7 +103,7 @@ describe('ts-node', function () {
       it('should include jsx when `allow-js` true', function (done) {
         exec(
           [
-            BIN_EXEC,
+            cmd,
             '-O "{\\\"allowJs\\\":true}"',
             '-pe "import { Foo2 } from \'./tests/allow-js/with-jsx\'; Foo2.sayHi()"'
           ].join(' '),
@@ -117,7 +119,7 @@ describe('ts-node', function () {
 
     it('should eval code', function (done) {
       exec(
-        `${BIN_EXEC} -e "import * as m from './tests/module';console.log(m.example('test'))"`,
+        `${cmd} -e "import * as m from './tests/module';console.log(m.example('test'))"`,
         function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('TEST\n')
@@ -128,7 +130,7 @@ describe('ts-node', function () {
     })
 
     it('should import empty files', function (done) {
-      exec(`${BIN_EXEC} -e "import './tests/empty'"`, function (err, stdout) {
+      exec(`${cmd} -e "import './tests/empty'"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('')
 
@@ -137,7 +139,7 @@ describe('ts-node', function () {
     })
 
     it('should throw errors', function (done) {
-      exec(`${BIN_EXEC} -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
+      exec(`${cmd} -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
@@ -153,7 +155,7 @@ describe('ts-node', function () {
 
     it('should be able to ignore diagnostic', function (done) {
       exec(
-        `${BIN_EXEC} --ignore-diagnostics 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
+        `${cmd} --ignore-diagnostics 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
         function (err) {
           if (err === null) {
             return done('Command was expected to fail, but it succeeded.')
@@ -169,7 +171,7 @@ describe('ts-node', function () {
     })
 
     it('should work with source maps', function (done) {
-      exec(`${BIN_EXEC} tests/throw`, function (err) {
+      exec(`${cmd} tests/throw`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
@@ -186,7 +188,7 @@ describe('ts-node', function () {
     })
 
     it('eval should work with source maps', function (done) {
-      exec(`${BIN_EXEC} -pe "import './tests/throw'"`, function (err) {
+      exec(`${cmd} -pe "import './tests/throw'"`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
@@ -202,7 +204,7 @@ describe('ts-node', function () {
     })
 
     it('should support transpile only mode', function (done) {
-      exec(`${BIN_EXEC} --transpile-only -pe "x"`, function (err) {
+      exec(`${cmd} --transpile-only -pe "x"`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
@@ -214,7 +216,7 @@ describe('ts-node', function () {
     })
 
     it('should throw error even in transpileOnly mode', function (done) {
-      exec(`${BIN_EXEC} --transpile-only -pe "console."`, function (err) {
+      exec(`${cmd} --transpile-only -pe "console."`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
@@ -226,7 +228,7 @@ describe('ts-node', function () {
     })
 
     it('should pipe into `ts-node` and evaluate', function (done) {
-      const cp = exec(BIN_EXEC, function (err, stdout) {
+      const cp = exec(cmd, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('hello\n')
 
@@ -237,7 +239,7 @@ describe('ts-node', function () {
     })
 
     it('should pipe into `ts-node`', function (done) {
-      const cp = exec(`${BIN_EXEC} -p`, function (err, stdout) {
+      const cp = exec(`${cmd} -p`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('true\n')
 
@@ -248,7 +250,7 @@ describe('ts-node', function () {
     })
 
     it('should pipe into an eval script', function (done) {
-      const cp = exec(`${BIN_EXEC} --transpile-only -pe 'process.stdin.isTTY'`, function (err, stdout) {
+      const cp = exec(`${cmd} --transpile-only -pe 'process.stdin.isTTY'`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('undefined\n')
 
@@ -259,7 +261,7 @@ describe('ts-node', function () {
     })
 
     it('should support require flags', function (done) {
-      exec(`${BIN_EXEC} -r ./tests/hello-world -pe "console.log('success')"`, function (err, stdout) {
+      exec(`${cmd} -r ./tests/hello-world -pe "console.log('success')"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\nsuccess\nundefined\n')
 
@@ -268,7 +270,7 @@ describe('ts-node', function () {
     })
 
     it('should support require from node modules', function (done) {
-      exec(`${BIN_EXEC} -r typescript -e "console.log('success')"`, function (err, stdout) {
+      exec(`${cmd} -r typescript -e "console.log('success')"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('success\n')
 
@@ -277,7 +279,7 @@ describe('ts-node', function () {
     })
 
     it.skip('should use source maps with react tsx', function (done) {
-      exec(`${BIN_EXEC} -r ./tests/emit-compiled.ts tests/jsx-react.tsx`, function (err, stdout) {
+      exec(`${cmd} -r ./tests/emit-compiled.ts tests/jsx-react.tsx`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('todo')
 
@@ -286,7 +288,7 @@ describe('ts-node', function () {
     })
 
     it('should allow custom typings', function (done) {
-      exec(`${BIN_EXEC} tests/custom-types`, function (err, stdout) {
+      exec(`${cmd} tests/custom-types`, function (err, stdout) {
         expect(err).to.match(/Error: Cannot find module 'does-not-exist'/)
 
         return done()
@@ -294,7 +296,7 @@ describe('ts-node', function () {
     })
 
     it('should preserve `ts-node` context with child process', function (done) {
-      exec(`${BIN_EXEC} tests/child-process`, function (err, stdout) {
+      exec(`${cmd} tests/child-process`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\n')
 
@@ -303,7 +305,7 @@ describe('ts-node', function () {
     })
 
     it('should import js before ts by default', function (done) {
-      exec(`${BIN_EXEC} tests/import-order/compiled`, function (err, stdout) {
+      exec(`${cmd} tests/import-order/compiled`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, JavaScript!\n')
 
@@ -312,7 +314,7 @@ describe('ts-node', function () {
     })
 
     it('should import ts before js when --prefer-ts-exts flag is present', function (done) {
-      exec(`${BIN_EXEC} --prefer-ts-exts tests/import-order/compiled`, function (err, stdout) {
+      exec(`${cmd} --prefer-ts-exts tests/import-order/compiled`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, TypeScript!\n')
 
@@ -321,7 +323,7 @@ describe('ts-node', function () {
     })
 
     it('should import ts before js when TS_NODE_PREFER_TS_EXTS env is present', function (done) {
-      exec(`${BIN_EXEC} tests/import-order/compiled`, { env: { ...process.env, TS_NODE_PREFER_TS_EXTS: 'true' } }, function (err, stdout) {
+      exec(`${cmd} tests/import-order/compiled`, { env: { ...process.env, TS_NODE_PREFER_TS_EXTS: 'true' } }, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, TypeScript!\n')
 
@@ -330,7 +332,7 @@ describe('ts-node', function () {
     })
 
     it('should ignore .d.ts files', function (done) {
-      exec(`${BIN_EXEC} tests/import-order/importer`, function (err, stdout) {
+      exec(`${cmd} tests/import-order/importer`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, World!\n')
 
@@ -338,9 +340,18 @@ describe('ts-node', function () {
       })
     })
 
+    it('issue #884', function (done) {
+      exec(`node "${BIN_PATH}" --project tests/issue-884/tsconfig.json tests/issue-884`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('')
+
+        return done()
+      })
+    })
+
     if (semver.gte(ts.version, '2.7.0')) {
       it('should support script mode', function (done) {
-        exec(`${SCRIPT_EXEC} tests/scope/a/log`, function (err, stdout) {
+        exec(`node ${BIN_SCRIPT_PATH} tests/scope/a/log`, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('.ts\n')
 
@@ -414,7 +425,7 @@ describe('ts-node', function () {
 
     describe('compiler host', function () {
       it('should execute cli', function (done) {
-        exec(`${BIN_EXEC} --compiler-host tests/hello-world`, function (err, stdout) {
+        exec(`${cmd} --compiler-host tests/hello-world`, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('Hello, world!\n')
 
@@ -423,7 +434,7 @@ describe('ts-node', function () {
       })
 
       it('should give ts error for invalid node_modules', function (done) {
-        exec(`${BIN_EXEC} --compiler-host --skip-ignore tests/from-node-modules`, function (err, stdout) {
+        exec(`${cmd} --compiler-host --skip-ignore tests/from-node-modules`, function (err, stdout) {
           if (err === null) return done('Expected an error')
 
           expect(err.message).to.contain('Unable to compile file from external library')

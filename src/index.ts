@@ -471,7 +471,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
       // Create the compiler host for type checking.
       const serviceHost: _ts.LanguageServiceHost = {
         getProjectVersion: () => String(projectVersion),
-        getScriptFileNames: () => rootFileNames,
+        getScriptFileNames: () => Array.from(fileContents.keys()),
         getScriptVersion: (fileName: string) => {
           const version = fileVersions.get(fileName)
           return version === undefined ? '' : version.toString()
@@ -539,7 +539,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
         const programBefore = service.getProgram()
         if (programBefore !== previousProgram) {
-          debug(`compiler rebuilt Program instance when getting output for ${ fileName }`)
+          debug(`compiler rebuilt Program instance when getting output for ${fileName}`)
         }
 
         const output = service.getEmitOutput(fileName)
@@ -549,7 +549,11 @@ export function create (rawOptions: CreateOptions = {}): Register {
           .concat(service.getSyntacticDiagnostics(fileName))
 
         const programAfter = service.getProgram()
-        debug('invariant: Is service.getProject() identical before and after getting emit output and diagnostics? (should always be true) ', programBefore === programAfter)
+
+        debug(
+          'invariant: Is service.getProject() identical before and after getting emit output and diagnostics? (should always be true) ',
+          programBefore === programAfter
+        )
 
         previousProgram = programAfter
 
