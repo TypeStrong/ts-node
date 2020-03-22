@@ -457,7 +457,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
     // Use language services by default (TODO: invert next major version).
     if (!options.compilerHost) {
       let projectVersion = 1
-      const fileVersions = new Map<string, number>()
+      const fileVersions = new Map(rootFileNames.map(fileName => [fileName, 0]))
 
       const getCustomTransformers = () => {
         if (typeof transformers === 'function') {
@@ -471,10 +471,10 @@ export function create (rawOptions: CreateOptions = {}): Register {
       // Create the compiler host for type checking.
       const serviceHost: _ts.LanguageServiceHost = {
         getProjectVersion: () => String(projectVersion),
-        getScriptFileNames: () => Array.from(fileContents.keys()),
+        getScriptFileNames: () => Array.from(fileVersions.keys()),
         getScriptVersion: (fileName: string) => {
           const version = fileVersions.get(fileName)
-          return version === undefined ? '' : version.toString()
+          return version ? version.toString() : ''
         },
         getScriptSnapshot (fileName: string) {
           let contents = fileContents.get(fileName)
