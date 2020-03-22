@@ -340,12 +340,36 @@ describe('ts-node', function () {
       })
     })
 
-    it('issue #884', function (done) {
-      exec(`node "${BIN_PATH}" --project tests/issue-884/tsconfig.json tests/issue-884`, function (err, stdout) {
-        expect(err).to.equal(null)
-        expect(stdout).to.equal('')
+    describe('issue #884', function () {
+      it('should compile', function (done) {
+        exec(`node "${BIN_PATH}" --project tests/issue-884/tsconfig.json tests/issue-884`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('')
 
-        return done()
+          return done()
+        })
+      })
+    })
+
+    describe('issue #986', function () {
+      it('should not compile', function (done) {
+        exec(`node "${BIN_PATH}" --project tests/issue-986/tsconfig.json tests/issue-986`, function (err, stdout, stderr) {
+          expect(err).not.to.equal(null)
+          expect(stderr).to.contain('Cannot find name \'TEST\'') // TypeScript error.
+          expect(stdout).to.equal('')
+
+          return done()
+        })
+      })
+
+      it('should compile with `--files`', function (done) {
+        exec(`node "${BIN_PATH}" --files --project tests/issue-986/tsconfig.json tests/issue-986`, function (err, stdout, stderr) {
+          expect(err).not.to.equal(null)
+          expect(stderr).to.contain('ReferenceError: TEST is not defined') // Runtime error.
+          expect(stdout).to.equal('')
+
+          return done()
+        })
       })
     })
 
