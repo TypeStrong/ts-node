@@ -38,11 +38,9 @@ function yn (value: string | undefined) {
  * Debugging `ts-node`.
  */
 const shouldDebug = yn(process.env.TS_NODE_DEBUG)
-const timestamp = function(){};
-timestamp.toString = function(){
-  return "[ts-node " + (new Date).toISOString() + "]";
-}
-const debug = shouldDebug ? console.log.bind(console, '%s', timestamp) : () => undefined
+const debug = shouldDebug ? 
+  (...args: any) => console.log("ts-node " + (new Date).toISOString(), ...args) 
+  : () => undefined;
 const debugFn = shouldDebug ?
   <T, U> (key: string, fn: (arg: T) => U) => {
     let i = 0
