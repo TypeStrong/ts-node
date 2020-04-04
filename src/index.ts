@@ -39,7 +39,7 @@ function yn (value: string | undefined) {
  */
 const shouldDebug = yn(process.env.TS_NODE_DEBUG)
 const debug = shouldDebug ?
-  (...args: any) => console.log(`ts-node ${new Date().toISOString()}`, ...args)
+  (...args: any) => console.log(`[ts-node ${new Date().toISOString()}]`, ...args)
   : () => undefined
 const debugFn = shouldDebug ?
   <T, U> (key: string, fn: (arg: T) => U) => {
