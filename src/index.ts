@@ -507,17 +507,18 @@ export function create (rawOptions: CreateOptions = {}): Register {
       const service = ts.createLanguageService(serviceHost, registry)
 
       const updateMemoryCache = (contents: string, fileName: string) => {
+        const normalizedFileName = normalizeSlashes(fileName)
         // Add to `rootFiles` when discovered for the first time.
-        if (!fileVersions.has(fileName)) {
-          rootFileNames.push(fileName)
+        if (!fileVersions.has(normalizedFileName)) {
+          rootFileNames.push(normalizedFileName)
         }
 
-        const previousVersion = fileVersions.get(fileName) || 0
-        const previousContents = fileContents.get(fileName)
+        const previousVersion = fileVersions.get(normalizedFileName) || 0
+        const previousContents = fileContents.get(normalizedFileName)
         // Avoid incrementing cache when nothing has changed.
         if (contents !== previousContents) {
-          fileVersions.set(fileName, previousVersion + 1)
-          fileContents.set(fileName, contents)
+          fileVersions.set(normalizedFileName, previousVersion + 1)
+          fileContents.set(normalizedFileName, contents)
           // Increment project version for every file change.
           projectVersion++
         }
@@ -633,13 +634,14 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
       // Set the file contents into cache manually.
       const updateMemoryCache = (contents: string, fileName: string) => {
-        const sourceFile = builderProgram.getSourceFile(fileName)
+        const normalizedFileName = normalizeSlashes(fileName)
+        const sourceFile = builderProgram.getSourceFile(normalizedFileName)
 
-        fileContents.set(fileName, contents)
+        fileContents.set(normalizedFileName, contents)
 
         // Add to `rootFiles` when discovered by compiler for the first time.
         if (sourceFile === undefined) {
-          rootFileNames.push(fileName)
+          rootFileNames.push(normalizedFileName)
         }
 
         // Update program when file changes.
