@@ -11,12 +11,12 @@
 
 ```sh
 # Locally in your project.
-npm install -D ts-node
 npm install -D typescript
+npm install -D ts-node
 
 # Or globally with TypeScript.
-npm install -g ts-node
 npm install -g typescript
+npm install -g ts-node
 ```
 
 **Tip:** Installing modules locally allows you to control and share the versions through `package.json`. TS Node will always resolve the compiler from `cwd` before checking relative to its own installation.
