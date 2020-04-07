@@ -467,6 +467,13 @@ describe('ts-node', function () {
         })
       })
     })
+
+    it('should transpile files inside a node_modules directory when not ignored', function (done) {
+      exec(`${cmd} --skip-ignore tests/from-node-modules`, function (err, stdout) {
+        if (err) return done('Unexpected error')
+        done()
+      })
+    })
   })
 
   describe('register', function () {
