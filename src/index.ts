@@ -488,6 +488,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
             fileVersions.set(fileName, 1)
             fileContents.set(fileName, contents)
+            projectVersion++
           }
 
           return ts.ScriptSnapshot.fromString(contents)
