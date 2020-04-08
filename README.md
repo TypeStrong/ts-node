@@ -40,6 +40,12 @@ ts-node -p -e '"Hello, world!"'
 
 # Pipe scripts to execute with TypeScript.
 echo 'console.log("Hello, world!")' | ts-node
+
+# Equivalent to ts-node --script-mode
+ts-node-script scripts.ts
+
+# Equivalent to ts-node --transpile-only
+ts-node-transpile-only scripts.ts
 ```
 
 ![TypeScript REPL](https://github.com/TypeStrong/ts-node/raw/master/screenshot.png)
@@ -48,13 +54,17 @@ echo 'console.log("Hello, world!")' | ts-node
 
 ```typescript
 #!/usr/bin/env ts-node-script
+
+console.log("Hello, world!")
 ```
 
-While `ts-node` searches for the `tsconfig.json` file in your current working directory and its ancestor directories, `ts-node-script` searches relative to the location of the script, which is passed as an argument to the command. See [below](#loading-tsconfigjson) for more information.
+`ts-node-script` is recommended because it enables `--script-mode`, discovering `tsconfig.json` relative to the script's location instead of `process.cwd()`.  This makes scripts more portable.
 
-Please note that the [`ts-node-script`](https://github.com/TypeStrong/ts-node/blob/56f2079d1436d1f63a4976859cda57ab0a856b26/package.json#L10) and [`ts-node-transpile-only`](https://github.com/TypeStrong/ts-node/blob/56f2079d1436d1f63a4976859cda57ab0a856b26/package.json#L11) commands are included in the `ts-node` installation and invoke the main command with [`--script-mode`](https://github.com/TypeStrong/ts-node/blob/56f2079d1436d1f63a4976859cda57ab0a856b26/src/bin-script.ts#L5) respectively [`--transpile-only`](https://github.com/TypeStrong/ts-node/blob/56f2079d1436d1f63a4976859cda57ab0a856b26/src/bin-transpile.ts#L5).
+Passing CLI arguments via shebang is allowed on Mac but not Linux.  For example, the following will fail on Linux:
 
-Please also note that directly installing TypeScript files without precompilation into the `PATH` through the [`"bin"`](https://docs.npmjs.com/files/package.json#bin) property of `package.json` is currently not supported because `ts-node-script` does not resolve the symlink to the script's actual location. (See [this issue](https://github.com/TypeStrong/ts-node/issues/995) for more information and ways around this limitation.)
+```
+#!/usr/bin/env ts-node --script-mode --transpile-only --files
+```
 
 ### Programmatic
 
@@ -134,19 +144,23 @@ Create a new Node.js configuration and add `-r ts-node/register` to "Node parame
 
 ## Loading `tsconfig.json`
 
-If you do not provide an absolute or relative `--project` path, *TypeScript Node* lets the *TypeScript Compiler* locate the `tsconfig.json` file (with [this code](https://github.com/TypeStrong/ts-node/blob/56f2079d1436d1f63a4976859cda57ab0a856b26/src/index.ts#L897-L899)). According to its [documentation](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html) and [implementation](https://github.com/microsoft/TypeScript/blob/3e86f15f5101a354625427befbd907e3bac57b30/src/compiler/program.ts#L2-L7), the *TypeScript Compiler* searches for the `tsconfig.json` file starting in the current directory and continues up the parent directory chain. You can set the [working directory](https://github.com/TypeStrong/ts-node/blob/92cf9613828c2ba2fe37b7a0aa7895e122c16185/src/bin.ts#L240-L258) used for this purpose to the directory of the script for which you invoke `ts-node` with the `--script-mode` flag. If you prefer not to use any `tsconfig.json` file, use the `--skip-project` flag.
+**Typescript Node** loads `tsconfig.json` automatically. Use `--skip-project` to skip loading the `tsconfig.json`.
+
+By default, it is located relative to `--dir`.  In `--script-mode`, this is the directory containing the script.  Otherwise it is `process.cwd()`.
+
+Use `--project` to specify the path to your `tsconfig.json`, ignoring `--dir`.
 
 **Tip**: You can use `ts-node` together with [tsconfig-paths](https://www.npmjs.com/package/tsconfig-paths) to load modules according to the `paths` section in `tsconfig.json`.
 
 ## Configuration Options
 
-You can set options by passing them before the script path, via programmatic usage or via environment variables.
+You can set options by passing them before the script path, via programmatic usage, via `tsconfig.json`, or via environment variables.
 
 ```sh
 ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 ```
 
-**Note:** [`ntypescript`](https://github.com/TypeStrong/ntypescript#readme) is an example of a TypeScript compatible `compiler`.
+**Note:** [`ntypescript`](https://github.com/TypeStrong/ntypescript#readme) is an example of a TypeScript-compatible `compiler`.
 
 ### CLI Options
 
@@ -154,7 +168,7 @@ ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 
 * `-h, --help` Prints the help text
 * `-v, --version` Prints the version. `-vv` prints node and typescript compiler versions, too
-* `-s, --script-mode` Use the directory of the passed script instead of the current directory
+* `-s, --script-mode` Resolve config relative to the directory of the passed script instead of the current directory. Changes default of `--dir`
 
 ### CLI and Programmatic Options
 
@@ -167,7 +181,7 @@ _The name of the environment variable and the option's default value are denoted
 * `-C, --compiler [name]` Specify a custom TypeScript compiler (`TS_NODE_COMPILER`, default: `typescript`)
 * `-D, --ignore-diagnostics [code]` Ignore TypeScript warnings by diagnostic code (`TS_NODE_IGNORE_DIAGNOSTICS`)
 * `-O, --compiler-options [opts]` JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
-* `--dir` Specify working directory for config resolution (`TS_NODE_CWD`, default: `process.cwd()`)
+* `--dir` Specify working directory for config resolution (`TS_NODE_CWD`, default: `process.cwd()`, or `dirname(scriptPath)` if `--script-mode`)
 * `--scope` Scope compiler to files within `cwd` (`TS_NODE_SCOPE`, default: `false`)
 * `--files` Load `files`, `include` and `exclude` from `tsconfig.json` on startup (`TS_NODE_FILES`, default: `false`)
 * `--pretty` Use pretty diagnostic formatter (`TS_NODE_PRETTY`, default: `false`)
@@ -177,9 +191,18 @@ _The name of the environment variable and the option's default value are denoted
 * `--prefer-ts-exts` Re-order file extensions so that TypeScript imports are preferred (`TS_NODE_PREFER_TS_EXTS`, default: `false`)
 * `--log-error` Logs TypeScript errors to stderr instead of throwing exceptions (`TS_NODE_LOG_ERROR`, default: `false`)
 
-You can also specify some of these options inside a `"ts-node"` property in the `tsconfig.json` file. For example, if you want to transpile your TypeScript code directly to JavaScript without type checking for performance reasons, you can specify this as follows:
+### Programmatic-only Options
+
+* `transformers` `_ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)`: An object with transformers or a function that accepts a program and returns an transformers object to pass to TypeScript. Function isn't available with `transpileOnly` flag
+* `readFile`: Custom TypeScript-compatible file reading function
+* `fileExists`: Custom TypeScript-compatible file existence function
+
+### Options via tsconfig.json
+
+Most options can be specified by a `"ts-node"` object in `tsconfig.json` using their programmatic, camelCase names. For example, to enable `--transpile-only`:
 
 ```json
+// tsconfig.json
 {
   "ts-node": {
     "transpileOnly": true
@@ -188,13 +211,7 @@ You can also specify some of these options inside a `"ts-node"` property in the 
 }
 ```
 
-See [this file](https://github.com/TypeStrong/ts-node/blob/3f50313a4546e68099636baee210626bd7883115/tests/tsconfig-options/tsconfig.json) for a more elaborate example. Please note that you have to transform the options from `--kebab-case` to `camelCase`.
-
-### Programmatic-only Options
-
-* `transformers` `_ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)`: An object with transformers or a function that accepts a program and returns an transformers object to pass to TypeScript. Function isn't available with `transpileOnly` flag
-* `readFile`: Custom TypeScript-compatible file reading function
-* `fileExists`: Custom TypeScript-compatible file existence function
+Our bundled [JSON schema](https://unpkg.com/browse/ts-node@8.8.2/tsconfig.schema.json) lists all compatible options.
 
 ## SyntaxError
 
