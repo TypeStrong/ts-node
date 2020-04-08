@@ -160,22 +160,22 @@ ts-node --compiler ntypescript --project src/tsconfig.json script.ts
 
 _The name of the environment variable and the option's default value are denoted in parentheses._
 
-* `-T`, `--transpile-only`: Use TypeScript's faster `transpileModule` (`TS_NODE_TRANSPILE_ONLY`, default: `false`)
-* `-H`, `--compiler-host`: Use TypeScript's compiler host API (`TS_NODE_COMPILER_HOST`, default: `false`)
-* `-I`, `--ignore [pattern]`: Override the path patterns to skip compilation (`TS_NODE_IGNORE`, default: `/node_modules/`)
-* `-P`, `--project [path]`: Path to TypeScript JSON project file (`TS_NODE_PROJECT`)
-* `-C`, `--compiler [name]`: Specify a custom TypeScript compiler (`TS_NODE_COMPILER`, default: `typescript`)
-* `-D`, `--ignore-diagnostics [code]`: Ignore TypeScript warnings by diagnostic code (`TS_NODE_IGNORE_DIAGNOSTICS`)
-* `-O`, `--compiler-options [opts]`: JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
-* `--dir`: Specify working directory for config resolution (`TS_NODE_CWD`, default: `process.cwd()`)
-* `--scope`: Scope compiler to files within `cwd` (`TS_NODE_SCOPE`, default: `false`)
-* `--files`: Load `files`, `include` and `exclude` from `tsconfig.json` on startup (`TS_NODE_FILES`, default: `false`)
-* `--pretty`: Use pretty diagnostic formatter (`TS_NODE_PRETTY`, default: `false`)
-* `--skip-project`: Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`, default: `false`)
-* `--skip-ignore`: Skip ignore checks (`TS_NODE_SKIP_IGNORE`, default: `false`)
-* `--emit`: Emit output files into `.ts-node` directory (`TS_NODE_EMIT`, default: `false`)
-* `--prefer-ts-exts`: Re-order file extensions so that TypeScript imports are preferred (`TS_NODE_PREFER_TS_EXTS`, default: `false`)
-* `--log-error`: Logs TypeScript errors to stderr instead of throwing exceptions (`TS_NODE_LOG_ERROR`, default: `false`)
+* `-T, --transpile-only` Use TypeScript's faster `transpileModule` (`TS_NODE_TRANSPILE_ONLY`, default: `false`)
+* `-H, --compiler-host` Use TypeScript's compiler host API (`TS_NODE_COMPILER_HOST`, default: `false`)
+* `-I, --ignore [pattern]` Override the path patterns to skip compilation (`TS_NODE_IGNORE`, default: `/node_modules/`)
+* `-P, --project [path]` Path to TypeScript JSON project file (`TS_NODE_PROJECT`)
+* `-C, --compiler [name]` Specify a custom TypeScript compiler (`TS_NODE_COMPILER`, default: `typescript`)
+* `-D, --ignore-diagnostics [code]` Ignore TypeScript warnings by diagnostic code (`TS_NODE_IGNORE_DIAGNOSTICS`)
+* `-O, --compiler-options [opts]` JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
+* `--dir` Specify working directory for config resolution (`TS_NODE_CWD`, default: `process.cwd()`)
+* `--scope` Scope compiler to files within `cwd` (`TS_NODE_SCOPE`, default: `false`)
+* `--files` Load `files`, `include` and `exclude` from `tsconfig.json` on startup (`TS_NODE_FILES`, default: `false`)
+* `--pretty` Use pretty diagnostic formatter (`TS_NODE_PRETTY`, default: `false`)
+* `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`, default: `false`)
+* `--skip-ignore` Skip ignore checks (`TS_NODE_SKIP_IGNORE`, default: `false`)
+* `--emit` Emit output files into `.ts-node` directory (`TS_NODE_EMIT`, default: `false`)
+* `--prefer-ts-exts` Re-order file extensions so that TypeScript imports are preferred (`TS_NODE_PREFER_TS_EXTS`, default: `false`)
+* `--log-error` Logs TypeScript errors to stderr instead of throwing exceptions (`TS_NODE_LOG_ERROR`, default: `false`)
 
 You can also specify some of these options inside a `"ts-node"` property in the `tsconfig.json` file. For example, if you want to transpile your TypeScript code directly to JavaScript without type checking for performance reasons, you can specify this as follows:
 
