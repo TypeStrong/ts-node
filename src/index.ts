@@ -544,7 +544,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
        */
       const fixupResolvedModule = (resolvedModule: _ts.ResolvedModule) => {
         const canonical = getCanonicalFileName(resolvedModule.resolvedFileName)
-        if (rootFileNames.some(rootFileName => canonical === getCanonicalFileName(rootFileName))) {
+        if (Array.from(rootFileNames).some(rootFileName => canonical === getCanonicalFileName(rootFileName))) {
           resolvedModule.isExternalLibraryImport = false
         }
       }
