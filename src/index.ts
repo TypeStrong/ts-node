@@ -74,6 +74,21 @@ export interface TSCommon {
 }
 
 /**
+ * Compiler APIs we use that are marked internal and not included in TypeScript's public API declarations
+ */
+interface TSInternal {
+  // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906-L1909
+  createGetCanonicalFileName (useCaseSensitiveFileNames: boolean): TSInternal.GetCanonicalFileName
+
+  // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1430-L1445
+  toFileNameLowerCase (x: string): string
+}
+namespace TSInternal {
+  // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906
+  export type GetCanonicalFileName = (fileName: string) => string
+}
+
+/**
  * Export the current version.
  */
 export const VERSION = require('../package.json').version
@@ -471,7 +486,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
       }
 
       // Create the compiler host for type checking.
-      const serviceHost: _ts.LanguageServiceHost = {
+      const serviceHost: _ts.LanguageServiceHost & Required<Pick<_ts.LanguageServiceHost, 'fileExists' | 'readFile'>> = {
         getProjectVersion: () => String(projectVersion),
         getScriptFileNames: () => Array.from(rootFileNames),
         getScriptVersion: (fileName: string) => {
@@ -497,13 +512,44 @@ export function create (rawOptions: CreateOptions = {}): Register {
         getDirectories: cachedLookup(debugFn('getDirectories', ts.sys.getDirectories)),
         fileExists: cachedLookup(debugFn('fileExists', fileExists)),
         directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
+        realpath: ts.sys.realpath ? cachedLookup(debugFn('realpath', ts.sys.realpath)) : undefined,
         getNewLine: () => ts.sys.newLine,
         useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
         getCurrentDirectory: () => cwd,
         getCompilationSettings: () => config.options,
         getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
-        getCustomTransformers: getCustomTransformers
+        getCustomTransformers: getCustomTransformers,
+        /*
+         * NOTE:
+         * Older ts versions do not pass `redirectedReference` nor `options`.
+         * We must pass `redirectedReference` to newer ts versions, but cannot rely on `options`
+         */
+        resolveModuleNames (moduleNames: string[], containingFile: string, reusedNames: string[] | undefined, redirectedReference: _ts.ResolvedProjectReference | undefined, options: _ts.CompilerOptions): (_ts.ResolvedModule | undefined)[] {
+          return moduleNames.map(moduleName => {
+            const { resolvedModule } = ts.resolveModuleName(moduleName, containingFile, config.options, serviceHost, moduleResolutionCache, redirectedReference)
+            if (resolvedModule) fixupResolvedModule(resolvedModule)
+            return resolvedModule
+          })
+        },
+        getResolvedModuleWithFailedLookupLocationsFromCache (moduleName, containingFile): _ts.ResolvedModuleWithFailedLookupLocations | undefined {
+          const ret = ts.resolveModuleNameFromCache(moduleName, containingFile, moduleResolutionCache)
+          if (ret && ret.resolvedModule) {
+            fixupResolvedModule(ret.resolvedModule)
+          }
+          return ret
+        }
       }
+      /**
+       * If we need to emit JS for a file, force TS to consider it non-external
+       */
+      const fixupResolvedModule = (resolvedModule: _ts.ResolvedModule) => {
+        const canonical = getCanonicalFileName(resolvedModule.resolvedFileName)
+        if (rootFileNames.some(rootFileName => canonical === getCanonicalFileName(rootFileName))) {
+          resolvedModule.isExternalLibraryImport = false
+        }
+      }
+      const getCanonicalFileName = (ts as unknown as TSInternal).createGetCanonicalFileName(ts.sys.useCaseSensitiveFileNames)
+      const moduleResolutionCache = ts.createModuleResolutionCache(cwd, (s) => getCanonicalFileName(s), config.options)
 
       const registry = ts.createDocumentRegistry(ts.sys.useCaseSensitiveFileNames, cwd)
       const service = ts.createLanguageService(serviceHost, registry)
