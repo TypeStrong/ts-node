@@ -224,10 +224,10 @@ Example project structure:
 
 ```text
 <project_root>/
-- tsconfig.json
-- typings/
-  - <module_name>/
-    - index.d.ts
+-- tsconfig.json
+-- typings/
+  -- <module_name>/
+    -- index.d.ts
 ```
 
 Example module declaration file:
