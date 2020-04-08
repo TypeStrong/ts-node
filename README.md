@@ -64,6 +64,7 @@ Passing CLI arguments via shebang is allowed on Mac but not Linux.  For example,
 
 ```
 #!/usr/bin/env ts-node --script-mode --transpile-only --files
+// This shebang is not portable.  It only works on Mac
 ```
 
 ### Programmatic
@@ -146,7 +147,7 @@ Create a new Node.js configuration and add `-r ts-node/register` to "Node parame
 
 **Typescript Node** loads `tsconfig.json` automatically. Use `--skip-project` to skip loading the `tsconfig.json`.
 
-By default, it is located relative to `--dir`.  In `--script-mode`, this is the directory containing the script.  Otherwise it is `process.cwd()`.
+It is resolved relative to `--dir` using [the same search behavior as `tsc`](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html).  In `--script-mode`, this is the directory containing the script.  Otherwise it is resolved relative to `process.cwd()`, which matches the behavior of `tsc`.
 
 Use `--project` to specify the path to your `tsconfig.json`, ignoring `--dir`.
 
