@@ -143,7 +143,7 @@ If you do not provide an absolute or relative `--project` path, *TypeScript Node
 You can set options by passing them before the script path, via programmatic usage or via environment variables.
 
 ```sh
-ts-node --compiler ntypescript --project src/tsconfig.json script.ts
+ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 ```
 
 **Note:** [`ntypescript`](https://github.com/TypeStrong/ntypescript#readme) is an example of a TypeScript compatible `compiler`.
@@ -152,9 +152,9 @@ ts-node --compiler ntypescript --project src/tsconfig.json script.ts
 
 `ts-node` supports `--print` (`-p`), `--eval` (`-e`), `--require` (`-r`) and `--interactive` (`-i`) similar to the [node.js CLI options](https://nodejs.org/api/cli.html).
 
-* `-h`, `--help`: Prints the help text
-* `-v`, `--version`: Prints the version
-* `-s`, `--script-mode`: Use the directory of the passed script instead of the current directory
+* `-h, --help` Prints the help text
+* `-v, --version` Prints the version
+* `-s, --script-mode` Use the directory of the passed script instead of the current directory
 
 ### CLI and Programmatic Options
 
