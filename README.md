@@ -153,7 +153,7 @@ ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 `ts-node` supports `--print` (`-p`), `--eval` (`-e`), `--require` (`-r`) and `--interactive` (`-i`) similar to the [node.js CLI options](https://nodejs.org/api/cli.html).
 
 * `-h, --help` Prints the help text
-* `-v, --version` Prints the version
+* `-v, --version` Prints the version. `-vv` prints node and typescript compiler versions, too
 * `-s, --script-mode` Use the directory of the passed script instead of the current directory
 
 ### CLI and Programmatic Options
