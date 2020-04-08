@@ -507,18 +507,17 @@ export function create (rawOptions: CreateOptions = {}): Register {
       const service = ts.createLanguageService(serviceHost, registry)
 
       const updateMemoryCache = (contents: string, fileName: string) => {
-        const normalizedFileName = normalizeSlashes(fileName)
         // Add to `rootFiles` when discovered for the first time.
-        if (!fileVersions.has(normalizedFileName)) {
-          rootFileNames.push(normalizedFileName)
+        if (!fileVersions.has(fileName)) {
+          rootFileNames.push(fileName)
         }
 
-        const previousVersion = fileVersions.get(normalizedFileName) || 0
-        const previousContents = fileContents.get(normalizedFileName)
+        const previousVersion = fileVersions.get(fileName) || 0
+        const previousContents = fileContents.get(fileName)
         // Avoid incrementing cache when nothing has changed.
         if (contents !== previousContents) {
-          fileVersions.set(normalizedFileName, previousVersion + 1)
-          fileContents.set(normalizedFileName, contents)
+          fileVersions.set(fileName, previousVersion + 1)
+          fileContents.set(fileName, contents)
           // Increment project version for every file change.
           projectVersion++
         }
@@ -634,14 +633,13 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
       // Set the file contents into cache manually.
       const updateMemoryCache = (contents: string, fileName: string) => {
-        const normalizedFileName = normalizeSlashes(fileName)
-        const sourceFile = builderProgram.getSourceFile(normalizedFileName)
+        const sourceFile = builderProgram.getSourceFile(fileName)
 
-        fileContents.set(normalizedFileName, contents)
+        fileContents.set(fileName, contents)
 
         // Add to `rootFiles` when discovered by compiler for the first time.
         if (sourceFile === undefined) {
-          rootFileNames.push(normalizedFileName)
+          rootFileNames.push(fileName)
         }
 
         // Update program when file changes.
@@ -756,8 +754,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
   // Create a simple TypeScript compiler proxy.
   function compile (code: string, fileName: string, lineOffset = 0) {
-    const [value, sourceMap] = getOutput(code, fileName, lineOffset)
-    const output = updateOutput(value, fileName, sourceMap, getExtension)
+    const normalizedFileName = normalizeSlashes(fileName)
+    const [value, sourceMap] = getOutput(code, normalizedFileName, lineOffset)
+    const output = updateOutput(value, normalizedFileName, sourceMap, getExtension)
     outputCache.set(fileName, output)
     return output
   }
