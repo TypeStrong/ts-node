@@ -7,7 +7,7 @@ import Module = require('module')
 import arg = require('arg')
 import { diffLines } from 'diff'
 import { Script } from 'vm'
-import { readFileSync, statSync } from 'fs'
+import { readFileSync, statSync, realpathSync } from 'fs'
 import { homedir } from 'os'
 import { VERSION, TSError, parse, Register, register } from './index'
 
@@ -154,6 +154,7 @@ export function main (argv: string[]) {
   }
 
   const cwd = dir || process.cwd()
+  /** Unresolved.  May point to a symlink, not realpath.  May be missing file extension */
   const scriptPath = args._.length ? resolve(cwd, args._[0]) : undefined
   const state = new EvalState(scriptPath || join(cwd, EVAL_FILENAME))
 
@@ -251,7 +252,21 @@ function getCwd (dir?: string, scriptMode?: boolean, scriptPath?: string) {
       throw new TypeError('Script mode cannot be combined with `--dir`')
     }
 
-    return dirname(scriptPath)
+    // Use node's own resolution behavior to ensure we follow symlinks
+    // This may affect which tsconfig we discover
+    // This happens before we are registered, so tell node's resolver to consider .ts and tsx files
+    // TODO in extremely rare cases, if a foo.js and foo.ts both exist, we may follow the wrong one,
+    // because we are not obeying `--prefer-ts-exts`
+    const hadTsExt = hasOwnProperty(require.extensions, '.ts') // tslint:disable-line
+    const hadTsxExt = hasOwnProperty(require.extensions, '.tsx') // tslint:disable-line
+    try {
+      if(!hadTsExt) require.extensions['.ts'] = function() {}  // tslint:disable-line
+      if(!hadTsxExt) require.extensions['.tsx'] = function() {} // tslint:disable-line
+      return dirname(require.resolve(scriptPath))
+    } finally {
+      if(!hadTsExt) delete require.extensions['.ts'] // tslint:disable-line
+      if(!hadTsxExt) delete require.extensions['.tsx'] // tslint:disable-line
+    }
   }
 
   return dir
@@ -479,6 +494,11 @@ const RECOVERY_CODES: Set<number> = new Set([
  */
 function isRecoverable (error: TSError) {
   return error.diagnosticCodes.every(code => RECOVERY_CODES.has(code))
+}
+
+/** Safe `hasOwnProperty` */
+function hasOwnProperty (object: any, property: string): boolean {
+  return Object.prototype.hasOwnProperty.call(object, property)
 }
 
 if (require.main === module) {
