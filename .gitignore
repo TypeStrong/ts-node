@@ -3,5 +3,6 @@ coverage/
 .DS_Store
 npm-debug.log
 dist/
+dist-non-bundled/
 tsconfig.schema.json
 tsconfig.schemastore-schema.json

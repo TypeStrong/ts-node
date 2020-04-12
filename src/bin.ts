@@ -3,8 +3,8 @@
 import { join, resolve, dirname } from 'path'
 import { start, Recoverable } from 'repl'
 import { inspect } from 'util'
-import Module = require('module')
-import arg = require('arg')
+import * as Module from 'module'
+import * as arg from 'arg'
 import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { readFileSync, statSync } from 'fs'
@@ -481,6 +481,9 @@ function isRecoverable (error: TSError) {
   return error.diagnosticCodes.every(code => RECOVERY_CODES.has(code))
 }
 
-if (require.main === module) {
+// Detect when we're webpacked
+// tslint:disable-line
+const isMain = typeof __node_require__ === 'function' ? __node_require__.main === __node_module__ : require.main === module
+if (isMain) {
   main(process.argv.slice(2))
 }

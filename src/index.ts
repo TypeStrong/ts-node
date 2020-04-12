@@ -1,9 +1,17 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path'
-import sourceMapSupport = require('source-map-support')
+import * as sourceMapSupport from 'source-map-support'
 import * as ynModule from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
 import * as _ts from 'typescript'
+
+declare global {
+  // When webpacked, node's `require` and `module` objects are available via alternate identifiers.
+  const __non_webpack_require__: typeof require // tslint:disable-line
+  const __node_require__: typeof require // tslint:disable-line
+  const __node_module__: typeof module // tslint:disable-line
+}
+const nodeRequire = typeof __non_webpack_require__ === 'function' ? __non_webpack_require__ : require
 
 /**
  * Registered `ts-node` instance information.
@@ -332,7 +340,7 @@ function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
  * Register TypeScript compiler instance onto node.js
  */
 export function register (opts: RegisterOptions = {}): Register {
-  const originalJsHandler = require.extensions['.js'] // tslint:disable-line
+  const originalJsHandler = nodeRequire.extensions['.js'] // tslint:disable-line
   const service = create(opts)
   const extensions = ['.ts']
 
@@ -363,8 +371,8 @@ export function create (rawOptions: CreateOptions = {}): Register {
    * be changed by the tsconfig, so we sometimes have to do this twice.
    */
   function loadCompiler (name: string | undefined) {
-    const compiler = require.resolve(name || 'typescript', { paths: [cwd, __dirname] })
-    const ts: typeof _ts = require(compiler)
+    const compiler = nodeRequire.resolve(name || 'typescript', { paths: [cwd, __dirname] })
+    const ts: typeof _ts = nodeRequire(compiler)
     return { compiler, ts }
   }
 
@@ -785,14 +793,14 @@ function createIgnore (ignore: RegExp[]) {
 }
 
 /**
- * "Refreshes" an extension on `require.extensions`.
+ * "Refreshes" an extension on `nodeRequire.extensions`.
  *
  * @param {string} ext
  */
 function reorderRequireExtension (ext: string) {
-  const old = require.extensions[ext] // tslint:disable-line
-  delete require.extensions[ext] // tslint:disable-line
-  require.extensions[ext] = old // tslint:disable-line
+  const old = nodeRequire.extensions[ext] // tslint:disable-line
+  delete nodeRequire.extensions[ext] // tslint:disable-line
+  nodeRequire.extensions[ext] = old // tslint:disable-line
 }
 
 /**
@@ -811,7 +819,7 @@ function registerExtensions (
 
   if (preferTsExts) {
     // tslint:disable-next-line
-    const preferredExtensions = new Set([...extensions, ...Object.keys(require.extensions)])
+    const preferredExtensions = new Set([...extensions, ...Object.keys(nodeRequire.extensions)])
 
     for (const ext of preferredExtensions) reorderRequireExtension(ext)
   }
@@ -825,9 +833,9 @@ function registerExtension (
   register: Register,
   originalHandler: (m: NodeModule, filename: string) => any
 ) {
-  const old = require.extensions[ext] || originalHandler // tslint:disable-line
+  const old = nodeRequire.extensions[ext] || originalHandler // tslint:disable-line
 
-  require.extensions[ext] = function (m: any, filename) { // tslint:disable-line
+  nodeRequire.extensions[ext] = function (m: any, filename) { // tslint:disable-line
     if (register.ignored(filename)) return old(m, filename)
 
     const _compile = m._compile
