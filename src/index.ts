@@ -4,6 +4,7 @@ import * as ynModule from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
 import * as _ts from 'typescript'
+import * as assert from 'assert'
 
 /**
  * Registered `ts-node` instance information.
@@ -42,14 +43,14 @@ const debug = shouldDebug ?
   (...args: any) => console.log(`[ts-node ${new Date().toISOString()}]`, ...args)
   : () => undefined
 const debugFn = shouldDebug ?
-  <T, U> (key: string, fn: (arg: T) => U) => {
+  <T, U>(key: string, fn: (arg: T) => U) => {
     let i = 0
     return (x: T) => {
       debug(key, x, ++i)
       return fn(x)
     }
   } :
-  <T, U> (_: string, fn: (arg: T) => U) => fn
+  <T, U>(_: string, fn: (arg: T) => U) => fn
 
 /**
  * Common TypeScript interfaces between versions.
@@ -202,12 +203,12 @@ export interface TsConfigOptions extends Omit<RegisterOptions,
   | 'skipProject'
   | 'project'
   | 'dir'
-> {}
+  > { }
 
 /**
  * Like `Object.assign`, but ignores `undefined` properties.
  */
-function assign <T extends object> (initialValue: T, ...sources: Array<T>): T {
+function assign<T extends object> (initialValue: T, ...sources: Array<T>): T {
   for (const source of sources) {
     for (const key of Object.keys(source)) {
       const value = (source as any)[key]
@@ -310,13 +311,14 @@ export interface Register {
   enabled (enabled?: boolean): boolean
   ignored (fileName: string): boolean
   compile (code: string, fileName: string, lineOffset?: number): string
+  compileEsm (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
 }
 
 /**
  * Cached fs operation wrapper.
  */
-function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
+function cachedLookup<T> (fn: (arg: string) => T): (arg: string) => T {
   const cache = new Map<string, T>()
 
   return (arg: string): T => {
@@ -328,18 +330,26 @@ function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
   }
 }
 
+/** @internal */
+export function getExtensions (config: _ts.ParsedCommandLine) {
+  const tsExtensions = ['.ts']
+  const jsExtensions = []
+
+  // Enable additional extensions when JSX or `allowJs` is enabled.
+  if (config.options.jsx) tsExtensions.push('.tsx')
+  if (config.options.allowJs) jsExtensions.push('.js')
+  if (config.options.jsx && config.options.allowJs) jsExtensions.push('.jsx')
+  return { tsExtensions, jsExtensions }
+}
+
 /**
  * Register TypeScript compiler instance onto node.js
  */
 export function register (opts: RegisterOptions = {}): Register {
   const originalJsHandler = require.extensions['.js'] // tslint:disable-line
   const service = create(opts)
-  const extensions = ['.ts']
-
-  // Enable additional extensions when JSX or `allowJs` is enabled.
-  if (service.config.options.jsx) extensions.push('.tsx')
-  if (service.config.options.allowJs) extensions.push('.js')
-  if (service.config.options.jsx && service.config.options.allowJs) extensions.push('.jsx')
+  const { tsExtensions, jsExtensions } = getExtensions(service.config)
+  const extensions = [...tsExtensions, ...jsExtensions]
 
   // Expose registered instance globally.
   process[REGISTER_INSTANCE] = service
@@ -392,7 +402,10 @@ export function create (rawOptions: CreateOptions = {}): Register {
   ].map(Number)
 
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
-  const outputCache = new Map<string, string>()
+  const outputCache = new Map<string, {
+    createdBy: 'compileEsm' | 'compile',
+    content: string
+  }>()
 
   const isScoped = options.scope ? (relname: string) => relname.charAt(0) !== '.' : () => true
   const shouldIgnore = createIgnore(options.skipIgnore ? [] : (
@@ -409,7 +422,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
   sourceMapSupport.install({
     environment: 'node',
     retrieveFile (path: string) {
-      return outputCache.get(path) || ''
+      return outputCache.get(path)?.content || ''
     }
   })
 
@@ -447,8 +460,21 @@ export function create (rawOptions: CreateOptions = {}): Register {
   /**
    * Create the basic required function using transpile mode.
    */
-  let getOutput: (code: string, fileName: string, lineOffset: number) => SourceOutput
+  let getOutput: (code: string, fileName: string) => SourceOutput
   let getTypeInfo: (_code: string, _fileName: string, _position: number) => TypeInfo
+
+  const getOutputTranspileOnly = (code: string, fileName: string, overrideCompilerOptions?: Partial<_ts.CompilerOptions>): SourceOutput => {
+    const result = ts.transpileModule(code, {
+      fileName,
+      compilerOptions: overrideCompilerOptions ? { ...config.options, ...overrideCompilerOptions } : config.options,
+      reportDiagnostics: true
+    })
+
+    const diagnosticList = filterDiagnostics(result.diagnostics || [], ignoreDiagnostics)
+    if (diagnosticList.length) reportTSError(diagnosticList)
+
+    return [result.outputText, result.sourceMapText as string]
+  }
 
   // Use full language services when the fast option is disabled.
   if (!transpileOnly) {
@@ -735,30 +761,41 @@ export function create (rawOptions: CreateOptions = {}): Register {
       throw new TypeError('Transformers function is unavailable in "--transpile-only"')
     }
 
-    getOutput = (code: string, fileName: string): SourceOutput => {
-      const result = ts.transpileModule(code, {
-        fileName,
-        transformers,
-        compilerOptions: config.options,
-        reportDiagnostics: true
-      })
-
-      const diagnosticList = filterDiagnostics(result.diagnostics || [], ignoreDiagnostics)
-      if (diagnosticList.length) reportTSError(diagnosticList)
-
-      return [result.outputText, result.sourceMapText as string]
-    }
+    getOutput = getOutputTranspileOnly
 
     getTypeInfo = () => {
       throw new TypeError('Type information is unavailable in "--transpile-only"')
     }
   }
 
+  const cannotCompileViaBothCodepathsErrorMessage = 'Cannot compile the same file via both `require()` and ESM hooks codepaths. ' +
+    'This breaks source-map-support, which cannot tell the difference between the two sourcemaps. ' +
+    'To avoid this problem, load each .ts file as only ESM or only CommonJS.'
   // Create a simple TypeScript compiler proxy.
   function compile (code: string, fileName: string, lineOffset = 0) {
-    const [value, sourceMap] = getOutput(code, fileName, lineOffset)
+    // Avoid sourcemap issues
+    assert(outputCache.get(fileName)?.createdBy !== 'compileEsm', cannotCompileViaBothCodepathsErrorMessage)
+    const [value, sourceMap] = getOutput(code, fileName)
     const output = updateOutput(value, fileName, sourceMap, getExtension)
-    outputCache.set(fileName, output)
+    outputCache.set(fileName, { createdBy: 'compile', content: output })
+    return output
+  }
+
+  function compileEsm (code: string, fileName: string) {
+    if (config.options.module === ts.ModuleKind.ESNext || config.options.module === ts.ModuleKind.ES2015) {
+      // We can use our regular `compile` implementation, since it emits ESM
+      return compile(code, fileName)
+    }
+    // Else we must do an alternative emit for ESM
+
+    // Avoid sourcemap issues
+    assert(outputCache.get(fileName)?.createdBy !== 'compile', cannotCompileViaBothCodepathsErrorMessage)
+
+    // TODO for now, we use a very simple transpileModule
+    // This does not typecheck, so we'll need to integrate with our main codepath in the future.
+    const [value, sourceMap] = getOutputTranspileOnly(code, fileName, { module: ts.ModuleKind.ESNext })
+    const output = updateOutput(value, fileName, sourceMap, getExtension)
+    outputCache.set(fileName, { createdBy: 'compileEsm', content: output })
     return output
   }
 
@@ -767,10 +804,14 @@ export function create (rawOptions: CreateOptions = {}): Register {
   const ignored = (fileName: string) => {
     if (!active) return true
     const relname = relative(cwd, fileName)
+    if (!config.options.allowJs) {
+      const ext = extname(fileName)
+      if (ext === '.js' || ext === '.jsx') return true
+    }
     return !isScoped(relname) || shouldIgnore(relname)
   }
 
-  return { ts, config, compile, getTypeInfo, ignored, enabled, options }
+  return { ts, config, compile, compileEsm, getTypeInfo, ignored, enabled, options }
 }
 
 /**
