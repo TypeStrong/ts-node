@@ -756,8 +756,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
   // Create a simple TypeScript compiler proxy.
   function compile (code: string, fileName: string, lineOffset = 0) {
-    const [value, sourceMap] = getOutput(code, fileName, lineOffset)
-    const output = updateOutput(value, fileName, sourceMap, getExtension)
+    const normalizedFileName = normalizeSlashes(fileName)
+    const [value, sourceMap] = getOutput(code, normalizedFileName, lineOffset)
+    const output = updateOutput(value, normalizedFileName, sourceMap, getExtension)
     outputCache.set(fileName, output)
     return output
   }
