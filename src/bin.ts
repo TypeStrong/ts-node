@@ -252,20 +252,27 @@ function getCwd (dir?: string, scriptMode?: boolean, scriptPath?: string) {
       throw new TypeError('Script mode cannot be combined with `--dir`')
     }
 
-    // Use node's own resolution behavior to ensure we follow symlinks
-    // This may affect which tsconfig we discover
-    // This happens before we are registered, so tell node's resolver to consider .ts and tsx files
-    // TODO in extremely rare cases, if a foo.js and foo.ts both exist, we may follow the wrong one,
-    // because we are not obeying `--prefer-ts-exts`
-    const hadTsExt = hasOwnProperty(require.extensions, '.ts') // tslint:disable-line
-    const hadTsxExt = hasOwnProperty(require.extensions, '.tsx') // tslint:disable-line
+    // Use node's own resolution behavior to ensure we follow symlinks.
+    // scriptPath may omit file extension or point to a directory with or without package.json.
+    // This happens before we are registered, so we tell node's resolver to consider ts, tsx, and jsx files.
+    // In extremely rare cases, is is technically possible to resolve the wrong directory,
+    // because we do not yet know preferTsExts, jsx, nor allowJs.
+    // See also, justification why this will not happen in real-world situations:
+    // https://github.com/TypeStrong/ts-node/pull/1009#issuecomment-613017081
+    const exts = ['.js', '.jsx', '.ts', '.tsx']
+    const extsTemporarilyInstalled: string[] = []
+    for (const ext of exts) {
+      if (!hasOwnProperty(require.extensions, ext)) { // tslint:disable-line
+        extsTemporarilyInstalled.push(ext)
+        require.extensions[ext] = function() {} // tslint:disable-line
+      }
+    }
     try {
-      if(!hadTsExt) require.extensions['.ts'] = function() {}  // tslint:disable-line
-      if(!hadTsxExt) require.extensions['.tsx'] = function() {} // tslint:disable-line
       return dirname(require.resolve(scriptPath))
     } finally {
-      if(!hadTsExt) delete require.extensions['.ts'] // tslint:disable-line
-      if(!hadTsxExt) delete require.extensions['.tsx'] // tslint:disable-line
+      for (const ext of extsTemporarilyInstalled) {
+        delete require.extensions[ext] // tslint:disable-line
+      }
     }
   }
 
