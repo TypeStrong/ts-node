@@ -596,7 +596,7 @@ describe('ts-node', function () {
             return _compile.call(this, code, fileName)
           }
 
-          return old(m, fileName)
+          return old!(m, fileName)
         }
       })
 
