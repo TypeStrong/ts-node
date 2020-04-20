@@ -467,6 +467,7 @@ function lineCount (value: string) {
 const RECOVERY_CODES: Set<number> = new Set([
   1003, // "Identifier expected."
   1005, // "')' expected."
+  1007, // "The parser expected to find a '}' to match the '{' token here."
   1109, // "Expression expected."
   1126, // "Unexpected end of text."
   1160, // "Unterminated template literal."
