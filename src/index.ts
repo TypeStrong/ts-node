@@ -773,18 +773,20 @@ export function create (rawOptions: CreateOptions = {}): Register {
     'To avoid this problem, load each .ts file as only ESM or only CommonJS.'
   // Create a simple TypeScript compiler proxy.
   function compile (code: string, fileName: string, lineOffset = 0) {
+    const normalizedFileName = normalizeSlashes(fileName)
     // Avoid sourcemap issues
-    assert(outputCache.get(fileName)?.createdBy !== 'compileEsm', cannotCompileViaBothCodepathsErrorMessage)
-    const [value, sourceMap] = getOutput(code, fileName)
-    const output = updateOutput(value, fileName, sourceMap, getExtension)
-    outputCache.set(fileName, { createdBy: 'compile', content: output })
+    assert(outputCache.get(normalizedFileName)?.createdBy !== 'compileEsm', cannotCompileViaBothCodepathsErrorMessage)
+    const [value, sourceMap] = getOutput(code, normalizedFileName)
+    const output = updateOutput(value, normalizedFileName, sourceMap, getExtension)
+    outputCache.set(normalizedFileName, { createdBy: 'compile', content: output })
     return output
   }
 
   function compileEsm (code: string, fileName: string) {
+    const normalizedFileName = normalizeSlashes(fileName)
     if (config.options.module === ts.ModuleKind.ESNext || config.options.module === ts.ModuleKind.ES2015) {
       // We can use our regular `compile` implementation, since it emits ESM
-      return compile(code, fileName)
+      return compile(code, normalizedFileName)
     }
     // Else we must do an alternative emit for ESM
 
@@ -793,9 +795,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
     // TODO for now, we use a very simple transpileModule
     // This does not typecheck, so we'll need to integrate with our main codepath in the future.
-    const [value, sourceMap] = getOutputTranspileOnly(code, fileName, { module: ts.ModuleKind.ESNext })
-    const output = updateOutput(value, fileName, sourceMap, getExtension)
-    outputCache.set(fileName, { createdBy: 'compileEsm', content: output })
+    const [value, sourceMap] = getOutputTranspileOnly(code, normalizedFileName, { module: ts.ModuleKind.ESNext })
+    const output = updateOutput(value, normalizedFileName, sourceMap, getExtension)
+    outputCache.set(normalizedFileName, { createdBy: 'compileEsm', content: output })
     return output
   }
 

@@ -1,8 +1,8 @@
 name: Continuous Integration
-on: [push]
+on: [push, pull_request]
 jobs:
   test:
-    name: Test ${{ matrix.flavor }} ${{ matrix.node }} ${{ matrix.typescript }}
+    name: "Test #${{ matrix.flavor }}: node v${{ matrix.node }}, ${{ matrix.typescript }}"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

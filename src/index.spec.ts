@@ -382,6 +382,14 @@ describe('ts-node', function () {
           return done()
         })
       })
+      it('should read tsconfig relative to realpath, not symlink, in scriptMode', function (done) {
+        exec(`node ${BIN_SCRIPT_PATH} tests/main-realpath/symlink/symlink.tsx`, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('')
+
+          return done()
+        })
+      })
     }
 
     describe('should read ts-node options from tsconfig.json', function () {
@@ -596,7 +604,7 @@ describe('ts-node', function () {
             return _compile.call(this, code, fileName)
           }
 
-          return old(m, fileName)
+          return old!(m, fileName)
         }
       })
 
