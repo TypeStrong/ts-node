@@ -18,6 +18,7 @@
     "dist/",
     "dist-raw/",
     "register/",
+    "esm.mjs",
     "LICENSE",
     "tsconfig.schema.json",
     "tsconfig.schemastore-schema.json"
