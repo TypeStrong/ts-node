@@ -275,6 +275,7 @@ function resolveExtensionsWithTryExactName(search) {
 
 const extensions = Array.from(new Set([
   ...(preferTsExts ? tsExtensions : []),
+  '.js',
   ...jsExtensions,
   '.json', '.node', '.mjs',
   ...tsExtensions
