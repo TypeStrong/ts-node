@@ -260,6 +260,21 @@ describe('ts-node', function () {
       cp.stdin!.end('true')
     })
 
+    it('should run REPL when --interactive passed and stdin is not a TTY', function (done) {
+      const cp = exec(`${cmd} --interactive`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal(
+          '> 123\n' +
+          'undefined\n' +
+          '> '
+        )
+        return done()
+      })
+
+      cp.stdin!.end('console.log("123")\n')
+
+    })
+
     it('should support require flags', function (done) {
       exec(`${cmd} -r ./tests/hello-world -pe "console.log('success')"`, function (err, stdout) {
         expect(err).to.equal(null)
