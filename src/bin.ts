@@ -227,7 +227,8 @@ export function main (argv: string[]) {
       Module.runMain()
     } else {
       // Piping of execution _only_ occurs when no other script is specified.
-      if (process.stdin.isTTY) {
+      // --interactive flag forces REPL
+      if (interactive || process.stdin.isTTY) {
         startRepl(service, state, code)
       } else {
         let buffer = code || ''
