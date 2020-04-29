@@ -402,8 +402,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
   ].map(Number)
 
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
+  type EmitFlavor = 'compileEsm' | 'compile';
   const outputCache = new Map<string, {
-    createdBy: 'compileEsm' | 'compile',
+    createdBy: EmitFlavor,
     content: string
   }>()
 
@@ -460,7 +461,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
   /**
    * Create the basic required function using transpile mode.
    */
-  let getOutput: (code: string, fileName: string) => SourceOutput
+  let getOutput: (code: string, fileName: string, emitFlavor: EmitFlavor) => SourceOutput
   let getTypeInfo: (_code: string, _fileName: string, _position: number) => TypeInfo
 
   const getOutputTranspileOnly = (code: string, fileName: string, overrideCompilerOptions?: Partial<_ts.CompilerOptions>): SourceOutput => {
@@ -553,7 +554,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
       let previousProgram: _ts.Program | undefined = undefined
 
-      getOutput = (code: string, fileName: string) => {
+      getOutput = (code: string, fileName: string, emitFlavor: EmitFlavor) => {
         updateMemoryCache(code, fileName)
 
         const programBefore = service.getProgram()
@@ -561,6 +562,10 @@ export function create (rawOptions: CreateOptions = {}): Register {
           debug(`compiler rebuilt Program instance when getting output for ${fileName}`)
         }
 
+        config.options.module === _ts.ModuleKind.
+        if(config.options.module === _ts.ModuleKind.CommonJS && emitFlavor === 'compile') {
+
+        }
         const output = service.getEmitOutput(fileName)
 
         // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.
