@@ -39,7 +39,8 @@ function yn (value: string | undefined) {
  * Debugging `ts-node`.
  */
 const shouldDebug = yn(process.env.TS_NODE_DEBUG)
-const debug = shouldDebug ?
+/** @internal */
+export const debug = shouldDebug ?
   (...args: any) => console.log(`[ts-node ${new Date().toISOString()}]`, ...args)
   : () => undefined
 const debugFn = shouldDebug ?
@@ -311,7 +312,6 @@ export interface Register {
   enabled (enabled?: boolean): boolean
   ignored (fileName: string): boolean
   compile (code: string, fileName: string, lineOffset?: number): string
-  compileEsm (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
 }
 
@@ -402,9 +402,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
   ].map(Number)
 
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
-  type EmitFlavor = 'compileEsm' | 'compile';
   const outputCache = new Map<string, {
-    createdBy: EmitFlavor,
     content: string
   }>()
 
@@ -461,7 +459,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
   /**
    * Create the basic required function using transpile mode.
    */
-  let getOutput: (code: string, fileName: string, emitFlavor: EmitFlavor) => SourceOutput
+  let getOutput: (code: string, fileName: string) => SourceOutput
   let getTypeInfo: (_code: string, _fileName: string, _position: number) => TypeInfo
 
   const getOutputTranspileOnly = (code: string, fileName: string, overrideCompilerOptions?: Partial<_ts.CompilerOptions>): SourceOutput => {
@@ -554,7 +552,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
       let previousProgram: _ts.Program | undefined = undefined
 
-      getOutput = (code: string, fileName: string, emitFlavor: EmitFlavor) => {
+      getOutput = (code: string, fileName: string) => {
         updateMemoryCache(code, fileName)
 
         const programBefore = service.getProgram()
@@ -562,10 +560,6 @@ export function create (rawOptions: CreateOptions = {}): Register {
           debug(`compiler rebuilt Program instance when getting output for ${fileName}`)
         }
 
-        config.options.module === _ts.ModuleKind.
-        if(config.options.module === _ts.ModuleKind.CommonJS && emitFlavor === 'compile') {
-
-        }
         const output = service.getEmitOutput(fileName)
 
         // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.
@@ -779,30 +773,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
   // Create a simple TypeScript compiler proxy.
   function compile (code: string, fileName: string, lineOffset = 0) {
     const normalizedFileName = normalizeSlashes(fileName)
-    // Avoid sourcemap issues
-    assert(outputCache.get(normalizedFileName)?.createdBy !== 'compileEsm', cannotCompileViaBothCodepathsErrorMessage)
     const [value, sourceMap] = getOutput(code, normalizedFileName)
     const output = updateOutput(value, normalizedFileName, sourceMap, getExtension)
-    outputCache.set(normalizedFileName, { createdBy: 'compile', content: output })
-    return output
-  }
-
-  function compileEsm (code: string, fileName: string) {
-    const normalizedFileName = normalizeSlashes(fileName)
-    if (config.options.module === ts.ModuleKind.ESNext || config.options.module === ts.ModuleKind.ES2015) {
-      // We can use our regular `compile` implementation, since it emits ESM
-      return compile(code, normalizedFileName)
-    }
-    // Else we must do an alternative emit for ESM
-
-    // Avoid sourcemap issues
-    assert(outputCache.get(fileName)?.createdBy !== 'compile', cannotCompileViaBothCodepathsErrorMessage)
-
-    // TODO for now, we use a very simple transpileModule
-    // This does not typecheck, so we'll need to integrate with our main codepath in the future.
-    const [value, sourceMap] = getOutputTranspileOnly(code, normalizedFileName, { module: ts.ModuleKind.ESNext })
-    const output = updateOutput(value, normalizedFileName, sourceMap, getExtension)
-    outputCache.set(normalizedFileName, { createdBy: 'compileEsm', content: output })
+    outputCache.set(normalizedFileName, { content: output })
     return output
   }
 
@@ -818,7 +791,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
     return !isScoped(relname) || shouldIgnore(relname)
   }
 
-  return { ts, config, compile, compileEsm, getTypeInfo, ignored, enabled, options }
+  return { ts, config, compile, getTypeInfo, ignored, enabled, options }
 }
 
 /**

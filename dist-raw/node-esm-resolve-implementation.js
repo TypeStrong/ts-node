@@ -50,16 +50,37 @@ const {
   Stats,
 } = require('fs');
 // const { getOptionValue } = require('internal/options');
-const { getOptionValue } = {
-  getOptionValue: (opt) => {
-    return ({
+const { getOptionValue } = (() => {
+  let options;
+  function parseOptions() {
+    if (!options) {
+      options = {
       '--preserve-symlinks': false,
       '--preserve-symlinks-main': false,
       '--input-type': undefined,
-      '--experimental-specifier-resolution': 'explicit'
-    })[opt]
+      '--experimental-specifier-resolution': 'explicit',
+      ...parseExecArgv()
+      }
+    }
+  };
+  function parseExecArgv () {
+    return require('arg')({
+      '--preserve-symlinks': Boolean,
+      '--preserve-symlinks-main': Boolean,
+      '--input-type': String,
+      '--experimental-specifier-resolution': String
+    }, {
+      argv: process.execArgv,
+      permissive: true
+    });
   }
-}
+  return {
+      getOptionValue: (opt) => {
+        parseOptions();
+        return options[opt];
+      }
+  };
+})();
 const { sep } = require('path');
 
 const preserveSymlinks = getOptionValue('--preserve-symlinks');
@@ -94,6 +115,7 @@ function createErrorCtor(name) {
 }
 
 function createResolve(opts) {
+// TODO receive cached fs implementations here
 const {tsExtensions, jsExtensions, preferTsExts} = opts;
 
 const realpathCache = new SafeMap();
@@ -270,6 +292,8 @@ function legacyMainResolve(packageJSONUrl, packageConfig) {
 
 function resolveExtensionsWithTryExactName(search) {
   if (fileExists(search)) return search;
+  const resolvedReplacementExtension = getReplacementExtensionCandidates(search);
+  if(resolvedReplacementExtension) return resolvedReplacementExtension;
   return resolveExtensions(search);
 }
 
@@ -280,6 +304,7 @@ const extensions = Array.from(new Set([
   '.json', '.node', '.mjs',
   ...tsExtensions
 ]));
+
 function resolveExtensions(search) {
   for (let i = 0; i < extensions.length; i++) {
     const extension = extensions[i];
@@ -289,36 +314,62 @@ function resolveExtensions(search) {
   return undefined;
 }
 
-// function resolveIndex(search) {
-//   return resolveExtensions(new URL('index', search));
-// }
+function resolveReplacementExtensionsWithTryExactName(search) {
+  if (fileExists(search)) return search;
+  return getReplacementExtensionCandidates(search);
+}
+
+/**
+ * TS's resolver can resolve foo.js to foo.ts, by replacing .js extension with several source extensions.
+ * IMPORTANT: preserve ordering according to preferTsExts; this affects resolution behavior!
+ */
+const replacementExtensions = extensions.filter(ext => ['.js', '.jsx', '.ts', '.tsx'].includes(ext));
+
+function getReplacementExtensionCandidates(search) {
+  if (search.pathname.match(/\.js$/)) {
+    const pathnameWithoutExtension = search.pathname.slice(0, search.pathname.length - 3);
+    return replacementExtensions.map(new URL(`${pathnameWithoutExtension}${extension}`, search));
+  }
+  return [search];
+}
+
+// TODO re-merge with above function
+function resolveCandidates(guesses) {
+  for (let i = 0; i < guesses.length; i++) {
+    const guess = guesses[i];
+    if (fileExists(guess)) return guess;
+  }
+  return undefined;
+}
+
+function resolveIndex(search) {
+  return resolveExtensions(new URL('index', search));
+}
 
 function finalizeResolution(resolved, base) {
-  // if (getOptionValue('--experimental-specifier-resolution') === 'node') {
-  //   let file = resolveExtensionsWithTryExactName(resolved);
-  //   if (file !== undefined) return file;
-  //   if (!StringPrototypeEndsWith(resolved.pathname, '/')) {
-  //     file = resolveIndex(new URL(`${resolved.pathname}/`, base));
-  //   } else {
-  //     file = resolveIndex(resolved);
-  //   }
-  //   if (file !== undefined) return file;
-  //   throw new ERR_MODULE_NOT_FOUND(
-  //     resolved.pathname, fileURLToPath(base), 'module');
-  // }
-
-  let file = resolveExtensionsWithTryExactName(resolved);
-  if (file !== undefined) return file;
+  if (getOptionValue('--experimental-specifier-resolution') === 'node') {
+    let file = resolveExtensionsWithTryExactName(resolved);
+    if (file !== undefined) return file;
+    if (!StringPrototypeEndsWith(resolved.pathname, '/')) {
+      file = resolveIndex(new URL(`${resolved.pathname}/`, base));
+    } else {
+      file = resolveIndex(resolved);
+    }
+    if (file !== undefined) return file;
+    throw new ERR_MODULE_NOT_FOUND(
+      resolved.pathname, fileURLToPath(base), 'module');
+  }
 
   if (StringPrototypeEndsWith(resolved.pathname, '/')) return resolved;
   const path = fileURLToPath(resolved);
 
-  if (!tryStatSync(path).isFile()) {
+  const file = resolveCandidates(getReplacementExtensionCandidates(resolved));
+  if (!file) {
     throw new ERR_MODULE_NOT_FOUND(
       path || resolved.pathname, fileURLToPath(base), 'module');
   }
 
-  return resolved;
+  return file;
 }
 
 function throwExportsNotFound(subpath, packageJSONUrl, base) {
@@ -478,15 +529,15 @@ function packageMainResolve(packageJSONUrl, packageConfig, base) {
       const path = fileURLToPath(resolved);
       if (tryStatSync(path).isFile()) return resolved;
     }
-    // if (getOptionValue('--experimental-specifier-resolution') === 'node') {
-    //   if (packageConfig.main !== undefined) {
-    //     return finalizeResolution(
-    //       new URL(packageConfig.main, packageJSONUrl), base);
-    //   } else {
-    //     return finalizeResolution(
-    //       new URL('index', packageJSONUrl), base);
-    //   }
-    // }
+    if (getOptionValue('--experimental-specifier-resolution') === 'node') {
+      if (packageConfig.main !== undefined) {
+        return finalizeResolution(
+          new URL(packageConfig.main, packageJSONUrl), base);
+      } else {
+        return finalizeResolution(
+          new URL('index', packageJSONUrl), base);
+      }
+    }
     if (packageConfig.type !== 'module') {
       return legacyMainResolve(packageJSONUrl, packageConfig);
     }

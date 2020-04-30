@@ -4,6 +4,8 @@ import { posix as posixPath } from 'path'
 import * as assert from 'assert'
 const { createResolve } = require('../dist-raw/node-esm-resolve-implementation')
 
+// Note: On Windows, URLs look like this: file:///D:/dev/@TypeStrong/ts-node-examples/foo.ts
+
 export function registerAndCreateEsmHooks () {
   // Automatically performs registration just like `-r ts-node/register`
   const tsNodeInstance = register()
@@ -61,7 +63,6 @@ export function registerAndCreateEsmHooks () {
     }
 
     const { pathname } = parsed
-    // TODO test how Windows behaves.  What kind of path do we receive?  Should we use a simpler regexp to match the end of the string?
     assert(pathname !== null, 'ESM getFormat() hook: URL should never have null pathname')
 
     // If file has .ts or .tsx extension, then ask node how it would treat this file if it were .js
@@ -100,7 +101,7 @@ export function registerAndCreateEsmHooks () {
       return defer()
     }
 
-    const emittedJs = tsNodeInstance.compileEsm(sourceAsString, fileName)
+    const emittedJs = tsNodeInstance.compile(sourceAsString, fileName)
 
     return { source: emittedJs }
   }
