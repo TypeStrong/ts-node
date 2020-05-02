@@ -292,7 +292,7 @@ function legacyMainResolve(packageJSONUrl, packageConfig) {
 
 function resolveExtensionsWithTryExactName(search) {
   if (fileExists(search)) return search;
-  const resolvedReplacementExtension = getReplacementExtensionCandidates(search);
+  const resolvedReplacementExtension = resolveReplacementExtensions(search);
   if(resolvedReplacementExtension) return resolvedReplacementExtension;
   return resolveExtensions(search);
 }
@@ -314,30 +314,20 @@ function resolveExtensions(search) {
   return undefined;
 }
 
-function resolveReplacementExtensionsWithTryExactName(search) {
-  if (fileExists(search)) return search;
-  return getReplacementExtensionCandidates(search);
-}
-
 /**
  * TS's resolver can resolve foo.js to foo.ts, by replacing .js extension with several source extensions.
  * IMPORTANT: preserve ordering according to preferTsExts; this affects resolution behavior!
  */
 const replacementExtensions = extensions.filter(ext => ['.js', '.jsx', '.ts', '.tsx'].includes(ext));
 
-function getReplacementExtensionCandidates(search) {
+function resolveReplacementExtensions(search) {
   if (search.pathname.match(/\.js$/)) {
     const pathnameWithoutExtension = search.pathname.slice(0, search.pathname.length - 3);
-    return replacementExtensions.map(new URL(`${pathnameWithoutExtension}${extension}`, search));
-  }
-  return [search];
-}
-
-// TODO re-merge with above function
-function resolveCandidates(guesses) {
-  for (let i = 0; i < guesses.length; i++) {
-    const guess = guesses[i];
-    if (fileExists(guess)) return guess;
+    for (let i = 0; i < replacementExtensions.length; i++) {
+      const extension = replacementExtensions[i];
+      const guess = new URL(`${pathnameWithoutExtension}${extension}`, search);
+      if (fileExists(guess)) return guess;
+    }
   }
   return undefined;
 }
@@ -361,12 +351,14 @@ function finalizeResolution(resolved, base) {
   }
 
   if (StringPrototypeEndsWith(resolved.pathname, '/')) return resolved;
-  const path = fileURLToPath(resolved);
 
-  const file = resolveCandidates(getReplacementExtensionCandidates(resolved));
-  if (!file) {
-    throw new ERR_MODULE_NOT_FOUND(
-      path || resolved.pathname, fileURLToPath(base), 'module');
+  const file = resolveReplacementExtensions(resolved) || resolved;
+
+  const path = fileURLToPath(file);
+
+  if (!tryStatSync(path).isFile()) {
+  throw new ERR_MODULE_NOT_FOUND(
+    path || resolved.pathname, fileURLToPath(base), 'module');
   }
 
   return file;

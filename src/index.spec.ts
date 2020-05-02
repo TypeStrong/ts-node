@@ -638,11 +638,18 @@ describe('ts-node', function () {
   describe('esm', () => {
     this.slow(1000)
 
-    // `ts-node/` prefix required to import from ourselves
-    const cmd = `node --loader ts-node/esm`
+    const cmd = `node --loader ../../esm.mjs`
 
     it('should compile and execute as ESM', (done) => {
-      exec(`${cmd} index.ts`, {cwd: join(__dirname, '../tests/esm')}, function (err, stdout) {
+      exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('foo bar baz\n')
+
+        return done()
+      })
+    })
+    it('supports --experimental-specifier-resolution=node', (done) => {
+      exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('foo bar baz\n')
 
