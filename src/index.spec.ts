@@ -643,7 +643,7 @@ describe('ts-node', function () {
     it('should compile and execute as ESM', (done) => {
       exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
         expect(err).to.equal(null)
-        expect(stdout).to.equal('foo bar baz\n')
+        expect(stdout).to.equal('foo bar baz biff\n')
 
         return done()
       })
@@ -651,7 +651,7 @@ describe('ts-node', function () {
     it('supports --experimental-specifier-resolution=node', (done) => {
       exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
         expect(err).to.equal(null)
-        expect(stdout).to.equal('foo bar baz\n')
+        expect(stdout).to.equal('foo bar baz biff\n')
 
         return done()
       })
