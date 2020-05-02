@@ -53,7 +53,7 @@ ts-node-transpile-only scripts.ts
 ### Shebang
 
 ```typescript
-#!/usr/bin/env ts-node-script
+#!/usr/bin/env npx ts-node-script
 
 console.log("Hello, world!")
 ```
