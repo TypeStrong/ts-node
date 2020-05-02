@@ -4,7 +4,6 @@ import * as ynModule from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
 import * as _ts from 'typescript'
-import * as assert from 'assert'
 
 /**
  * Registered `ts-node` instance information.
