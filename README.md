@@ -7,6 +7,10 @@
 
 > TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.7`**.
 
+### *Experimental ESM support*
+
+Native ESM support is currently experimental. For usage, limitations, and to provide feedback, see [#1007](https://github.com/TypeStrong/ts-node/issues/1007).
+
 ## Installation
 
 ```sh
