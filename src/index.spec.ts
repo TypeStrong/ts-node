@@ -649,4 +649,30 @@ describe('ts-node', function () {
       expect(output).to.contain('var x = 10;')
     })
   })
+
+  if (semver.gte(process.version, '13.0.0')) {
+    describe('esm', () => {
+      this.slow(1000)
+
+      const cmd = `node --loader ../../esm.mjs`
+
+      it('should compile and execute as ESM', (done) => {
+        exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('foo bar baz biff\n')
+
+          return done()
+        })
+      })
+      it('supports --experimental-specifier-resolution=node', (done) => {
+        exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('foo bar baz biff\n')
+
+          return done()
+        })
+
+      })
+    })
+  }
 })
