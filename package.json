@@ -3,10 +3,6 @@
   "version": "8.10.0",
   "description": "TypeScript execution environment and REPL for node.js, with source map support",
   "main": "dist/index.js",
-  "exports": {
-    ".": "./dist/index.js",
-    "./esm": "./esm.mjs"
-  },
   "types": "dist/index.d.ts",
   "bin": {
     "ts-node": "dist/bin.js",
