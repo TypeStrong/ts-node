@@ -9,7 +9,7 @@ import * as _ts from 'typescript'
  * Does this version of node obey the package.json "type" field
  * and attempt to load scripts as ESM
  */
-let engineSupportsPackageTypeField = parseInt(process.versions.node.split('.')[0]) >= 12
+let engineSupportsPackageTypeField = parseInt(process.versions.node.split('.')[0], 10) >= 12
 
 // Loaded conditionally so we don't need to support older node versions
 let assertScriptCanLoadAsCJSImpl: ((filename: string) => void) | undefined
@@ -18,9 +18,9 @@ let assertScriptCanLoadAsCJSImpl: ((filename: string) => void) | undefined
  * Assert that script can be loaded as CommonJS when we attempt to require it.
  * If it should be loaded as ESM, throw ERR_REQUIRE_ESM like node does.
  */
-function assertScriptCanLoadAsCJS(filename: string) {
-  if(!engineSupportsPackageTypeField) return
-  if(!assertScriptCanLoadAsCJSImpl) assertScriptCanLoadAsCJSImpl = require('../dist-raw/node-cjs-loader-utils').assertScriptCanLoadAsCJSImpl
+function assertScriptCanLoadAsCJS (filename: string) {
+  if (!engineSupportsPackageTypeField) return
+  if (!assertScriptCanLoadAsCJSImpl) assertScriptCanLoadAsCJSImpl = require('../dist-raw/node-cjs-loader-utils').assertScriptCanLoadAsCJSImpl
   assertScriptCanLoadAsCJSImpl!(filename)
 }
 
