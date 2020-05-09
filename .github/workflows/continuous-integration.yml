@@ -7,27 +7,33 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flavor: [1, 2, 3, 4, 5, 6, 7]
+        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9]
         include:
           - flavor: 1
             node: 6
             typescript: typescript@latest
           - flavor: 2
-            node: 13
+            node: 12.15
             typescript: typescript@latest
           - flavor: 3
-            node: 13
-            typescript: typescript@2.7
+            node: 12.16
+            typescript: typescript@latest
           - flavor: 4
             node: 13
-            typescript: typescript@next
+            typescript: typescript@latest
           - flavor: 5
+            node: 13
+            typescript: typescript@2.7
+          - flavor: 6
+            node: 13
+            typescript: typescript@next
+          - flavor: 7
             node: 14
             typescript: typescript@latest
-          - flavor: 6
+          - flavor: 8
             node: 14
             typescript: typescript@2.7
-          - flavor: 7
+          - flavor: 9
             node: 14
             typescript: typescript@next
     steps:
