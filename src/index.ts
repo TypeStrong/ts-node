@@ -8,7 +8,7 @@ import * as _ts from 'typescript'
 // Feature-detect native ECMAScript modules support
 let engineSupportsNativeModules = true
 try {
-  new Function('import("")')
+  new Function('import("")') // tslint:disable-line
 } catch (e) {
   engineSupportsNativeModules = false
 }
@@ -19,7 +19,7 @@ try {
  *
  * Loaded conditionally so we don't need to support older node versions
  */
-let assertScriptIsNotEsm = engineSupportsNativeModules ? require('../dist-raw/node-cjs-loader-utils').assertScriptIsNotEsm : () => {}
+let assertScriptIsNotEsm = engineSupportsNativeModules ? require('../dist-raw/node-cjs-loader-utils').assertScriptIsNotEsm : () => { } // tslint:disable-line
 
 /**
  * Registered `ts-node` instance information.

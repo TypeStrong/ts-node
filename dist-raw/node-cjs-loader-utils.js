@@ -1,4 +1,6 @@
 // copied from https://github.com/nodejs/node/blob/master/lib/internal/modules/cjs/loader.js
+const path = require('path');
+const fs = require('fs');
 
 module.exports.assertScriptIsNotEsm = assertScriptIsNotEsm;
 
@@ -34,13 +36,14 @@ function readPackage(requestPath) {
     return false;
   }
 
-  if (manifest) {
-    const jsonURL = pathToFileURL(jsonPath);
-    manifest.assertIntegrity(jsonURL, json);
-  }
+  // TODO Related to `--experimental-policy`?  Disabling for now
+  // if (manifest) {
+  //   const jsonURL = pathToFileURL(jsonPath);
+  //   manifest.assertIntegrity(jsonURL, json);
+  // }
 
   try {
-    const parsed = JSONParse(json);
+    const parsed = JSON.parse(json);
     const filtered = {
       name: parsed.name,
       main: parsed.main,
@@ -53,6 +56,15 @@ function readPackage(requestPath) {
     e.path = jsonPath;
     e.message = 'Error parsing ' + jsonPath + ': ' + e.message;
     throw e;
+  }
+}
+
+function internalModuleReadJSON(path) {
+  try {
+    return fs.readFileSync(path, 'utf8')
+  } catch (e) {
+    if (e.code === 'ENOENT') return undefined
+    throw e
   }
 }
 
