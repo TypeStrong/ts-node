@@ -780,9 +780,6 @@ export function create (rawOptions: CreateOptions = {}): Register {
     }
   }
 
-  const cannotCompileViaBothCodepathsErrorMessage = 'Cannot compile the same file via both `require()` and ESM hooks codepaths. ' +
-    'This breaks source-map-support, which cannot tell the difference between the two sourcemaps. ' +
-    'To avoid this problem, load each .ts file as only ESM or only CommonJS.'
   // Create a simple TypeScript compiler proxy.
   function compile (code: string, fileName: string, lineOffset = 0) {
     const normalizedFileName = normalizeSlashes(fileName)
