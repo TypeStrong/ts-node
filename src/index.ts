@@ -5,21 +5,19 @@ import { BaseError } from 'make-error'
 import * as util from 'util'
 import * as _ts from 'typescript'
 
-// Feature-detect native ECMAScript modules support
-let engineSupportsNativeModules = true
-try {
-  new Function('import("")') // tslint:disable-line
-} catch (e) {
-  engineSupportsNativeModules = false
-}
+/**
+ * Does this version of node obey the package.json "type" field
+ * and attempt to load scripts as ESM
+ */
+let engineSupportsPackageTypeField = parseInt(process.versions.node.split('.')[0]) >= 12
 
 /**
  * Assert that script should not be loaded as ESM, when we attempt to require it.
- * If it should, throw the same error as node.
+ * If it should be ESM, throw ERR_REQUIRE_ESM error like node does.
  *
  * Loaded conditionally so we don't need to support older node versions
  */
-let assertScriptIsNotEsm = engineSupportsNativeModules ? require('../dist-raw/node-cjs-loader-utils').assertScriptIsNotEsm : () => { } // tslint:disable-line
+let assertScriptIsNotEsm = engineSupportsPackageTypeField ? require('../dist-raw/node-cjs-loader-utils').assertScriptIsNotEsm : () => { } // tslint:disable-line
 
 /**
  * Registered `ts-node` instance information.
