@@ -11,13 +11,18 @@ import * as _ts from 'typescript'
  */
 let engineSupportsPackageTypeField = parseInt(process.versions.node.split('.')[0]) >= 12
 
+// Loaded conditionally so we don't need to support older node versions
+let assertScriptCanLoadAsCJSImpl: ((filename: string) => void) | undefined
+
 /**
- * Assert that script should not be loaded as ESM, when we attempt to require it.
- * If it should be ESM, throw ERR_REQUIRE_ESM error like node does.
- *
- * Loaded conditionally so we don't need to support older node versions
+ * Assert that script can be loaded as CommonJS when we attempt to require it.
+ * If it should be loaded as ESM, throw ERR_REQUIRE_ESM like node does.
  */
-let assertScriptIsNotEsm = engineSupportsPackageTypeField ? require('../dist-raw/node-cjs-loader-utils').assertScriptIsNotEsm : () => { } // tslint:disable-line
+function assertScriptCanLoadAsCJS(filename: string) {
+  if(!engineSupportsPackageTypeField) return
+  if(!assertScriptCanLoadAsCJSImpl) assertScriptCanLoadAsCJSImpl = require('../dist-raw/node-cjs-loader-utils').assertScriptCanLoadAsCJSImpl
+  assertScriptCanLoadAsCJSImpl!(filename)
+}
 
 /**
  * Registered `ts-node` instance information.
@@ -193,6 +198,12 @@ export interface CreateOptions {
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
   transformers?: _ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)
+  /**
+   * True if require() hooks should interop with experimental ESM loader.
+   * Enabled explicitly via a flag since it is a breaking change.
+   * @internal
+   */
+  experimentalEsmLoader?: boolean
 }
 
 /**
@@ -261,7 +272,8 @@ export const DEFAULTS: RegisterOptions = {
   transpileOnly: yn(process.env.TS_NODE_TRANSPILE_ONLY),
   typeCheck: yn(process.env.TS_NODE_TYPE_CHECK),
   compilerHost: yn(process.env.TS_NODE_COMPILER_HOST),
-  logError: yn(process.env.TS_NODE_LOG_ERROR)
+  logError: yn(process.env.TS_NODE_LOG_ERROR),
+  experimentalEsmLoader: false
 }
 
 /**
@@ -861,7 +873,9 @@ function registerExtension (
   require.extensions[ext] = function (m: any, filename) { // tslint:disable-line
     if (register.ignored(filename)) return old(m, filename)
 
-    assertScriptIsNotEsm(filename)
+    if (register.options.experimentalEsmLoader) {
+      assertScriptCanLoadAsCJS(filename)
+    }
 
     const _compile = m._compile
 

@@ -2,9 +2,18 @@
 const path = require('path');
 const fs = require('fs');
 
-module.exports.assertScriptIsNotEsm = assertScriptIsNotEsm;
+module.exports.assertScriptCanLoadAsCJSImpl = assertScriptCanLoadAsCJSImpl;
 
-const packageJsonCache = new Map();
+// copied from Module._extensions['.js']
+function assertScriptCanLoadAsCJSImpl(filename) {
+  const pkg = readPackageScope(filename);
+  // Function require shouldn't be used in ES modules.
+  if (pkg && pkg.data && pkg.data.type === 'module') {
+    const parentPath = module.parent && module.parent.filename;
+    const packageJsonPath = path.resolve(pkg.path, 'package.json');
+    throw createErrRequireEsm(filename, parentPath, packageJsonPath);
+  }
+}
 
 function readPackageScope(checkPath) {
   const rootSeparatorIndex = checkPath.indexOf(path.sep);
@@ -23,6 +32,8 @@ function readPackageScope(checkPath) {
   }
   return false;
 }
+
+const packageJsonCache = new Map();
 
 function readPackage(requestPath) {
   const jsonPath = path.resolve(requestPath, 'package.json');
@@ -65,17 +76,6 @@ function internalModuleReadJSON(path) {
   } catch (e) {
     if (e.code === 'ENOENT') return undefined
     throw e
-  }
-}
-
-// copied from Module._extensions['.js']
-function assertScriptIsNotEsm(filename) {
-  const pkg = readPackageScope(filename);
-  // Function require shouldn't be used in ES modules.
-  if (pkg && pkg.data && pkg.data.type === 'module') {
-    const parentPath = module.parent && module.parent.filename;
-    const packageJsonPath = path.resolve(pkg.path, 'package.json');
-    throw createErrRequireEsm(filename, parentPath, packageJsonPath);
   }
 }
 
