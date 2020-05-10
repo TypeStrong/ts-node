@@ -44,6 +44,6 @@ jobs:
       - run: npm run build
       - run: npm rm tslint
       - run: npm install ${{ matrix.typescript }} --force
-      - run: set +e ; npm run test-cov ; echo $? > tests-exit-code
+      - run: npm run test-cov
       - run: npm install -g coveralls@2 && cat ./coverage/lcov.info | coveralls
-      - run: set -euo pipefail ; exit $(cat tests-exit-code)
+        if: ${{ always() }}
