@@ -1,5 +1,12 @@
 name: Continuous Integration
-on: [push, pull_request]
+on:
+  # branches pushed by collaborators
+  push: {}
+  # pull request from non-collaborators
+  pull_request: {}
+  # nightly
+  schedule:
+    - cron:  '0 0 * * *'
 jobs:
   test:
     name: "Test #${{ matrix.flavor }}: node v${{ matrix.node }}, ${{ matrix.typescript }}"
