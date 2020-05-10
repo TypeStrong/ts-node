@@ -5,8 +5,8 @@ import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
 import { register, create, VERSION } from './index'
-import { mkdtempSync, readdirSync, copyFileSync, rmdirSync, unlinkSync, existsSync } from 'fs'
-import * as promisify from 'pify'
+import { mkdtempSync, readdirSync, copyFileSync, rmdirSync, unlinkSync, existsSync, readFileSync, writeFileSync } from 'fs'
+import * as promisify from 'util.promisify'
 
 const execP = promisify(exec)
 
@@ -25,7 +25,7 @@ before(async function () {
   const tempDir = mkdtempSync(join(TEST_DIR, 'tmp'))
   await execP(`npm pack --ignore-scripts "${ROOT_DIR}"`, { cwd: tempDir })
   const tarballPath = join(tempDir, readdirSync(tempDir)[0])
-  copyFileSync(tarballPath, TARBALL_PATH)
+  writeFileSync(TARBALL_PATH, readFileSync(tarballPath))
   unlinkSync(tarballPath)
   rmdirSync(tempDir)
   await execP(`npm install`, { cwd: TEST_DIR })
