@@ -45,5 +45,8 @@ jobs:
       - run: npm rm tslint
       - run: npm install ${{ matrix.typescript }} --force
       - run: npm run test-cov
-      - run: npm install -g coveralls@2 && cat ./coverage/lcov.info | coveralls
+      - name: Coveralls
         if: ${{ always() }}
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
