@@ -40,7 +40,10 @@ jobs:
           node-version: ${{ matrix.node }}
       # lint, build, test
       - run: npm install
+      - run: npm run lint
       - run: npm run build
       - run: npm rm tslint
-      - run: npm install ${{ matrix.typescript }}
-      - run: npm run test-cov
+      - run: npm install ${{ matrix.typescript }} --force
+      - run: npm run test-cov ; echo $? > tests-exit-code
+      - run: npm install coveralls@2 && cat ./coverage/lcov.info | coveralls
+      - run: set -euo pipefail ; exit $(cat tests-exit-code)
