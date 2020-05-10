@@ -64,6 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finished
+        if: ${{ always() }}
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.github_token }}
