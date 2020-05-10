@@ -5,14 +5,12 @@ import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
 import { register, create, VERSION } from './index'
-import { mkdtempSync, readdirSync, copyFileSync, rmdirSync, unlinkSync, existsSync, readFileSync, writeFileSync } from 'fs'
+import { unlinkSync, existsSync } from 'fs'
 import * as promisify from 'util.promisify'
 
 const execP = promisify(exec)
 
-const ROOT_DIR = join(__dirname, '..')
 const TEST_DIR = join(__dirname, '../tests')
-const TARBALL_PATH = join(TEST_DIR, 'ts-node-packed.tgz')
 const PROJECT = join(TEST_DIR, 'tsconfig.json')
 const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node')
 const BIN_SCRIPT_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-script')
@@ -22,12 +20,6 @@ const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset
 // Pack and install ts-node locally, necessary to test package "exports"
 before(async function () {
   this.timeout(30000)
-  const tempDir = mkdtempSync(join(TEST_DIR, 'tmp'))
-  await execP(`npm pack --ignore-scripts "${ROOT_DIR}"`, { cwd: tempDir })
-  const tarballPath = join(tempDir, readdirSync(tempDir)[0])
-  writeFileSync(TARBALL_PATH, readFileSync(tarballPath))
-  unlinkSync(tarballPath)
-  rmdirSync(tempDir)
   await execP(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
   existsSync(packageLockPath) && unlinkSync(packageLockPath)

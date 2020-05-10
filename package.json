@@ -22,14 +22,16 @@
   "scripts": {
     "lint": "tslint \"src/**/*.ts\" --project tsconfig.json",
     "lint-fix": "tslint \"src/**/*.ts\" --project tsconfig.json --fix",
-    "clean": "rimraf dist && rimraf tsconfig.schema.json && rimraf tsconfig.schemastore-schema.json",
-    "build": "npm run clean && npm run build-tsc && npm run build-configSchema",
+    "clean": "rimraf dist && rimraf tsconfig.schema.json && rimraf tsconfig.schemastore-schema.json && rimraf tests/ts-node-packed.tgz",
+    "build": "npm run build-nopack && npm run build-pack",
+    "build-nopack": "npm run clean && npm run build-tsc && npm run build-configSchema",
     "build-tsc": "tsc",
     "build-configSchema": "typescript-json-schema --topRef --refs --validationKeywords allOf --out tsconfig.schema.json tsconfig.json TsConfigSchema && node --require ./register ./scripts/create-merged-schema",
+    "build-pack": "node ./scripts/build-pack.js",
     "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
     "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- \"dist/**/*.spec.js\" -R spec --bail",
     "test": "npm run build && npm run lint && npm run test-cov",
-    "prepare": "npm run build"
+    "prepare": "npm run build-nopack"
   },
   "engines": {
     "node": ">=6.0.0"
