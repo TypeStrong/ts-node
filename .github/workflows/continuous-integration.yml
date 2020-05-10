@@ -62,6 +62,7 @@ jobs:
   finish:
     needs: test
     runs-on: ubuntu-latest
+    if: ${{ always() }}
     steps:
       - name: Coveralls Finished
         if: ${{ always() }}
