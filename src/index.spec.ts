@@ -675,4 +675,7 @@ describe('ts-node', function () {
       })
     })
   }
+  it('intentionally fails', () => {
+    throw new Error('intentional failure')
+  })
 })
