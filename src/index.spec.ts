@@ -23,7 +23,7 @@ const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset
 before(async function () {
   this.timeout(30000)
   const tempDir = mkdtempSync(join(TEST_DIR, 'tmp'))
-  await execP(`npm pack "${ROOT_DIR}"`, { cwd: tempDir })
+  await execP(`npm pack --ignore-scripts "${ROOT_DIR}"`, { cwd: tempDir })
   const tarballPath = join(tempDir, readdirSync(tempDir)[0])
   copyFileSync(tarballPath, TARBALL_PATH)
   unlinkSync(tarballPath)
