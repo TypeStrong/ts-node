@@ -66,7 +66,7 @@ export function registerAndCreateEsmHooks (opts?: RegisterOptions) {
     assert(pathname !== null, 'ESM getFormat() hook: URL should never have null pathname')
 
     // If file has .ts, .tsx, or .jsx extension, then ask node how it would treat this file if it were .js
-    const ext = posixPath.extname(pathname!)
+    const ext = posixPath.extname(pathname)
     if (ext === '.ts' || ext === '.tsx' || ext === '.jsx') {
       return defer(formatUrl({
         ...parsed,
