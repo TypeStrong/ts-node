@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "ts-node": "file:ts-node-packed.tgz"
+  }
+}
