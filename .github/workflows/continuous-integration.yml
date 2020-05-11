@@ -1,5 +1,12 @@
 name: Continuous Integration
-on: [push, pull_request]
+on:
+  # branches pushed by collaborators
+  push: {}
+  # pull request from non-collaborators
+  pull_request: {}
+  # nightly
+  schedule:
+    - cron:  '0 0 * * *'
 jobs:
   test:
     name: "Test #${{ matrix.flavor }}: node v${{ matrix.node }}, ${{ matrix.typescript }}"
@@ -46,7 +53,25 @@ jobs:
           node-version: ${{ matrix.node }}
       # lint, build, test
       - run: npm install
+      - run: npm run lint
       - run: npm run build
       - run: npm rm tslint
-      - run: npm install ${{ matrix.typescript }}
+      - run: npm install ${{ matrix.typescript }} --force
       - run: npm run test-cov
+      - name: Coveralls
+        if: ${{ always() }}
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          flag-name: run-${{ matrix.flavor }}
+          parallel: true
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          parallel-finished: true
