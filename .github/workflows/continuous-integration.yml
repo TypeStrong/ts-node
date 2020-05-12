@@ -81,7 +81,7 @@ jobs:
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.github_token }}
-          flag-name: run-${{ matrix.flavor }}
+          flag-name: run-${{ matrix.os }}-${{ matrix.flavor }}
           parallel: true
   finish:
     needs: test
