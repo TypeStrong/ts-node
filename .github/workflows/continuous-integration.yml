@@ -30,6 +30,7 @@ jobs:
           path: tests/ts-node-packed.tgz
 
   test:
+    needs: lint-build
     name: "Test #${{ matrix.flavor }}: ${{ matrix.os }}, node v${{ matrix.node }}, ${{ matrix.typescript }}"
     runs-on: ${{ matrix.os }}
     strategy:
