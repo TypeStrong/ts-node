@@ -67,6 +67,7 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: package
+          path: tests/ts-node-packed.tgz
       # install node
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v1
