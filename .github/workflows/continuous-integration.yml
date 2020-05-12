@@ -8,12 +8,34 @@ on:
   schedule:
     - cron:  '0 0 * * *'
 jobs:
-  test:
-    name: "Test #${{ matrix.flavor }}: node v${{ matrix.node }}, ${{ matrix.typescript }}"
+  lint-build:
+    name: "Lint & Build"
     runs-on: ubuntu-latest
+    steps:
+      # checkout code
+      - uses: actions/checkout@v2
+      # install node
+      - name: Use Node.js 14
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14
+      # lint, build, test
+      - run: npm install
+      - run: npm run lint
+      - run: npm run build
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: package
+          path: tests/ts-node-packed.tgz
+
+  test:
+    name: "Test #${{ matrix.flavor }}: ${{ matrix.os }}, node v${{ matrix.node }}, ${{ matrix.typescript }}"
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         flavor: [1, 2, 3, 4, 5, 6, 7]
         include:
           - flavor: 1
@@ -40,6 +62,10 @@ jobs:
     steps:
       # checkout code
       - uses: actions/checkout@v2
+      - name: Download package artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: package
       # install node
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v1
@@ -47,8 +73,6 @@ jobs:
           node-version: ${{ matrix.node }}
       # lint, build, test
       - run: npm install
-      - run: npm run lint
-      - run: npm run build
       - run: npm rm tslint
       - run: npm install ${{ matrix.typescript }} --force
       - run: npm run test-cov
