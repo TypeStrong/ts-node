@@ -74,7 +74,7 @@ jobs:
           node-version: ${{ matrix.node }}
       # lint, build, test
       - run: npm install
-      - run: npm rm tslint
+      - run: npm run build-nopack
       - run: npm install ${{ matrix.typescript }} --force
       - run: npm run test-cov
       - name: Coveralls
