@@ -67,15 +67,13 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: package
-          path: tests/ts-node-packed.tgz
+          path: tests/
       # install node
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node }}
       # lint, build, test
-      - run: ls -al tests
-      - run: ls -al tests/ts-node-packed.tgz
       - run: npm install
       - run: npm run build-nopack
       - run: npm install ${{ matrix.typescript }} --force
