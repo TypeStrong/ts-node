@@ -189,7 +189,7 @@ describe('ts-node', function () {
         }
 
         expect(err.message).to.contain([
-          `${join(__dirname, '../tests/throw.ts')}:3`,
+          `${join(__dirname, '../tests/throw.ts')}:100`,
           '  bar () { throw new Error(\'this is a demo\') }',
           '                 ^',
           'Error: this is a demo'
@@ -206,7 +206,7 @@ describe('ts-node', function () {
         }
 
         expect(err.message).to.contain([
-          `${join(__dirname, '../tests/throw.ts')}:3`,
+          `${join(__dirname, '../tests/throw.ts')}:100`,
           '  bar () { throw new Error(\'this is a demo\') }',
           '                 ^'
         ].join('\n'))
@@ -611,7 +611,7 @@ describe('ts-node', function () {
       } catch (error) {
         expect(error.stack).to.contain([
           'Error: this is a demo',
-          `    at Foo.bar (${join(__dirname, '../tests/throw.ts')}:3:18)`
+          `    at Foo.bar (${join(__dirname, '../tests/throw.ts')}:100:18)`
         ].join('\n'))
 
         done()
