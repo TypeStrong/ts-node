@@ -431,7 +431,7 @@ describe('ts-node', function () {
         }, function (err, stdout) {
           expect(err).to.equal(null)
           const { config } = JSON.parse(stdout)
-          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/env-typeroots')])
+          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/env-typeroots').replace(/\\/g, '/')])
           return done()
         })
       })
