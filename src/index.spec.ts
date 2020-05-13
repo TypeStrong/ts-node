@@ -369,7 +369,7 @@ describe('ts-node', function () {
 
     describe('issue #884', function () {
       it('should compile', function (done) {
-        exec(`node "${BIN_PATH}" --project tests/issue-884/tsconfig.json tests/issue-884`, function (err, stdout) {
+        exec(`"${BIN_PATH}" --project tests/issue-884/tsconfig.json tests/issue-884`, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('')
 
@@ -380,7 +380,7 @@ describe('ts-node', function () {
 
     describe('issue #986', function () {
       it('should not compile', function (done) {
-        exec(`node "${BIN_PATH}" --project tests/issue-986/tsconfig.json tests/issue-986`, function (err, stdout, stderr) {
+        exec(`"${BIN_PATH}" --project tests/issue-986/tsconfig.json tests/issue-986`, function (err, stdout, stderr) {
           expect(err).not.to.equal(null)
           expect(stderr).to.contain('Cannot find name \'TEST\'') // TypeScript error.
           expect(stdout).to.equal('')
@@ -390,7 +390,7 @@ describe('ts-node', function () {
       })
 
       it('should compile with `--files`', function (done) {
-        exec(`node "${BIN_PATH}" --files --project tests/issue-986/tsconfig.json tests/issue-986`, function (err, stdout, stderr) {
+        exec(`"${BIN_PATH}" --files --project tests/issue-986/tsconfig.json tests/issue-986`, function (err, stdout, stderr) {
           expect(err).not.to.equal(null)
           expect(stderr).to.contain('ReferenceError: TEST is not defined') // Runtime error.
           expect(stdout).to.equal('')
@@ -402,7 +402,7 @@ describe('ts-node', function () {
 
     if (semver.gte(ts.version, '2.7.0')) {
       it('should support script mode', function (done) {
-        exec(`node ${BIN_SCRIPT_PATH} tests/scope/a/log`, function (err, stdout) {
+        exec(`${BIN_SCRIPT_PATH} tests/scope/a/log`, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('.ts\n')
 
@@ -410,7 +410,7 @@ describe('ts-node', function () {
         })
       })
       it('should read tsconfig relative to realpath, not symlink, in scriptMode', function (done) {
-        exec(`node ${BIN_SCRIPT_PATH} tests/main-realpath/symlink/symlink.tsx`, function (err, stdout) {
+        exec(`${BIN_SCRIPT_PATH} tests/main-realpath/symlink/symlink.tsx`, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('')
 
