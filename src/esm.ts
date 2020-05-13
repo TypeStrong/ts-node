@@ -1,6 +1,6 @@
 import { register, getExtensions, RegisterOptions } from './index'
 import { parse as parseUrl, format as formatUrl, UrlWithStringQuery, fileURLToPath, pathToFileURL } from 'url'
-import { posix as posixPath, extname } from 'path'
+import { extname } from 'path'
 import * as assert from 'assert'
 const { createResolve } = require('../dist-raw/node-esm-resolve-implementation')
 
