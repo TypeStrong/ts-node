@@ -63,11 +63,6 @@ jobs:
     steps:
       # checkout code
       - uses: actions/checkout@v2
-      - name: Download package artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: package
-          path: tests/
       # install node
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v1
@@ -79,6 +74,11 @@ jobs:
       - run: ls -al tests/ts-node-packed.tgz
       - run: npm install
       - run: npm run build-nopack
+      - name: Download package artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: package
+          path: tests/
       - run: npm install ${{ matrix.typescript }} --force
       - run: npm run test-cov
       - name: Coveralls
