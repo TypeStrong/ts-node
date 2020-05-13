@@ -420,7 +420,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
   sourceMapSupport.install({
     environment: 'node',
     retrieveFile (path: string) {
-      return outputCache.get(path)?.content || ''
+      return outputCache.get(normalizeSlashes(path))?.content || ''
     }
   })
 
