@@ -69,9 +69,6 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       # lint, build, test
-      - run: ls -al
-      - run: ls -al tests
-      - run: ls -al tests/ts-node-packed.tgz
       - run: npm install
       - run: npm run build-nopack
       - name: Download package artifact
@@ -80,6 +77,9 @@ jobs:
           name: package
           path: tests/
       - run: npm install ${{ matrix.typescript }} --force
+      - run: ls -al
+      - run: ls -al tests
+      - run: ls -al tests/ts-node-packed.tgz
       - run: npm run test-cov
       - name: Coveralls
         if: ${{ always() }}
