@@ -74,6 +74,9 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       # lint, build, test
+      - run: ls -al
+      - run: ls -al tests
+      - run: ls -al tests/ts-node-packed.tgz
       - run: npm install
       - run: npm run build-nopack
       - run: npm install ${{ matrix.typescript }} --force
