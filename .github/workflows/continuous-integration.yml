@@ -26,7 +26,7 @@ jobs:
       - name: Upload package artifact
         uses: actions/upload-artifact@v1
         with:
-          name: package
+          name: ts-node-packed.tgz
           path: tests/ts-node-packed.tgz
 
   test:
@@ -74,7 +74,7 @@ jobs:
       - name: Download package artifact
         uses: actions/download-artifact@v1
         with:
-          name: package
+          name: ts-node-packed.tgz
           path: tests/
       - run: npm install ${{ matrix.typescript }} --force
       - run: npm run test-cov
