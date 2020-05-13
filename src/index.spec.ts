@@ -450,7 +450,7 @@ describe('ts-node', function () {
       })
 
       it('should have flags override `tsconfig.json`', function (done) {
-        exec(`${BIN_EXEC} --skip-ignore --compiler-options '{"types": ["flags-types"]}' tests/tsconfig-options/log-options.js`, function (err, stdout) {
+        exec(`${BIN_EXEC} --skip-ignore --compiler-options "{\\"types\\":[\\"flags-types\\"]}" tests/tsconfig-options/log-options.js`, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
           expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots').replace(/\\/g, '/')])
