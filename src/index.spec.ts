@@ -5,7 +5,7 @@ import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
 import { register, create, VERSION } from './index'
-import { unlinkSync, existsSync } from 'fs'
+import { unlinkSync, existsSync, statSync } from 'fs'
 import * as promisify from 'util.promisify'
 
 const execP = promisify(exec)
@@ -23,15 +23,6 @@ before(async function () {
   await execP(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
   existsSync(packageLockPath) && unlinkSync(packageLockPath)
-})
-
-// Check if symlink tests can run on windows
-let canRunSymlinkTests: boolean = true
-before(async function () {
-  if (process.platform === 'win32') {
-    const { stdout } = await execP(`git config core.symlinks`)
-    canRunSymlinkTests = stdout.trim() === 'true'
-  }
 })
 
 describe('ts-node', function () {
@@ -419,7 +410,7 @@ describe('ts-node', function () {
         })
       })
       it('should read tsconfig relative to realpath, not symlink, in scriptMode', function (done) {
-        if (canRunSymlinkTests) {
+        if (statSync(join(TEST_DIR, 'main-realpath/symlink/symlink.tsx')).isSymbolicLink()) {
           exec(`${BIN_SCRIPT_PATH} tests/main-realpath/symlink/symlink.tsx`, function (err, stdout) {
             expect(err).to.equal(null)
             expect(stdout).to.equal('')
