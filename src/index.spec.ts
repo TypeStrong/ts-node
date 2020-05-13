@@ -25,6 +25,15 @@ before(async function () {
   existsSync(packageLockPath) && unlinkSync(packageLockPath)
 })
 
+// Check if symlink tests can run on windows
+let canRunSymlinkTests: boolean = true
+before(async function () {
+  if(process.platform === 'win32') {
+    const { stdout } = await execP(`git config core.symlinks`)
+    canRunSymlinkTests = stdout.trim() === 'true'
+  }
+})
+
 describe('ts-node', function () {
   const cmd = `"${BIN_PATH}" --project "${PROJECT}"`
 
@@ -410,12 +419,16 @@ describe('ts-node', function () {
         })
       })
       it('should read tsconfig relative to realpath, not symlink, in scriptMode', function (done) {
-        exec(`${BIN_SCRIPT_PATH} tests/main-realpath/symlink/symlink.tsx`, function (err, stdout) {
-          expect(err).to.equal(null)
-          expect(stdout).to.equal('')
+        if (canRunSymlinkTests) {
+          exec(`${BIN_SCRIPT_PATH} tests/main-realpath/symlink/symlink.tsx`, function (err, stdout) {
+            expect(err).to.equal(null)
+            expect(stdout).to.equal('')
 
-          return done()
-        })
+            return done()
+          })
+        } else {
+          this.skip()
+        }
       })
     }
 
