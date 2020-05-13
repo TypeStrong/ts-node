@@ -28,7 +28,7 @@ before(async function () {
 // Check if symlink tests can run on windows
 let canRunSymlinkTests: boolean = true
 before(async function () {
-  if(process.platform === 'win32') {
+  if (process.platform === 'win32') {
     const { stdout } = await execP(`git config core.symlinks`)
     canRunSymlinkTests = stdout.trim() === 'true'
   }
