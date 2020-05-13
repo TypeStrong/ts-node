@@ -262,7 +262,7 @@ describe('ts-node', function () {
     })
 
     it('should pipe into an eval script', function (done) {
-      const cp = exec(`${cmd} --transpile-only -pe 'process.stdin.isTTY'`, function (err, stdout) {
+      const cp = exec(`${cmd} --transpile-only -pe "process.stdin.isTTY"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('undefined\n')
 
