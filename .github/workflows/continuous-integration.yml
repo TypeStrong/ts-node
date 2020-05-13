@@ -77,9 +77,6 @@ jobs:
           name: package
           path: tests/
       - run: npm install ${{ matrix.typescript }} --force
-      - run: ls -al
-      - run: ls -al tests
-      - run: ls -al tests/ts-node-packed.tgz
       - run: npm run test-cov
       - name: Coveralls
         if: ${{ always() }}
