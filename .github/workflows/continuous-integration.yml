@@ -1,7 +1,9 @@
 name: Continuous Integration
 on:
   # branches pushed by collaborators
-  push: {}
+  push:
+    branches:
+      - master
   # pull request from non-collaborators
   pull_request: {}
   # nightly
