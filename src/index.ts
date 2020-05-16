@@ -477,13 +477,13 @@ export function create (rawOptions: CreateOptions = {}): Register {
   // Use full language services when the fast option is disabled.
   if (!transpileOnly) {
     const fileContents = new Map<string, string>()
-    const rootFileNames = config.fileNames.slice()
+    const rootFileNames = new Set(config.fileNames)
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile))
 
     // Use language services by default (TODO: invert next major version).
     if (!options.compilerHost) {
       let projectVersion = 1
-      const fileVersions = new Map(rootFileNames.map(fileName => [fileName, 0]))
+      const fileVersions = new Map(Array.from(rootFileNames).map(fileName => [fileName, 0]))
 
       const getCustomTransformers = () => {
         if (typeof transformers === 'function') {
@@ -497,7 +497,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
       // Create the compiler host for type checking.
       const serviceHost: _ts.LanguageServiceHost = {
         getProjectVersion: () => String(projectVersion),
-        getScriptFileNames: () => Array.from(fileVersions.keys()),
+        getScriptFileNames: () => Array.from(rootFileNames),
         getScriptVersion: (fileName: string) => {
           const version = fileVersions.get(fileName)
           return version ? version.toString() : ''
@@ -534,9 +534,12 @@ export function create (rawOptions: CreateOptions = {}): Register {
       const service = ts.createLanguageService(serviceHost, registry)
 
       const updateMemoryCache = (contents: string, fileName: string) => {
-        // Add to `rootFiles` when discovered for the first time.
-        if (!fileVersions.has(fileName)) {
-          rootFileNames.push(fileName)
+        // Add to `rootFiles` if not already there
+        // This is necessary to force TS to emit output
+        if (!rootFileNames.has(fileName)) {
+          rootFileNames.add(fileName)
+          // Increment project version for every change to rootFileNames.
+          projectVersion++
         }
 
         const previousVersion = fileVersions.get(fileName) || 0
@@ -638,14 +641,14 @@ export function create (rawOptions: CreateOptions = {}): Register {
       // Fallback for older TypeScript releases without incremental API.
       let builderProgram = ts.createIncrementalProgram
         ? ts.createIncrementalProgram({
-          rootNames: rootFileNames.slice(),
+          rootNames: Array.from(rootFileNames),
           options: config.options,
           host: host,
           configFileParsingDiagnostics: config.errors,
           projectReferences: config.projectReferences
         })
         : ts.createEmitAndSemanticDiagnosticsBuilderProgram(
-          rootFileNames.slice(),
+          Array.from(rootFileNames),
           config.options,
           host,
           undefined,
@@ -666,13 +669,13 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
         // Add to `rootFiles` when discovered by compiler for the first time.
         if (sourceFile === undefined) {
-          rootFileNames.push(fileName)
+          rootFileNames.add(fileName)
         }
 
         // Update program when file changes.
         if (sourceFile === undefined || sourceFile.text !== contents) {
           builderProgram = ts.createEmitAndSemanticDiagnosticsBuilderProgram(
-            rootFileNames.slice(),
+            Array.from(rootFileNames),
             config.options,
             host,
             builderProgram,
