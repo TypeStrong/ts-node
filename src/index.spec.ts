@@ -7,6 +7,7 @@ import proxyquire = require('proxyquire')
 import { register, create, VERSION } from './index'
 import { unlinkSync, existsSync, statSync } from 'fs'
 import * as promisify from 'util.promisify'
+import { sync as rimrafSync } from 'rimraf'
 
 const execP = promisify(exec)
 
@@ -20,6 +21,7 @@ const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset
 // Pack and install ts-node locally, necessary to test package "exports"
 before(async function () {
   this.timeout(30000)
+  rimrafSync(join(TEST_DIR, 'node_modules'))
   await execP(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
   existsSync(packageLockPath) && unlinkSync(packageLockPath)
@@ -704,7 +706,7 @@ describe('ts-node', function () {
       it('throws ERR_REQUIRE_ESM when attempting to require() an ESM script while ESM loader is enabled', function (done) {
         exec(`${cmd} ./index.js`, { cwd: join(__dirname, '../tests/esm-err-require-esm') }, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
-          expect(stdout).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:\n')
+          expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
 
           return done()
         })
