@@ -1,13 +1,45 @@
 name: Continuous Integration
-on: [push]
+on:
+  # branches pushed by collaborators
+  push:
+    branches:
+      - master
+  # pull request from non-collaborators
+  pull_request: {}
+  # nightly
+  schedule:
+    - cron:  '0 0 * * *'
 jobs:
-  test:
-    name: Test ${{ matrix.flavor }} ${{ matrix.node }} ${{ matrix.typescript }}
+  lint-build:
+    name: "Lint & Build"
     runs-on: ubuntu-latest
+    steps:
+      # checkout code
+      - uses: actions/checkout@v2
+      # install node
+      - name: Use Node.js 14
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14
+      # lint, build, test
+      - run: npm install
+      - run: npm run lint
+      - run: npm run build
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: ts-node-packed.tgz
+          path: tests/ts-node-packed.tgz
+
+  test:
+    needs: lint-build
+    name: "Test #${{ matrix.flavor }}: ${{ matrix.os }}, node v${{ matrix.node }}, ${{ matrix.typescript }}"
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        flavor: [1, 2, 3, 4]
+        os: [ubuntu-latest, windows-latest]
+        flavor: [1, 2, 3, 4, 5, 6, 7]
         include:
           - flavor: 1
             node: 6
@@ -21,6 +53,15 @@ jobs:
           - flavor: 4
             node: 13
             typescript: typescript@next
+          - flavor: 5
+            node: 14
+            typescript: typescript@latest
+          - flavor: 6
+            node: 14
+            typescript: typescript@2.7
+          - flavor: 7
+            node: 14
+            typescript: typescript@next
     steps:
       # checkout code
       - uses: actions/checkout@v2
@@ -31,7 +72,28 @@ jobs:
           node-version: ${{ matrix.node }}
       # lint, build, test
       - run: npm install
-      - run: npm run build
-      - run: npm rm tslint
-      - run: npm install ${{ matrix.typescript }}
+      - run: npm run build-nopack
+      - name: Download package artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: ts-node-packed.tgz
+          path: tests/
+      - run: npm install ${{ matrix.typescript }} --force
       - run: npm run test-cov
+      - name: Coveralls
+        if: ${{ always() }}
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          flag-name: run-${{ matrix.os }}-${{ matrix.flavor }}
+          parallel: true
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          parallel-finished: true

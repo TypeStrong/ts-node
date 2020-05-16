@@ -1,0 +1,1 @@
+this tsconfig is intentionally invalid, to confirm that ts-node does *not* attempt to parse it
