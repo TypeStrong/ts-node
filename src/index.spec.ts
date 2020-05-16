@@ -703,7 +703,7 @@ describe('ts-node', function () {
       })
       it('throws ERR_REQUIRE_ESM when attempting to require() an ESM script while ESM loader is enabled', function (done) {
         exec(`${cmd} ./index.js`, { cwd: join(__dirname, '../tests/esm-err-require-esm') }, function (err, stdout, stderr) {
-          expect(err).to.equal(null)
+          expect(err).to.not.equal(null)
           expect(stdout).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:\n')
 
           return done()
