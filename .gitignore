@@ -1,4 +1,5 @@
 node_modules/
+.nyc_output/
 coverage/
 .DS_Store
 npm-debug.log
