@@ -1,6 +1,6 @@
 import { register, getExtensions, RegisterOptions } from './index'
-import { parse as parseUrl, format as formatUrl, UrlWithStringQuery } from 'url'
-import { posix as posixPath } from 'path'
+import { parse as parseUrl, format as formatUrl, UrlWithStringQuery, fileURLToPath, pathToFileURL } from 'url'
+import { extname } from 'path'
 import * as assert from 'assert'
 const { createResolve } = require('../dist-raw/node-esm-resolve-implementation')
 
@@ -65,13 +65,12 @@ export function registerAndCreateEsmHooks (opts?: RegisterOptions) {
     const { pathname } = parsed
     assert(pathname !== null, 'ESM getFormat() hook: URL should never have null pathname')
 
+    const nativePath = fileURLToPath(url)
+
     // If file has .ts, .tsx, or .jsx extension, then ask node how it would treat this file if it were .js
-    const ext = posixPath.extname(pathname)
+    const ext = extname(nativePath)
     if (ext === '.ts' || ext === '.tsx' || ext === '.jsx') {
-      return defer(formatUrl({
-        ...parsed,
-        pathname: pathname + '.js'
-      }))
+      return defer(formatUrl(pathToFileURL(nativePath + '.js')))
     }
 
     return defer()
@@ -88,20 +87,13 @@ export function registerAndCreateEsmHooks (opts?: RegisterOptions) {
     if (!isFileUrlOrNodeStyleSpecifier(parsed)) {
       return defer()
     }
-    const { pathname } = parsed
-    if (pathname === null || !posixPath.isAbsolute(pathname)) {
-      // If we are meant to handle this URL, then it has already been resolved to an absolute path by our resolver hook
+    const nativePath = fileURLToPath(url)
+
+    if (tsNodeInstance.ignored(nativePath)) {
       return defer()
     }
 
-    // Assigning to a new variable so it's clear that we have stopped thinking of it as a URL, and started using it like a native FS path
-    const fileName = pathname
-
-    if (tsNodeInstance.ignored(fileName)) {
-      return defer()
-    }
-
-    const emittedJs = tsNodeInstance.compile(sourceAsString, fileName)
+    const emittedJs = tsNodeInstance.compile(sourceAsString, nativePath)
 
     return { source: emittedJs }
   }
