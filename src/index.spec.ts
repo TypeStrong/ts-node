@@ -678,12 +678,12 @@ describe('ts-node', function () {
     })
   })
 
-  if (semver.gte(process.version, '13.0.0')) {
-    describe('esm', () => {
-      this.slow(1000)
+  describe('esm', () => {
+    this.slow(1000)
 
-      const cmd = `node --loader ../../esm.mjs`
+    const cmd = `node --loader ts-node/esm.mjs`
 
+    if (semver.gte(process.version, '13.0.0')) {
       it('should compile and execute as ESM', (done) => {
         exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
           expect(err).to.equal(null)
@@ -701,6 +701,23 @@ describe('ts-node', function () {
         })
 
       })
+      it('throws ERR_REQUIRE_ESM when attempting to require() an ESM script while ESM loader is enabled', function (done) {
+        exec(`${cmd} ./index.js`, { cwd: join(__dirname, '../tests/esm-err-require-esm') }, function (err, stdout, stderr) {
+          expect(err).to.equal(null)
+          expect(stdout).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:\n')
+
+          return done()
+        })
+      })
+    }
+
+    it('executes ESM as CJS, ignoring package.json "types" field (for backwards compatibility; should be changed in next major release to throw ERR_REQUIRE_ESM)', function (done) {
+      exec(`${BIN_PATH} ./tests/esm-err-require-esm/index.js`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal('CommonJS\n')
+
+        return done()
+      })
     })
-  }
+  })
 })

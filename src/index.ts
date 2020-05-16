@@ -9,7 +9,7 @@ import * as _ts from 'typescript'
  * Does this version of node obey the package.json "type" field
  * and attempt to load scripts as ESM
  */
-let engineSupportsPackageTypeField = parseInt(process.versions.node.split('.')[0], 10) >= 12
+const engineSupportsPackageTypeField = parseInt(process.versions.node.split('.')[0], 10) >= 12
 
 // Loaded conditionally so we don't need to support older node versions
 let assertScriptCanLoadAsCJSImpl: ((filename: string) => void) | undefined
