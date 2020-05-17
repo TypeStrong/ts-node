@@ -5,7 +5,7 @@ import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
 import { register, create, VERSION } from './index'
-import { unlinkSync, existsSync, statSync } from 'fs'
+import { unlinkSync, existsSync, lstatSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
 
@@ -417,7 +417,7 @@ describe('ts-node', function () {
         })
       })
       it('should read tsconfig relative to realpath, not symlink, in scriptMode', function (done) {
-        if (statSync(join(TEST_DIR, 'main-realpath/symlink/symlink.tsx')).isSymbolicLink()) {
+        if (lstatSync(join(TEST_DIR, 'main-realpath/symlink/symlink.tsx')).isSymbolicLink()) {
           exec(`${BIN_SCRIPT_PATH} tests/main-realpath/symlink/symlink.tsx`, function (err, stdout) {
             expect(err).to.equal(null)
             expect(stdout).to.equal('')
