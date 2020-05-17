@@ -9,6 +9,7 @@ import { unlinkSync, existsSync, lstatSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
 import { createRequire, createRequireFromPath } from 'module'
+import Module = require('module')
 
 const execP = promisify(exec)
 
@@ -667,10 +668,11 @@ describe('ts-node', function () {
     })
 
     describe('JSX preserve', () => {
-      let old = require.extensions['.tsx'] // tslint:disable-line
+      let old: (m: Module, filename: string) => any
       let compiled: string
 
       before(function () {
+        old = require.extensions['.tsx']! // tslint:disable-line
         require.extensions['.tsx'] = (m: any, fileName) => { // tslint:disable-line
           const _compile = m._compile
 
@@ -679,7 +681,7 @@ describe('ts-node', function () {
             return _compile.call(this, code, fileName)
           }
 
-          return old!(m, fileName)
+          return old(m, fileName)
         }
       })
 
