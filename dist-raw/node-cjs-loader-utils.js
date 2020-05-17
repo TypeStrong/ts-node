@@ -1,10 +1,14 @@
-// copied from https://github.com/nodejs/node/blob/master/lib/internal/modules/cjs/loader.js
+// Copied from several files in node's source code.
+// https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/modules/cjs/loader.js
+// Each function and variable below must have a comment linking to the source in node's github repo.
+
 const path = require('path');
 const fs = require('fs');
 
 module.exports.assertScriptCanLoadAsCJSImpl = assertScriptCanLoadAsCJSImpl;
 
 // copied from Module._extensions['.js']
+// https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/modules/cjs/loader.js#L1211-L1217
 function assertScriptCanLoadAsCJSImpl(filename) {
   const pkg = readPackageScope(filename);
   // Function require shouldn't be used in ES modules.
@@ -15,6 +19,7 @@ function assertScriptCanLoadAsCJSImpl(filename) {
   }
 }
 
+// Copied from https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/modules/cjs/loader.js#L285-L301
 function readPackageScope(checkPath) {
   const rootSeparatorIndex = checkPath.indexOf(path.sep);
   let separatorIndex;
@@ -33,8 +38,10 @@ function readPackageScope(checkPath) {
   return false;
 }
 
+// Copied from https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/modules/cjs/loader.js#L249
 const packageJsonCache = new Map();
 
+// Copied from https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/modules/cjs/loader.js#L251-L283
 function readPackage(requestPath) {
   const jsonPath = path.resolve(requestPath, 'package.json');
 
@@ -70,6 +77,8 @@ function readPackage(requestPath) {
   }
 }
 
+// In node's core, this is implemented in C
+// https://github.com/nodejs/node/blob/e9f293750760d59243020d0376edf242c9a26b67/src/node_file.cc#L845-L939
 function internalModuleReadJSON(path) {
   try {
     return fs.readFileSync(path, 'utf8')
@@ -79,10 +88,18 @@ function internalModuleReadJSON(path) {
   }
 }
 
+// Native ERR_REQUIRE_ESM Error is declared here:
+//   https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/errors.js#L1294-L1313
+// Error class factory is implemented here:
+//   function E: https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/errors.js#L323-L341
+//   function makeNodeErrorWithCode: https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/errors.js#L251-L278
+// The code below should create an error that matches the native error as closely as possible.
+// Third-party libraries which attempt to catch the native ERR_REQUIRE_ESM should recognize our imitation error.
 function createErrRequireEsm(filename, parentPath, packageJsonPath) {
-  // Attempt to create an error object that matches node's native error close enough
   const code = 'ERR_REQUIRE_ESM'
   const err = new Error(getMessage(filename, parentPath, packageJsonPath))
+  // Set `name` to be used in stack trace, generate stack trace with that name baked in, then re-declare the `name` field.
+  // This trick is copied from node's source.
   err.name = `Error [${ code }]`
   err.stack
   Object.defineProperty(err, 'name', {
@@ -94,7 +111,8 @@ function createErrRequireEsm(filename, parentPath, packageJsonPath) {
   err.code = code
   return err
 
-  // copy-pasted from https://github.com/nodejs/node/blob/master/lib/internal/errors.js#L1294-L1311
+  // Copy-pasted from https://github.com/nodejs/node/blob/b533fb3508009e5f567cc776daba8fbf665386a6/lib/internal/errors.js#L1293-L1311
+  // so that our error message is identical to the native message.
   function getMessage(filename, parentPath = null, packageJsonPath = null) {
     const ext = path.extname(filename)
     let msg = `Must use import to load ES Module: ${filename}`;
