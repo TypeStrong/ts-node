@@ -4,6 +4,7 @@ import { join } from 'path'
 import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
+import * as tsNodeTypes from './index'
 import { unlinkSync, existsSync, lstatSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
@@ -18,7 +19,7 @@ const BIN_SCRIPT_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-script')
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
 
 // Set after ts-node is installed locally
-let { register, create, VERSION }: typeof import('./index') = null as any
+let { register, create, VERSION }: typeof tsNodeTypes = {} as any
 
 // Pack and install ts-node locally, necessary to test package "exports"
 before(async function () {
@@ -27,7 +28,7 @@ before(async function () {
   await execP(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
   existsSync(packageLockPath) && unlinkSync(packageLockPath)
-  ;({register, create, VERSION} = require('ts-node'))
+  ;({ register, create, VERSION } = require(join(TEST_DIR, 'node_modules/ts-node')))
 })
 
 describe('ts-node', function () {
@@ -545,11 +546,14 @@ describe('ts-node', function () {
   })
 
   describe('register', function () {
-    const registered = register({
-      project: PROJECT,
-      compilerOptions: {
-        jsx: 'preserve'
-      }
+    let registered: tsNodeTypes.Register
+    before(() => {
+      registered = register({
+        project: PROJECT,
+        compilerOptions: {
+          jsx: 'preserve'
+        }
+      })
     })
 
     const moduleTestPath = require.resolve('../tests/module')
