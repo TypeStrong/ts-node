@@ -35,6 +35,25 @@ describe('ts-node', function () {
   it('should export the correct version', function () {
     expect(VERSION).to.equal(require('../package.json').version)
   })
+  it('should export all CJS entrypoints', function () {
+    // Ensure our package.json "exports" declaration doesn't prevent `require()`ing all our entrypoints
+    // https://github.com/TypeStrong/ts-node/pull/1026
+    require('ts-node')
+    require('ts-node/package')
+    require('ts-node/dist/index')
+    require('ts-node/dist/bin')
+    require('ts-node/dist/bin-transpile')
+    require('ts-node/dist/bin-script')
+    require('ts-node/dist/bin-script-deprecated')
+    require('ts-node/dist/esm')
+    require('ts-node/register')
+    require('ts-node/register/index')
+    require('ts-node/register/files')
+    require('ts-node/register/transpile-only')
+    require('ts-node/register/type-check')
+    require('ts-node/tsconfig.schema.json')
+    require('ts-node/tsconfig.schemastore-schema.json')
+  })
 
   describe('cli', function () {
     this.slow(1000)
