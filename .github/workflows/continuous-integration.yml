@@ -95,9 +95,8 @@ jobs:
       - name: Codecov
         if: ${{ always() }}
         uses: codecov/codecov-action@v1
-        # with:
-          # file: ./coverage/lcov.info
-          # flags: unittests # optional
+        with:
+          flags: ${{ matrix.os }},${{ matrix.node }},${{ matrix.typescript }}
           # name: codecov-umbrella # optional
           # fail_ci_if_error: true # optional (default = false)
   finish:
