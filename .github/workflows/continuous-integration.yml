@@ -105,12 +105,8 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ always() }}
     steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v2
-        with:
-          path: ci-artifacts/
-      - run: npm run ci-coverage-report
       - name: Coveralls
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.github_token }}
+          parallel-finish: true
