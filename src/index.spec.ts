@@ -8,6 +8,7 @@ import * as tsNodeTypes from './index'
 import { unlinkSync, existsSync, lstatSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
+import { createRequire, createRequireFromPath } from 'module'
 
 const execP = promisify(exec)
 
@@ -17,6 +18,9 @@ const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node')
 const BIN_SCRIPT_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-script')
 
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
+
+// `createRequire` does not exist on older node versions
+const testsDirRequire = (createRequire || createRequireFromPath)(join(TEST_DIR, 'index.js')) // tslint:disable-line
 
 // Set after ts-node is installed locally
 let { register, create, VERSION }: typeof tsNodeTypes = {} as any
@@ -28,7 +32,7 @@ before(async function () {
   await execP(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
   existsSync(packageLockPath) && unlinkSync(packageLockPath)
-  ;({ register, create, VERSION } = require(join(TEST_DIR, 'node_modules/ts-node')))
+  ;({ register, create, VERSION } = testsDirRequire('ts-node'))
 })
 
 describe('ts-node', function () {
@@ -40,23 +44,23 @@ describe('ts-node', function () {
     expect(VERSION).to.equal(require('../package.json').version)
   })
   it('should export all CJS entrypoints', function () {
-    // Ensure our package.json "exports" declaration doesn't prevent `require()`ing all our entrypoints
+    // Ensure our package.json "exports" declaration allows `require()`ing all our entrypoints
     // https://github.com/TypeStrong/ts-node/pull/1026
-    require('ts-node')
-    require('ts-node/package')
-    require('ts-node/dist/index')
-    require('ts-node/dist/bin')
-    require('ts-node/dist/bin-transpile')
-    require('ts-node/dist/bin-script')
-    require('ts-node/dist/bin-script-deprecated')
-    require('ts-node/dist/esm')
-    require('ts-node/register')
-    require('ts-node/register/index')
-    require('ts-node/register/files')
-    require('ts-node/register/transpile-only')
-    require('ts-node/register/type-check')
-    require('ts-node/tsconfig.schema.json')
-    require('ts-node/tsconfig.schemastore-schema.json')
+    testsDirRequire.resolve('ts-node')
+    testsDirRequire.resolve('ts-node/package')
+    testsDirRequire.resolve('ts-node/dist/index')
+    testsDirRequire.resolve('ts-node/dist/bin')
+    testsDirRequire.resolve('ts-node/dist/bin-transpile')
+    testsDirRequire.resolve('ts-node/dist/bin-script')
+    testsDirRequire.resolve('ts-node/dist/bin-script-deprecated')
+    testsDirRequire.resolve('ts-node/dist/esm')
+    testsDirRequire.resolve('ts-node/register')
+    testsDirRequire.resolve('ts-node/register/index')
+    testsDirRequire.resolve('ts-node/register/files')
+    testsDirRequire.resolve('ts-node/register/transpile-only')
+    testsDirRequire.resolve('ts-node/register/type-check')
+    testsDirRequire.resolve('ts-node/tsconfig.schema.json')
+    testsDirRequire.resolve('ts-node/tsconfig.schemastore-schema.json')
   })
 
   describe('cli', function () {
