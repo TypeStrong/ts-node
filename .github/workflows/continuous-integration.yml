@@ -83,6 +83,8 @@ jobs:
           path: tests/
       - run: npm install ${{ matrix.typescript }} --force
       - run: npm run test-cov
+      - run: npm run coverage-report
+        if: ${{ always() }}
       - name: Coveralls
         if: ${{ always() }}
         uses: coverallsapp/github-action@master
@@ -90,13 +92,25 @@ jobs:
           github-token: ${{ secrets.github_token }}
           flag-name: run-${{ matrix.os }}-${{ matrix.flavor }}
           parallel: true
+      - name: Codecov
+        if: ${{ always() }}
+        uses: codecov/codecov-action@v1
+        with:
+          # file: ./coverage/lcov.info
+          # flags: unittests # optional
+          # name: codecov-umbrella # optional
+          # fail_ci_if_error: true # optional (default = false)
   finish:
     needs: test
     runs-on: ubuntu-latest
     if: ${{ always() }}
     steps:
-      - name: Coveralls Finished
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: ci-artifacts/
+      - run: npm run ci-coverage-report
+      - name: Coveralls
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.github_token }}
-          parallel-finished: true

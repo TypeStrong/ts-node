@@ -29,7 +29,8 @@
     "build-configSchema": "typescript-json-schema --topRef --refs --validationKeywords allOf --out tsconfig.schema.json tsconfig.json TsConfigSchema && node --require ./register ./scripts/create-merged-schema",
     "build-pack": "node ./scripts/build-pack.js",
     "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
-    "test-cov": "nyc mocha -- \"dist/**/*.spec.js\" -R spec --bail && node ./scripts/rewrite-coverage-paths.js && nyc report --reporter=lcov",
+    "test-cov": "nyc mocha -- \"dist/**/*.spec.js\" -R spec --bail",
+    "coverage-report": "node ./scripts/rewrite-coverage-paths.js && nyc report --reporter=lcov",
     "test": "npm run build && npm run lint && npm run test-cov",
     "prepare": "npm run build-nopack"
   },
