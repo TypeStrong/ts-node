@@ -1,0 +1,4 @@
+fixes:
+  # Remap from npm-installed ts-node to root of project
+  # This can take the place of ./scripts/rewrite-coverage-paths.js
+  - "tests/node_modules/ts-node/::"
