@@ -1,15 +1,4 @@
-coverage:
-  status:
-    project:
-      default:
-        # basic
-        target: auto
-        threshold: 0%
-        base: auto
-       # advanced
-        branches:
-          - master
-        if_not_found: success
-        if_ci_failed: error
-        informational: false
-        only_pulls: false
+fixes:
+  # Remap from npm-installed ts-node to root of project
+  # This can take the place of ./scripts/rewrite-coverage-paths.js
+  - "tests/node_modules/ts-node/::"
