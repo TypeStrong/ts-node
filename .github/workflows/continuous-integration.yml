@@ -85,6 +85,13 @@ jobs:
       - run: npm run test-cov
       - run: npm run coverage-report
         if: ${{ always() }}
+      - name: Codecov
+        if: ${{ always() }}
+        uses: codecov/codecov-action@v1
+        with:
+          flags: ${{ matrix.os }},${{ matrix.node }},${{ matrix.typescript }}
+      - run: npm run coverage-fix-paths
+      - run: npm run coverage-report
       - name: Coveralls
         if: ${{ always() }}
         uses: coverallsapp/github-action@master
@@ -92,13 +99,6 @@ jobs:
           github-token: ${{ secrets.github_token }}
           flag-name: run-${{ matrix.os }}-${{ matrix.flavor }}
           parallel: true
-      - name: Codecov
-        if: ${{ always() }}
-        uses: codecov/codecov-action@v1
-        with:
-          flags: ${{ matrix.os }},${{ matrix.node }},${{ matrix.typescript }}
-          # name: codecov-umbrella # optional
-          # fail_ci_if_error: true # optional (default = false)
   finish:
     needs: test
     runs-on: ubuntu-latest

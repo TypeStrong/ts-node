@@ -30,8 +30,9 @@
     "build-pack": "node ./scripts/build-pack.js",
     "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
     "test-cov": "nyc mocha -- \"dist/**/*.spec.js\" -R spec --bail",
-    "coverage-report": "node ./scripts/rewrite-coverage-paths.js && nyc report --reporter=lcov",
     "test": "npm run build && npm run lint && npm run test-cov",
+    "coverage-fix-paths": "node ./scripts/rewrite-coverage-paths.js",
+    "coverage-report": "nyc report --reporter=lcov",
     "prepare": "npm run build-nopack"
   },
   "engines": {
