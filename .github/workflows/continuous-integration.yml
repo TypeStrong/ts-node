@@ -58,6 +58,7 @@ jobs:
             typescriptFlag: latest
           - flavor: 4
             node: 13
+            nodeFlag: 13
             typescript: latest
             typescriptFlag: latest
           - flavor: 5
