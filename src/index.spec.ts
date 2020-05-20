@@ -47,21 +47,30 @@ describe('ts-node', function () {
   it('should export all CJS entrypoints', function () {
     // Ensure our package.json "exports" declaration allows `require()`ing all our entrypoints
     // https://github.com/TypeStrong/ts-node/pull/1026
+
     testsDirRequire.resolve('ts-node')
+
+    // only reliably way to ask node for the root path of a dependency is Path.resolve(require.resolve('ts-node/package'), '..')
     testsDirRequire.resolve('ts-node/package')
-    testsDirRequire.resolve('ts-node/dist/index')
+    testsDirRequire.resolve('ts-node/package.json')
+
+    // All bin entrypoints for people who need to augment our CLI: `node -r otherstuff ./node_modules/ts-node/dist/bin`
     testsDirRequire.resolve('ts-node/dist/bin')
+    testsDirRequire.resolve('ts-node/dist/bin.js')
     testsDirRequire.resolve('ts-node/dist/bin-transpile')
+    testsDirRequire.resolve('ts-node/dist/bin-transpile.js')
     testsDirRequire.resolve('ts-node/dist/bin-script')
-    testsDirRequire.resolve('ts-node/dist/bin-script-deprecated')
+    testsDirRequire.resolve('ts-node/dist/bin-script.js')
+
+    // Must be `require()`able obviously
     testsDirRequire.resolve('ts-node/register')
-    testsDirRequire.resolve('ts-node/register/index')
     testsDirRequire.resolve('ts-node/register/files')
     testsDirRequire.resolve('ts-node/register/transpile-only')
     testsDirRequire.resolve('ts-node/register/type-check')
-    testsDirRequire.resolve('ts-node/tsconfig.schema.json')
-    testsDirRequire.resolve('ts-node/tsconfig.schemastore-schema.json')
+
+    // `node --loader ts-node/esm`
     testsDirRequire.resolve('ts-node/esm')
+    testsDirRequire.resolve('ts-node/esm.mjs')
   })
 
   describe('cli', function () {
