@@ -54,7 +54,6 @@ describe('ts-node', function () {
     testsDirRequire.resolve('ts-node/dist/bin-transpile')
     testsDirRequire.resolve('ts-node/dist/bin-script')
     testsDirRequire.resolve('ts-node/dist/bin-script-deprecated')
-    testsDirRequire.resolve('ts-node/dist/esm')
     testsDirRequire.resolve('ts-node/register')
     testsDirRequire.resolve('ts-node/register/index')
     testsDirRequire.resolve('ts-node/register/files')
@@ -62,6 +61,7 @@ describe('ts-node', function () {
     testsDirRequire.resolve('ts-node/register/type-check')
     testsDirRequire.resolve('ts-node/tsconfig.schema.json')
     testsDirRequire.resolve('ts-node/tsconfig.schemastore-schema.json')
+    testsDirRequire.resolve('ts-node/esm')
   })
 
   describe('cli', function () {
