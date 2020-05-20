@@ -1,4 +1,7 @@
+---
 name: 'Bug report'
+about: 'Create a report to help us improve'
+
 ---
 
 ### Expected Behavior
@@ -28,12 +31,13 @@ https://github.com/TypeStrong/ts-node-repros
 
 ### Specifications
 
+<!-- `ts-node -vv` will print ts-node, node, and TypeScript versions -->
 * ts-node version:
+* node version:
 * TypeScript version:
 * tsconfig.json, if you're using one:
 ```
 {}
 ```
-* node version:
 * Operating system and version:
 * If Windows, are you using WSL or WSL2?:

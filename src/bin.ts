@@ -7,7 +7,7 @@ import Module = require('module')
 import arg = require('arg')
 import { diffLines } from 'diff'
 import { Script } from 'vm'
-import { readFileSync, statSync } from 'fs'
+import { readFileSync, statSync, realpathSync } from 'fs'
 import { homedir } from 'os'
 import { VERSION, TSError, parse, Register, register } from './index'
 
@@ -154,6 +154,7 @@ export function main (argv: string[]) {
   }
 
   const cwd = dir || process.cwd()
+  /** Unresolved.  May point to a symlink, not realpath.  May be missing file extension */
   const scriptPath = args._.length ? resolve(cwd, args._[0]) : undefined
   const state = new EvalState(scriptPath || join(cwd, EVAL_FILENAME))
 
@@ -226,7 +227,8 @@ export function main (argv: string[]) {
       Module.runMain()
     } else {
       // Piping of execution _only_ occurs when no other script is specified.
-      if (process.stdin.isTTY) {
+      // --interactive flag forces REPL
+      if (interactive || process.stdin.isTTY) {
         startRepl(service, state, code)
       } else {
         let buffer = code || ''
@@ -251,7 +253,28 @@ function getCwd (dir?: string, scriptMode?: boolean, scriptPath?: string) {
       throw new TypeError('Script mode cannot be combined with `--dir`')
     }
 
-    return dirname(scriptPath)
+    // Use node's own resolution behavior to ensure we follow symlinks.
+    // scriptPath may omit file extension or point to a directory with or without package.json.
+    // This happens before we are registered, so we tell node's resolver to consider ts, tsx, and jsx files.
+    // In extremely rare cases, is is technically possible to resolve the wrong directory,
+    // because we do not yet know preferTsExts, jsx, nor allowJs.
+    // See also, justification why this will not happen in real-world situations:
+    // https://github.com/TypeStrong/ts-node/pull/1009#issuecomment-613017081
+    const exts = ['.js', '.jsx', '.ts', '.tsx']
+    const extsTemporarilyInstalled: string[] = []
+    for (const ext of exts) {
+      if (!hasOwnProperty(require.extensions, ext)) { // tslint:disable-line
+        extsTemporarilyInstalled.push(ext)
+        require.extensions[ext] = function() {} // tslint:disable-line
+      }
+    }
+    try {
+      return dirname(require.resolve(scriptPath))
+    } finally {
+      for (const ext of extsTemporarilyInstalled) {
+        delete require.extensions[ext] // tslint:disable-line
+      }
+    }
   }
 
   return dir
@@ -479,6 +502,11 @@ const RECOVERY_CODES: Set<number> = new Set([
  */
 function isRecoverable (error: TSError) {
   return error.diagnosticCodes.every(code => RECOVERY_CODES.has(code))
+}
+
+/** Safe `hasOwnProperty` */
+function hasOwnProperty (object: any, property: string): boolean {
+  return Object.prototype.hasOwnProperty.call(object, property)
 }
 
 if (require.main === module) {
