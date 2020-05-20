@@ -1,4 +1,4 @@
-import { relative, basename, extname, resolve, dirname, join } from 'path'
+import { relative, basename, extname, resolve, dirname, join, isAbsolute } from 'path'
 import sourceMapSupport = require('source-map-support')
 import * as ynModule from 'yn'
 import { BaseError } from 'make-error'
@@ -422,7 +422,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
   let { compiler, ts } = loadCompiler(compilerName)
 
   // Read config file and merge new options between env and CLI options.
-  const { config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
+  const { config, options: tsconfigOptions, configFileName } = readConfig(cwd, ts, rawOptions)
   const options = assign<CreateOptions>({}, DEFAULTS, tsconfigOptions || {}, rawOptions)
 
   // If `compiler` option changed based on tsconfig, re-load the compiler.
@@ -520,11 +520,24 @@ export function create (rawOptions: CreateOptions = {}): Register {
     const fileContents = new Map<string, string>()
     const rootFileNames = new Set(config.fileNames)
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile))
+    const getCanonicalFileName = (ts as unknown as TSInternal).createGetCanonicalFileName(ts.sys.useCaseSensitiveFileNames)
 
     // Use language services by default (TODO: invert next major version).
     if (!options.compilerHost) {
       let projectVersion = 1
       const fileVersions = new Map(Array.from(rootFileNames).map(fileName => [fileName, 0]))
+
+      const syntheticRootFileName = normalizeSlashes(join(config.options.rootDir || (configFileName && dirname(configFileName)) || cwd, '$$ts-node-root.ts'))
+      let syntheticRootFileVersion = 0
+      let syntheticRootFileContents = ''
+      rootFileNames.add(syntheticRootFileName)
+
+      /**
+       * To avoid modifying rootFileNames, yet still keep track of which files must be emitted,
+       * store the latter here.
+       * Store as canonical file names for faster lookups in resolver.
+       */
+      const mustBeEmittedCanonicalFileNames = new Set(Array.from(rootFileNames).map(rootFileName => getCanonicalFileName(rootFileName)))
 
       const getCustomTransformers = () => {
         if (typeof transformers === 'function') {
@@ -594,23 +607,31 @@ export function create (rawOptions: CreateOptions = {}): Register {
        * If we need to emit JS for a file, force TS to consider it non-external
        */
       const fixupResolvedModule = (resolvedModule: _ts.ResolvedModule) => {
-        const canonical = getCanonicalFileName(resolvedModule.resolvedFileName)
-        if (rootFileNames.some(rootFileName => canonical === getCanonicalFileName(rootFileName))) {
+        if (!resolvedModule.isExternalLibraryImport) return
+        const resolvedFileNameCanonical = getCanonicalFileName(resolvedModule.resolvedFileName)
+        if (mustBeEmittedCanonicalFileNames.has(resolvedFileNameCanonical)) {
           resolvedModule.isExternalLibraryImport = false
         }
+        // TODO if a file is first allowed to be external, then later require()d, what happens?
       }
-      const getCanonicalFileName = (ts as unknown as TSInternal).createGetCanonicalFileName(ts.sys.useCaseSensitiveFileNames)
-      const moduleResolutionCache = ts.createModuleResolutionCache(cwd, (s) => getCanonicalFileName(s), config.options)
+      const moduleResolutionCache = ts.createModuleResolutionCache(cwd, getCanonicalFileName, config.options)
 
       const registry = ts.createDocumentRegistry(ts.sys.useCaseSensitiveFileNames, cwd)
       const service = ts.createLanguageService(serviceHost, registry)
 
       const updateMemoryCache = (contents: string, fileName: string) => {
-        // Add to `rootFiles` if not already there
-        // This is necessary to force TS to emit output
-        if (!rootFileNames.has(fileName)) {
-          rootFileNames.add(fileName)
-          // Increment project version for every change to rootFileNames.
+        const canonicalFileName = getCanonicalFileName(fileName)
+        // Force TS to emit output
+        if (!mustBeEmittedCanonicalFileNames.has(canonicalFileName)) {
+          mustBeEmittedCanonicalFileNames.add(canonicalFileName)
+          if (isAbsolute(canonicalFileName)) {
+            syntheticRootFileVersion++
+            syntheticRootFileContents += `/// <reference path=${ JSON.stringify(canonicalFileName) } />\n`
+            fileVersions.set(syntheticRootFileName, syntheticRootFileVersion)
+            fileContents.set(syntheticRootFileName, syntheticRootFileContents)
+          } else {
+            rootFileNames.add(fileName)
+          }
           projectVersion++
         }
 
@@ -977,6 +998,11 @@ function readConfig (
   config: _ts.ParsedCommandLine
   // Options pulled from `tsconfig.json`.
   options: TsConfigOptions
+  /**
+   * Path to config file
+   * @internal
+   */
+  configFileName?: string
 } {
   let config: any = { compilerOptions: {} }
   let basePath = cwd
@@ -1002,7 +1028,8 @@ function readConfig (
       if (result.error) {
         return {
           config: { errors: [result.error], fileNames: [], options: {} },
-          options: {}
+          options: {},
+          configFileName
         }
       }
 
@@ -1038,7 +1065,7 @@ function readConfig (
     useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames
   }, basePath, undefined, configFileName))
 
-  return { config: fixedConfig, options: tsconfigOptions }
+  return { config: fixedConfig, options: tsconfigOptions, configFileName }
 }
 
 /**
