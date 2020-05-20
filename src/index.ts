@@ -6,6 +6,25 @@ import * as util from 'util'
 import * as _ts from 'typescript'
 
 /**
+ * Does this version of node obey the package.json "type" field
+ * and throw ERR_REQUIRE_ESM when attempting to require() an ESM modules.
+ */
+const engineSupportsPackageTypeField = parseInt(process.versions.node.split('.')[0], 10) >= 12
+
+// Loaded conditionally so we don't need to support older node versions
+let assertScriptCanLoadAsCJSImpl: ((filename: string) => void) | undefined
+
+/**
+ * Assert that script can be loaded as CommonJS when we attempt to require it.
+ * If it should be loaded as ESM, throw ERR_REQUIRE_ESM like node does.
+ */
+function assertScriptCanLoadAsCJS (filename: string) {
+  if (!engineSupportsPackageTypeField) return
+  if (!assertScriptCanLoadAsCJSImpl) assertScriptCanLoadAsCJSImpl = require('../dist-raw/node-cjs-loader-utils').assertScriptCanLoadAsCJSImpl
+  assertScriptCanLoadAsCJSImpl!(filename)
+}
+
+/**
  * Registered `ts-node` instance information.
  */
 export const REGISTER_INSTANCE = Symbol.for('ts-node.register.instance')
@@ -179,6 +198,12 @@ export interface CreateOptions {
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
   transformers?: _ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)
+  /**
+   * True if require() hooks should interop with experimental ESM loader.
+   * Enabled explicitly via a flag since it is a breaking change.
+   * @internal
+   */
+  experimentalEsmLoader?: boolean
 }
 
 /**
@@ -247,7 +272,8 @@ export const DEFAULTS: RegisterOptions = {
   transpileOnly: yn(process.env.TS_NODE_TRANSPILE_ONLY),
   typeCheck: yn(process.env.TS_NODE_TYPE_CHECK),
   compilerHost: yn(process.env.TS_NODE_COMPILER_HOST),
-  logError: yn(process.env.TS_NODE_LOG_ERROR)
+  logError: yn(process.env.TS_NODE_LOG_ERROR),
+  experimentalEsmLoader: false
 }
 
 /**
@@ -770,9 +796,6 @@ export function create (rawOptions: CreateOptions = {}): Register {
     }
   }
 
-  const cannotCompileViaBothCodepathsErrorMessage = 'Cannot compile the same file via both `require()` and ESM hooks codepaths. ' +
-    'This breaks source-map-support, which cannot tell the difference between the two sourcemaps. ' +
-    'To avoid this problem, load each .ts file as only ESM or only CommonJS.'
   // Create a simple TypeScript compiler proxy.
   function compile (code: string, fileName: string, lineOffset = 0) {
     const normalizedFileName = normalizeSlashes(fileName)
@@ -853,6 +876,10 @@ function registerExtension (
 
   require.extensions[ext] = function (m: any, filename) { // tslint:disable-line
     if (register.ignored(filename)) return old(m, filename)
+
+    if (register.options.experimentalEsmLoader) {
+      assertScriptCanLoadAsCJS(filename)
+    }
 
     const _compile = m._compile
 

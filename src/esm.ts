@@ -8,7 +8,10 @@ const { createResolve } = require('../dist-raw/node-esm-resolve-implementation')
 
 export function registerAndCreateEsmHooks (opts?: RegisterOptions) {
   // Automatically performs registration just like `-r ts-node/register`
-  const tsNodeInstance = register(opts)
+  const tsNodeInstance = register({
+    ...opts,
+    experimentalEsmLoader: true
+  })
 
   // Custom implementation that considers additional file extensions and automatically adds file extensions
   const nodeResolveImplementation = createResolve({

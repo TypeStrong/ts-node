@@ -33,38 +33,59 @@ jobs:
 
   test:
     needs: lint-build
-    name: "Test #${{ matrix.flavor }}: ${{ matrix.os }}, node v${{ matrix.node }}, ${{ matrix.typescript }}"
-    runs-on: ${{ matrix.os }}
+    name: "Test: ${{ matrix.os }}, node ${{ matrix.node }}, TS ${{ matrix.typescript }}"
+    runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        flavor: [1, 2, 3, 4, 5, 6, 7, 8]
+        os: [ubuntu, windows]
+        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9]
         include:
           - flavor: 1
             node: 10
-            typescript: typescript@latest
+            nodeFlag: 10
+            typescript: latest
+            typescriptFlag: latest
           - flavor: 2
-            node: 12
-            typescript: typescript@latest
+            node: 12.15
+            nodeFlag: 12_15
+            typescript: latest
+            typescriptFlag: latest
           - flavor: 3
-            node: 13
-            typescript: typescript@latest
+            node: 12.16
+            nodeFlag: 12_16
+            typescript: latest
+            typescriptFlag: latest
           - flavor: 4
             node: 13
-            typescript: typescript@2.7
+            nodeFlag: 13
+            typescript: latest
+            typescriptFlag: latest
           - flavor: 5
             node: 13
-            typescript: typescript@next
+            nodeFlag: 13
+            typescript: 2.7
+            typescriptFlag: 2_7
           - flavor: 6
-            node: 14
-            typescript: typescript@latest
+            node: 13
+            nodeFlag: 13
+            typescript: next
+            typescriptFlag: next
           - flavor: 7
             node: 14
-            typescript: typescript@2.7
+            nodeFlag: 14
+            typescript: latest
+            typescriptFlag: latest
           - flavor: 8
             node: 14
-            typescript: typescript@next
+            nodeFlag: 14
+            typescript: 2.7
+            typescriptFlag: 2_7
+          - flavor: 9
+            node: 14
+            nodeFlag: 14
+            typescript: next
+            typescriptFlag: next
     steps:
       # checkout code
       - uses: actions/checkout@v2
@@ -81,14 +102,22 @@ jobs:
         with:
           name: ts-node-packed.tgz
           path: tests/
-      - run: npm install ${{ matrix.typescript }} --force
+      - run: npm install typescript@${{ matrix.typescript }} --force
       - run: npm run test-cov
+      - run: npm run coverage-report
+        if: ${{ always() }}
+      - name: Codecov
+        if: ${{ always() }}
+        uses: codecov/codecov-action@v1
+        with:
+          flags: ${{ matrix.os }},node_${{ matrix.nodeFlag }},typescript_${{ matrix.typescriptFlag }}
+      - run: npm run coverage-fix-paths
+      - run: npm run coverage-report
       - name: Coveralls
         if: ${{ always() }}
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.github_token }}
-          flag-name: run-${{ matrix.os }}-${{ matrix.flavor }}
           parallel: true
   finish:
     needs: test
