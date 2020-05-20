@@ -624,9 +624,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
         // Force TS to emit output
         if (!mustBeEmittedCanonicalFileNames.has(canonicalFileName)) {
           mustBeEmittedCanonicalFileNames.add(canonicalFileName)
-          if (isAbsolute(canonicalFileName)) {
+          if (isAbsolute(fileName)) {
             syntheticRootFileVersion++
-            syntheticRootFileContents += `/// <reference path=${ JSON.stringify(canonicalFileName) } />\n`
+            syntheticRootFileContents += `/// <reference path=${ JSON.stringify(fileName) } />\n`
             fileVersions.set(syntheticRootFileName, syntheticRootFileVersion)
             fileContents.set(syntheticRootFileName, syntheticRootFileContents)
           } else {
