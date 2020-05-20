@@ -7,7 +7,7 @@ import * as _ts from 'typescript'
 
 /**
  * Does this version of node obey the package.json "type" field
- * and attempt to load scripts as ESM
+ * and throw ERR_REQUIRE_ESM when attempting to require() an ESM modules.
  */
 const engineSupportsPackageTypeField = parseInt(process.versions.node.split('.')[0], 10) >= 12
 
