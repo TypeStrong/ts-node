@@ -4,7 +4,7 @@ import { join } from 'path'
 import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
-import * as tsNodeTypes from './index'
+import type * as tsNodeTypes from './index'
 import { unlinkSync, existsSync, lstatSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
