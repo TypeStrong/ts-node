@@ -488,10 +488,15 @@ export function create (rawOptions: CreateOptions = {}): Register {
   let getTypeInfo: (_code: string, _fileName: string, _position: number) => TypeInfo
 
   const getOutputTranspileOnly = (code: string, fileName: string, overrideCompilerOptions?: Partial<_ts.CompilerOptions>): SourceOutput => {
+    if (typeof transformers === 'function') {
+      throw new TypeError('Transformers function is unavailable in "--transpile-only"')
+    }
+
     const result = ts.transpileModule(code, {
       fileName,
       compilerOptions: overrideCompilerOptions ? { ...config.options, ...overrideCompilerOptions } : config.options,
-      reportDiagnostics: true
+      reportDiagnostics: true,
+      transformers: transformers
     })
 
     const diagnosticList = filterDiagnostics(result.diagnostics || [], ignoreDiagnostics)
@@ -785,10 +790,6 @@ export function create (rawOptions: CreateOptions = {}): Register {
       }
     }
   } else {
-    if (typeof transformers === 'function') {
-      throw new TypeError('Transformers function is unavailable in "--transpile-only"')
-    }
-
     getOutput = getOutputTranspileOnly
 
     getTypeInfo = () => {
