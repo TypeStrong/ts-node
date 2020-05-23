@@ -4,10 +4,12 @@ import { join } from 'path'
 import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
-import { register, create, VERSION } from './index'
+import type * as tsNodeTypes from './index'
 import { unlinkSync, existsSync, lstatSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
+import { createRequire, createRequireFromPath } from 'module'
+import Module = require('module')
 
 const execP = promisify(exec)
 
@@ -18,6 +20,12 @@ const BIN_SCRIPT_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-script')
 
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
 
+// `createRequire` does not exist on older node versions
+const testsDirRequire = (createRequire || createRequireFromPath)(join(TEST_DIR, 'index.js')) // tslint:disable-line
+
+// Set after ts-node is installed locally
+let { register, create, VERSION }: typeof tsNodeTypes = {} as any
+
 // Pack and install ts-node locally, necessary to test package "exports"
 before(async function () {
   this.timeout(30000)
@@ -25,6 +33,7 @@ before(async function () {
   await execP(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
   existsSync(packageLockPath) && unlinkSync(packageLockPath)
+  ;({ register, create, VERSION } = testsDirRequire('ts-node'))
 })
 
 describe('ts-node', function () {
@@ -34,6 +43,34 @@ describe('ts-node', function () {
 
   it('should export the correct version', function () {
     expect(VERSION).to.equal(require('../package.json').version)
+  })
+  it('should export all CJS entrypoints', function () {
+    // Ensure our package.json "exports" declaration allows `require()`ing all our entrypoints
+    // https://github.com/TypeStrong/ts-node/pull/1026
+
+    testsDirRequire.resolve('ts-node')
+
+    // only reliably way to ask node for the root path of a dependency is Path.resolve(require.resolve('ts-node/package'), '..')
+    testsDirRequire.resolve('ts-node/package')
+    testsDirRequire.resolve('ts-node/package.json')
+
+    // All bin entrypoints for people who need to augment our CLI: `node -r otherstuff ./node_modules/ts-node/dist/bin`
+    testsDirRequire.resolve('ts-node/dist/bin')
+    testsDirRequire.resolve('ts-node/dist/bin.js')
+    testsDirRequire.resolve('ts-node/dist/bin-transpile')
+    testsDirRequire.resolve('ts-node/dist/bin-transpile.js')
+    testsDirRequire.resolve('ts-node/dist/bin-script')
+    testsDirRequire.resolve('ts-node/dist/bin-script.js')
+
+    // Must be `require()`able obviously
+    testsDirRequire.resolve('ts-node/register')
+    testsDirRequire.resolve('ts-node/register/files')
+    testsDirRequire.resolve('ts-node/register/transpile-only')
+    testsDirRequire.resolve('ts-node/register/type-check')
+
+    // `node --loader ts-node/esm`
+    testsDirRequire.resolve('ts-node/esm')
+    testsDirRequire.resolve('ts-node/esm.mjs')
   })
 
   describe('cli', function () {
@@ -523,11 +560,14 @@ describe('ts-node', function () {
   })
 
   describe('register', function () {
-    const registered = register({
-      project: PROJECT,
-      compilerOptions: {
-        jsx: 'preserve'
-      }
+    let registered: tsNodeTypes.Register
+    before(() => {
+      registered = register({
+        project: PROJECT,
+        compilerOptions: {
+          jsx: 'preserve'
+        }
+      })
     })
 
     const moduleTestPath = require.resolve('../tests/module')
@@ -637,10 +677,11 @@ describe('ts-node', function () {
     })
 
     describe('JSX preserve', () => {
-      let old = require.extensions['.tsx'] // tslint:disable-line
+      let old: (m: Module, filename: string) => any
       let compiled: string
 
       before(function () {
+        old = require.extensions['.tsx']! // tslint:disable-line
         require.extensions['.tsx'] = (m: any, fileName) => { // tslint:disable-line
           const _compile = m._compile
 
@@ -649,7 +690,7 @@ describe('ts-node', function () {
             return _compile.call(this, code, fileName)
           }
 
-          return old!(m, fileName)
+          return old(m, fileName)
         }
       })
 
