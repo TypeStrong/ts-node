@@ -487,20 +487,6 @@ export function create (rawOptions: CreateOptions = {}): Register {
   let getOutput: (code: string, fileName: string) => SourceOutput
   let getTypeInfo: (_code: string, _fileName: string, _position: number) => TypeInfo
 
-  const getOutputTranspileOnly = (code: string, fileName: string, overrideCompilerOptions?: Partial<_ts.CompilerOptions>): SourceOutput => {
-    const result = ts.transpileModule(code, {
-      fileName,
-      compilerOptions: overrideCompilerOptions ? { ...config.options, ...overrideCompilerOptions } : config.options,
-      reportDiagnostics: true,
-      transformers: transformers as Exclude<typeof transformers, Function>
-    })
-
-    const diagnosticList = filterDiagnostics(result.diagnostics || [], ignoreDiagnostics)
-    if (diagnosticList.length) reportTSError(diagnosticList)
-
-    return [result.outputText, result.sourceMapText as string]
-  }
-
   // Use full language services when the fast option is disabled.
   if (!transpileOnly) {
     const fileContents = new Map<string, string>()
@@ -790,7 +776,19 @@ export function create (rawOptions: CreateOptions = {}): Register {
       throw new TypeError('Transformers function is unavailable in "--transpile-only"')
     }
 
-    getOutput = getOutputTranspileOnly
+    getOutput = (code: string, fileName: string, overrideCompilerOptions?: Partial<_ts.CompilerOptions>): SourceOutput => {
+      const result = ts.transpileModule(code, {
+        fileName,
+        compilerOptions: overrideCompilerOptions ? { ...config.options, ...overrideCompilerOptions } : config.options,
+        reportDiagnostics: true,
+        transformers: transformers as Exclude<typeof transformers, Function>
+      })
+
+      const diagnosticList = filterDiagnostics(result.diagnostics || [], ignoreDiagnostics)
+      if (diagnosticList.length) reportTSError(diagnosticList)
+
+      return [result.outputText, result.sourceMapText as string]
+    }
 
     getTypeInfo = () => {
       throw new TypeError('Type information is unavailable in "--transpile-only"')
