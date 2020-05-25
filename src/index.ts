@@ -781,7 +781,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
         fileName,
         compilerOptions: overrideCompilerOptions ? { ...config.options, ...overrideCompilerOptions } : config.options,
         reportDiagnostics: true,
-        transformers: transformers as Exclude<typeof transformers, Function>
+        transformers: transformers
       })
 
       const diagnosticList = filterDiagnostics(result.diagnostics || [], ignoreDiagnostics)
