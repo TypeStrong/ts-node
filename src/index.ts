@@ -776,10 +776,10 @@ export function create (rawOptions: CreateOptions = {}): Register {
       throw new TypeError('Transformers function is unavailable in "--transpile-only"')
     }
 
-    getOutput = (code: string, fileName: string, overrideCompilerOptions?: Partial<_ts.CompilerOptions>): SourceOutput => {
+    getOutput = (code: string, fileName: string): SourceOutput => {
       const result = ts.transpileModule(code, {
         fileName,
-        compilerOptions: overrideCompilerOptions ? { ...config.options, ...overrideCompilerOptions } : config.options,
+        compilerOptions: config.options,
         reportDiagnostics: true,
         transformers: transformers
       })
