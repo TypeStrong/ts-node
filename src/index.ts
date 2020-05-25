@@ -491,7 +491,8 @@ export function create (rawOptions: CreateOptions = {}): Register {
     const result = ts.transpileModule(code, {
       fileName,
       compilerOptions: overrideCompilerOptions ? { ...config.options, ...overrideCompilerOptions } : config.options,
-      reportDiagnostics: true
+      reportDiagnostics: true,
+      transformers: transformers as Exclude<typeof transformers, Function>
     })
 
     const diagnosticList = filterDiagnostics(result.diagnostics || [], ignoreDiagnostics)
