@@ -6,6 +6,25 @@ import * as util from 'util'
 import * as _ts from 'typescript'
 
 /**
+ * Does this version of node obey the package.json "type" field
+ * and throw ERR_REQUIRE_ESM when attempting to require() an ESM modules.
+ */
+const engineSupportsPackageTypeField = parseInt(process.versions.node.split('.')[0], 10) >= 12
+
+// Loaded conditionally so we don't need to support older node versions
+let assertScriptCanLoadAsCJSImpl: ((filename: string) => void) | undefined
+
+/**
+ * Assert that script can be loaded as CommonJS when we attempt to require it.
+ * If it should be loaded as ESM, throw ERR_REQUIRE_ESM like node does.
+ */
+function assertScriptCanLoadAsCJS (filename: string) {
+  if (!engineSupportsPackageTypeField) return
+  if (!assertScriptCanLoadAsCJSImpl) assertScriptCanLoadAsCJSImpl = require('../dist-raw/node-cjs-loader-utils').assertScriptCanLoadAsCJSImpl
+  assertScriptCanLoadAsCJSImpl!(filename)
+}
+
+/**
  * Registered `ts-node` instance information.
  */
 export const REGISTER_INSTANCE = Symbol.for('ts-node.register.instance')
@@ -38,16 +57,19 @@ function yn (value: string | undefined) {
  * Debugging `ts-node`.
  */
 const shouldDebug = yn(process.env.TS_NODE_DEBUG)
-const debug = shouldDebug ? console.log.bind(console, 'ts-node') : () => undefined
+/** @internal */
+export const debug = shouldDebug ?
+  (...args: any) => console.log(`[ts-node ${new Date().toISOString()}]`, ...args)
+  : () => undefined
 const debugFn = shouldDebug ?
-  <T, U> (key: string, fn: (arg: T) => U) => {
+  <T, U>(key: string, fn: (arg: T) => U) => {
     let i = 0
     return (x: T) => {
       debug(key, x, ++i)
       return fn(x)
     }
   } :
-  <T, U> (_: string, fn: (arg: T) => U) => fn
+  <T, U>(_: string, fn: (arg: T) => U) => fn
 
 /**
  * Common TypeScript interfaces between versions.
@@ -176,6 +198,12 @@ export interface CreateOptions {
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
   transformers?: _ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)
+  /**
+   * True if require() hooks should interop with experimental ESM loader.
+   * Enabled explicitly via a flag since it is a breaking change.
+   * @internal
+   */
+  experimentalEsmLoader?: boolean
 }
 
 /**
@@ -200,14 +228,14 @@ export interface TsConfigOptions extends Omit<RegisterOptions,
   | 'skipProject'
   | 'project'
   | 'dir'
-> {
+  > {
   requires?: Array<string>
 }
 
 /**
  * Like `Object.assign`, but ignores `undefined` properties.
  */
-function assign <T extends object> (initialValue: T, ...sources: Array<T>): T {
+function assign<T extends object> (initialValue: T, ...sources: Array<T>): T {
   for (const source of sources) {
     for (const key of Object.keys(source)) {
       const value = (source as any)[key]
@@ -246,7 +274,8 @@ export const DEFAULTS: RegisterOptions = {
   transpileOnly: yn(process.env.TS_NODE_TRANSPILE_ONLY),
   typeCheck: yn(process.env.TS_NODE_TYPE_CHECK),
   compilerHost: yn(process.env.TS_NODE_COMPILER_HOST),
-  logError: yn(process.env.TS_NODE_LOG_ERROR)
+  logError: yn(process.env.TS_NODE_LOG_ERROR),
+  experimentalEsmLoader: false
 }
 
 /**
@@ -316,7 +345,7 @@ export interface Register {
 /**
  * Cached fs operation wrapper.
  */
-function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
+function cachedLookup<T> (fn: (arg: string) => T): (arg: string) => T {
   const cache = new Map<string, T>()
 
   return (arg: string): T => {
@@ -328,18 +357,26 @@ function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
   }
 }
 
+/** @internal */
+export function getExtensions (config: _ts.ParsedCommandLine) {
+  const tsExtensions = ['.ts']
+  const jsExtensions = []
+
+  // Enable additional extensions when JSX or `allowJs` is enabled.
+  if (config.options.jsx) tsExtensions.push('.tsx')
+  if (config.options.allowJs) jsExtensions.push('.js')
+  if (config.options.jsx && config.options.allowJs) jsExtensions.push('.jsx')
+  return { tsExtensions, jsExtensions }
+}
+
 /**
  * Register TypeScript compiler instance onto node.js
  */
 export function register (opts: RegisterOptions = {}): Register {
   const originalJsHandler = require.extensions['.js'] // tslint:disable-line
   const service = create(opts)
-  const extensions = ['.ts']
-
-  // Enable additional extensions when JSX or `allowJs` is enabled.
-  if (service.config.options.jsx) extensions.push('.tsx')
-  if (service.config.options.allowJs) extensions.push('.js')
-  if (service.config.options.jsx && service.config.options.allowJs) extensions.push('.jsx')
+  const { tsExtensions, jsExtensions } = getExtensions(service.config)
+  const extensions = [...tsExtensions, ...jsExtensions]
 
   // Expose registered instance globally.
   process[REGISTER_INSTANCE] = service
@@ -392,7 +429,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
   ].map(Number)
 
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
-  const outputCache = new Map<string, string>()
+  const outputCache = new Map<string, {
+    content: string
+  }>()
 
   const isScoped = options.scope ? (relname: string) => relname.charAt(0) !== '.' : () => true
   const shouldIgnore = createIgnore(options.skipIgnore ? [] : (
@@ -409,7 +448,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
   sourceMapSupport.install({
     environment: 'node',
     retrieveFile (path: string) {
-      return outputCache.get(path) || ''
+      return outputCache.get(normalizeSlashes(path))?.content || ''
     }
   })
 
@@ -447,18 +486,19 @@ export function create (rawOptions: CreateOptions = {}): Register {
   /**
    * Create the basic required function using transpile mode.
    */
-  let getOutput: (code: string, fileName: string, lineOffset: number) => SourceOutput
+  let getOutput: (code: string, fileName: string) => SourceOutput
   let getTypeInfo: (_code: string, _fileName: string, _position: number) => TypeInfo
 
   // Use full language services when the fast option is disabled.
   if (!transpileOnly) {
     const fileContents = new Map<string, string>()
-    const rootFileNames = config.fileNames.slice()
+    const rootFileNames = new Set(config.fileNames)
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile))
 
     // Use language services by default (TODO: invert next major version).
     if (!options.compilerHost) {
-      const fileVersions = new Map<string, number>()
+      let projectVersion = 1
+      const fileVersions = new Map(Array.from(rootFileNames).map(fileName => [fileName, 0]))
 
       const getCustomTransformers = () => {
         if (typeof transformers === 'function') {
@@ -471,10 +511,11 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
       // Create the compiler host for type checking.
       const serviceHost: _ts.LanguageServiceHost = {
-        getScriptFileNames: () => rootFileNames,
+        getProjectVersion: () => String(projectVersion),
+        getScriptFileNames: () => Array.from(rootFileNames),
         getScriptVersion: (fileName: string) => {
           const version = fileVersions.get(fileName)
-          return version === undefined ? '' : version.toString()
+          return version ? version.toString() : ''
         },
         getScriptSnapshot (fileName: string) {
           let contents = fileContents.get(fileName)
@@ -486,12 +527,13 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
             fileVersions.set(fileName, 1)
             fileContents.set(fileName, contents)
+            projectVersion++
           }
 
           return ts.ScriptSnapshot.fromString(contents)
         },
         readFile: cachedReadFile,
-        readDirectory: cachedLookup(debugFn('readDirectory', ts.sys.readDirectory)),
+        readDirectory: ts.sys.readDirectory,
         getDirectories: cachedLookup(debugFn('getDirectories', ts.sys.getDirectories)),
         fileExists: cachedLookup(debugFn('fileExists', fileExists)),
         directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
@@ -507,26 +549,49 @@ export function create (rawOptions: CreateOptions = {}): Register {
       const service = ts.createLanguageService(serviceHost, registry)
 
       const updateMemoryCache = (contents: string, fileName: string) => {
-        const fileVersion = fileVersions.get(fileName) || 0
+        // Add to `rootFiles` if not already there
+        // This is necessary to force TS to emit output
+        if (!rootFileNames.has(fileName)) {
+          rootFileNames.add(fileName)
+          // Increment project version for every change to rootFileNames.
+          projectVersion++
+        }
 
-        // Add to `rootFiles` when discovered for the first time.
-        if (fileVersion === 0) rootFileNames.push(fileName)
-
+        const previousVersion = fileVersions.get(fileName) || 0
+        const previousContents = fileContents.get(fileName)
         // Avoid incrementing cache when nothing has changed.
-        if (fileContents.get(fileName) === contents) return
-
-        fileVersions.set(fileName, fileVersion + 1)
-        fileContents.set(fileName, contents)
+        if (contents !== previousContents) {
+          fileVersions.set(fileName, previousVersion + 1)
+          fileContents.set(fileName, contents)
+          // Increment project version for every file change.
+          projectVersion++
+        }
       }
+
+      let previousProgram: _ts.Program | undefined = undefined
 
       getOutput = (code: string, fileName: string) => {
         updateMemoryCache(code, fileName)
+
+        const programBefore = service.getProgram()
+        if (programBefore !== previousProgram) {
+          debug(`compiler rebuilt Program instance when getting output for ${fileName}`)
+        }
 
         const output = service.getEmitOutput(fileName)
 
         // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.
         const diagnostics = service.getSemanticDiagnostics(fileName)
           .concat(service.getSyntacticDiagnostics(fileName))
+
+        const programAfter = service.getProgram()
+
+        debug(
+          'invariant: Is service.getProject() identical before and after getting emit output and diagnostics? (should always be true) ',
+          programBefore === programAfter
+        )
+
+        previousProgram = programAfter
 
         const diagnosticList = filterDiagnostics(diagnostics, ignoreDiagnostics)
         if (diagnosticList.length) reportTSError(diagnosticList)
@@ -566,7 +631,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
           if (cacheContents !== undefined) return cacheContents
           return cachedReadFile(fileName)
         },
-        readDirectory: cachedLookup(debugFn('readDirectory', ts.sys.readDirectory)),
+        readDirectory: ts.sys.readDirectory,
         getDirectories: cachedLookup(debugFn('getDirectories', ts.sys.getDirectories)),
         fileExists: cachedLookup(debugFn('fileExists', fileExists)),
         directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
@@ -591,14 +656,14 @@ export function create (rawOptions: CreateOptions = {}): Register {
       // Fallback for older TypeScript releases without incremental API.
       let builderProgram = ts.createIncrementalProgram
         ? ts.createIncrementalProgram({
-          rootNames: rootFileNames.slice(),
+          rootNames: Array.from(rootFileNames),
           options: config.options,
           host: host,
           configFileParsingDiagnostics: config.errors,
           projectReferences: config.projectReferences
         })
         : ts.createEmitAndSemanticDiagnosticsBuilderProgram(
-          rootFileNames.slice(),
+          Array.from(rootFileNames),
           config.options,
           host,
           undefined,
@@ -619,13 +684,13 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
         // Add to `rootFiles` when discovered by compiler for the first time.
         if (sourceFile === undefined) {
-          rootFileNames.push(fileName)
+          rootFileNames.add(fileName)
         }
 
         // Update program when file changes.
         if (sourceFile === undefined || sourceFile.text !== contents) {
           builderProgram = ts.createEmitAndSemanticDiagnosticsBuilderProgram(
-            rootFileNames.slice(),
+            Array.from(rootFileNames),
             config.options,
             host,
             builderProgram,
@@ -716,9 +781,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
     getOutput = (code: string, fileName: string): SourceOutput => {
       const result = ts.transpileModule(code, {
         fileName,
-        transformers,
         compilerOptions: config.options,
-        reportDiagnostics: true
+        reportDiagnostics: true,
+        transformers: transformers
       })
 
       const diagnosticList = filterDiagnostics(result.diagnostics || [], ignoreDiagnostics)
@@ -734,9 +799,10 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
   // Create a simple TypeScript compiler proxy.
   function compile (code: string, fileName: string, lineOffset = 0) {
-    const [value, sourceMap] = getOutput(code, fileName, lineOffset)
-    const output = updateOutput(value, fileName, sourceMap, getExtension)
-    outputCache.set(fileName, output)
+    const normalizedFileName = normalizeSlashes(fileName)
+    const [value, sourceMap] = getOutput(code, normalizedFileName)
+    const output = updateOutput(value, normalizedFileName, sourceMap, getExtension)
+    outputCache.set(normalizedFileName, { content: output })
     return output
   }
 
@@ -745,6 +811,10 @@ export function create (rawOptions: CreateOptions = {}): Register {
   const ignored = (fileName: string) => {
     if (!active) return true
     const relname = relative(cwd, fileName)
+    if (!config.options.allowJs) {
+      const ext = extname(fileName)
+      if (ext === '.js' || ext === '.jsx') return true
+    }
     return !isScoped(relname) || shouldIgnore(relname)
   }
 
@@ -807,6 +877,10 @@ function registerExtension (
 
   require.extensions[ext] = function (m: any, filename) { // tslint:disable-line
     if (register.ignored(filename)) return old(m, filename)
+
+    if (register.options.experimentalEsmLoader) {
+      assertScriptCanLoadAsCJS(filename)
+    }
 
     const _compile = m._compile
 

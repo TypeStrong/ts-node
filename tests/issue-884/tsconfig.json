@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "umd",
+    "target": "esnext",
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noImplicitAny": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": false,
+    "declaration": true,
+    "strict": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true,
+    "lib": ["es2015", "es2017.object", "dom"]
+  }
+}

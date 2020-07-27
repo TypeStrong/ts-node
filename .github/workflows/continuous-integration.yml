@@ -1,0 +1,131 @@
+name: Continuous Integration
+on:
+  # branches pushed by collaborators
+  push:
+    branches:
+      - master
+  # pull request from non-collaborators
+  pull_request: {}
+  # nightly
+  schedule:
+    - cron:  '0 0 * * *'
+jobs:
+  lint-build:
+    name: "Lint & Build"
+    runs-on: ubuntu-latest
+    steps:
+      # checkout code
+      - uses: actions/checkout@v2
+      # install node
+      - name: Use Node.js 14
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14
+      # lint, build, test
+      - run: npm install
+      - run: npm run lint
+      - run: npm run build
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: ts-node-packed.tgz
+          path: tests/ts-node-packed.tgz
+
+  test:
+    needs: lint-build
+    name: "Test: ${{ matrix.os }}, node ${{ matrix.node }}, TS ${{ matrix.typescript }}"
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, windows]
+        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        include:
+          - flavor: 1
+            node: 10
+            nodeFlag: 10
+            typescript: latest
+            typescriptFlag: latest
+          - flavor: 2
+            node: 12.15
+            nodeFlag: 12_15
+            typescript: latest
+            typescriptFlag: latest
+          - flavor: 3
+            node: 12.16
+            nodeFlag: 12_16
+            typescript: latest
+            typescriptFlag: latest
+          - flavor: 4
+            node: 13
+            nodeFlag: 13
+            typescript: latest
+            typescriptFlag: latest
+          - flavor: 5
+            node: 13
+            nodeFlag: 13
+            typescript: 2.7
+            typescriptFlag: 2_7
+          - flavor: 6
+            node: 13
+            nodeFlag: 13
+            typescript: next
+            typescriptFlag: next
+          - flavor: 7
+            node: 14
+            nodeFlag: 14
+            typescript: latest
+            typescriptFlag: latest
+          - flavor: 8
+            node: 14
+            nodeFlag: 14
+            typescript: 2.7
+            typescriptFlag: 2_7
+          - flavor: 9
+            node: 14
+            nodeFlag: 14
+            typescript: next
+            typescriptFlag: next
+    steps:
+      # checkout code
+      - uses: actions/checkout@v2
+      # install node
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node }}
+      # lint, build, test
+      - run: npm install
+      - run: npm run build-nopack
+      - name: Download package artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: ts-node-packed.tgz
+          path: tests/
+      - run: npm install typescript@${{ matrix.typescript }} --force
+      - run: npm run test-cov
+      - run: npm run coverage-report
+        if: ${{ always() }}
+      - name: Codecov
+        if: ${{ always() }}
+        uses: codecov/codecov-action@v1
+        with:
+          flags: ${{ matrix.os }},node_${{ matrix.nodeFlag }},typescript_${{ matrix.typescriptFlag }}
+      - run: npm run coverage-fix-paths
+      - run: npm run coverage-report
+      - name: Coveralls
+        if: ${{ always() }}
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          parallel: true
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          parallel-finished: true
