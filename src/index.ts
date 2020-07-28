@@ -4,6 +4,7 @@ import * as ynModule from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
 import * as _ts from 'typescript'
+import { debugIt } from './resolver'
 
 /**
  * Does this version of node obey the package.json "type" field
@@ -381,6 +382,9 @@ export function register (opts: RegisterOptions = {}): Register {
 
   // Register the extensions.
   registerExtensions(service.options.preferTsExts, extensions, service, originalJsHandler)
+
+  console.dir(service.config, {depth: 10})
+  debugIt(service.config)
 
   return service
 }

@@ -12,7 +12,17 @@
     "sourceMap": true,
     "inlineSources": true,
     "types": ["node", "mocha"],
-    "stripInternal": true
+    "stripInternal": true,
+    "baseUrl": "src",
+    "paths": {
+      // "*": ["generated/*", "bundled/*"],
+      "/what-*": ["generated/*", "bundled/*"],
+      "/*-what": ["generated/*", "bundled/*"]
+    },
+    "rootDirs": [
+      "src",
+      "generated/src"
+    ]
   },
   "include": [
     "src/**/*"
