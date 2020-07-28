@@ -1007,7 +1007,7 @@ function readConfig (
 
   if (tsconfigOptions.require) {
     // Relative paths are relative to the tsconfig's parent directory, not the `dir` option
-    const tsconfigRelativeRequire = createRequire(configFileName)
+    const tsconfigRelativeRequire = createRequire(configFileName!)
     tsconfigOptions.require = tsconfigOptions.require.map((path: string) => {
       return tsconfigRelativeRequire.resolve(path)
     })
