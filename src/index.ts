@@ -1075,8 +1075,10 @@ function getTokenAtPosition (ts: typeof _ts, sourceFile: _ts.SourceFile, positio
 }
 
 let nodeCreateRequire: (path: string) => NodeRequire
-function createRequire(filename: string) {
-  if (!nodeCreateRequire)
+function createRequire (filename: string) {
+  if (!nodeCreateRequire) {
+    // tslint:disable-next-line
     nodeCreateRequire = Module.createRequire || Module.createRequireFromPath || require('../dist-raw/node-createrequire').createRequireFromPath
+  }
   return nodeCreateRequire(filename)
 }

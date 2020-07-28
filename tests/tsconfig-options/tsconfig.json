@@ -5,7 +5,7 @@
       "types": ["tsconfig-tsnode-types"]
     },
     "transpileOnly": true,
-    "requires": ["./required"],
+    "require": ["./required"],
     "skipIgnore": false
   },
   "compilerOptions": {
