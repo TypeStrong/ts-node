@@ -493,7 +493,7 @@ describe('ts-node', function () {
           expect(options.pretty).to.equal(undefined)
           expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
-          expect(options.requires).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required')])
+          expect(options.require).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required')])
           return done()
         })
       })
