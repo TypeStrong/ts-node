@@ -4,6 +4,7 @@ import * as ynModule from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
 import * as _ts from 'typescript'
+import * as Module from 'module'
 
 /**
  * Does this version of node obey the package.json "type" field
@@ -219,6 +220,19 @@ export interface RegisterOptions extends CreateOptions {
 }
 
 /**
+ * Options only available via tsconfig, not register() nor create() APIs.
+ */
+export interface TsConfigExclusiveOptions {
+  require?: Array<string>
+}
+
+/**
+ * Options returned by us after we merge programmatic options with those
+ * from tsconfig.json
+ */
+export interface ParsedOptions extends RegisterOptions, TsConfigExclusiveOptions {}
+
+/**
  * Must be an interface to support `typescript-json-schema`.
  */
 export interface TsConfigOptions extends Omit<RegisterOptions,
@@ -228,9 +242,7 @@ export interface TsConfigOptions extends Omit<RegisterOptions,
   | 'skipProject'
   | 'project'
   | 'dir'
-  > {
-  requires?: Array<string>
-}
+  >, TsConfigExclusiveOptions {}
 
 /**
  * Like `Object.assign`, but ignores `undefined` properties.
@@ -335,7 +347,7 @@ export class TSError extends BaseError {
 export interface Register {
   ts: TSCommon
   config: _ts.ParsedCommandLine
-  options: RegisterOptions
+  options: ParsedOptions
   enabled (enabled?: boolean): boolean
   ignored (fileName: string): boolean
   compile (code: string, fileName: string, lineOffset?: number): string
@@ -410,7 +422,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
   // Read config file and merge new options between env and CLI options.
   const { config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
-  const options = assign<CreateOptions>({}, DEFAULTS, tsconfigOptions || {}, rawOptions)
+  const options = assign<ParsedOptions>({}, DEFAULTS, tsconfigOptions || {}, rawOptions)
 
   // If `compiler` option changed based on tsconfig, re-load the compiler.
   if (options.compiler !== compilerName) {
@@ -993,13 +1005,11 @@ function readConfig (
     useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames
   }, basePath, undefined, configFileName))
 
-  if (tsconfigOptions.requires) {
+  if (tsconfigOptions.require) {
     // Relative paths are relative to the tsconfig's parent directory, not the `dir` option
-    tsconfigOptions.requires = tsconfigOptions.requires.map((path: string) => {
-      // TODO this is not good enough.
-      // We also need to resolve node_modules relative to the tsconfig.json
-      if (path.startsWith('.')) return resolve(dirname(configFileName!), path)
-      return path
+    const tsconfigRelativeRequire = createRequire(configFileName)
+    tsconfigOptions.require = tsconfigOptions.require.map((path: string) => {
+      return tsconfigRelativeRequire.resolve(path)
     })
   }
 
@@ -1062,4 +1072,11 @@ function getTokenAtPosition (ts: typeof _ts, sourceFile: _ts.SourceFile, positio
 
     return current
   }
+}
+
+let nodeCreateRequire: (path: string) => NodeRequire
+function createRequire(filename: string) {
+  if (!nodeCreateRequire)
+    nodeCreateRequire = Module.createRequire || Module.createRequireFromPath || require('../dist-raw/node-createrequire').createRequireFromPath
+  return nodeCreateRequire(filename)
 }
