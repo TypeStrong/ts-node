@@ -9,6 +9,7 @@ import { unlinkSync, existsSync, lstatSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
 import { createRequire, createRequireFromPath } from 'module'
+import { pathToFileURL } from 'url'
 import Module = require('module')
 
 const execP = promisify(exec)
@@ -28,7 +29,7 @@ let { register, create, VERSION }: typeof tsNodeTypes = {} as any
 
 // Pack and install ts-node locally, necessary to test package "exports"
 before(async function () {
-  this.timeout(30000)
+  this.timeout(5 * 60e3)
   rimrafSync(join(TEST_DIR, 'node_modules'))
   await execP(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
@@ -729,13 +730,26 @@ describe('ts-node', function () {
   describe('esm', () => {
     this.slow(1000)
 
-    const cmd = `node --loader ts-node/esm.mjs`
+    const cmd = `node --loader ts-node/esm`
 
     if (semver.gte(process.version, '13.0.0')) {
       it('should compile and execute as ESM', (done) => {
         exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('foo bar baz biff\n')
+
+          return done()
+        })
+      })
+      it('should use source maps', function (done) {
+        exec(`${cmd} throw.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
+          expect(err).not.to.equal(null)
+          expect(err!.message).to.contain([
+            `${pathToFileURL(join(__dirname, '../tests/esm/throw.ts'))}:100`,
+            '  bar () { throw new Error(\'this is a demo\') }',
+            '                 ^',
+            'Error: this is a demo'
+          ].join('\n'))
 
           return done()
         })
