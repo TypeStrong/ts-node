@@ -609,10 +609,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
       const fixupResolvedModule = (resolvedModule: _ts.ResolvedModule) => {
         if (!resolvedModule.isExternalLibraryImport) return
         const resolvedFileNameCanonical = getCanonicalFileName(resolvedModule.resolvedFileName)
-        if (mustBeEmittedCanonicalFileNames.has(resolvedFileNameCanonical)) {
+        if (!ignored(resolvedFileNameCanonical)) {
           resolvedModule.isExternalLibraryImport = false
         }
-        // TODO if a file is first allowed to be external, then later require()d, what happens?
       }
       const moduleResolutionCache = ts.createModuleResolutionCache(cwd, getCanonicalFileName, config.options)
 
