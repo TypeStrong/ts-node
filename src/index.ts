@@ -3,6 +3,7 @@ import sourceMapSupport = require('source-map-support')
 import * as ynModule from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
+import {fileURLToPath} from 'url'
 import * as _ts from 'typescript'
 
 /**
@@ -445,8 +446,18 @@ export function create (rawOptions: CreateOptions = {}): Register {
   // Install source map support and read from memory cache.
   sourceMapSupport.install({
     environment: 'node',
-    retrieveFile (path: string) {
-      return outputCache.get(normalizeSlashes(path))?.content || ''
+    retrieveFile (pathOrUrl: string) {
+      let path = pathOrUrl
+      // If it's a file URL, convert to local path
+      // Note: fileURLToPath does not exist on early node v10
+      // I could not find a way to handle non-URLs except to swallow an error
+      if(fileURLToPath && path.startsWith('file://')) {
+        try {
+          path = fileURLToPath(path)
+        } catch (e) {}
+      }
+      path = normalizeSlashes(path)
+      return outputCache.get(path)?.content || ''
     }
   })
 
