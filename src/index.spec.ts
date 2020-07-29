@@ -724,13 +724,26 @@ describe('ts-node', function () {
   describe('esm', () => {
     this.slow(1000)
 
-    const cmd = `node --loader ts-node/esm.mjs`
+    const cmd = `node --loader ts-node/esm`
 
     if (semver.gte(process.version, '13.0.0')) {
       it('should compile and execute as ESM', (done) => {
         exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('foo bar baz biff\n')
+
+          return done()
+        })
+      })
+      it('should use source maps', function (done) {
+        exec(`${cmd} throw.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
+          expect(err).not.to.equal(null)
+          expect(err!.message).to.contain([
+            `${join(__dirname, '../tests/esm/throw.ts')}:100`,
+            '  bar () { throw new Error(\'this is a demo\') }',
+            '                 ^',
+            'Error: this is a demo'
+          ].join('\n'))
 
           return done()
         })

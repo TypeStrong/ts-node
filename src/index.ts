@@ -451,7 +451,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
       // If it's a file URL, convert to local path
       // Note: fileURLToPath does not exist on early node v10
       // I could not find a way to handle non-URLs except to swallow an error
-      if (fileURLToPath && path.startsWith('file://')) {
+      if (options.experimentalEsmLoader && path.startsWith('file://')) {
         try {
           path = fileURLToPath(path)
         } catch (e) {/* swallow error */}
