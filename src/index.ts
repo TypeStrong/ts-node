@@ -99,9 +99,6 @@ export interface TSCommon {
 interface TSInternal {
   // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906-L1909
   createGetCanonicalFileName (useCaseSensitiveFileNames: boolean): TSInternal.GetCanonicalFileName
-
-  // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1430-L1445
-  toFileNameLowerCase (x: string): string
 }
 namespace TSInternal {
   // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906
@@ -527,18 +524,6 @@ export function create (rawOptions: CreateOptions = {}): Register {
       let projectVersion = 1
       const fileVersions = new Map(Array.from(rootFileNames).map(fileName => [fileName, 0]))
 
-      const syntheticRootFileName = normalizeSlashes(join(config.options.rootDir || (configFileName && dirname(configFileName)) || cwd, '$$ts-node-root.ts'))
-      let syntheticRootFileVersion = 0
-      let syntheticRootFileContents = ''
-      rootFileNames.add(syntheticRootFileName)
-
-      /**
-       * To avoid modifying rootFileNames, yet still keep track of which files must be emitted,
-       * store the latter here.
-       * Store as canonical file names for faster lookups in resolver.
-       */
-      const mustBeEmittedCanonicalFileNames = new Set(Array.from(rootFileNames).map(rootFileName => getCanonicalFileName(rootFileName)))
-
       const getCustomTransformers = () => {
         if (typeof transformers === 'function') {
           const program = service.getProgram()
@@ -586,9 +571,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
         /*
          * NOTE:
          * Older ts versions do not pass `redirectedReference` nor `options`.
-         * We must pass `redirectedReference` to newer ts versions, but cannot rely on `options`
+         * We must pass `redirectedReference` to newer ts versions, but cannot rely on `options`, hence the weird argument name
          */
-        resolveModuleNames (moduleNames: string[], containingFile: string, reusedNames: string[] | undefined, redirectedReference: _ts.ResolvedProjectReference | undefined, options: _ts.CompilerOptions): (_ts.ResolvedModule | undefined)[] {
+        resolveModuleNames (moduleNames: string[], containingFile: string, reusedNames: string[] | undefined, redirectedReference: _ts.ResolvedProjectReference | undefined, optionsOnlyWithNewerTsVersions: _ts.CompilerOptions): (_ts.ResolvedModule | undefined)[] {
           return moduleNames.map(moduleName => {
             const { resolvedModule } = ts.resolveModuleName(moduleName, containingFile, config.options, serviceHost, moduleResolutionCache, redirectedReference)
             if (resolvedModule) fixupResolvedModule(resolvedModule)
@@ -608,8 +593,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
        */
       const fixupResolvedModule = (resolvedModule: _ts.ResolvedModule) => {
         if (!resolvedModule.isExternalLibraryImport) return
-        const resolvedFileNameCanonical = getCanonicalFileName(resolvedModule.resolvedFileName)
-        if (!ignored(resolvedFileNameCanonical)) {
+        if (!ignored(resolvedModule.resolvedFileName)) {
           resolvedModule.isExternalLibraryImport = false
         }
       }
@@ -619,18 +603,11 @@ export function create (rawOptions: CreateOptions = {}): Register {
       const service = ts.createLanguageService(serviceHost, registry)
 
       const updateMemoryCache = (contents: string, fileName: string) => {
-        const canonicalFileName = getCanonicalFileName(fileName)
-        // Force TS to emit output
-        if (!mustBeEmittedCanonicalFileNames.has(canonicalFileName)) {
-          mustBeEmittedCanonicalFileNames.add(canonicalFileName)
-          if (isAbsolute(fileName)) {
-            syntheticRootFileVersion++
-            syntheticRootFileContents += `/// <reference path=${ JSON.stringify(fileName) } />\n`
-            fileVersions.set(syntheticRootFileName, syntheticRootFileVersion)
-            fileContents.set(syntheticRootFileName, syntheticRootFileContents)
-          } else {
-            rootFileNames.add(fileName)
-          }
+        // Add to `rootFiles` if not already there
+        // This is necessary to force TS to emit output
+        if (!rootFileNames.has(fileName)) {
+          rootFileNames.add(fileName)
+          // Increment project version for every change to rootFileNames.
           projectVersion++
         }
 
@@ -700,7 +677,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
         return { name, comment }
       }
     } else {
-      const sys = {
+      const sys: _ts.System & _ts.FormatDiagnosticsHost = {
         ...ts.sys,
         ...diagnosticHost,
         readFile: (fileName: string) => {
@@ -713,7 +690,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
         fileExists: cachedLookup(debugFn('fileExists', fileExists)),
         directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
         resolvePath: cachedLookup(debugFn('resolvePath', ts.sys.resolvePath)),
-        realpath: ts.sys.realpath ? cachedLookup(debugFn('realpath', ts.sys.realpath)) : undefined
+        realpath: ts.sys.realpath ? cachedLookup(debugFn('realpath', ts.sys.realpath)) : undefined,
       }
 
       const host: _ts.CompilerHost = ts.createIncrementalCompilerHost
@@ -997,11 +974,6 @@ function readConfig (
   config: _ts.ParsedCommandLine
   // Options pulled from `tsconfig.json`.
   options: TsConfigOptions
-  /**
-   * Path to config file
-   * @internal
-   */
-  configFileName?: string
 } {
   let config: any = { compilerOptions: {} }
   let basePath = cwd
@@ -1027,8 +999,7 @@ function readConfig (
       if (result.error) {
         return {
           config: { errors: [result.error], fileNames: [], options: {} },
-          options: {},
-          configFileName
+          options: {}
         }
       }
 
@@ -1064,7 +1035,7 @@ function readConfig (
     useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames
   }, basePath, undefined, configFileName))
 
-  return { config: fixedConfig, options: tsconfigOptions, configFileName }
+  return { config: fixedConfig, options: tsconfigOptions }
 }
 
 /**
