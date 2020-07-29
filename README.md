@@ -224,7 +224,7 @@ Any error that is not a `TSError` is from node.js (e.g. `SyntaxError`), and cann
 
 ### Import Statements
 
-You have two options when using `import` statements: compile them into CommonJS or use node's native ESM support.
+There are two options when using `import` statements: compile them into CommonJS or use node's native ESM support.
 
 To compile to CommonJS, you must set `"module": "commonjs"` in your `tsconfig.json`.
 
