@@ -454,7 +454,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
       if (fileURLToPath && path.startsWith('file://')) {
         try {
           path = fileURLToPath(path)
-        } catch (e) {}
+        } catch (e) {/* swallow error */}
       }
       path = normalizeSlashes(path)
       return outputCache.get(path)?.content || ''
