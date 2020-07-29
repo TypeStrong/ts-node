@@ -176,6 +176,7 @@ export function main (argv: string[]) {
     compiler,
     ignoreDiagnostics,
     compilerOptions,
+    require: argsRequire,
     readFile: code !== undefined
       ? (path: string) => {
         if (path === state.path) return state.input
@@ -199,8 +200,6 @@ export function main (argv: string[]) {
       : undefined
   })
 
-  const requires = argsRequire.length !== 0 ? argsRequire : service.options.require || []
-
   // Output project information.
   if (version >= 2) {
     console.log(`ts-node v${VERSION}`)
@@ -213,9 +212,6 @@ export function main (argv: string[]) {
   const module = new Module(state.path)
   module.filename = state.path
   module.paths = (Module as any)._nodeModulePaths(cwd)
-
-  // Require specified modules before start-up.
-  ;(Module as any)._preloadModules(requires)
 
   // Prepend `ts-node` arguments to CLI for child processes.
   process.execArgv.unshift(__filename, ...process.argv.slice(2, process.argv.length - args._.length))

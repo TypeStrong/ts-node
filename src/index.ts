@@ -196,6 +196,15 @@ export interface CreateOptions {
    * Ignore TypeScript warnings by diagnostic code.
    */
   ignoreDiagnostics?: Array<number | string>
+  /**
+   * Modules to require, like node's `--require` flag.
+   *
+   * If specified in tsconfig.json, the modules will be resolved relative to the tsconfig.json file.
+   *
+   * If specified programmatically, each input string should be pre-resolved to an absolute path for
+   * best results.
+   */
+  require?: Array<string>
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
   transformers?: _ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)
@@ -220,19 +229,6 @@ export interface RegisterOptions extends CreateOptions {
 }
 
 /**
- * Options only available via tsconfig, not register() nor create() APIs.
- */
-export interface TsConfigExclusiveOptions {
-  require?: Array<string>
-}
-
-/**
- * Options returned by us after we merge programmatic options with those
- * from tsconfig.json
- */
-export interface ParsedOptions extends RegisterOptions, TsConfigExclusiveOptions {}
-
-/**
  * Must be an interface to support `typescript-json-schema`.
  */
 export interface TsConfigOptions extends Omit<RegisterOptions,
@@ -242,7 +238,7 @@ export interface TsConfigOptions extends Omit<RegisterOptions,
   | 'skipProject'
   | 'project'
   | 'dir'
-  >, TsConfigExclusiveOptions {}
+  > {}
 
 /**
  * Like `Object.assign`, but ignores `undefined` properties.
@@ -347,7 +343,7 @@ export class TSError extends BaseError {
 export interface Register {
   ts: TSCommon
   config: _ts.ParsedCommandLine
-  options: ParsedOptions
+  options: RegisterOptions
   enabled (enabled?: boolean): boolean
   ignored (fileName: string): boolean
   compile (code: string, fileName: string, lineOffset?: number): string
@@ -396,6 +392,9 @@ export function register (opts: RegisterOptions = {}): Register {
   // Register the extensions.
   registerExtensions(service.options.preferTsExts, extensions, service, originalJsHandler)
 
+  // Require specified modules before start-up.
+  ;(Module as any)._preloadModules(service.options.require)
+
   return service
 }
 
@@ -422,7 +421,11 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
   // Read config file and merge new options between env and CLI options.
   const { config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
-  const options = assign<ParsedOptions>({}, DEFAULTS, tsconfigOptions || {}, rawOptions)
+  const options = assign<RegisterOptions>({}, DEFAULTS, tsconfigOptions || {}, rawOptions)
+  options.require = [
+    ...tsconfigOptions.require || [],
+    ...rawOptions.require || []
+  ]
 
   // If `compiler` option changed based on tsconfig, re-load the compiler.
   if (options.compiler !== compilerName) {
@@ -1006,7 +1009,7 @@ function readConfig (
   }, basePath, undefined, configFileName))
 
   if (tsconfigOptions.require) {
-    // Relative paths are relative to the tsconfig's parent directory, not the `dir` option
+    // Modules are found relative to the tsconfig file, not the `dir` option
     const tsconfigRelativeRequire = createRequire(configFileName!)
     tsconfigOptions.require = tsconfigOptions.require.map((path: string) => {
       return tsconfigRelativeRequire.resolve(path)
