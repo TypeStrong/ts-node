@@ -29,7 +29,7 @@ let { register, create, VERSION }: typeof tsNodeTypes = {} as any
 
 // Pack and install ts-node locally, necessary to test package "exports"
 before(async function () {
-  this.timeout(30000)
+  this.timeout(5 * 60e3)
   rimrafSync(join(TEST_DIR, 'node_modules'))
   await execP(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
