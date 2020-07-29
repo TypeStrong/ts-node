@@ -344,10 +344,15 @@ describe('ts-node', function () {
       })
     })
 
-    it.skip('should use source maps with react tsx', function (done) {
-      exec(`${cmd} -r ./tests/emit-compiled.ts tests/jsx-react.tsx`, function (err, stdout) {
-        expect(err).to.equal(null)
-        expect(stdout).to.equal('todo')
+    it('should use source maps with react tsx', function (done) {
+      exec(`${cmd} tests/throw-react-tsx.tsx`, function (err, stdout) {
+        expect(err).not.to.equal(null)
+        expect(err!.message).to.contain([
+          `${join(__dirname, '../tests/throw-react-tsx.tsx')}:100`,
+          '  bar () { throw new Error(\'this is a demo\') }',
+          '                 ^',
+          'Error: this is a demo'
+        ].join('\n'))
 
         return done()
       })
