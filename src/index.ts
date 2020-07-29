@@ -419,7 +419,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
   let { compiler, ts } = loadCompiler(compilerName)
 
   // Read config file and merge new options between env and CLI options.
-  const { config, options: tsconfigOptions, configFileName } = readConfig(cwd, ts, rawOptions)
+  const { config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
   const options = assign<CreateOptions>({}, DEFAULTS, tsconfigOptions || {}, rawOptions)
 
   // If `compiler` option changed based on tsconfig, re-load the compiler.
@@ -512,12 +512,48 @@ export function create (rawOptions: CreateOptions = {}): Register {
     return [result.outputText, result.sourceMapText as string]
   }
 
+  const getCanonicalFileName = (ts as unknown as TSInternal).createGetCanonicalFileName(ts.sys.useCaseSensitiveFileNames)
+
+  // In a factory because these are shared across both CompilerHost and LanguageService codepaths
+  function createResolverFunctions (serviceHost: _ts.ModuleResolutionHost) {
+    const moduleResolutionCache = ts.createModuleResolutionCache(cwd, getCanonicalFileName, config.options)
+    /**
+     * If we need to emit JS for a file, force TS to consider it non-external
+     */
+    const fixupResolvedModule = (resolvedModule: _ts.ResolvedModule) => {
+      if (!resolvedModule.isExternalLibraryImport) return
+      if (!ignored(resolvedModule.resolvedFileName)) {
+        resolvedModule.isExternalLibraryImport = false
+      }
+    }
+    /*
+      * NOTE:
+      * Older ts versions do not pass `redirectedReference` nor `options`.
+      * We must pass `redirectedReference` to newer ts versions, but cannot rely on `options`, hence the weird argument name
+      */
+    const resolveModuleNames: _ts.LanguageServiceHost['resolveModuleNames'] = (moduleNames: string[], containingFile: string, reusedNames: string[] | undefined, redirectedReference: _ts.ResolvedProjectReference | undefined, optionsOnlyWithNewerTsVersions: _ts.CompilerOptions): (_ts.ResolvedModule | undefined)[] => {
+      return moduleNames.map(moduleName => {
+        const { resolvedModule } = ts.resolveModuleName(moduleName, containingFile, config.options, serviceHost, moduleResolutionCache, redirectedReference)
+        if (resolvedModule) fixupResolvedModule(resolvedModule)
+        return resolvedModule
+      })
+    }
+    const getResolvedModuleWithFailedLookupLocationsFromCache: _ts.LanguageServiceHost['getResolvedModuleWithFailedLookupLocationsFromCache'] = (moduleName, containingFile): _ts.ResolvedModuleWithFailedLookupLocations | undefined => {
+      const ret = ts.resolveModuleNameFromCache(moduleName, containingFile, moduleResolutionCache)
+      if (ret && ret.resolvedModule) {
+        fixupResolvedModule(ret.resolvedModule)
+      }
+      return ret
+    }
+
+    return { resolveModuleNames, getResolvedModuleWithFailedLookupLocationsFromCache, fixupResolvedModule, moduleResolutionCache }
+  }
+
   // Use full language services when the fast option is disabled.
   if (!transpileOnly) {
     const fileContents = new Map<string, string>()
     const rootFileNames = new Set(config.fileNames)
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile))
-    const getCanonicalFileName = (ts as unknown as TSInternal).createGetCanonicalFileName(ts.sys.useCaseSensitiveFileNames)
 
     // Use language services by default (TODO: invert next major version).
     if (!options.compilerHost) {
@@ -567,37 +603,11 @@ export function create (rawOptions: CreateOptions = {}): Register {
         getCurrentDirectory: () => cwd,
         getCompilationSettings: () => config.options,
         getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
-        getCustomTransformers: getCustomTransformers,
-        /*
-         * NOTE:
-         * Older ts versions do not pass `redirectedReference` nor `options`.
-         * We must pass `redirectedReference` to newer ts versions, but cannot rely on `options`, hence the weird argument name
-         */
-        resolveModuleNames (moduleNames: string[], containingFile: string, reusedNames: string[] | undefined, redirectedReference: _ts.ResolvedProjectReference | undefined, optionsOnlyWithNewerTsVersions: _ts.CompilerOptions): (_ts.ResolvedModule | undefined)[] {
-          return moduleNames.map(moduleName => {
-            const { resolvedModule } = ts.resolveModuleName(moduleName, containingFile, config.options, serviceHost, moduleResolutionCache, redirectedReference)
-            if (resolvedModule) fixupResolvedModule(resolvedModule)
-            return resolvedModule
-          })
-        },
-        getResolvedModuleWithFailedLookupLocationsFromCache (moduleName, containingFile): _ts.ResolvedModuleWithFailedLookupLocations | undefined {
-          const ret = ts.resolveModuleNameFromCache(moduleName, containingFile, moduleResolutionCache)
-          if (ret && ret.resolvedModule) {
-            fixupResolvedModule(ret.resolvedModule)
-          }
-          return ret
-        }
+        getCustomTransformers: getCustomTransformers
       }
-      /**
-       * If we need to emit JS for a file, force TS to consider it non-external
-       */
-      const fixupResolvedModule = (resolvedModule: _ts.ResolvedModule) => {
-        if (!resolvedModule.isExternalLibraryImport) return
-        if (!ignored(resolvedModule.resolvedFileName)) {
-          resolvedModule.isExternalLibraryImport = false
-        }
-      }
-      const moduleResolutionCache = ts.createModuleResolutionCache(cwd, getCanonicalFileName, config.options)
+      const { resolveModuleNames, getResolvedModuleWithFailedLookupLocationsFromCache } = createResolverFunctions(serviceHost)
+      serviceHost.resolveModuleNames = resolveModuleNames
+      serviceHost.getResolvedModuleWithFailedLookupLocationsFromCache = getResolvedModuleWithFailedLookupLocationsFromCache
 
       const registry = ts.createDocumentRegistry(ts.sys.useCaseSensitiveFileNames, cwd)
       const service = ts.createLanguageService(serviceHost, registry)
@@ -690,7 +700,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
         fileExists: cachedLookup(debugFn('fileExists', fileExists)),
         directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
         resolvePath: cachedLookup(debugFn('resolvePath', ts.sys.resolvePath)),
-        realpath: ts.sys.realpath ? cachedLookup(debugFn('realpath', ts.sys.realpath)) : undefined,
+        realpath: ts.sys.realpath ? cachedLookup(debugFn('realpath', ts.sys.realpath)) : undefined
       }
 
       const host: _ts.CompilerHost = ts.createIncrementalCompilerHost
@@ -706,6 +716,8 @@ export function create (rawOptions: CreateOptions = {}): Register {
           getDefaultLibFileName: () => normalizeSlashes(join(dirname(compiler), ts.getDefaultLibFileName(config.options))),
           useCaseSensitiveFileNames: () => sys.useCaseSensitiveFileNames
         }
+      const { resolveModuleNames } = createResolverFunctions(host)
+      host.resolveModuleNames = resolveModuleNames
 
       // Fallback for older TypeScript releases without incremental API.
       let builderProgram = ts.createIncrementalProgram
