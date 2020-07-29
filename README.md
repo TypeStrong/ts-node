@@ -224,7 +224,11 @@ Any error that is not a `TSError` is from node.js (e.g. `SyntaxError`), and cann
 
 ### Import Statements
 
-Current node.js stable releases do not support ES modules. Additionally, `ts-node` does not have the required hooks into node.js to support ES modules. You will need to set `"module": "commonjs"` in your `tsconfig.json` for your code to work.
+There are two options when using `import` statements: compile them to CommonJS or use node's native ESM support.
+
+To compile to CommonJS, you must set `"module": "CommonJS"` in your `tsconfig.json` or compiler options.
+
+Node's native ESM support is currently experimental and so is `ts-node`'s ESM loader hook.  For usage, limitations, and to provide feedback, see [#1007](https://github.com/TypeStrong/ts-node/issues/1007).
 
 ## Help! My Types Are Missing!
 
