@@ -735,15 +735,32 @@ describe('ts-node', function () {
           return done()
         })
       })
-      it('supports --experimental-specifier-resolution=node', (done) => {
-        exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
-          expect(err).to.equal(null)
-          expect(stdout).to.equal('foo bar baz biff\n')
 
-          return done()
+      describe('supports experimental-specifier-resolution=node', () => {
+        it('via --experimental-specifier-resolution', (done) => {
+          exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
+            expect(err).to.equal(null)
+            expect(stdout).to.equal('foo bar baz biff\n')
+
+            return done()
+          })
         })
+        it('via NODE_OPTIONS', (done) => {
+          exec(`${cmd} index.ts`, {
+            cwd: join(__dirname, '../tests/esm-node-resolver'),
+            env: {
+              ...process.env,
+              NODE_OPTIONS: '--experimental-specifier-resolution=node'
+            }
+          }, function (err, stdout) {
+            expect(err).to.equal(null)
+            expect(stdout).to.equal('foo bar baz biff\n')
 
+            return done()
+          })
+        })
       })
+
       it('throws ERR_REQUIRE_ESM when attempting to require() an ESM script while ESM loader is enabled', function (done) {
         exec(`${cmd} ./index.js`, { cwd: join(__dirname, '../tests/esm-err-require-esm') }, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
