@@ -365,7 +365,7 @@ function startRepl (service: Register, state: EvalState, code?: string) {
     prompt: '> ',
     input: process.stdin,
     output: process.stdout,
-    terminal: process.stdout.isTTY && !parseInt(process.env.NODE_NO_READLINE!), // tslint:disable-line
+    terminal: process.stdout.isTTY && !parseInt(process.env.NODE_NO_READLINE!, 10),
     eval: replEval,
     useGlobal: true
   })
