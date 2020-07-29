@@ -9,6 +9,7 @@ import { unlinkSync, existsSync, lstatSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
 import { createRequire, createRequireFromPath } from 'module'
+import { pathToFileURL } from 'url'
 import Module = require('module')
 
 const execP = promisify(exec)
@@ -739,7 +740,7 @@ describe('ts-node', function () {
         exec(`${cmd} throw.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
           expect(err).not.to.equal(null)
           expect(err!.message).to.contain([
-            `${join(__dirname, '../tests/esm/throw.ts')}:100`,
+            `${pathToFileURL(join(__dirname, '../tests/esm/throw.ts'))}:100`,
             '  bar () { throw new Error(\'this is a demo\') }',
             '                 ^',
             'Error: this is a demo'
