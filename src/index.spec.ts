@@ -477,7 +477,7 @@ describe('ts-node', function () {
       const BIN_EXEC = `"${BIN_PATH}" --project tests/tsconfig-options/tsconfig.json`
 
       it('should override compiler options from env', function (done) {
-        exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, {
+        exec(`${BIN_EXEC} tests/tsconfig-options/log-options1.js`, {
           env: {
             ...process.env,
             TS_NODE_COMPILER_OPTIONS: '{"typeRoots": ["env-typeroots"]}'
@@ -491,7 +491,7 @@ describe('ts-node', function () {
       })
 
       it('should use options from `tsconfig.json`', function (done) {
-        exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, function (err, stdout) {
+        exec(`${BIN_EXEC} tests/tsconfig-options/log-options1.js`, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
           expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots').replace(/\\/g, '/')])
@@ -499,12 +499,13 @@ describe('ts-node', function () {
           expect(options.pretty).to.equal(undefined)
           expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
+          expect(options.require).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required1.js')])
           return done()
         })
       })
 
-      it('should have flags override `tsconfig.json`', function (done) {
-        exec(`${BIN_EXEC} --skip-ignore --compiler-options "{\\"types\\":[\\"flags-types\\"]}" tests/tsconfig-options/log-options.js`, function (err, stdout) {
+      it('should have flags override / merge with `tsconfig.json`', function (done) {
+        exec(`${BIN_EXEC} --skip-ignore --compiler-options "{\\"types\\":[\\"flags-types\\"]}" --require ./tests/tsconfig-options/required2.js tests/tsconfig-options/log-options2.js`, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
           expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots').replace(/\\/g, '/')])
@@ -512,12 +513,16 @@ describe('ts-node', function () {
           expect(options.pretty).to.equal(undefined)
           expect(options.skipIgnore).to.equal(true)
           expect(options.transpileOnly).to.equal(true)
+          expect(options.require).to.deep.equal([
+            join(__dirname, '../tests/tsconfig-options/required1.js'),
+            './tests/tsconfig-options/required2.js'
+          ])
           return done()
         })
       })
 
       it('should have `tsconfig.json` override environment', function (done) {
-        exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, {
+        exec(`${BIN_EXEC} tests/tsconfig-options/log-options1.js`, {
           env: {
             ...process.env,
             TS_NODE_PRETTY: 'true',
@@ -531,6 +536,7 @@ describe('ts-node', function () {
           expect(options.pretty).to.equal(true)
           expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
+          expect(options.require).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required1.js')])
           return done()
         })
       })

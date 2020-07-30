@@ -5,6 +5,7 @@ import { BaseError } from 'make-error'
 import * as util from 'util'
 import { fileURLToPath } from 'url'
 import * as _ts from 'typescript'
+import * as Module from 'module'
 
 /**
  * Does this version of node obey the package.json "type" field
@@ -196,6 +197,15 @@ export interface CreateOptions {
    * Ignore TypeScript warnings by diagnostic code.
    */
   ignoreDiagnostics?: Array<number | string>
+  /**
+   * Modules to require, like node's `--require` flag.
+   *
+   * If specified in tsconfig.json, the modules will be resolved relative to the tsconfig.json file.
+   *
+   * If specified programmatically, each input string should be pre-resolved to an absolute path for
+   * best results.
+   */
+  require?: Array<string>
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
   transformers?: _ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)
@@ -229,7 +239,7 @@ export interface TsConfigOptions extends Omit<RegisterOptions,
   | 'skipProject'
   | 'project'
   | 'dir'
-  > { }
+  > {}
 
 /**
  * Like `Object.assign`, but ignores `undefined` properties.
@@ -383,6 +393,9 @@ export function register (opts: RegisterOptions = {}): Register {
   // Register the extensions.
   registerExtensions(service.options.preferTsExts, extensions, service, originalJsHandler)
 
+  // Require specified modules before start-up.
+  ;(Module as any)._preloadModules(service.options.require)
+
   return service
 }
 
@@ -409,7 +422,11 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
   // Read config file and merge new options between env and CLI options.
   const { config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
-  const options = assign<CreateOptions>({}, DEFAULTS, tsconfigOptions || {}, rawOptions)
+  const options = assign<RegisterOptions>({}, DEFAULTS, tsconfigOptions || {}, rawOptions)
+  options.require = [
+    ...tsconfigOptions.require || [],
+    ...rawOptions.require || []
+  ]
 
   // If `compiler` option changed based on tsconfig, re-load the compiler.
   if (options.compiler !== compilerName) {
@@ -1002,6 +1019,14 @@ function readConfig (
     useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames
   }, basePath, undefined, configFileName))
 
+  if (tsconfigOptions.require) {
+    // Modules are found relative to the tsconfig file, not the `dir` option
+    const tsconfigRelativeRequire = createRequire(configFileName!)
+    tsconfigOptions.require = tsconfigOptions.require.map((path: string) => {
+      return tsconfigRelativeRequire.resolve(path)
+    })
+  }
+
   return { config: fixedConfig, options: tsconfigOptions }
 }
 
@@ -1061,4 +1086,13 @@ function getTokenAtPosition (ts: typeof _ts, sourceFile: _ts.SourceFile, positio
 
     return current
   }
+}
+
+let nodeCreateRequire: (path: string) => NodeRequire
+function createRequire (filename: string) {
+  if (!nodeCreateRequire) {
+    // tslint:disable-next-line
+    nodeCreateRequire = Module.createRequire || Module.createRequireFromPath || require('../dist-raw/node-createrequire').createRequireFromPath
+  }
+  return nodeCreateRequire(filename)
 }
