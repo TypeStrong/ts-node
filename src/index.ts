@@ -3,6 +3,7 @@ import sourceMapSupport = require('source-map-support')
 import * as ynModule from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
+import { fileURLToPath } from 'url'
 import * as _ts from 'typescript'
 
 /**
@@ -457,8 +458,18 @@ export function create (rawOptions: CreateOptions = {}): Register {
   // Install source map support and read from memory cache.
   sourceMapSupport.install({
     environment: 'node',
-    retrieveFile (path: string) {
-      return outputCache.get(normalizeSlashes(path))?.content || ''
+    retrieveFile (pathOrUrl: string) {
+      let path = pathOrUrl
+      // If it's a file URL, convert to local path
+      // Note: fileURLToPath does not exist on early node v10
+      // I could not find a way to handle non-URLs except to swallow an error
+      if (options.experimentalEsmLoader && path.startsWith('file://')) {
+        try {
+          path = fileURLToPath(path)
+        } catch (e) {/* swallow error */}
+      }
+      path = normalizeSlashes(path)
+      return outputCache.get(path)?.content || ''
     }
   })
 
@@ -498,19 +509,6 @@ export function create (rawOptions: CreateOptions = {}): Register {
    */
   let getOutput: (code: string, fileName: string) => SourceOutput
   let getTypeInfo: (_code: string, _fileName: string, _position: number) => TypeInfo
-
-  const getOutputTranspileOnly = (code: string, fileName: string, overrideCompilerOptions?: Partial<_ts.CompilerOptions>): SourceOutput => {
-    const result = ts.transpileModule(code, {
-      fileName,
-      compilerOptions: overrideCompilerOptions ? { ...config.options, ...overrideCompilerOptions } : config.options,
-      reportDiagnostics: true
-    })
-
-    const diagnosticList = filterDiagnostics(result.diagnostics || [], ignoreDiagnostics)
-    if (diagnosticList.length) reportTSError(diagnosticList)
-
-    return [result.outputText, result.sourceMapText as string]
-  }
 
   const getCanonicalFileName = (ts as unknown as TSInternal).createGetCanonicalFileName(ts.sys.useCaseSensitiveFileNames)
 
@@ -844,7 +842,19 @@ export function create (rawOptions: CreateOptions = {}): Register {
       throw new TypeError('Transformers function is unavailable in "--transpile-only"')
     }
 
-    getOutput = getOutputTranspileOnly
+    getOutput = (code: string, fileName: string): SourceOutput => {
+      const result = ts.transpileModule(code, {
+        fileName,
+        compilerOptions: config.options,
+        reportDiagnostics: true,
+        transformers: transformers
+      })
+
+      const diagnosticList = filterDiagnostics(result.diagnostics || [], ignoreDiagnostics)
+      if (diagnosticList.length) reportTSError(diagnosticList)
+
+      return [result.outputText, result.sourceMapText as string]
+    }
 
     getTypeInfo = () => {
       throw new TypeError('Type information is unavailable in "--transpile-only"')
