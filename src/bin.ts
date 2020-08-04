@@ -363,7 +363,8 @@ function startRepl (service: Register, state: EvalState, code?: string) {
     prompt: '> ',
     input: process.stdin,
     output: process.stdout,
-    terminal: process.stdout.isTTY,
+    // Mimicking node's REPL implementation: https://github.com/nodejs/node/blob/168b22ba073ee1cbf8d0bcb4ded7ff3099335d04/lib/internal/repl.js#L28-L30
+    terminal: process.stdout.isTTY && !parseInt(process.env.NODE_NO_READLINE!, 10),
     eval: replEval,
     useGlobal: true
   })
