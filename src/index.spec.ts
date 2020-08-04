@@ -9,6 +9,7 @@ import { unlinkSync, existsSync, lstatSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
 import { createRequire, createRequireFromPath } from 'module'
+import { pathToFileURL } from 'url'
 import Module = require('module')
 
 const execP = promisify(exec)
@@ -28,7 +29,7 @@ let { register, create, VERSION }: typeof tsNodeTypes = {} as any
 
 // Pack and install ts-node locally, necessary to test package "exports"
 before(async function () {
-  this.timeout(30000)
+  this.timeout(5 * 60e3)
   rimrafSync(join(TEST_DIR, 'node_modules'))
   await execP(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
@@ -344,10 +345,15 @@ describe('ts-node', function () {
       })
     })
 
-    it.skip('should use source maps with react tsx', function (done) {
-      exec(`${cmd} -r ./tests/emit-compiled.ts tests/jsx-react.tsx`, function (err, stdout) {
-        expect(err).to.equal(null)
-        expect(stdout).to.equal('todo')
+    it('should use source maps with react tsx', function (done) {
+      exec(`${cmd} tests/throw-react-tsx.tsx`, function (err, stdout) {
+        expect(err).not.to.equal(null)
+        expect(err!.message).to.contain([
+          `${join(__dirname, '../tests/throw-react-tsx.tsx')}:100`,
+          '  bar () { throw new Error(\'this is a demo\') }',
+          '                 ^',
+          'Error: this is a demo'
+        ].join('\n'))
 
         return done()
       })
@@ -471,7 +477,7 @@ describe('ts-node', function () {
       const BIN_EXEC = `"${BIN_PATH}" --project tests/tsconfig-options/tsconfig.json`
 
       it('should override compiler options from env', function (done) {
-        exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, {
+        exec(`${BIN_EXEC} tests/tsconfig-options/log-options1.js`, {
           env: {
             ...process.env,
             TS_NODE_COMPILER_OPTIONS: '{"typeRoots": ["env-typeroots"]}'
@@ -485,7 +491,7 @@ describe('ts-node', function () {
       })
 
       it('should use options from `tsconfig.json`', function (done) {
-        exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, function (err, stdout) {
+        exec(`${BIN_EXEC} tests/tsconfig-options/log-options1.js`, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
           expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots').replace(/\\/g, '/')])
@@ -493,12 +499,13 @@ describe('ts-node', function () {
           expect(options.pretty).to.equal(undefined)
           expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
+          expect(options.require).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required1.js')])
           return done()
         })
       })
 
-      it('should have flags override `tsconfig.json`', function (done) {
-        exec(`${BIN_EXEC} --skip-ignore --compiler-options "{\\"types\\":[\\"flags-types\\"]}" tests/tsconfig-options/log-options.js`, function (err, stdout) {
+      it('should have flags override / merge with `tsconfig.json`', function (done) {
+        exec(`${BIN_EXEC} --skip-ignore --compiler-options "{\\"types\\":[\\"flags-types\\"]}" --require ./tests/tsconfig-options/required2.js tests/tsconfig-options/log-options2.js`, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
           expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots').replace(/\\/g, '/')])
@@ -506,12 +513,16 @@ describe('ts-node', function () {
           expect(options.pretty).to.equal(undefined)
           expect(options.skipIgnore).to.equal(true)
           expect(options.transpileOnly).to.equal(true)
+          expect(options.require).to.deep.equal([
+            join(__dirname, '../tests/tsconfig-options/required1.js'),
+            './tests/tsconfig-options/required2.js'
+          ])
           return done()
         })
       })
 
       it('should have `tsconfig.json` override environment', function (done) {
-        exec(`${BIN_EXEC} tests/tsconfig-options/log-options.js`, {
+        exec(`${BIN_EXEC} tests/tsconfig-options/log-options1.js`, {
           env: {
             ...process.env,
             TS_NODE_PRETTY: 'true',
@@ -525,6 +536,7 @@ describe('ts-node', function () {
           expect(options.pretty).to.equal(true)
           expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
+          expect(options.require).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required1.js')])
           return done()
         })
       })
@@ -724,11 +736,32 @@ describe('ts-node', function () {
   describe('esm', () => {
     this.slow(1000)
 
-    const cmd = `node --loader ts-node/esm.mjs`
+    const cmd = `node --loader ts-node/esm`
 
     if (semver.gte(process.version, '13.0.0')) {
       it('should compile and execute as ESM', (done) => {
         exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('foo bar baz biff\n')
+
+          return done()
+        })
+      })
+      it('should use source maps', function (done) {
+        exec(`${cmd} throw.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
+          expect(err).not.to.equal(null)
+          expect(err!.message).to.contain([
+            `${pathToFileURL(join(__dirname, '../tests/esm/throw.ts'))}:100`,
+            '  bar () { throw new Error(\'this is a demo\') }',
+            '                 ^',
+            'Error: this is a demo'
+          ].join('\n'))
+
+          return done()
+        })
+      })
+      it('supports --experimental-specifier-resolution=node', (done) => {
+        exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('foo bar baz biff\n')
 
