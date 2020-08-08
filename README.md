@@ -300,7 +300,7 @@ MIT
 [npm-url]: https://npmjs.org/package/ts-node
 [downloads-image]: https://img.shields.io/npm/dm/ts-node.svg?style=flat
 [downloads-url]: https://npmjs.org/package/ts-node
-[github-actions-image]: https://github.com/TypeStrong/ts-node/workflows/Continuous+Integration/badge.svg
+[github-actions-image]: https://img.shields.io/github/workflow/status/TypeStrong/ts-node/Continuous%20Integration
 [github-actions-url]: https://github.com/TypeStrong/ts-node/actions?query=workflow%3A%22Continuous+Integration%22
 [codecov-image]: https://img.shields.io/codecov/c/git/TypeStrong/ts-node.svg?style=flat
 [codecov-url]: https://codecov.io/gh/TypeStrong/ts-node
