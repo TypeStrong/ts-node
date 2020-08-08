@@ -13,6 +13,6 @@ contact_links:
     about: "This is likely a configuration problem.  Check our README"
     url: "https://github.com/TypeStrong/ts-node/blob/master/README.md#help-my-types-are-missing"
   - 
-    about: "These errors come from TypeScript and node, respectively"
     name: "TSError or SyntaxError"
+    about: "These errors come from TypeScript and node, respectively"
     url: "https://stackoverflow.com/questions/tagged/ts-node"
