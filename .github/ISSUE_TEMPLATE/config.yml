@@ -14,5 +14,5 @@ contact_links:
     url: "https://github.com/TypeStrong/ts-node/blob/master/README.md#help-my-types-are-missing"
   - 
     name: "TSError or SyntaxError"
-    about: "These errors come from TypeScript and node, respectively"
+    about: "These errors come from TypeScript and node, respectively.  Use StackOverflow or Discord for usage and configuration help."
     url: "https://stackoverflow.com/questions/tagged/ts-node"
