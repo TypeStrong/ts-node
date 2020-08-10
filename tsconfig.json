@@ -12,7 +12,7 @@
     "sourceMap": true,
     "inlineSources": true,
     "types": ["node", "mocha"],
-    "stripInternal": true
+    "stripInternal": true,
   },
   "include": [
     "src/**/*"

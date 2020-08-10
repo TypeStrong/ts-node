@@ -548,7 +548,7 @@ describe('ts-node', function () {
 
       it('should give ts error for invalid node_modules', function (done) {
         exec(`${cmd} --compiler-host --skip-ignore tests/from-node-modules/from-node-modules`, function (err, stdout) {
-          if (err === null) return done('Expected an error')
+          if (err === null) return done(new Error('Expected an error'))
 
           expect(err.message).to.contain('Unable to compile file from external library')
 
