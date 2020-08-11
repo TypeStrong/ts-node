@@ -557,7 +557,7 @@ describe('ts-node', function () {
     it('should transpile files inside a node_modules directory when not ignored', function (done) {
       exec(`${cmdNoProject} --script-mode tests/from-node-modules/from-node-modules`, function (err, stdout, stderr) {
         if (err) return done(`Unexpected error: ${err}\nstdout:\n${stdout}\nstderr:\n${stderr}`)
-        expect(stdout.trim()).to.equal(JSON.stringify({
+        expect(JSON.parse(stdout)).to.deep.equal({
           external: {
             tsmri: { name: 'typescript-module-required-internally' },
             jsmri: { name: 'javascript-module-required-internally' },
@@ -568,7 +568,7 @@ describe('ts-node', function () {
           jsmie: { name: 'javascript-module-imported-externally' },
           tsmre: { name: 'typescript-module-required-externally' },
           jsmre: { name: 'javascript-module-required-externally' }
-        }, null, 2))
+        })
         done()
       })
     })
