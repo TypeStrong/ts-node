@@ -584,7 +584,6 @@ describe('ts-node', function () {
       moduleTestPath = require.resolve('../tests/module')
     })
 
-
     afterEach(() => {
       // Re-enable project after every test.
       registered.enabled(true)
