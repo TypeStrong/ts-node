@@ -804,6 +804,31 @@ describe('ts-node', function () {
           return done()
         })
       })
+
+      describe('support a transpile only mode', () => {
+        it('should execute successfully with type errors and transpile-only enabled', (done) => {
+          exec(`${cmd}/transpile-only index.ts`, { cwd: join(__dirname, '../tests/esm-transpile-only') }, function (err, stdout) {
+            expect(err).to.equal(null)
+            expect(stdout).to.equal('foo bar baz biff\n')
+
+            return done()
+          })
+        })
+        it('should throw an error with type errors and transpile-only disabled', (done) => {
+          exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm-transpile-only') }, function (err, stdout) {
+            if (err === null) {
+              return done('Command was expected to fail, but it succeeded.')
+            }
+
+            expect(err.message).to.contain('Unable to compile TypeScript')
+            expect(err.message).to.match(new RegExp('TS2345: Argument of type \'(?:number|1101)\' is not assignable to parameter of type \'string\'\\.'))
+            expect(err.message).to.match(new RegExp('TS2322: Type \'"(?:hello world|string)"\' is not assignable to type \'number\'\\.'))
+            expect(stdout).to.equal('')
+
+            return done()
+          })
+        })
+      })
     }
 
     it('executes ESM as CJS, ignoring package.json "types" field (for backwards compatibility; should be changed in next major release to throw ERR_REQUIRE_ESM)', function (done) {
@@ -812,31 +837,6 @@ describe('ts-node', function () {
         expect(stdout).to.equal('CommonJS\n')
 
         return done()
-      })
-    })
-
-    describe('support a transpile only mode', () => {
-      it('should execute successfully with type errors and transpile-only enabled', (done) => {
-        exec(`${cmd}/transpile-only index.ts`, { cwd: join(__dirname, '../tests/esm-transpile-only') }, function (err, stdout) {
-          expect(err).to.equal(null)
-          expect(stdout).to.equal('foo bar baz biff\n')
-
-          return done()
-        })
-      })
-      it('should throw an error with type errors and transpile-only disabled', (done) => {
-        exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm-transpile-only') }, function (err, stdout) {
-          if (err === null) {
-            return done('Command was expected to fail, but it succeeded.')
-          }
-
-          expect(err.message).to.contain('Unable to compile TypeScript')
-          expect(err.message).to.contain('TS2345: Argument of type \'1101\' is not assignable to parameter of type \'string\'.')
-          expect(err.message).to.contain('TS2322: Type \'"hello world"\' is not assignable to type \'number\'.')
-          expect(stdout).to.equal('')
-
-          return done()
-        })
       })
     })
   })
