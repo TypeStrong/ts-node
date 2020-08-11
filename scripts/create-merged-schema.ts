@@ -57,4 +57,13 @@ async function main() {
   );
 }
 
+export async function getSchemastoreSchema() {
+  /** schemastore definition */
+  const schemastoreSchema = (await axios.get(
+    'https://schemastore.azurewebsites.net/schemas/json/tsconfig.json',
+    { responseType: "json" }
+  )).data;
+  return schemastoreSchema;
+}
+
 main();
