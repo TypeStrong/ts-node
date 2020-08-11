@@ -558,7 +558,15 @@ describe('ts-node', function () {
     })
 
     it('should transpile files inside a node_modules directory when not ignored', function (done) {
-      exec(`${cmd} --skip-ignore tests/from-node-modules/from-node-modules`, function (err, stdout, stderr) {
+      exec(`${cmd} --script-mode tests/from-node-modules/from-node-modules`, function (err, stdout, stderr) {
+        if (err) return done(`Unexpected error: ${err}\nstdout:\n${stdout}\nstderr:\n${stderr}`)
+        expect(stdout).to.be('')
+        done()
+      })
+    })
+
+    it('should respect maxNodeModulesJsDepth', function (done) {
+      exec(`${cmd} --script-mode tests/maxnodemodulesjsdepth`, function (err, stdout, stderr) {
         if (err) return done(`Unexpected error: ${err}\nstdout:\n${stdout}\nstderr:\n${stderr}`)
         done()
       })
@@ -567,6 +575,7 @@ describe('ts-node', function () {
 
   describe('register', function () {
     let registered: tsNodeTypes.Register
+    let moduleTestPath: string
     before(() => {
       registered = register({
         project: PROJECT,
@@ -574,9 +583,8 @@ describe('ts-node', function () {
           jsx: 'preserve'
         }
       })
+      moduleTestPath = require.resolve('../tests/module')
     })
-
-    const moduleTestPath = require.resolve('../tests/module')
 
     afterEach(() => {
       // Re-enable project after every test.

@@ -522,22 +522,22 @@ export function create (rawOptions: CreateOptions = {}): Register {
     // Get bucket for a source filename.  Bucket is the containing `./node_modules/*/` directory
     // For '/project/node_modules/foo/node_modules/bar/lib/index.js' bucket is '/project/node_modules/foo/node_modules/bar/'
     const moduleBucketRe = /.*\/node_modules\/[^\/]+\//
-    function getModuleBucket(filename: string) {
+    function getModuleBucket (filename: string) {
       const find = moduleBucketRe.exec(filename)
-      if(find) return find[0]
+      if (find) return find[0]
       return ''
     }
 
     // Mark that this file and all siblings in its bucket should be "internal"
-    function markBucketOfFilenameInternal(filename: string) {
+    function markBucketOfFilenameInternal (filename: string) {
       internalBuckets.add(getModuleBucket(filename))
     }
 
-    function isFileInInternalBucket(filename: string) {
+    function isFileInInternalBucket (filename: string) {
       return internalBuckets.has(getModuleBucket(filename))
     }
 
-    function isFileKnownToBeInternal(filename: string) {
+    function isFileKnownToBeInternal (filename: string) {
       return knownInternalFilenames.has(filename)
     }
 
@@ -545,8 +545,8 @@ export function create (rawOptions: CreateOptions = {}): Register {
      * If we need to emit JS for a file, force TS to consider it non-external
      */
     const fixupResolvedModule = (resolvedModule: _ts.ResolvedModule | _ts.ResolvedTypeReferenceDirective) => {
-      const {resolvedFileName} = resolvedModule
-      if (resolvedFileName == null) return
+      const { resolvedFileName } = resolvedModule
+      if (resolvedFileName === undefined) return
       // .ts is always switched to internal
       // .js is switched on-demand
       if (
@@ -558,9 +558,8 @@ export function create (rawOptions: CreateOptions = {}): Register {
       ) {
         resolvedModule.isExternalLibraryImport = false
       }
-      if(!resolvedModule.isExternalLibraryImport) {
+      if (!resolvedModule.isExternalLibraryImport) {
         knownInternalFilenames.add(resolvedFileName)
-        console.log('knowninternal:', resolvedFileName)
       }
     }
     /*
@@ -591,7 +590,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
       // Note: seems to be called with empty typeDirectiveNames array for all files.
       return typeDirectiveNames.map(typeDirectiveName => {
         const { resolvedTypeReferenceDirective } = ts.resolveTypeReferenceDirective(typeDirectiveName, containingFile, config.options, serviceHost, redirectedReference)
-        if(resolvedTypeReferenceDirective) {
+        if (resolvedTypeReferenceDirective) {
           fixupResolvedModule(resolvedTypeReferenceDirective)
         }
         return resolvedTypeReferenceDirective
@@ -755,7 +754,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
           const cacheContents = fileContents.get(fileName)
           if (cacheContents !== undefined) return cacheContents
           const contents = cachedReadFile(fileName)
-          if(contents) fileContents.set(fileName, contents)
+          if (contents) fileContents.set(fileName, contents)
           return contents
         },
         readDirectory: ts.sys.readDirectory,
