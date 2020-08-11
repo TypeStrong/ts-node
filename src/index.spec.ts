@@ -575,7 +575,12 @@ describe('ts-node', function () {
 
     it('should respect maxNodeModulesJsDepth', function (done) {
       exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth`, function (err, stdout, stderr) {
-        if (err) return done(`Unexpected error: ${err}\nstdout:\n${stdout}\nstderr:\n${stderr}`)
+        expect(err).to.exist
+        expect(stderr).to.contain(
+          "TSError: ⨯ Unable to compile TypeScript:\n" +
+          "index.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
+          "\n"
+        )
         done()
       })
     })
