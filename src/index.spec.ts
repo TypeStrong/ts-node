@@ -822,7 +822,7 @@ describe('ts-node', function () {
 
             expect(err.message).to.contain('Unable to compile TypeScript')
             expect(err.message).to.match(new RegExp('TS2345: Argument of type \'(?:number|1101)\' is not assignable to parameter of type \'string\'\\.'))
-            expect(err.message).to.match(new RegExp('TS2322: Type \'"(?:hello world|string)"\' is not assignable to type \'number\'\\.'))
+            expect(err.message).to.match(new RegExp('TS2322: Type \'(?:"hello world"|string)\' is not assignable to type \'number\'\\.'))
             expect(stdout).to.equal('')
 
             return done()
