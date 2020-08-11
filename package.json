@@ -112,7 +112,6 @@
     "diff": "^4.0.1",
     "make-error": "^1.1.1",
     "source-map-support": "^0.5.17",
-    "ts-expose-internals": "^3.9.7-patch",
     "yn": "3.1.1"
   }
 }

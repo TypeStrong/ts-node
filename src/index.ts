@@ -563,10 +563,10 @@ export function create (rawOptions: CreateOptions = {}): Register {
       }
     }
     /*
-      * NOTE:
-      * Older ts versions do not pass `redirectedReference` nor `options`.
-      * We must pass `redirectedReference` to newer ts versions, but cannot rely on `options`, hence the weird argument name
-      */
+     * NOTE:
+     * Older ts versions do not pass `redirectedReference` nor `options`.
+     * We must pass `redirectedReference` to newer ts versions, but cannot rely on `options`, hence the weird argument name
+     */
     const resolveModuleNames: _ts.LanguageServiceHost['resolveModuleNames'] = (moduleNames: string[], containingFile: string, reusedNames: string[] | undefined, redirectedReference: _ts.ResolvedProjectReference | undefined, optionsOnlyWithNewerTsVersions: _ts.CompilerOptions): (_ts.ResolvedModule | undefined)[] => {
       return moduleNames.map(moduleName => {
         const { resolvedModule } = ts.resolveModuleName(moduleName, containingFile, config.options, serviceHost, moduleResolutionCache, redirectedReference)
@@ -765,7 +765,6 @@ export function create (rawOptions: CreateOptions = {}): Register {
         realpath: ts.sys.realpath ? cachedLookup(debugFn('realpath', ts.sys.realpath)) : undefined
       }
 
-      const registry = ts.createDocumentRegistry(ts.sys.useCaseSensitiveFileNames, cwd)
       const host: _ts.CompilerHost = ts.createIncrementalCompilerHost
         ? ts.createIncrementalCompilerHost(config.options, sys)
         : {
@@ -779,8 +778,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
           getDefaultLibFileName: () => normalizeSlashes(join(dirname(compiler), ts.getDefaultLibFileName(config.options))),
           useCaseSensitiveFileNames: () => sys.useCaseSensitiveFileNames
         }
-      const { resolveModuleNames, isFileKnownToBeInternal, markBucketOfFilenameInternal } = createResolverFunctions(host)
+      const { resolveModuleNames, resolveTypeReferenceDirectives, isFileKnownToBeInternal, markBucketOfFilenameInternal } = createResolverFunctions(host)
       host.resolveModuleNames = resolveModuleNames
+      host.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives
 
       // Fallback for older TypeScript releases without incremental API.
       let builderProgram = ts.createIncrementalProgram
