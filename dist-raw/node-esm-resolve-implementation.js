@@ -50,37 +50,7 @@ const {
   Stats,
 } = require('fs');
 // const { getOptionValue } = require('internal/options');
-const { getOptionValue } = (() => {
-  let options;
-  function parseOptions() {
-    if (!options) {
-      options = {
-      '--preserve-symlinks': false,
-      '--preserve-symlinks-main': false,
-      '--input-type': undefined,
-      '--experimental-specifier-resolution': 'explicit',
-      ...parseExecArgv()
-      }
-    }
-  };
-  function parseExecArgv () {
-    return require('arg')({
-      '--preserve-symlinks': Boolean,
-      '--preserve-symlinks-main': Boolean,
-      '--input-type': String,
-      '--experimental-specifier-resolution': String
-    }, {
-      argv: process.execArgv,
-      permissive: true
-    });
-  }
-  return {
-      getOptionValue: (opt) => {
-        parseOptions();
-        return options[opt];
-      }
-  };
-})();
+const { getOptionValue } = require('./node-options');
 const { sep } = require('path');
 
 const preserveSymlinks = getOptionValue('--preserve-symlinks');

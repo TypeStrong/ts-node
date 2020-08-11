@@ -90,7 +90,7 @@ export function main (argv: string[]) {
     '--help': help = false,
     '--script-mode': scriptMode = false,
     '--version': version = 0,
-    '--require': requires = [],
+    '--require': argsRequire = [],
     '--eval': code = undefined,
     '--print': print = false,
     '--interactive': interactive = false,
@@ -176,6 +176,7 @@ export function main (argv: string[]) {
     compiler,
     ignoreDiagnostics,
     compilerOptions,
+    require: argsRequire,
     readFile: code !== undefined
       ? (path: string) => {
         if (path === state.path) return state.input
@@ -211,9 +212,6 @@ export function main (argv: string[]) {
   const module = new Module(state.path)
   module.filename = state.path
   module.paths = (Module as any)._nodeModulePaths(cwd)
-
-  // Require specified modules before start-up.
-  ;(Module as any)._preloadModules(requires)
 
   // Prepend `ts-node` arguments to CLI for child processes.
   process.execArgv.unshift(__filename, ...process.argv.slice(2, process.argv.length - args._.length))
@@ -365,7 +363,8 @@ function startRepl (service: Register, state: EvalState, code?: string) {
     prompt: '> ',
     input: process.stdin,
     output: process.stdout,
-    terminal: process.stdout.isTTY,
+    // Mimicking node's REPL implementation: https://github.com/nodejs/node/blob/168b22ba073ee1cbf8d0bcb4ded7ff3099335d04/lib/internal/repl.js#L28-L30
+    terminal: process.stdout.isTTY && !parseInt(process.env.NODE_NO_READLINE!, 10),
     eval: replEval,
     useGlobal: true
   })
