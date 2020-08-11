@@ -728,8 +728,35 @@ describe('ts-node', function () {
     it('should create generic compiler instances', () => {
       const service = create({ compilerOptions: { target: 'es5' }, skipProject: true })
       const output = service.compile('const x = 10', 'test.ts')
-
       expect(output).to.contain('var x = 10;')
+    })
+  })
+
+  describe('issue #1098', () => {
+    function testIgnored (ignored: tsNodeTypes.Register['ignored'], allowed: string[], disallowed: string[]) {
+      for (const ext of allowed) {
+        expect(ignored(join(__dirname, `index${ext}`))).equal(false, `should accept ${ext} files`)
+      }
+      for (const ext of disallowed) {
+        expect(ignored(join(__dirname, `index${ext}`))).equal(true, `should ignore ${ext} files`)
+      }
+    }
+
+    it('correctly filters file extensions from the compiler when allowJs=false and jsx=false', () => {
+      const { ignored } = create({ compilerOptions: { }, skipProject: true })
+      testIgnored(ignored, ['.ts'], ['.js', '.tsx', '.jsx', '.mjs', '.cjs', '.xyz', ''])
+    })
+    it('correctly filters file extensions from the compiler when allowJs=true and jsx=false', () => {
+      const { ignored } = create({ compilerOptions: { allowJs: true }, skipProject: true })
+      testIgnored(ignored, ['.ts', '.js'], ['.tsx', '.jsx', '.mjs', '.cjs', '.xyz', ''])
+    })
+    it('correctly filters file extensions from the compiler when allowJs=false and jsx=true', () => {
+      const { ignored } = create({ compilerOptions: { allowJs: false, jsx: 'preserve' }, skipProject: true })
+      testIgnored(ignored, ['.ts', '.tsx'], ['.js', '.jsx', '.mjs', '.cjs', '.xyz', ''])
+    })
+    it('correctly filters file extensions from the compiler when allowJs=true and jsx=true', () => {
+      const { ignored } = create({ compilerOptions: { allowJs: true, jsx: 'preserve' }, skipProject: true })
+      testIgnored(ignored, ['.ts', '.tsx', '.js', '.jsx'], ['.mjs', '.cjs', '.xyz', ''])
     })
   })
 
