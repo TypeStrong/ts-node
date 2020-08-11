@@ -802,6 +802,16 @@ describe('ts-node', function () {
           return done()
         })
       })
+
+      it('defers to fallback loaders when URL should not be handled by ts-node', function (done) {
+        exec(`${cmd} index.mjs`, {
+            cwd: join(__dirname, '../tests/esm-import-http-url')
+        }, function (err, stdout, stderr) {
+          expect(err).to.not.equal(null)
+          expect(stderr).to.contain('sfaksdfjl')
+          return done()
+        })
+      })
     }
 
     it('executes ESM as CJS, ignoring package.json "types" field (for backwards compatibility; should be changed in next major release to throw ERR_REQUIRE_ESM)', function (done) {
