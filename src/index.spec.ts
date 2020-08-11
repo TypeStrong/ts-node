@@ -39,6 +39,7 @@ before(async function () {
 
 describe('ts-node', function () {
   const cmd = `"${BIN_PATH}" --project "${PROJECT}"`
+  const cmdNoProject = `"${BIN_PATH}"`
 
   this.timeout(10000)
 
@@ -545,28 +546,29 @@ describe('ts-node', function () {
           return done()
         })
       })
-
-      it('should give ts error for invalid node_modules', function (done) {
-        exec(`${cmd} --compiler-host --skip-ignore tests/from-node-modules/from-node-modules`, function (err, stdout) {
-          if (err === null) return done(new Error('Expected an error'))
-
-          expect(err.message).to.contain('Unable to compile file from external library')
-
-          return done()
-        })
-      })
     })
 
     it('should transpile files inside a node_modules directory when not ignored', function (done) {
-      exec(`${cmd} --script-mode tests/from-node-modules/from-node-modules`, function (err, stdout, stderr) {
+      exec(`${cmdNoProject} --script-mode tests/from-node-modules/from-node-modules`, function (err, stdout, stderr) {
         if (err) return done(`Unexpected error: ${err}\nstdout:\n${stdout}\nstderr:\n${stderr}`)
-        expect(stdout).to.be('')
+        expect(stdout.trim()).to.equal(JSON.stringify({
+          external: {
+            tsmri: { name: 'typescript-module-required-internally' },
+            jsmri: { name: 'javascript-module-required-internally' },
+            tsmii: { name: 'typescript-module-imported-internally' },
+            jsmii: { name: 'javascript-module-imported-internally' }
+          },
+          tsmie: { name: 'typescript-module-imported-externally' },
+          jsmie: { name: 'javascript-module-imported-externally' },
+          tsmre: { name: 'typescript-module-required-externally' },
+          jsmre: { name: 'javascript-module-required-externally' }
+        }, null, 2))
         done()
       })
     })
 
     it('should respect maxNodeModulesJsDepth', function (done) {
-      exec(`${cmd} --script-mode tests/maxnodemodulesjsdepth`, function (err, stdout, stderr) {
+      exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth`, function (err, stdout, stderr) {
         if (err) return done(`Unexpected error: ${err}\nstdout:\n${stdout}\nstderr:\n${stderr}`)
         done()
       })

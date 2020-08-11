@@ -7,4 +7,4 @@ const jsmre = require('external/javascript-module-required-externally')
 
 import * as external from 'external'
 
-console.dir({external, tsmie, jsmie, tsmre, jsmre})
+console.log(JSON.stringify({external, tsmie, jsmie, tsmre, jsmre}, null, 2))
