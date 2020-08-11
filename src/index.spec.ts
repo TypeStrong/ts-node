@@ -72,6 +72,8 @@ describe('ts-node', function () {
     // `node --loader ts-node/esm`
     testsDirRequire.resolve('ts-node/esm')
     testsDirRequire.resolve('ts-node/esm.mjs')
+    testsDirRequire.resolve('ts-node/esm/transpile-only')
+    testsDirRequire.resolve('ts-node/esm/transpile-only.mjs')
   })
 
   describe('cli', function () {
