@@ -573,6 +573,7 @@ describe('ts-node', function () {
 
   describe('register', function () {
     let registered: tsNodeTypes.Register
+    let moduleTestPath: string
     before(() => {
       registered = register({
         project: PROJECT,
@@ -580,9 +581,9 @@ describe('ts-node', function () {
           jsx: 'preserve'
         }
       })
+      moduleTestPath = require.resolve('../tests/module')
     })
 
-    const moduleTestPath = require.resolve('../tests/module')
 
     afterEach(() => {
       // Re-enable project after every test.
