@@ -39,6 +39,7 @@ before(async function () {
 
 describe('ts-node', function () {
   const cmd = `"${BIN_PATH}" --project "${PROJECT}"`
+  const cmdNoProject = `"${BIN_PATH}"`
 
   this.timeout(10000)
 
@@ -84,6 +85,32 @@ describe('ts-node', function () {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\n')
 
+        return done()
+      })
+    })
+
+    it('shows usage via --help', function (done) {
+      exec(`${cmdNoProject} --help`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.match(/Usage: ts-node /)
+        return done()
+      })
+    })
+    it('shows version via -v', function (done) {
+      exec(`${cmdNoProject} -v`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout.trim()).to.equal('v' + testsDirRequire('ts-node/package').version)
+        return done()
+      })
+    })
+    it('shows version of compiler via -vv', function (done) {
+      exec(`${cmdNoProject} -vv`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout.trim()).to.equal(
+          `ts-node v${ testsDirRequire('ts-node/package').version }\n` +
+          `node ${ process.version }\n` +
+          `compiler v${ testsDirRequire('typescript/package').version }`
+        )
         return done()
       })
     })
@@ -727,10 +754,29 @@ describe('ts-node', function () {
   })
 
   describe('create', () => {
+    let service: tsNodeTypes.Register
+    before(() => {
+      service = create({ compilerOptions: { target: 'es5' }, skipProject: true })
+    })
+
     it('should create generic compiler instances', () => {
-      const service = create({ compilerOptions: { target: 'es5' }, skipProject: true })
       const output = service.compile('const x = 10', 'test.ts')
       expect(output).to.contain('var x = 10;')
+    })
+
+    describe('should get type information', () => {
+      it('given position of identifier', () => {
+        expect(service.getTypeInfo('/**jsdoc here*/const x = 10', 'test.ts', 21)).to.deep.equal({
+          comment: 'jsdoc here',
+          name: 'const x: 10'
+        })
+      })
+      it('given position that does not point to an identifier', () => {
+        expect(service.getTypeInfo('/**jsdoc here*/const x = 10', 'test.ts', 0)).to.deep.equal({
+          comment: '',
+          name: ''
+        })
+      })
     })
   })
 
@@ -820,6 +866,17 @@ describe('ts-node', function () {
           expect(err).to.not.equal(null)
           expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
 
+          return done()
+        })
+      })
+
+      it('defers to fallback loaders when URL should not be handled by ts-node', function (done) {
+        exec(`${cmd} index.mjs`, {
+          cwd: join(__dirname, '../tests/esm-import-http-url')
+        }, function (err, stdout, stderr) {
+          expect(err).to.not.equal(null)
+          // expect error from node's default resolver
+          expect(stderr).to.match(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*\n *at defaultResolve/)
           return done()
         })
       })
