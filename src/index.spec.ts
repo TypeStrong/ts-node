@@ -760,14 +760,6 @@ describe('ts-node', function () {
           return done()
         })
       })
-      it('supports --experimental-specifier-resolution=node', (done) => {
-        exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
-          expect(err).to.equal(null)
-          expect(stdout).to.equal('foo bar baz biff\n')
-
-          return done()
-        })
-      })
 
       describe('supports experimental-specifier-resolution=node', () => {
         it('via --experimental-specifier-resolution', (done) => {
