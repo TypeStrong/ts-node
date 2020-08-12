@@ -744,19 +744,19 @@ describe('ts-node', function () {
 
     it('correctly filters file extensions from the compiler when allowJs=false and jsx=false', () => {
       const { ignored } = create({ compilerOptions: { }, skipProject: true })
-      testIgnored(ignored, ['.ts'], ['.js', '.tsx', '.jsx', '.mjs', '.cjs', '.xyz', ''])
+      testIgnored(ignored, ['.ts', '.d.ts'], ['.js', '.tsx', '.jsx', '.mjs', '.cjs', '.xyz', ''])
     })
     it('correctly filters file extensions from the compiler when allowJs=true and jsx=false', () => {
       const { ignored } = create({ compilerOptions: { allowJs: true }, skipProject: true })
-      testIgnored(ignored, ['.ts', '.js'], ['.tsx', '.jsx', '.mjs', '.cjs', '.xyz', ''])
+      testIgnored(ignored, ['.ts', '.js', '.d.ts'], ['.tsx', '.jsx', '.mjs', '.cjs', '.xyz', ''])
     })
     it('correctly filters file extensions from the compiler when allowJs=false and jsx=true', () => {
       const { ignored } = create({ compilerOptions: { allowJs: false, jsx: 'preserve' }, skipProject: true })
-      testIgnored(ignored, ['.ts', '.tsx'], ['.js', '.jsx', '.mjs', '.cjs', '.xyz', ''])
+      testIgnored(ignored, ['.ts', '.tsx', '.d.ts'], ['.js', '.jsx', '.mjs', '.cjs', '.xyz', ''])
     })
     it('correctly filters file extensions from the compiler when allowJs=true and jsx=true', () => {
       const { ignored } = create({ compilerOptions: { allowJs: true, jsx: 'preserve' }, skipProject: true })
-      testIgnored(ignored, ['.ts', '.tsx', '.js', '.jsx'], ['.mjs', '.cjs', '.xyz', ''])
+      testIgnored(ignored, ['.ts', '.tsx', '.js', '.jsx', '.d.ts'], ['.mjs', '.cjs', '.xyz', ''])
     })
   })
 
