@@ -72,7 +72,7 @@ export function registerAndCreateEsmHooks (opts?: RegisterOptions) {
 
     // If file has .ts, .tsx, or .jsx extension, then ask node how it would treat this file if it were .js
     const ext = extname(nativePath)
-    if (ext === '.ts' || ext === '.tsx' || ext === '.jsx') {
+    if (ext !== '.js' && !tsNodeInstance.ignored(nativePath)) {
       return defer(formatUrl(pathToFileURL(nativePath + '.js')))
     }
 

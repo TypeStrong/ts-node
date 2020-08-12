@@ -72,6 +72,8 @@ describe('ts-node', function () {
     // `node --loader ts-node/esm`
     testsDirRequire.resolve('ts-node/esm')
     testsDirRequire.resolve('ts-node/esm.mjs')
+    testsDirRequire.resolve('ts-node/esm/transpile-only')
+    testsDirRequire.resolve('ts-node/esm/transpile-only.mjs')
   })
 
   describe('cli', function () {
@@ -573,6 +575,7 @@ describe('ts-node', function () {
 
   describe('register', function () {
     let registered: tsNodeTypes.Register
+    let moduleTestPath: string
     before(() => {
       registered = register({
         project: PROJECT,
@@ -580,9 +583,8 @@ describe('ts-node', function () {
           jsx: 'preserve'
         }
       })
+      moduleTestPath = require.resolve('../tests/module')
     })
-
-    const moduleTestPath = require.resolve('../tests/module')
 
     afterEach(() => {
       // Re-enable project after every test.
@@ -728,8 +730,35 @@ describe('ts-node', function () {
     it('should create generic compiler instances', () => {
       const service = create({ compilerOptions: { target: 'es5' }, skipProject: true })
       const output = service.compile('const x = 10', 'test.ts')
-
       expect(output).to.contain('var x = 10;')
+    })
+  })
+
+  describe('issue #1098', () => {
+    function testIgnored (ignored: tsNodeTypes.Register['ignored'], allowed: string[], disallowed: string[]) {
+      for (const ext of allowed) {
+        expect(ignored(join(__dirname, `index${ext}`))).equal(false, `should accept ${ext} files`)
+      }
+      for (const ext of disallowed) {
+        expect(ignored(join(__dirname, `index${ext}`))).equal(true, `should ignore ${ext} files`)
+      }
+    }
+
+    it('correctly filters file extensions from the compiler when allowJs=false and jsx=false', () => {
+      const { ignored } = create({ compilerOptions: { }, skipProject: true })
+      testIgnored(ignored, ['.ts', '.d.ts'], ['.js', '.tsx', '.jsx', '.mjs', '.cjs', '.xyz', ''])
+    })
+    it('correctly filters file extensions from the compiler when allowJs=true and jsx=false', () => {
+      const { ignored } = create({ compilerOptions: { allowJs: true }, skipProject: true })
+      testIgnored(ignored, ['.ts', '.js', '.d.ts'], ['.tsx', '.jsx', '.mjs', '.cjs', '.xyz', ''])
+    })
+    it('correctly filters file extensions from the compiler when allowJs=false and jsx=true', () => {
+      const { ignored } = create({ compilerOptions: { allowJs: false, jsx: 'preserve' }, skipProject: true })
+      testIgnored(ignored, ['.ts', '.tsx', '.d.ts'], ['.js', '.jsx', '.mjs', '.cjs', '.xyz', ''])
+    })
+    it('correctly filters file extensions from the compiler when allowJs=true and jsx=true', () => {
+      const { ignored } = create({ compilerOptions: { allowJs: true, jsx: 'preserve' }, skipProject: true })
+      testIgnored(ignored, ['.ts', '.tsx', '.js', '.jsx', '.d.ts'], ['.mjs', '.cjs', '.xyz', ''])
     })
   })
 
@@ -756,14 +785,6 @@ describe('ts-node', function () {
             '                 ^',
             'Error: this is a demo'
           ].join('\n'))
-
-          return done()
-        })
-      })
-      it('supports --experimental-specifier-resolution=node', (done) => {
-        exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
-          expect(err).to.equal(null)
-          expect(stdout).to.equal('foo bar baz biff\n')
 
           return done()
         })
@@ -809,6 +830,29 @@ describe('ts-node', function () {
         }, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr).to.contain('sfaksdfjl')
+          return done()
+        })
+      })
+
+      it('should support transpile only mode via dedicated loader entrypoint', (done) => {
+        exec(`${cmd}/transpile-only index.ts`, { cwd: join(__dirname, '../tests/esm-transpile-only') }, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('')
+
+          return done()
+        })
+      })
+      it('should throw type errors without transpile-only enabled', (done) => {
+        exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm-transpile-only') }, function (err, stdout) {
+          if (err === null) {
+            return done('Command was expected to fail, but it succeeded.')
+          }
+
+          expect(err.message).to.contain('Unable to compile TypeScript')
+          expect(err.message).to.match(new RegExp('TS2345: Argument of type \'(?:number|1101)\' is not assignable to parameter of type \'string\'\\.'))
+          expect(err.message).to.match(new RegExp('TS2322: Type \'(?:"hello world"|string)\' is not assignable to type \'number\'\\.'))
+          expect(stdout).to.equal('')
+
           return done()
         })
       })
