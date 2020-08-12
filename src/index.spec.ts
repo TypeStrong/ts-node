@@ -805,7 +805,7 @@ describe('ts-node', function () {
 
       it('defers to fallback loaders when URL should not be handled by ts-node', function (done) {
         exec(`${cmd} index.mjs`, {
-            cwd: join(__dirname, '../tests/esm-import-http-url')
+          cwd: join(__dirname, '../tests/esm-import-http-url')
         }, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr).to.contain('sfaksdfjl')
