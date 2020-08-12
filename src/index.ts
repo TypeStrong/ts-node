@@ -535,6 +535,8 @@ export function create (rawOptions: CreateOptions = {}): Register {
         return transformers
       }
 
+      const compilerHost: _ts.TODO
+
       // Create the compiler host for type checking.
       const serviceHost: _ts.LanguageServiceHost = {
         getProjectVersion: () => String(projectVersion),
@@ -568,11 +570,24 @@ export function create (rawOptions: CreateOptions = {}): Register {
         getCurrentDirectory: () => cwd,
         getCompilationSettings: () => config.options,
         getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
-        getCustomTransformers: getCustomTransformers
+        getCustomTransformers: getCustomTransformers,
+        getProjectReferences() { return config.projectReferences },
+        // TODO Add both of the following function signatures to an "Internals" declaration somewhere,
+        // copied from TS source code
+        useSourceOfProjectReferenceRedirect() { return true },
+        setCompilerHost(_compilerHost: _ts.CompilerHost) {
+          compilerHost = _compilerHost
+          setResolverHost(compilerHost)
+        }
       }
 
       const registry = ts.createDocumentRegistry(ts.sys.useCaseSensitiveFileNames, cwd)
       const service = ts.createLanguageService(serviceHost, registry)
+      setResolverHost(serviceHost)
+      // TODO ADD THIS TO THE RESOLVER FACTORY AFTER THAT'S BEEN MERGED
+      function setResolverHost(newHost: _ts.ModuleResolutionHost) {
+        serviceHost = newHost
+      }
 
       const updateMemoryCache = (contents: string, fileName: string) => {
         // Add to `rootFiles` if not already there
