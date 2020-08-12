@@ -72,6 +72,8 @@ describe('ts-node', function () {
     // `node --loader ts-node/esm`
     testsDirRequire.resolve('ts-node/esm')
     testsDirRequire.resolve('ts-node/esm.mjs')
+    testsDirRequire.resolve('ts-node/esm/transpile-only')
+    testsDirRequire.resolve('ts-node/esm/transpile-only.mjs')
   })
 
   describe('cli', function () {
@@ -817,6 +819,29 @@ describe('ts-node', function () {
         exec(`${cmd} ./index.js`, { cwd: join(__dirname, '../tests/esm-err-require-esm') }, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
+
+          return done()
+        })
+      })
+
+      it('should support transpile only mode via dedicated loader entrypoint', (done) => {
+        exec(`${cmd}/transpile-only index.ts`, { cwd: join(__dirname, '../tests/esm-transpile-only') }, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('')
+
+          return done()
+        })
+      })
+      it('should throw type errors without transpile-only enabled', (done) => {
+        exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm-transpile-only') }, function (err, stdout) {
+          if (err === null) {
+            return done('Command was expected to fail, but it succeeded.')
+          }
+
+          expect(err.message).to.contain('Unable to compile TypeScript')
+          expect(err.message).to.match(new RegExp('TS2345: Argument of type \'(?:number|1101)\' is not assignable to parameter of type \'string\'\\.'))
+          expect(err.message).to.match(new RegExp('TS2322: Type \'(?:"hello world"|string)\' is not assignable to type \'number\'\\.'))
+          expect(stdout).to.equal('')
 
           return done()
         })
