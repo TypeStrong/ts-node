@@ -262,6 +262,11 @@ export interface TypeInfo {
   comment: string
 }
 
+export interface Completions {
+  completions: string[],
+  context: string
+}
+
 /**
  * Default register options, including values specified via environment
  * variables.
@@ -349,6 +354,7 @@ export interface Register {
   ignored (fileName: string): boolean
   compile (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
+  getCompletions (code: string, fileName: string, position: number): Completions
 }
 
 /**
@@ -514,6 +520,15 @@ export function create (rawOptions: CreateOptions = {}): Register {
    */
   let getOutput: (code: string, fileName: string) => SourceOutput
   let getTypeInfo: (_code: string, _fileName: string, _position: number) => TypeInfo
+  let getCompletions: (_code: string, _fileName: string, _position: number) => Completions
+
+  const getEmptyCompletions = (code: string, fileName: string, position: number) => {
+    // throw new Error('not implemented')
+    return {
+      completions: [],
+      context: ''
+    }
+  }
 
   // Use full language services when the fast option is disabled.
   if (!transpileOnly) {
@@ -647,6 +662,20 @@ export function create (rawOptions: CreateOptions = {}): Register {
         const comment = ts.displayPartsToString(info ? info.documentation : [])
 
         return { name, comment }
+      }
+
+      getCompletions = (code: string, fileName: string, position: number) => {
+        updateMemoryCache(code, fileName)
+
+        // https://github.com/microsoft/monaco-typescript/blob/e623bb9f76c8376b433e7f1c30fec5a5d7abd4d1/src/languageFeatures.ts#L274-L309
+        const trailingWordLength = code.slice(0, position).match(/\s*[a-zA-Z0-9_$]+\s*$/)?.[0].length ?? 0
+
+        const info = service.getCompletionsAtPosition(fileName, position, {includeCompletionsWithInsertText: true})
+        const entries = info?.entries.filter(entry => !entry.hasAction && !entry.replacementSpan) ?? []
+        return {
+          completions: entries.map(entry => entry.name),
+          context: code.slice(position - trailingWordLength, position)
+        }
       }
     } else {
       const sys = {
@@ -791,6 +820,8 @@ export function create (rawOptions: CreateOptions = {}): Register {
         }
       }
 
+      getCompletions = getEmptyCompletions
+
       // Write `.tsbuildinfo` when `--build` is enabled.
       if (options.emit && config.options.incremental) {
         process.on('exit', () => {
@@ -821,6 +852,8 @@ export function create (rawOptions: CreateOptions = {}): Register {
     getTypeInfo = () => {
       throw new TypeError('Type information is unavailable in "--transpile-only"')
     }
+
+    getCompletions = getEmptyCompletions
   }
 
   // Create a simple TypeScript compiler proxy.
@@ -845,7 +878,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
     return true
   }
 
-  return { ts, config, compile, getTypeInfo, ignored, enabled, options }
+  return { ts, config, compile, getTypeInfo, getCompletions, ignored, enabled, options }
 }
 
 /**
