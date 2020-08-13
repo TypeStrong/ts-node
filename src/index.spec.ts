@@ -355,6 +355,20 @@ describe('ts-node', function () {
       cp.stdin!.end('console.log("123")\n')
 
     })
+    it('REPL has command to get type information', function (done) {
+      const cp = exec(`${cmd} --interactive`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal(
+          '> undefined\n' +
+          '> undefined\n' +
+          '> const a: 123\n' +
+          '> '
+        )
+        return done()
+      })
+
+      cp.stdin!.end('\nconst a = 123\n.type a')
+    })
 
     it('should support require flags', function (done) {
       exec(`${cmd} -r ./tests/hello-world -pe "console.log('success')"`, function (err, stdout) {
