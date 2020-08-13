@@ -1,3 +1,4 @@
+# $schema: https://json.schemastore.org/github-workflow
 name: Continuous Integration
 on:
   # branches pushed by collaborators
@@ -33,6 +34,8 @@ jobs:
 
   test:
     needs: lint-build
+    # Skip some tests if the pull request is tagged for "quick testing"
+    if: (contains(github.event.pull_request.labels.*.name, 'quick-test') != 'true') || (matrix.onlyInFullTest != 'true')
     name: "Test: ${{ matrix.os }}, node ${{ matrix.node }}, TS ${{ matrix.typescript }}"
     runs-on: ${{ matrix.os }}-latest
     strategy:
@@ -51,26 +54,31 @@ jobs:
             nodeFlag: 12_15
             typescript: latest
             typescriptFlag: latest
+            onlyInFullTest: true
           - flavor: 3
             node: 12.16
             nodeFlag: 12_16
             typescript: latest
             typescriptFlag: latest
+            onlyInFullTest: true
           - flavor: 4
             node: 13
             nodeFlag: 13
             typescript: latest
             typescriptFlag: latest
+            onlyInFullTest: true
           - flavor: 5
             node: 13
             nodeFlag: 13
             typescript: 2.7
             typescriptFlag: 2_7
+            onlyInFullTest: true
           - flavor: 6
             node: 13
             nodeFlag: 13
             typescript: next
             typescriptFlag: next
+            onlyInFullTest: true
           - flavor: 7
             node: 14
             nodeFlag: 14
@@ -86,6 +94,7 @@ jobs:
             nodeFlag: 14
             typescript: next
             typescriptFlag: next
+            onlyInFullTest: true
     steps:
       # checkout code
       - uses: actions/checkout@v2
