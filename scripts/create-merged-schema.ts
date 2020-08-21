@@ -54,7 +54,7 @@ async function main() {
   );
 }
 
-async function getSchemastoreSchema() {
+export async function getSchemastoreSchema() {
   const {data: schemastoreSchema} = await axios.get(
     'https://schemastore.azurewebsites.net/schemas/json/tsconfig.json',
     { responseType: "json" }

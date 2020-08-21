@@ -594,22 +594,50 @@ describe('ts-node', function () {
           return done()
         })
       })
-
-      it('should give ts error for invalid node_modules', function (done) {
-        exec(`${cmd} --compiler-host --skip-ignore tests/from-node-modules/from-node-modules`, function (err, stdout) {
-          if (err === null) return done('Expected an error')
-
-          expect(err.message).to.contain('Unable to compile file from external library')
-
-          return done()
-        })
-      })
     })
 
     it('should transpile files inside a node_modules directory when not ignored', function (done) {
-      exec(`${cmd} --skip-ignore tests/from-node-modules/from-node-modules`, function (err, stdout, stderr) {
+      exec(`${cmdNoProject} --script-mode tests/from-node-modules/from-node-modules`, function (err, stdout, stderr) {
         if (err) return done(`Unexpected error: ${err}\nstdout:\n${stdout}\nstderr:\n${stderr}`)
+        expect(JSON.parse(stdout)).to.deep.equal({
+          external: {
+            tsmri: { name: 'typescript-module-required-internally' },
+            jsmri: { name: 'javascript-module-required-internally' },
+            tsmii: { name: 'typescript-module-imported-internally' },
+            jsmii: { name: 'javascript-module-imported-internally' }
+          },
+          tsmie: { name: 'typescript-module-imported-externally' },
+          jsmie: { name: 'javascript-module-imported-externally' },
+          tsmre: { name: 'typescript-module-required-externally' },
+          jsmre: { name: 'javascript-module-required-externally' }
+        })
         done()
+      })
+    })
+
+    describe('should respect maxNodeModulesJsDepth', function () {
+      it('for unscoped modules', function (done) {
+        exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth`, function (err, stdout, stderr) {
+          expect(err).to.not.equal(null)
+          expect(stderr.replace(/\r\n/g, '\n')).to.contain(
+            'TSError: ⨯ Unable to compile TypeScript:\n' +
+            "other.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
+            '\n'
+          )
+          done()
+        })
+      })
+
+      it('for @scoped modules', function (done) {
+        exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth-scoped`, function (err, stdout, stderr) {
+          expect(err).to.not.equal(null)
+          expect(stderr.replace(/\r\n/g, '\n')).to.contain(
+            'TSError: ⨯ Unable to compile TypeScript:\n' +
+            "other.ts(7,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
+            '\n'
+          )
+          done()
+        })
       })
     })
   })
