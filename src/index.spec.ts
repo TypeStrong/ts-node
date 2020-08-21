@@ -73,6 +73,8 @@ describe('ts-node', function () {
     // `node --loader ts-node/esm`
     testsDirRequire.resolve('ts-node/esm')
     testsDirRequire.resolve('ts-node/esm.mjs')
+    testsDirRequire.resolve('ts-node/esm/transpile-only')
+    testsDirRequire.resolve('ts-node/esm/transpile-only.mjs')
   })
 
   describe('cli', function () {
@@ -83,6 +85,32 @@ describe('ts-node', function () {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\n')
 
+        return done()
+      })
+    })
+
+    it('shows usage via --help', function (done) {
+      exec(`${cmdNoProject} --help`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.match(/Usage: ts-node /)
+        return done()
+      })
+    })
+    it('shows version via -v', function (done) {
+      exec(`${cmdNoProject} -v`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout.trim()).to.equal('v' + testsDirRequire('ts-node/package').version)
+        return done()
+      })
+    })
+    it('shows version of compiler via -vv', function (done) {
+      exec(`${cmdNoProject} -vv`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout.trim()).to.equal(
+          `ts-node v${ testsDirRequire('ts-node/package').version }\n` +
+          `node ${ process.version }\n` +
+          `compiler v${ testsDirRequire('typescript/package').version }`
+        )
         return done()
       })
     })
@@ -326,6 +354,20 @@ describe('ts-node', function () {
 
       cp.stdin!.end('console.log("123")\n')
 
+    })
+    it('REPL has command to get type information', function (done) {
+      const cp = exec(`${cmd} --interactive`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal(
+          '> undefined\n' +
+          '> undefined\n' +
+          '> const a: 123\n' +
+          '> '
+        )
+        return done()
+      })
+
+      cp.stdin!.end('\nconst a = 123\n.type a')
     })
 
     it('should support require flags', function (done) {
@@ -754,11 +796,57 @@ describe('ts-node', function () {
   })
 
   describe('create', () => {
-    it('should create generic compiler instances', () => {
-      const service = create({ compilerOptions: { target: 'es5' }, skipProject: true })
-      const output = service.compile('const x = 10', 'test.ts')
+    let service: tsNodeTypes.Register
+    before(() => {
+      service = create({ compilerOptions: { target: 'es5' }, skipProject: true })
+    })
 
+    it('should create generic compiler instances', () => {
+      const output = service.compile('const x = 10', 'test.ts')
       expect(output).to.contain('var x = 10;')
+    })
+
+    describe('should get type information', () => {
+      it('given position of identifier', () => {
+        expect(service.getTypeInfo('/**jsdoc here*/const x = 10', 'test.ts', 21)).to.deep.equal({
+          comment: 'jsdoc here',
+          name: 'const x: 10'
+        })
+      })
+      it('given position that does not point to an identifier', () => {
+        expect(service.getTypeInfo('/**jsdoc here*/const x = 10', 'test.ts', 0)).to.deep.equal({
+          comment: '',
+          name: ''
+        })
+      })
+    })
+  })
+
+  describe('issue #1098', () => {
+    function testIgnored (ignored: tsNodeTypes.Register['ignored'], allowed: string[], disallowed: string[]) {
+      for (const ext of allowed) {
+        expect(ignored(join(__dirname, `index${ext}`))).equal(false, `should accept ${ext} files`)
+      }
+      for (const ext of disallowed) {
+        expect(ignored(join(__dirname, `index${ext}`))).equal(true, `should ignore ${ext} files`)
+      }
+    }
+
+    it('correctly filters file extensions from the compiler when allowJs=false and jsx=false', () => {
+      const { ignored } = create({ compilerOptions: { }, skipProject: true })
+      testIgnored(ignored, ['.ts', '.d.ts'], ['.js', '.tsx', '.jsx', '.mjs', '.cjs', '.xyz', ''])
+    })
+    it('correctly filters file extensions from the compiler when allowJs=true and jsx=false', () => {
+      const { ignored } = create({ compilerOptions: { allowJs: true }, skipProject: true })
+      testIgnored(ignored, ['.ts', '.js', '.d.ts'], ['.tsx', '.jsx', '.mjs', '.cjs', '.xyz', ''])
+    })
+    it('correctly filters file extensions from the compiler when allowJs=false and jsx=true', () => {
+      const { ignored } = create({ compilerOptions: { allowJs: false, jsx: 'preserve' }, skipProject: true })
+      testIgnored(ignored, ['.ts', '.tsx', '.d.ts'], ['.js', '.jsx', '.mjs', '.cjs', '.xyz', ''])
+    })
+    it('correctly filters file extensions from the compiler when allowJs=true and jsx=true', () => {
+      const { ignored } = create({ compilerOptions: { allowJs: true, jsx: 'preserve' }, skipProject: true })
+      testIgnored(ignored, ['.ts', '.tsx', '.js', '.jsx', '.d.ts'], ['.mjs', '.cjs', '.xyz', ''])
     })
   })
 
@@ -785,14 +873,6 @@ describe('ts-node', function () {
             '                 ^',
             'Error: this is a demo'
           ].join('\n'))
-
-          return done()
-        })
-      })
-      it('supports --experimental-specifier-resolution=node', (done) => {
-        exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
-          expect(err).to.equal(null)
-          expect(stdout).to.equal('foo bar baz biff\n')
 
           return done()
         })
@@ -827,6 +907,40 @@ describe('ts-node', function () {
         exec(`${cmd} ./index.js`, { cwd: join(__dirname, '../tests/esm-err-require-esm') }, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
+
+          return done()
+        })
+      })
+
+      it('defers to fallback loaders when URL should not be handled by ts-node', function (done) {
+        exec(`${cmd} index.mjs`, {
+          cwd: join(__dirname, '../tests/esm-import-http-url')
+        }, function (err, stdout, stderr) {
+          expect(err).to.not.equal(null)
+          // expect error from node's default resolver
+          expect(stderr).to.match(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*\n *at defaultResolve/)
+          return done()
+        })
+      })
+
+      it('should support transpile only mode via dedicated loader entrypoint', (done) => {
+        exec(`${cmd}/transpile-only index.ts`, { cwd: join(__dirname, '../tests/esm-transpile-only') }, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('')
+
+          return done()
+        })
+      })
+      it('should throw type errors without transpile-only enabled', (done) => {
+        exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm-transpile-only') }, function (err, stdout) {
+          if (err === null) {
+            return done('Command was expected to fail, but it succeeded.')
+          }
+
+          expect(err.message).to.contain('Unable to compile TypeScript')
+          expect(err.message).to.match(new RegExp('TS2345: Argument of type \'(?:number|1101)\' is not assignable to parameter of type \'string\'\\.'))
+          expect(err.message).to.match(new RegExp('TS2322: Type \'(?:"hello world"|string)\' is not assignable to type \'number\'\\.'))
+          expect(stdout).to.equal('')
 
           return done()
         })

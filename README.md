@@ -2,8 +2,8 @@
 
 [![NPM version][npm-image]][npm-url]
 [![NPM downloads][downloads-image]][downloads-url]
-[![Build status][travis-image]][travis-url]
-[![Test coverage][coveralls-image]][coveralls-url]
+[![Build status][github-actions-image]][github-actions-url]
+[![Test coverage][codecov-image]][codecov-url]
 
 > TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.7`**.
 
@@ -300,7 +300,7 @@ MIT
 [npm-url]: https://npmjs.org/package/ts-node
 [downloads-image]: https://img.shields.io/npm/dm/ts-node.svg?style=flat
 [downloads-url]: https://npmjs.org/package/ts-node
-[travis-image]: https://img.shields.io/travis/TypeStrong/ts-node.svg?style=flat
-[travis-url]: https://travis-ci.org/TypeStrong/ts-node
-[coveralls-image]: https://img.shields.io/coveralls/TypeStrong/ts-node.svg?style=flat
-[coveralls-url]: https://coveralls.io/r/TypeStrong/ts-node?branch=master
+[github-actions-image]: https://img.shields.io/github/workflow/status/TypeStrong/ts-node/Continuous%20Integration
+[github-actions-url]: https://github.com/TypeStrong/ts-node/actions?query=workflow%3A%22Continuous+Integration%22
+[codecov-image]: https://codecov.io/gh/TypeStrong/ts-node/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/TypeStrong/ts-node

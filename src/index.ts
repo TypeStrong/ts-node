@@ -960,14 +960,15 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
   let active = true
   const enabled = (enabled?: boolean) => enabled === undefined ? active : (active = !!enabled)
+  const extensions = getExtensions(config)
   const ignored = (fileName: string) => {
     if (!active) return true
-    const relname = relative(cwd, fileName)
-    if (!config.options.allowJs) {
-      const ext = extname(fileName)
-      if (ext === '.js' || ext === '.jsx') return true
+    const ext = extname(fileName)
+    if (extensions.tsExtensions.includes(ext) || extensions.jsExtensions.includes(ext)) {
+      const relname = relative(cwd, fileName)
+      return !isScoped(relname) || shouldIgnore(relname)
     }
-    return !isScoped(relname) || shouldIgnore(relname)
+    return true
   }
 
   return { ts, config, compile, getTypeInfo, ignored, enabled, options }
