@@ -573,15 +573,29 @@ describe('ts-node', function () {
       })
     })
 
-    it('should respect maxNodeModulesJsDepth', function (done) {
-      exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth`, function (err, stdout, stderr) {
-        expect(err).to.not.equal(null)
-        expect(stderr.replace(/\r\n/g, '\n')).to.contain(
-          'TSError: ⨯ Unable to compile TypeScript:\n' +
-          "index.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
-          '\n'
-        )
-        done()
+    describe('should respect maxNodeModulesJsDepth', function () {
+      it('for unscoped modules', function (done) {
+        exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth`, function (err, stdout, stderr) {
+          expect(err).to.not.equal(null)
+          expect(stderr.replace(/\r\n/g, '\n')).to.contain(
+            'TSError: ⨯ Unable to compile TypeScript:\n' +
+            "other.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
+            '\n'
+          )
+          done()
+        })
+      })
+
+      it('for @scoped modules', function (done) {
+        exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth-scoped`, function (err, stdout, stderr) {
+          expect(err).to.not.equal(null)
+          expect(stderr.replace(/\r\n/g, '\n')).to.contain(
+            'TSError: ⨯ Unable to compile TypeScript:\n' +
+            "other.ts(7,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
+            '\n'
+          )
+          done()
+        })
       })
     })
   })

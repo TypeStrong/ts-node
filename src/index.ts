@@ -538,7 +538,8 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
     // Get bucket for a source filename.  Bucket is the containing `./node_modules/*/` directory
     // For '/project/node_modules/foo/node_modules/bar/lib/index.js' bucket is '/project/node_modules/foo/node_modules/bar/'
-    const moduleBucketRe = /.*\/node_modules\/[^\/]+\//
+    // For '/project/node_modules/foo/node_modules/@scope/bar/lib/index.js' bucket is '/project/node_modules/foo/node_modules/@scope/bar/'
+    const moduleBucketRe = /.*\/node_modules\/(?:@[^\/]+\/)?[^\/]+\//
     function getModuleBucket (filename: string) {
       const find = moduleBucketRe.exec(filename)
       if (find) return find[0]

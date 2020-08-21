@@ -1,0 +1,11 @@
+{
+  "ts-node": {
+    // Force transpilation of node_modules
+    "skipIgnore": true
+  },
+  "compilerOptions": {
+    "allowJs": true,
+    "maxNodeModuleJsDepth": 1,
+    "moduleResolution": "node"
+  }
+}
