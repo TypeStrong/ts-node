@@ -370,6 +370,15 @@ describe('ts-node', function () {
       cp.stdin!.end('\nconst a = 123\n.type a')
     })
 
+    it('should run a custom REPL with with the ts-node repl evaluator', function (done) {
+      exec(`${BIN_PATH} ./tests/repl.ts`, function (err, stdout) {
+        expect(err && err.signal).to.equal('SIGTERM')
+        expect(stdout).to.equal('> ')
+
+        return done()
+      })
+    })
+
     it('should support require flags', function (done) {
       exec(`${cmd} -r ./tests/hello-world -pe "console.log('success')"`, function (err, stdout) {
         expect(err).to.equal(null)
