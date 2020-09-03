@@ -10,5 +10,3 @@ start({
   eval: createReplEval(service),
   useGlobal: true
 })
-
-process.emit('SIGTERM', 'SIGTERM')

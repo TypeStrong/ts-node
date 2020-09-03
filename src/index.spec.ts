@@ -371,12 +371,16 @@ describe('ts-node', function () {
     })
 
     it('should run a custom REPL with with the ts-node repl evaluator', function (done) {
-      exec(`${BIN_PATH} ./tests/repl.ts`, function (err, stdout) {
-        expect(err && err.signal).to.equal('SIGTERM')
-        expect(stdout).to.equal('> ')
+      const cp = exec(`${BIN_PATH} ./tests/repl.ts`, function (err, stdout) {
+        expect(err).to.equal(null)
+        expect(stdout).to.equal(
+          '> \'use strict\'\n' +
+          '> '
+        )
 
         return done()
       })
+      cp.stdin!.end('const letsWrite: string = "some typescript!"\n')
     })
 
     it('should support require flags', function (done) {
