@@ -353,8 +353,8 @@ describe('ts-node', function () {
       })
 
       cp.stdin!.end('console.log("123")\n')
-
     })
+
     it('REPL has command to get type information', function (done) {
       const cp = exec(`${cmd} --interactive`, function (err, stdout) {
         expect(err).to.equal(null)

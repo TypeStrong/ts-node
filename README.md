@@ -198,7 +198,7 @@ _The name of the environment variable and the option's default value are denoted
 
 ### Programmatic-only Options
 
-* `transformers` `_ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)`: An object with transformers or a function that accepts a program and returns an transformers object to pass to TypeScript. Function isn't available with `transpileOnly` flag
+* `transformers` `_ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)`: An object with transformers or a function that accepts a program and returns a transformers object to pass to TypeScript. Function isn't available with `transpileOnly` flag
 * `readFile`: Custom TypeScript-compatible file reading function
 * `fileExists`: Custom TypeScript-compatible file existence function
 
