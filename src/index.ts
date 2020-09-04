@@ -1,8 +1,5 @@
-import { diffLines } from 'diff'
 import { relative, basename, extname, resolve, dirname, join } from 'path'
-import { Recoverable } from 'repl'
 import sourceMapSupport = require('source-map-support')
-import { Script } from 'vm'
 import * as ynModule from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
@@ -44,12 +41,6 @@ declare global {
     }
   }
 }
-
-/**
- * @internal
- * Eval filename for REPL/debug.
- */
-export const EVAL_FILENAME = `[eval].ts`
 
 /**
  * @internal
@@ -981,162 +972,6 @@ export function create (rawOptions: CreateOptions = {}): Register {
   }
 
   return { ts, config, compile, getTypeInfo, ignored, enabled, options }
-}
-
-/**
- * Eval state management.
- */
-export class EvalState {
-  input = ''
-  output = ''
-  version = 0
-  lines = 0
-
-  constructor (public path: string) {}
-}
-
-/**
- * @param service - TypeScript compiler instance
- * @param state - Eval state management
- *
- * @returns an evaluator for the node REPL
- */
-export function createReplService (
-  service: Register,
-  state: EvalState = new EvalState(join(process.cwd(), EVAL_FILENAME))
-) {
-  return {
-    /**
-     * Eval code from the REPL.
-     */
-    eval: function (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any) {
-      let err: Error | null = null
-      let result: any
-
-      // TODO: Figure out how to handle completion here.
-      if (code === '.scope') {
-        callback(err)
-        return
-      }
-
-      try {
-        result = _eval(service, state, code)
-      } catch (error) {
-        if (error instanceof TSError) {
-          // Support recoverable compilations using >= node 6.
-          if (Recoverable && isRecoverable(error)) {
-            err = new Recoverable(error)
-          } else {
-            console.error(error)
-          }
-        } else {
-          err = error
-        }
-      }
-
-      return callback(err, result)
-    }
-  }
-}
-
-/**
- * @internal
- * Append to the eval instance and return an undo function.
- */
-export function appendEval (state: EvalState, input: string) {
-  const undoInput = state.input
-  const undoVersion = state.version
-  const undoOutput = state.output
-  const undoLines = state.lines
-
-  // Handle ASI issues with TypeScript re-evaluation.
-  if (undoInput.charAt(undoInput.length - 1) === '\n' && /^\s*[\/\[(`-]/.test(input) && !/;\s*$/.test(undoInput)) {
-    state.input = `${state.input.slice(0, -1)};\n`
-  }
-
-  state.input += input
-  state.lines += lineCount(input)
-  state.version++
-
-  return function () {
-    state.input = undoInput
-    state.output = undoOutput
-    state.version = undoVersion
-    state.lines = undoLines
-  }
-}
-
-/**
- * Count the number of lines.
- */
-function lineCount (value: string) {
-  let count = 0
-
-  for (const char of value) {
-    if (char === '\n') {
-      count++
-    }
-  }
-
-  return count
-}
-
-/**
- * @internal
- * Evaluate the code snippet.
- */
-export function _eval (service: Register, state: EvalState, input: string) {
-  const lines = state.lines
-  const isCompletion = !/\n$/.test(input)
-  const undo = appendEval(state, input)
-  let output: string
-
-  try {
-    output = service.compile(state.input, state.path, -lines)
-  } catch (err) {
-    undo()
-    throw err
-  }
-
-  // Use `diff` to check for new JavaScript to execute.
-  const changes = diffLines(state.output, output)
-
-  if (isCompletion) {
-    undo()
-  } else {
-    state.output = output
-  }
-
-  return changes.reduce((result, change) => {
-    return change.added ? exec(change.value, state.path) : result
-  }, undefined)
-}
-
-/**
- * @internal
- * Execute some code.
- */
-export function exec (code: string, filename: string) {
-  const script = new Script(code, { filename: filename })
-
-  return script.runInThisContext()
-}
-
-const RECOVERY_CODES: Set<number> = new Set([
-  1003, // "Identifier expected."
-  1005, // "')' expected."
-  1109, // "Expression expected."
-  1126, // "Unexpected end of text."
-  1160, // "Unterminated template literal."
-  1161, // "Unterminated regular expression literal."
-  2355 // "A function whose declared type is neither 'void' nor 'any' must return a value."
-])
-
-/**
- * Check if a function can recover gracefully.
- */
-function isRecoverable (error: TSError) {
-  return error.diagnosticCodes.every(code => RECOVERY_CODES.has(code))
 }
 
 /**

@@ -1,25 +1,23 @@
 #!/usr/bin/env node
 
 import { join, resolve, dirname } from 'path'
-import { start } from 'repl'
 import { inspect } from 'util'
 import Module = require('module')
 import arg = require('arg')
-import { readFileSync, statSync, realpathSync } from 'fs'
-import { homedir } from 'os'
+import { readFileSync, statSync } from 'fs'
 import {
-  _eval,
-  appendEval,
-  createReplService,
-  EVAL_FILENAME,
-  EvalState,
-  exec,
   parse,
   Register,
   register,
   TSError,
   VERSION
 } from './index'
+import {
+  _eval,
+  EVAL_FILENAME,
+  EvalState,
+  startRepl
+ } from './repl'
 
 /**
  * Main `bin` functionality.
@@ -296,75 +294,6 @@ function evalAndExit (service: Register, state: EvalState, module: Module, code:
 
   if (isPrinted) {
     console.log(typeof result === 'string' ? result : inspect(result))
-  }
-}
-
-/**
- * Start a CLI REPL.
- */
-function startRepl (service: Register, state: EvalState, code?: string) {
-  // Eval incoming code before the REPL starts.
-  if (code) {
-    try {
-      _eval(service, state, `${code}\n`)
-    } catch (err) {
-      console.error(err)
-      process.exit(1)
-    }
-  }
-
-  const repl = start({
-    prompt: '> ',
-    input: process.stdin,
-    output: process.stdout,
-    // Mimicking node's REPL implementation: https://github.com/nodejs/node/blob/168b22ba073ee1cbf8d0bcb4ded7ff3099335d04/lib/internal/repl.js#L28-L30
-    terminal: process.stdout.isTTY && !parseInt(process.env.NODE_NO_READLINE!, 10),
-    eval: createReplService(service, state).eval,
-    useGlobal: true
-  })
-
-  // Bookmark the point where we should reset the REPL state.
-  const resetEval = appendEval(state, '')
-
-  function reset () {
-    resetEval()
-
-    // Hard fix for TypeScript forcing `Object.defineProperty(exports, ...)`.
-    exec('exports = module.exports', state.path)
-  }
-
-  reset()
-  repl.on('reset', reset)
-
-  repl.defineCommand('type', {
-    help: 'Check the type of a TypeScript identifier',
-    action: function (identifier: string) {
-      if (!identifier) {
-        repl.displayPrompt()
-        return
-      }
-
-      const undo = appendEval(state, identifier)
-      const { name, comment } = service.getTypeInfo(state.input, state.path, state.input.length)
-
-      undo()
-
-      if (name) repl.outputStream.write(`${name}\n`)
-      if (comment) repl.outputStream.write(`${comment}\n`)
-      repl.displayPrompt()
-    }
-  })
-
-  // Set up REPL history when available natively via node.js >= 11.
-  if (repl.setupHistory) {
-    const historyPath = process.env.TS_NODE_HISTORY || join(homedir(), '.ts_node_repl_history')
-
-    repl.setupHistory(historyPath, err => {
-      if (!err) return
-
-      console.error(err)
-      process.exit(1)
-    })
   }
 }
 
