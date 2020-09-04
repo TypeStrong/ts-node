@@ -10,7 +10,7 @@ import { homedir } from 'os'
 import {
   _eval,
   appendEval,
-  createReplEval,
+  createReplService,
   EVAL_FILENAME,
   EvalState,
   exec,
@@ -319,7 +319,7 @@ function startRepl (service: Register, state: EvalState, code?: string) {
     output: process.stdout,
     // Mimicking node's REPL implementation: https://github.com/nodejs/node/blob/168b22ba073ee1cbf8d0bcb4ded7ff3099335d04/lib/internal/repl.js#L28-L30
     terminal: process.stdout.isTTY && !parseInt(process.env.NODE_NO_READLINE!, 10),
-    eval: createReplEval(service, state),
+    eval: createReplService(service, state).eval,
     useGlobal: true
   })
 

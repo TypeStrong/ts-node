@@ -1001,39 +1001,41 @@ export class EvalState {
  *
  * @returns an evaluator for the node REPL
  */
-export function createReplEval (
+export function createReplService (
   service: Register,
   state: EvalState = new EvalState(join(process.cwd(), EVAL_FILENAME))
 ) {
-  /**
-   * Eval code from the REPL.
-   */
-  return function (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any) {
-    let err: Error | null = null
-    let result: any
+  return {
+    /**
+     * Eval code from the REPL.
+     */
+    eval: function (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any) {
+      let err: Error | null = null
+      let result: any
 
-    // TODO: Figure out how to handle completion here.
-    if (code === '.scope') {
-      callback(err)
-      return
-    }
-
-    try {
-      result = _eval(service, state, code)
-    } catch (error) {
-      if (error instanceof TSError) {
-        // Support recoverable compilations using >= node 6.
-        if (Recoverable && isRecoverable(error)) {
-          err = new Recoverable(error)
-        } else {
-          console.error(error)
-        }
-      } else {
-        err = error
+      // TODO: Figure out how to handle completion here.
+      if (code === '.scope') {
+        callback(err)
+        return
       }
-    }
 
-    return callback(err, result)
+      try {
+        result = _eval(service, state, code)
+      } catch (error) {
+        if (error instanceof TSError) {
+          // Support recoverable compilations using >= node 6.
+          if (Recoverable && isRecoverable(error)) {
+            err = new Recoverable(error)
+          } else {
+            console.error(error)
+          }
+        } else {
+          err = error
+        }
+      }
+
+      return callback(err, result)
+    }
   }
 }
 
