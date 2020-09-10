@@ -25,7 +25,8 @@ function parseArgv(argv) {
     '--preserve-symlinks': Boolean,
     '--preserve-symlinks-main': Boolean,
     '--input-type': String,
-    '--experimental-specifier-resolution': String
+    '--experimental-specifier-resolution': String,
+    '--es-module-specifier-resolution': '--experimental-specifier-resolution',
   }, {
     argv,
     permissive: true

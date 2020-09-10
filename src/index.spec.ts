@@ -887,6 +887,14 @@ describe('ts-node', function () {
             return done()
           })
         })
+        it('via --es-module-specifier-resolution alias', (done) => {
+          exec(`${cmd} --experimental-modules --es-module-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
+            expect(err).to.equal(null)
+            expect(stdout).to.equal('foo bar baz biff\n')
+
+            return done()
+          })
+        })
         it('via NODE_OPTIONS', (done) => {
           exec(`${cmd} index.ts`, {
             cwd: join(__dirname, '../tests/esm-node-resolver'),
