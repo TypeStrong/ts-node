@@ -286,31 +286,6 @@ describe('ts-node', function () {
       })
     })
 
-    it('sourcemaps should update when file is modified on disk, require.cache is cleaned, and file is recompiled', function (done) {
-      // Make temp directory
-      // Put file there
-      // require file
-      // clean require cache
-      // modify file
-      // re-require file
-      // check that stack trace of thrown error is correct
-
-      // exec(`${cmd} tests/throw`, function (err) {
-      //   if (err === null) {
-      //     return done('Command was expected to fail, but it succeeded.')
-      //   }
-
-      //   expect(err.message).to.contain([
-      //     `${join(__dirname, '../tests/throw.ts')}:100`,
-      //     '  bar () { throw new Error(\'this is a demo\') }',
-      //     '                 ^',
-      //     'Error: this is a demo'
-      //   ].join('\n'))
-
-      //   return done()
-      // })
-    })
-
     it('should support transpile only mode', function (done) {
       exec(`${cmd} --transpile-only -pe "x"`, function (err) {
         if (err === null) {
