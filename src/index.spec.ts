@@ -106,6 +106,8 @@ describe('ts-node', function () {
     it('shows version of compiler via -vv', function (done) {
       exec(`${cmdNoProject} -vv`, function (err, stdout) {
         expect(err).to.equal(null)
+        console.dir(testsDirRequire.resolve('typescript/package'))
+        console.dir(testsDirRequire('typescript/package'))
         expect(stdout.trim()).to.equal(
           `ts-node v${ testsDirRequire('ts-node/package').version }\n` +
           `node ${ process.version }\n` +
@@ -282,6 +284,31 @@ describe('ts-node', function () {
 
         return done()
       })
+    })
+
+    it('sourcemaps should update when file is modified on disk, require.cache is cleaned, and file is recompiled', function (done) {
+      // Make temp directory
+      // Put file there
+      // require file
+      // clean require cache
+      // modify file
+      // re-require file
+      // check that stack trace of thrown error is correct
+
+      // exec(`${cmd} tests/throw`, function (err) {
+      //   if (err === null) {
+      //     return done('Command was expected to fail, but it succeeded.')
+      //   }
+
+      //   expect(err.message).to.contain([
+      //     `${join(__dirname, '../tests/throw.ts')}:100`,
+      //     '  bar () { throw new Error(\'this is a demo\') }',
+      //     '                 ^',
+      //     'Error: this is a demo'
+      //   ].join('\n'))
+
+      //   return done()
+      // })
     })
 
     it('should support transpile only mode', function (done) {
@@ -926,7 +953,7 @@ describe('ts-node', function () {
         }, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           // expect error from node's default resolver
-          expect(stderr).to.match(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*\n *at defaultResolve/)
+          expect(stderr).to.match(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,1}\n *at defaultResolve/)
           return done()
         })
       })
