@@ -39,23 +39,30 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu, windows]
-        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        # Don't forget to add all new flavors to this list!
+        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
         include:
+          # Node 10
           - flavor: 1
             node: 10
             nodeFlag: 10
             typescript: latest
             typescriptFlag: latest
+          # Node 12.15
           - flavor: 2
             node: 12.15
             nodeFlag: 12_15
             typescript: latest
             typescriptFlag: latest
+          # Node 12.16
+          # TODO Add comments about why we test 2.15 and 2.16; I think git blame says it's because of an ESM behavioral change that happened at this version number
+          # TODO switch to '12' to get latest patch?
           - flavor: 3
             node: 12.16
             nodeFlag: 12_16
             typescript: latest
             typescriptFlag: latest
+          # Node 13
           - flavor: 4
             node: 13
             nodeFlag: 13
@@ -71,6 +78,7 @@ jobs:
             nodeFlag: 13
             typescript: next
             typescriptFlag: next
+          # Node 14
           - flavor: 7
             node: 14
             nodeFlag: 14
@@ -86,6 +94,25 @@ jobs:
             nodeFlag: 14
             typescript: next
             typescriptFlag: next
+          # Node 15
+          - flavor: 10
+            node: 15
+            nodeFlag: 15
+            typescript: latest
+            typescriptFlag: latest
+            downgradeNpm: true
+          - flavor: 11
+            node: 15
+            nodeFlag: 15
+            typescript: 2.7
+            typescriptFlag: 2_7
+            downgradeNpm: true
+          - flavor: 12
+            node: 15
+            nodeFlag: 15
+            typescript: next
+            typescriptFlag: next
+            downgradeNpm: true
     steps:
       # checkout code
       - uses: actions/checkout@v2
@@ -95,6 +122,9 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       # lint, build, test
+        # Downgrade from npm 7 to 6 because 7 still seems buggy to me
+      - if: ${{ matrix.downgradeNpm }}
+        run: npm install -g npm@6
       - run: npm install
       - run: npm run build-nopack
       - name: Download package artifact

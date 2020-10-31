@@ -926,7 +926,7 @@ describe('ts-node', function () {
         }, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           // expect error from node's default resolver
-          expect(stderr).to.match(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*\n *at defaultResolve/)
+          expect(stderr).to.match(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,1}\n *at defaultResolve/)
           return done()
         })
       })
