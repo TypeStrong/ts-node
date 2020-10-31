@@ -119,6 +119,8 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       # lint, build, test
+        # Downgrade from npm 7 to 6 because 7 still seems buggy to me
+      - run: npmVersion="$(npm --version)" && [[ "${npmVersion:0:2}" = '7.' ]] && npm install -g npm@6
       - run: npm install
       - run: npm run build-nopack
       - name: Download package artifact
