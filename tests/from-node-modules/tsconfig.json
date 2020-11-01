@@ -1,0 +1,8 @@
+{
+  "ts-node": {
+    "ignore": []
+  },
+  "compilerOptions": {
+    "allowJs": true
+  }
+}

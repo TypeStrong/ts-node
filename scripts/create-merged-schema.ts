@@ -12,10 +12,7 @@ import {writeFileSync} from 'fs';
 
 async function main() {
   /** schemastore definition */
-  const schemastoreSchema = (await axios.get(
-    'https://schemastore.azurewebsites.net/schemas/json/tsconfig.json',
-    { responseType: "json" }
-  )).data;
+  const schemastoreSchema = await getSchemastoreSchema();
 
   /** ts-node schema auto-generated from ts-node source code */
   const typescriptNodeSchema = require('../tsconfig.schema.json');
@@ -55,6 +52,14 @@ async function main() {
     resolve(__dirname, '../tsconfig.schemastore-schema.json'),
     JSON.stringify(mergedSchema, null, 2)
   );
+}
+
+export async function getSchemastoreSchema() {
+  const {data: schemastoreSchema} = await axios.get(
+    'https://schemastore.azurewebsites.net/schemas/json/tsconfig.json',
+    { responseType: "json" }
+  );
+  return schemastoreSchema;
 }
 
 main();

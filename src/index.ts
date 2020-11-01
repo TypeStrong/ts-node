@@ -1,9 +1,30 @@
-import { relative, basename, extname, resolve, dirname, join } from 'path'
+import { relative, basename, extname, resolve, dirname, join, isAbsolute } from 'path'
 import sourceMapSupport = require('source-map-support')
 import * as ynModule from 'yn'
 import { BaseError } from 'make-error'
 import * as util from 'util'
-import * as _ts from 'typescript'
+import { fileURLToPath } from 'url'
+import type * as _ts from 'typescript'
+import * as Module from 'module'
+
+/**
+ * Does this version of node obey the package.json "type" field
+ * and throw ERR_REQUIRE_ESM when attempting to require() an ESM modules.
+ */
+const engineSupportsPackageTypeField = parseInt(process.versions.node.split('.')[0], 10) >= 12
+
+// Loaded conditionally so we don't need to support older node versions
+let assertScriptCanLoadAsCJSImpl: ((filename: string) => void) | undefined
+
+/**
+ * Assert that script can be loaded as CommonJS when we attempt to require it.
+ * If it should be loaded as ESM, throw ERR_REQUIRE_ESM like node does.
+ */
+function assertScriptCanLoadAsCJS (filename: string) {
+  if (!engineSupportsPackageTypeField) return
+  if (!assertScriptCanLoadAsCJSImpl) assertScriptCanLoadAsCJSImpl = require('../dist-raw/node-cjs-loader-utils').assertScriptCanLoadAsCJSImpl
+  assertScriptCanLoadAsCJSImpl!(filename)
+}
 
 /**
  * Registered `ts-node` instance information.
@@ -38,18 +59,19 @@ function yn (value: string | undefined) {
  * Debugging `ts-node`.
  */
 const shouldDebug = yn(process.env.TS_NODE_DEBUG)
-const debug = shouldDebug ?
+/** @internal */
+export const debug = shouldDebug ?
   (...args: any) => console.log(`[ts-node ${new Date().toISOString()}]`, ...args)
   : () => undefined
 const debugFn = shouldDebug ?
-  <T, U> (key: string, fn: (arg: T) => U) => {
+  <T, U>(key: string, fn: (arg: T) => U) => {
     let i = 0
     return (x: T) => {
       debug(key, x, ++i)
       return fn(x)
     }
   } :
-  <T, U> (_: string, fn: (arg: T) => U) => fn
+  <T, U>(_: string, fn: (arg: T) => U) => fn
 
 /**
  * Common TypeScript interfaces between versions.
@@ -71,6 +93,18 @@ export interface TSCommon {
   parseJsonConfigFileContent: typeof _ts.parseJsonConfigFileContent
   formatDiagnostics: typeof _ts.formatDiagnostics
   formatDiagnosticsWithColorAndContext: typeof _ts.formatDiagnosticsWithColorAndContext
+}
+
+/**
+ * Compiler APIs we use that are marked internal and not included in TypeScript's public API declarations
+ */
+interface TSInternal {
+  // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906-L1909
+  createGetCanonicalFileName (useCaseSensitiveFileNames: boolean): TSInternal.GetCanonicalFileName
+}
+namespace TSInternal {
+  // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906
+  export type GetCanonicalFileName = (fileName: string) => string
 }
 
 /**
@@ -175,9 +209,24 @@ export interface CreateOptions {
    * Ignore TypeScript warnings by diagnostic code.
    */
   ignoreDiagnostics?: Array<number | string>
+  /**
+   * Modules to require, like node's `--require` flag.
+   *
+   * If specified in tsconfig.json, the modules will be resolved relative to the tsconfig.json file.
+   *
+   * If specified programmatically, each input string should be pre-resolved to an absolute path for
+   * best results.
+   */
+  require?: Array<string>
   readFile?: (path: string) => string | undefined
   fileExists?: (path: string) => boolean
   transformers?: _ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)
+  /**
+   * True if require() hooks should interop with experimental ESM loader.
+   * Enabled explicitly via a flag since it is a breaking change.
+   * @internal
+   */
+  experimentalEsmLoader?: boolean
 }
 
 /**
@@ -202,12 +251,12 @@ export interface TsConfigOptions extends Omit<RegisterOptions,
   | 'skipProject'
   | 'project'
   | 'dir'
-> {}
+  > {}
 
 /**
  * Like `Object.assign`, but ignores `undefined` properties.
  */
-function assign <T extends object> (initialValue: T, ...sources: Array<T>): T {
+function assign<T extends object> (initialValue: T, ...sources: Array<T>): T {
   for (const source of sources) {
     for (const key of Object.keys(source)) {
       const value = (source as any)[key]
@@ -246,7 +295,8 @@ export const DEFAULTS: RegisterOptions = {
   transpileOnly: yn(process.env.TS_NODE_TRANSPILE_ONLY),
   typeCheck: yn(process.env.TS_NODE_TYPE_CHECK),
   compilerHost: yn(process.env.TS_NODE_COMPILER_HOST),
-  logError: yn(process.env.TS_NODE_LOG_ERROR)
+  logError: yn(process.env.TS_NODE_LOG_ERROR),
+  experimentalEsmLoader: false
 }
 
 /**
@@ -316,7 +366,7 @@ export interface Register {
 /**
  * Cached fs operation wrapper.
  */
-function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
+function cachedLookup<T> (fn: (arg: string) => T): (arg: string) => T {
   const cache = new Map<string, T>()
 
   return (arg: string): T => {
@@ -328,24 +378,35 @@ function cachedLookup <T> (fn: (arg: string) => T): (arg: string) => T {
   }
 }
 
+/** @internal */
+export function getExtensions (config: _ts.ParsedCommandLine) {
+  const tsExtensions = ['.ts']
+  const jsExtensions = []
+
+  // Enable additional extensions when JSX or `allowJs` is enabled.
+  if (config.options.jsx) tsExtensions.push('.tsx')
+  if (config.options.allowJs) jsExtensions.push('.js')
+  if (config.options.jsx && config.options.allowJs) jsExtensions.push('.jsx')
+  return { tsExtensions, jsExtensions }
+}
+
 /**
  * Register TypeScript compiler instance onto node.js
  */
 export function register (opts: RegisterOptions = {}): Register {
   const originalJsHandler = require.extensions['.js'] // tslint:disable-line
   const service = create(opts)
-  const extensions = ['.ts']
-
-  // Enable additional extensions when JSX or `allowJs` is enabled.
-  if (service.config.options.jsx) extensions.push('.tsx')
-  if (service.config.options.allowJs) extensions.push('.js')
-  if (service.config.options.jsx && service.config.options.allowJs) extensions.push('.jsx')
+  const { tsExtensions, jsExtensions } = getExtensions(service.config)
+  const extensions = [...tsExtensions, ...jsExtensions]
 
   // Expose registered instance globally.
   process[REGISTER_INSTANCE] = service
 
   // Register the extensions.
   registerExtensions(service.options.preferTsExts, extensions, service, originalJsHandler)
+
+  // Require specified modules before start-up.
+  ;(Module as any)._preloadModules(service.options.require)
 
   return service
 }
@@ -373,7 +434,11 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
   // Read config file and merge new options between env and CLI options.
   const { config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
-  const options = assign<CreateOptions>({}, DEFAULTS, tsconfigOptions || {}, rawOptions)
+  const options = assign<RegisterOptions>({}, DEFAULTS, tsconfigOptions || {}, rawOptions)
+  options.require = [
+    ...tsconfigOptions.require || [],
+    ...rawOptions.require || []
+  ]
 
   // If `compiler` option changed based on tsconfig, re-load the compiler.
   if (options.compiler !== compilerName) {
@@ -392,7 +457,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
   ].map(Number)
 
   const configDiagnosticList = filterDiagnostics(config.errors, ignoreDiagnostics)
-  const outputCache = new Map<string, string>()
+  const outputCache = new Map<string, {
+    content: string
+  }>()
 
   const isScoped = options.scope ? (relname: string) => relname.charAt(0) !== '.' : () => true
   const shouldIgnore = createIgnore(options.skipIgnore ? [] : (
@@ -408,8 +475,18 @@ export function create (rawOptions: CreateOptions = {}): Register {
   // Install source map support and read from memory cache.
   sourceMapSupport.install({
     environment: 'node',
-    retrieveFile (path: string) {
-      return outputCache.get(path) || ''
+    retrieveFile (pathOrUrl: string) {
+      let path = pathOrUrl
+      // If it's a file URL, convert to local path
+      // Note: fileURLToPath does not exist on early node v10
+      // I could not find a way to handle non-URLs except to swallow an error
+      if (options.experimentalEsmLoader && path.startsWith('file://')) {
+        try {
+          path = fileURLToPath(path)
+        } catch (e) {/* swallow error */}
+      }
+      path = normalizeSlashes(path)
+      return outputCache.get(path)?.content || ''
     }
   })
 
@@ -447,19 +524,116 @@ export function create (rawOptions: CreateOptions = {}): Register {
   /**
    * Create the basic required function using transpile mode.
    */
-  let getOutput: (code: string, fileName: string, lineOffset: number) => SourceOutput
+  let getOutput: (code: string, fileName: string) => SourceOutput
   let getTypeInfo: (_code: string, _fileName: string, _position: number) => TypeInfo
+
+  const getCanonicalFileName = (ts as unknown as TSInternal).createGetCanonicalFileName(ts.sys.useCaseSensitiveFileNames)
+
+  // In a factory because these are shared across both CompilerHost and LanguageService codepaths
+  function createResolverFunctions (serviceHost: _ts.ModuleResolutionHost) {
+    const moduleResolutionCache = ts.createModuleResolutionCache(cwd, getCanonicalFileName, config.options)
+    const knownInternalFilenames = new Set<string>()
+    /** "Buckets" (module directories) whose contents should be marked "internal" */
+    const internalBuckets = new Set<string>()
+
+    // Get bucket for a source filename.  Bucket is the containing `./node_modules/*/` directory
+    // For '/project/node_modules/foo/node_modules/bar/lib/index.js' bucket is '/project/node_modules/foo/node_modules/bar/'
+    // For '/project/node_modules/foo/node_modules/@scope/bar/lib/index.js' bucket is '/project/node_modules/foo/node_modules/@scope/bar/'
+    const moduleBucketRe = /.*\/node_modules\/(?:@[^\/]+\/)?[^\/]+\//
+    function getModuleBucket (filename: string) {
+      const find = moduleBucketRe.exec(filename)
+      if (find) return find[0]
+      return ''
+    }
+
+    // Mark that this file and all siblings in its bucket should be "internal"
+    function markBucketOfFilenameInternal (filename: string) {
+      internalBuckets.add(getModuleBucket(filename))
+    }
+
+    function isFileInInternalBucket (filename: string) {
+      return internalBuckets.has(getModuleBucket(filename))
+    }
+
+    function isFileKnownToBeInternal (filename: string) {
+      return knownInternalFilenames.has(filename)
+    }
+
+    /**
+     * If we need to emit JS for a file, force TS to consider it non-external
+     */
+    const fixupResolvedModule = (resolvedModule: _ts.ResolvedModule | _ts.ResolvedTypeReferenceDirective) => {
+      const { resolvedFileName } = resolvedModule
+      if (resolvedFileName === undefined) return
+      // .ts is always switched to internal
+      // .js is switched on-demand
+      if (
+        resolvedModule.isExternalLibraryImport && (
+          (resolvedFileName.endsWith('.ts') && !resolvedFileName.endsWith('.d.ts')) ||
+          isFileKnownToBeInternal(resolvedFileName) ||
+          isFileInInternalBucket(resolvedFileName)
+        )
+      ) {
+        resolvedModule.isExternalLibraryImport = false
+      }
+      if (!resolvedModule.isExternalLibraryImport) {
+        knownInternalFilenames.add(resolvedFileName)
+      }
+    }
+    /*
+     * NOTE:
+     * Older ts versions do not pass `redirectedReference` nor `options`.
+     * We must pass `redirectedReference` to newer ts versions, but cannot rely on `options`, hence the weird argument name
+     */
+    const resolveModuleNames: _ts.LanguageServiceHost['resolveModuleNames'] = (moduleNames: string[], containingFile: string, reusedNames: string[] | undefined, redirectedReference: _ts.ResolvedProjectReference | undefined, optionsOnlyWithNewerTsVersions: _ts.CompilerOptions): (_ts.ResolvedModule | undefined)[] => {
+      return moduleNames.map(moduleName => {
+        const { resolvedModule } = ts.resolveModuleName(moduleName, containingFile, config.options, serviceHost, moduleResolutionCache, redirectedReference)
+        if (resolvedModule) {
+          fixupResolvedModule(resolvedModule)
+        }
+        return resolvedModule
+      })
+    }
+
+    // language service never calls this, but TS docs recommend that we implement it
+    const getResolvedModuleWithFailedLookupLocationsFromCache: _ts.LanguageServiceHost['getResolvedModuleWithFailedLookupLocationsFromCache'] = (moduleName, containingFile): _ts.ResolvedModuleWithFailedLookupLocations | undefined => {
+      const ret = ts.resolveModuleNameFromCache(moduleName, containingFile, moduleResolutionCache)
+      if (ret && ret.resolvedModule) {
+        fixupResolvedModule(ret.resolvedModule)
+      }
+      return ret
+    }
+
+    const resolveTypeReferenceDirectives: _ts.LanguageServiceHost['resolveTypeReferenceDirectives'] = (typeDirectiveNames: string[], containingFile: string, redirectedReference: _ts.ResolvedProjectReference | undefined, options: _ts.CompilerOptions): (_ts.ResolvedTypeReferenceDirective | undefined)[] => {
+      // Note: seems to be called with empty typeDirectiveNames array for all files.
+      return typeDirectiveNames.map(typeDirectiveName => {
+        const { resolvedTypeReferenceDirective } = ts.resolveTypeReferenceDirective(typeDirectiveName, containingFile, config.options, serviceHost, redirectedReference)
+        if (resolvedTypeReferenceDirective) {
+          fixupResolvedModule(resolvedTypeReferenceDirective)
+        }
+        return resolvedTypeReferenceDirective
+      })
+    }
+
+    return {
+      resolveModuleNames,
+      getResolvedModuleWithFailedLookupLocationsFromCache,
+      resolveTypeReferenceDirectives,
+      isFileKnownToBeInternal,
+      markBucketOfFilenameInternal
+    }
+  }
 
   // Use full language services when the fast option is disabled.
   if (!transpileOnly) {
     const fileContents = new Map<string, string>()
-    const rootFileNames = config.fileNames.slice()
+    const rootFileNames = new Set(config.fileNames)
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile))
 
     // Use language services by default (TODO: invert next major version).
     if (!options.compilerHost) {
       let projectVersion = 1
-      const fileVersions = new Map(rootFileNames.map(fileName => [fileName, 0]))
+      const fileVersions = new Map(Array.from(rootFileNames).map(fileName => [fileName, 0]))
 
       const getCustomTransformers = () => {
         if (typeof transformers === 'function') {
@@ -471,14 +645,15 @@ export function create (rawOptions: CreateOptions = {}): Register {
       }
 
       // Create the compiler host for type checking.
-      const serviceHost: _ts.LanguageServiceHost = {
+      const serviceHost: _ts.LanguageServiceHost & Required<Pick<_ts.LanguageServiceHost, 'fileExists' | 'readFile'>> = {
         getProjectVersion: () => String(projectVersion),
-        getScriptFileNames: () => Array.from(fileVersions.keys()),
+        getScriptFileNames: () => Array.from(rootFileNames),
         getScriptVersion: (fileName: string) => {
           const version = fileVersions.get(fileName)
           return version ? version.toString() : ''
         },
         getScriptSnapshot (fileName: string) {
+          // TODO ordering of this with getScriptVersion?  Should they sync up?
           let contents = fileContents.get(fileName)
 
           // Read contents into TypeScript memory cache.
@@ -488,6 +663,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
             fileVersions.set(fileName, 1)
             fileContents.set(fileName, contents)
+            projectVersion++
           }
 
           return ts.ScriptSnapshot.fromString(contents)
@@ -497,6 +673,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
         getDirectories: cachedLookup(debugFn('getDirectories', ts.sys.getDirectories)),
         fileExists: cachedLookup(debugFn('fileExists', fileExists)),
         directoryExists: cachedLookup(debugFn('directoryExists', ts.sys.directoryExists)),
+        realpath: ts.sys.realpath ? cachedLookup(debugFn('realpath', ts.sys.realpath)) : undefined,
         getNewLine: () => ts.sys.newLine,
         useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
         getCurrentDirectory: () => cwd,
@@ -504,14 +681,22 @@ export function create (rawOptions: CreateOptions = {}): Register {
         getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
         getCustomTransformers: getCustomTransformers
       }
+      const { resolveModuleNames, getResolvedModuleWithFailedLookupLocationsFromCache, resolveTypeReferenceDirectives, isFileKnownToBeInternal, markBucketOfFilenameInternal } = createResolverFunctions(serviceHost)
+      serviceHost.resolveModuleNames = resolveModuleNames
+      serviceHost.getResolvedModuleWithFailedLookupLocationsFromCache = getResolvedModuleWithFailedLookupLocationsFromCache
+      serviceHost.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives
 
       const registry = ts.createDocumentRegistry(ts.sys.useCaseSensitiveFileNames, cwd)
       const service = ts.createLanguageService(serviceHost, registry)
 
       const updateMemoryCache = (contents: string, fileName: string) => {
-        // Add to `rootFiles` when discovered for the first time.
-        if (!fileVersions.has(fileName)) {
-          rootFileNames.push(fileName)
+        // Add to `rootFiles` as necessary, either to make TS include a file it has not seen,
+        // or to trigger a re-classification of files from external to internal.
+        if (!rootFileNames.has(fileName) && !isFileKnownToBeInternal(fileName)) {
+          markBucketOfFilenameInternal(fileName)
+          rootFileNames.add(fileName)
+          // Increment project version for every change to rootFileNames.
+          projectVersion++
         }
 
         const previousVersion = fileVersions.get(fileName) || 0
@@ -580,13 +765,15 @@ export function create (rawOptions: CreateOptions = {}): Register {
         return { name, comment }
       }
     } else {
-      const sys = {
+      const sys: _ts.System & _ts.FormatDiagnosticsHost = {
         ...ts.sys,
         ...diagnosticHost,
         readFile: (fileName: string) => {
           const cacheContents = fileContents.get(fileName)
           if (cacheContents !== undefined) return cacheContents
-          return cachedReadFile(fileName)
+          const contents = cachedReadFile(fileName)
+          if (contents) fileContents.set(fileName, contents)
+          return contents
         },
         readDirectory: ts.sys.readDirectory,
         getDirectories: cachedLookup(debugFn('getDirectories', ts.sys.getDirectories)),
@@ -609,18 +796,21 @@ export function create (rawOptions: CreateOptions = {}): Register {
           getDefaultLibFileName: () => normalizeSlashes(join(dirname(compiler), ts.getDefaultLibFileName(config.options))),
           useCaseSensitiveFileNames: () => sys.useCaseSensitiveFileNames
         }
+      const { resolveModuleNames, resolveTypeReferenceDirectives, isFileKnownToBeInternal, markBucketOfFilenameInternal } = createResolverFunctions(host)
+      host.resolveModuleNames = resolveModuleNames
+      host.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives
 
       // Fallback for older TypeScript releases without incremental API.
       let builderProgram = ts.createIncrementalProgram
         ? ts.createIncrementalProgram({
-          rootNames: rootFileNames.slice(),
+          rootNames: Array.from(rootFileNames),
           options: config.options,
           host: host,
           configFileParsingDiagnostics: config.errors,
           projectReferences: config.projectReferences
         })
         : ts.createEmitAndSemanticDiagnosticsBuilderProgram(
-          rootFileNames.slice(),
+          Array.from(rootFileNames),
           config.options,
           host,
           undefined,
@@ -635,19 +825,24 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
       // Set the file contents into cache manually.
       const updateMemoryCache = (contents: string, fileName: string) => {
-        const sourceFile = builderProgram.getSourceFile(fileName)
-
-        fileContents.set(fileName, contents)
+        const previousContents = fileContents.get(fileName)
+        const contentsChanged = previousContents !== contents
+        if (contentsChanged) {
+          fileContents.set(fileName, contents)
+        }
 
         // Add to `rootFiles` when discovered by compiler for the first time.
-        if (sourceFile === undefined) {
-          rootFileNames.push(fileName)
+        let addedToRootFileNames = false
+        if (!rootFileNames.has(fileName) && !isFileKnownToBeInternal(fileName)) {
+          markBucketOfFilenameInternal(fileName)
+          rootFileNames.add(fileName)
+          addedToRootFileNames = true
         }
 
         // Update program when file changes.
-        if (sourceFile === undefined || sourceFile.text !== contents) {
+        if (addedToRootFileNames || contentsChanged) {
           builderProgram = ts.createEmitAndSemanticDiagnosticsBuilderProgram(
-            rootFileNames.slice(),
+            Array.from(rootFileNames),
             config.options,
             host,
             builderProgram,
@@ -738,9 +933,9 @@ export function create (rawOptions: CreateOptions = {}): Register {
     getOutput = (code: string, fileName: string): SourceOutput => {
       const result = ts.transpileModule(code, {
         fileName,
-        transformers,
         compilerOptions: config.options,
-        reportDiagnostics: true
+        reportDiagnostics: true,
+        transformers: transformers
       })
 
       const diagnosticList = filterDiagnostics(result.diagnostics || [], ignoreDiagnostics)
@@ -757,18 +952,23 @@ export function create (rawOptions: CreateOptions = {}): Register {
   // Create a simple TypeScript compiler proxy.
   function compile (code: string, fileName: string, lineOffset = 0) {
     const normalizedFileName = normalizeSlashes(fileName)
-    const [value, sourceMap] = getOutput(code, normalizedFileName, lineOffset)
+    const [value, sourceMap] = getOutput(code, normalizedFileName)
     const output = updateOutput(value, normalizedFileName, sourceMap, getExtension)
-    outputCache.set(fileName, output)
+    outputCache.set(normalizedFileName, { content: output })
     return output
   }
 
   let active = true
   const enabled = (enabled?: boolean) => enabled === undefined ? active : (active = !!enabled)
+  const extensions = getExtensions(config)
   const ignored = (fileName: string) => {
     if (!active) return true
-    const relname = relative(cwd, fileName)
-    return !isScoped(relname) || shouldIgnore(relname)
+    const ext = extname(fileName)
+    if (extensions.tsExtensions.includes(ext) || extensions.jsExtensions.includes(ext)) {
+      const relname = relative(cwd, fileName)
+      return !isScoped(relname) || shouldIgnore(relname)
+    }
+    return true
   }
 
   return { ts, config, compile, getTypeInfo, ignored, enabled, options }
@@ -830,6 +1030,10 @@ function registerExtension (
 
   require.extensions[ext] = function (m: any, filename) { // tslint:disable-line
     if (register.ignored(filename)) return old(m, filename)
+
+    if (register.options.experimentalEsmLoader) {
+      assertScriptCanLoadAsCJS(filename)
+    }
 
     const _compile = m._compile
 
@@ -942,6 +1146,14 @@ function readConfig (
     useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames
   }, basePath, undefined, configFileName))
 
+  if (tsconfigOptions.require) {
+    // Modules are found relative to the tsconfig file, not the `dir` option
+    const tsconfigRelativeRequire = createRequire(configFileName!)
+    tsconfigOptions.require = tsconfigOptions.require.map((path: string) => {
+      return tsconfigRelativeRequire.resolve(path)
+    })
+  }
+
   return { config: fixedConfig, options: tsconfigOptions }
 }
 
@@ -1001,4 +1213,13 @@ function getTokenAtPosition (ts: typeof _ts, sourceFile: _ts.SourceFile, positio
 
     return current
   }
+}
+
+let nodeCreateRequire: (path: string) => NodeRequire
+function createRequire (filename: string) {
+  if (!nodeCreateRequire) {
+    // tslint:disable-next-line
+    nodeCreateRequire = Module.createRequire || Module.createRequireFromPath || require('../dist-raw/node-createrequire').createRequireFromPath
+  }
+  return nodeCreateRequire(filename)
 }
