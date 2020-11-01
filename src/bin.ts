@@ -31,56 +31,59 @@ class EvalState {
 /**
  * Main `bin` functionality.
  */
-export function main (argv: string[]) {
-  const args = arg({
-    // Node.js-like options.
-    '--eval': String,
-    '--interactive': Boolean,
-    '--print': Boolean,
-    '--require': [String],
+export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Record<string, any> = {}) {
+  const args = {
+    ...entrypointArgs,
+    ...arg({
+      // Node.js-like options.
+      '--eval': String,
+      '--interactive': Boolean,
+      '--print': Boolean,
+      '--require': [String],
 
-    // CLI options.
-    '--help': Boolean,
-    '--script-mode': Boolean,
-    '--version': arg.COUNT,
+      // CLI options.
+      '--help': Boolean,
+      '--script-mode': Boolean,
+      '--version': arg.COUNT,
 
-    // Project options.
-    '--dir': String,
-    '--files': Boolean,
-    '--compiler': String,
-    '--compiler-options': parse,
-    '--project': String,
-    '--ignore-diagnostics': [String],
-    '--ignore': [String],
-    '--transpile-only': Boolean,
-    '--type-check': Boolean,
-    '--compiler-host': Boolean,
-    '--pretty': Boolean,
-    '--skip-project': Boolean,
-    '--skip-ignore': Boolean,
-    '--prefer-ts-exts': Boolean,
-    '--log-error': Boolean,
-    '--emit': Boolean,
+      // Project options.
+      '--dir': String,
+      '--files': Boolean,
+      '--compiler': String,
+      '--compiler-options': parse,
+      '--project': String,
+      '--ignore-diagnostics': [String],
+      '--ignore': [String],
+      '--transpile-only': Boolean,
+      '--type-check': Boolean,
+      '--compiler-host': Boolean,
+      '--pretty': Boolean,
+      '--skip-project': Boolean,
+      '--skip-ignore': Boolean,
+      '--prefer-ts-exts': Boolean,
+      '--log-error': Boolean,
+      '--emit': Boolean,
 
-    // Aliases.
-    '-e': '--eval',
-    '-i': '--interactive',
-    '-p': '--print',
-    '-r': '--require',
-    '-h': '--help',
-    '-s': '--script-mode',
-    '-v': '--version',
-    '-T': '--transpile-only',
-    '-H': '--compiler-host',
-    '-I': '--ignore',
-    '-P': '--project',
-    '-C': '--compiler',
-    '-D': '--ignore-diagnostics',
-    '-O': '--compiler-options'
-  }, {
-    argv,
-    stopAtPositional: true
-  })
+      // Aliases.
+      '-e': '--eval',
+      '-i': '--interactive',
+      '-p': '--print',
+      '-r': '--require',
+      '-h': '--help',
+      '-s': '--script-mode',
+      '-v': '--version',
+      '-T': '--transpile-only',
+      '-H': '--compiler-host',
+      '-I': '--ignore',
+      '-P': '--project',
+      '-C': '--compiler',
+      '-D': '--ignore-diagnostics',
+      '-O': '--compiler-options'
+    }, {
+      argv,
+      stopAtPositional: true
+    })
+  }
 
   // Only setting defaults for CLI-specific flags
   // Anything passed to `register()` can be `undefined`; `create()` will apply
@@ -509,5 +512,5 @@ function hasOwnProperty (object: any, property: string): boolean {
 }
 
 if (require.main === module) {
-  main(process.argv.slice(2))
+  main()
 }
