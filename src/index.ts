@@ -447,7 +447,8 @@ export function create (rawOptions: CreateOptions = {}): Register {
 
   const readFile = options.readFile || ts.sys.readFile
   const fileExists = options.fileExists || ts.sys.fileExists
-  const transpileOnly = options.transpileOnly === true || options.typeCheck === false
+  // typeCheck can override transpileOnly, useful for CLI flag to override config file
+  const transpileOnly = options.transpileOnly === true && options.typeCheck !== true
   const transformers = options.transformers || undefined
   const ignoreDiagnostics = [
     6059, // "'rootDir' is expected to contain all source files."
