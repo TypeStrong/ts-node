@@ -40,7 +40,7 @@ jobs:
       matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         include:
           # Node 10
           - flavor: 1
@@ -49,72 +49,55 @@ jobs:
             typescript: latest
             typescriptFlag: latest
           # Node 12.15
+          # TODO Add comments about why we test 12.15; I think git blame says it's because of an ESM behavioral change that happened at 12.16
           - flavor: 2
             node: 12.15
             nodeFlag: 12_15
             typescript: latest
             typescriptFlag: latest
-          # Node 12.16
-          # TODO Add comments about why we test 2.15 and 2.16; I think git blame says it's because of an ESM behavioral change that happened at this version number
-          # TODO switch to '12' to get latest patch?
+          # Node 12
           - flavor: 3
-            node: 12.16
-            nodeFlag: 12_16
+            node: 12
+            nodeFlag: 12
             typescript: latest
             typescriptFlag: latest
-          # Node 13
-          - flavor: 4
-            node: 13
-            nodeFlag: 13
-            typescript: latest
-            typescriptFlag: latest
-          - flavor: 5
-            node: 13
-            nodeFlag: 13
-            typescript: 2.7
-            typescriptFlag: 2_7
-          - flavor: 6
-            node: 13
-            nodeFlag: 13
-            typescript: next
-            typescriptFlag: next
-          # Node 14
-          - flavor: 7
-            node: 14
-            nodeFlag: 14
-            typescript: latest
-            typescriptFlag: latest
-          - flavor: 8
-            node: 14
-            nodeFlag: 14
-            typescript: 2.7
-            typescriptFlag: 2_7
-          - flavor: 9
-            node: 14
-            nodeFlag: 14
-            typescript: next
-            typescriptFlag: next
           # Node 14.13.0
           # To test ESM builtin module resolution immediately before a node behavioral change: https://github.com/TypeStrong/ts-node/issues/1130
-          - flavor: 10
+          - flavor: 4
             node: 14.13.0
             nodeFlag: 14_13_0
             typescript: latest
             typescriptFlag: latest
+          # Node 14
+          - flavor: 5
+            node: 14
+            nodeFlag: 14
+            typescript: latest
+            typescriptFlag: latest
+          - flavor: 6
+            node: 14
+            nodeFlag: 14
+            typescript: 2.7
+            typescriptFlag: 2_7
+          - flavor: 7
+            node: 14
+            nodeFlag: 14
+            typescript: next
+            typescriptFlag: next
           # Node 15
-          - flavor: 11
+          - flavor: 8
             node: 15
             nodeFlag: 15
             typescript: latest
             typescriptFlag: latest
             downgradeNpm: true
-          - flavor: 12
+          - flavor: 9
             node: 15
             nodeFlag: 15
             typescript: 2.7
             typescriptFlag: 2_7
             downgradeNpm: true
-          - flavor: 13
+          - flavor: 10
             node: 15
             nodeFlag: 15
             typescript: next
