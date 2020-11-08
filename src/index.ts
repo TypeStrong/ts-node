@@ -300,7 +300,7 @@ export const DEFAULTS: RegisterOptions = {
 }
 
 /**
- * Default TypeScript compiler options required by `ts-node`.
+ * TypeScript compiler option values required by `ts-node` which cannot be overridden.
  */
 const TS_NODE_COMPILER_OPTIONS = {
   sourceMap: true,
