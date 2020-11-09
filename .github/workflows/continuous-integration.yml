@@ -150,19 +150,3 @@ jobs:
           flags: ${{ matrix.os }},node_${{ matrix.nodeFlag }},typescript_${{ matrix.typescriptFlag }}
       - run: npm run coverage-fix-paths
       - run: npm run coverage-report
-      - name: Coveralls
-        if: ${{ always() }}
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.github_token }}
-          parallel: true
-  finish:
-    needs: test
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.github_token }}
-          parallel-finished: true
