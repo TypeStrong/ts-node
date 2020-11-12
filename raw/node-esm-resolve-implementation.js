@@ -231,7 +231,12 @@ function resolveExtensions(search) {
 }
 
 function resolveIndex(search) {
-  return resolveExtensions(new URL('index', search));
+  const index = resolveExtensions(new URL('index', search));
+  if (index !== undefined) return index;
+
+  const pkg = resolveExtensions(new URL('package', search));
+  const config = getPackageConfig(pkg, search);
+  return packageMainResolve(pkg, config, search);
 }
 
 function finalizeResolution(resolved, base) {
