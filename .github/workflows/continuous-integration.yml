@@ -148,5 +148,3 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           flags: ${{ matrix.os }},node_${{ matrix.nodeFlag }},typescript_${{ matrix.typescriptFlag }}
-      - run: npm run coverage-fix-paths
-      - run: npm run coverage-report
