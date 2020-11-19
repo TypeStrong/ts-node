@@ -43,6 +43,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 
       // CLI options.
       '--help': Boolean,
+      '--cwd-mode': Boolean,
       '--script-mode': Boolean,
       '--version': arg.COUNT,
 
@@ -91,7 +92,8 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
   const {
     '--dir': dir,
     '--help': help = false,
-    '--script-mode': scriptMode = false,
+    '--script-mode': scriptMode,
+    '--cwd-mode': cwdMode,
     '--version': version = 0,
     '--require': argsRequire = [],
     '--eval': code = undefined,
@@ -127,7 +129,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 
     -h, --help                     Print CLI usage
     -v, --version                  Print module version information
-    -s, --script-mode              Use cwd from <script.ts> instead of current directory
+    --cwd-mode                     Use current directory instead of <script.ts> for config resolution
 
     -T, --transpile-only           Use TypeScript's faster \`transpileModule\`
     -H, --compiler-host            Use TypeScript's compiler host API
@@ -163,7 +165,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 
   // Register the TypeScript compiler instance.
   const service = register({
-    dir: getCwd(dir, scriptMode, scriptPath),
+    dir: getDir(dir, scriptMode, cwdMode, scriptPath),
     emit,
     files,
     pretty,
@@ -243,17 +245,26 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 /**
  * Get project path from args.
  */
-function getCwd (dir?: string, scriptMode?: boolean, scriptPath?: string) {
-  // Validate `--script-mode` usage is correct.
-  if (scriptMode) {
-    if (!scriptPath) {
-      throw new TypeError('Script mode must be used with a script name, e.g. `ts-node -s <script.ts>`')
-    }
-
-    if (dir) {
-      throw new TypeError('Script mode cannot be combined with `--dir`')
-    }
-
+function getDir (dir?: string, scriptMode?: boolean, cwdMode?: boolean, scriptPath?: string) {
+  // Validate `--script-mode` / `--cwd-mode` / `--dir` usage is correct.
+  if (dir && scriptMode) {
+    throw new TypeError('--script-mode cannot be combined with --dir')
+  }
+  if (dir && cwdMode) {
+    throw new TypeError('--cwd-mode cannot be combined with --dir')
+  }
+  if (scriptMode && cwdMode) {
+    throw new TypeError('--cwd-mode cannot be combined with --script-mode')
+  }
+  if (scriptMode && !scriptPath) {
+    throw new TypeError('--script-mode must be used with a script name, e.g. `ts-node --script-mode <script.ts>`')
+  }
+  const doScriptMode =
+    scriptMode === true ? true
+    : cwdMode === true ? false
+    : dir !== undefined ? false
+    : !!scriptPath
+  if (doScriptMode) {
     // Use node's own resolution behavior to ensure we follow symlinks.
     // scriptPath may omit file extension or point to a directory with or without package.json.
     // This happens before we are registered, so we tell node's resolver to consider ts, tsx, and jsx files.
@@ -270,7 +281,7 @@ function getCwd (dir?: string, scriptMode?: boolean, scriptPath?: string) {
       }
     }
     try {
-      return dirname(require.resolve(scriptPath))
+      return dirname(require.resolve(scriptPath!))
     } finally {
       for (const ext of extsTemporarilyInstalled) {
         delete require.extensions[ext] // tslint:disable-line
