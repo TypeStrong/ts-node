@@ -2,4 +2,4 @@
 
 import { main } from './bin'
 
-main(['--transpile-only', ...process.argv.slice(2)])
+main(undefined, { '--transpile-only': true })

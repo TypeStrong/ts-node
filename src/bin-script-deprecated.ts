@@ -7,4 +7,4 @@ console.warn(
   'Please use ts-node-script instead'
 )
 
-main(['--script-mode', ...process.argv.slice(2)])
+main(undefined, { '--script-mode': true })

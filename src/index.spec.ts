@@ -887,6 +887,14 @@ describe('ts-node', function () {
             return done()
           })
         })
+        it('via --es-module-specifier-resolution alias', (done) => {
+          exec(`${cmd} --experimental-modules --es-module-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
+            expect(err).to.equal(null)
+            expect(stdout).to.equal('foo bar baz biff\n')
+
+            return done()
+          })
+        })
         it('via NODE_OPTIONS', (done) => {
           exec(`${cmd} index.ts`, {
             cwd: join(__dirname, '../tests/esm-node-resolver'),
@@ -918,7 +926,7 @@ describe('ts-node', function () {
         }, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           // expect error from node's default resolver
-          expect(stderr).to.match(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*\n *at defaultResolve/)
+          expect(stderr).to.match(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,1}\n *at defaultResolve/)
           return done()
         })
       })

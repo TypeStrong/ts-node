@@ -4,6 +4,18 @@
 // upstream changes and understand our modifications.
 'use strict';
 
+const [nodeMajor, nodeMinor, nodePatch] = process.versions.node.split('.').map(s => parseInt(s, 10))
+// Test for 14.13.1 or higher
+const builtinModuleProtocol = nodeMajor > 14 || (
+    nodeMajor === 14 && (
+      nodeMinor > 13 || (
+        nodeMinor === 13 && nodePatch > 0
+      )
+    )
+  )
+    ? 'node:'
+    : 'nodejs:';
+
 const {
   ArrayIsArray,
   JSONParse,
@@ -688,13 +700,13 @@ function defaultResolve(specifier, { parentURL } = {}, defaultResolveUnused) {
       };
     }
   } catch {}
-  if (parsed && parsed.protocol === 'nodejs:')
+  if (parsed && parsed.protocol === builtinModuleProtocol)
     return { url: specifier };
   if (parsed && parsed.protocol !== 'file:' && parsed.protocol !== 'data:')
     throw new ERR_UNSUPPORTED_ESM_URL_SCHEME();
   if (NativeModule.canBeRequiredByUsers(specifier)) {
     return {
-      url: 'nodejs:' + specifier
+      url: builtinModuleProtocol + specifier
     };
   }
   if (parentURL && StringPrototypeStartsWith(parentURL, 'data:')) {

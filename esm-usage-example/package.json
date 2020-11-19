@@ -1,7 +1,7 @@
 {
   "type": "module",
   "dependencies": {
-    "ts-node": "github:TypeStrong/ts-node#ab/esm-support",
+    "ts-node": "github:TypeStrong/ts-node#master",
     "typescript": "^3.8.3"
   }
 }

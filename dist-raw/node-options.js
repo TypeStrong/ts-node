@@ -25,7 +25,9 @@ function parseArgv(argv) {
     '--preserve-symlinks': Boolean,
     '--preserve-symlinks-main': Boolean,
     '--input-type': String,
-    '--experimental-specifier-resolution': String
+    '--experimental-specifier-resolution': String,
+    // Legacy alias for node versions prior to 12.16
+    '--es-module-specifier-resolution': '--experimental-specifier-resolution',
   }, {
     argv,
     permissive: true
