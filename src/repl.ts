@@ -11,48 +11,6 @@ import { Register, TSError } from './index'
 export const EVAL_FILENAME = `[eval].ts`
 
 /**
- * Evaluate the code snippet.
- */
-export function _eval (service: Register, state: EvalState, input: string) {
-  const lines = state.lines
-  const isCompletion = !/\n$/.test(input)
-  const undo = appendEval(state, input)
-  let output: string
-
-  try {
-    output = service.compile(state.input, state.path, -lines)
-  } catch (err) {
-    undo()
-    throw err
-  }
-
-  // Use `diff` to check for new JavaScript to execute.
-  const changes = diffLines(state.output, output)
-
-  if (isCompletion) {
-    undo()
-  } else {
-    state.output = output
-  }
-
-  return changes.reduce((result, change) => {
-    return change.added ? exec(change.value, state.path) : result
-  }, undefined)
-}
-
-/**
- * Eval state management.
- */
-export class EvalState {
-  input = ''
-  output = ''
-  version = 0
-  lines = 0
-
-  constructor (public path: string) {}
-}
-
-/**
  * @param service - TypeScript compiler instance
  * @param state - Eval state management
  *
@@ -97,44 +55,45 @@ export function createReplService (
 }
 
 /**
- * Append to the eval instance and return an undo function.
+ * Eval state management.
  */
-export function appendEval (state: EvalState, input: string) {
-  const undoInput = state.input
-  const undoVersion = state.version
-  const undoOutput = state.output
-  const undoLines = state.lines
+export class EvalState {
+  input = ''
+  output = ''
+  version = 0
+  lines = 0
 
-  // Handle ASI issues with TypeScript re-evaluation.
-  if (undoInput.charAt(undoInput.length - 1) === '\n' && /^\s*[\/\[(`-]/.test(input) && !/;\s*$/.test(undoInput)) {
-    state.input = `${state.input.slice(0, -1)};\n`
-  }
-
-  state.input += input
-  state.lines += lineCount(input)
-  state.version++
-
-  return function () {
-    state.input = undoInput
-    state.output = undoOutput
-    state.version = undoVersion
-    state.lines = undoLines
-  }
+  constructor (public path: string) {}
 }
 
 /**
- * Count the number of lines.
+ * Evaluate the code snippet.
  */
-function lineCount (value: string) {
-  let count = 0
+export function _eval (service: Register, state: EvalState, input: string) {
+  const lines = state.lines
+  const isCompletion = !/\n$/.test(input)
+  const undo = appendEval(state, input)
+  let output: string
 
-  for (const char of value) {
-    if (char === '\n') {
-      count++
-    }
+  try {
+    output = service.compile(state.input, state.path, -lines)
+  } catch (err) {
+    undo()
+    throw err
   }
 
-  return count
+  // Use `diff` to check for new JavaScript to execute.
+  const changes = diffLines(state.output, output)
+
+  if (isCompletion) {
+    undo()
+  } else {
+    state.output = output
+  }
+
+  return changes.reduce((result, change) => {
+    return change.added ? exec(change.value, state.path) : result
+  }, undefined)
 }
 
 /**
@@ -144,23 +103,6 @@ export function exec (code: string, filename: string) {
   const script = new Script(code, { filename: filename })
 
   return script.runInThisContext()
-}
-
-const RECOVERY_CODES: Set<number> = new Set([
-  1003, // "Identifier expected."
-  1005, // "')' expected."
-  1109, // "Expression expected."
-  1126, // "Unexpected end of text."
-  1160, // "Unterminated template literal."
-  1161, // "Unterminated regular expression literal."
-  2355 // "A function whose declared type is neither 'void' nor 'any' must return a value."
-])
-
-/**
- * Check if a function can recover gracefully.
- */
-function isRecoverable (error: TSError) {
-  return error.diagnosticCodes.every(code => RECOVERY_CODES.has(code))
 }
 
 /**
@@ -230,4 +172,62 @@ export function startRepl (service: Register, state: EvalState, code?: string) {
       process.exit(1)
     })
   }
+}
+
+/**
+ * Append to the eval instance and return an undo function.
+ */
+export function appendEval (state: EvalState, input: string) {
+  const undoInput = state.input
+  const undoVersion = state.version
+  const undoOutput = state.output
+  const undoLines = state.lines
+
+  // Handle ASI issues with TypeScript re-evaluation.
+  if (undoInput.charAt(undoInput.length - 1) === '\n' && /^\s*[\/\[(`-]/.test(input) && !/;\s*$/.test(undoInput)) {
+    state.input = `${state.input.slice(0, -1)};\n`
+  }
+
+  state.input += input
+  state.lines += lineCount(input)
+  state.version++
+
+  return function () {
+    state.input = undoInput
+    state.output = undoOutput
+    state.version = undoVersion
+    state.lines = undoLines
+  }
+}
+
+/**
+ * Count the number of lines.
+ */
+function lineCount (value: string) {
+  let count = 0
+
+  for (const char of value) {
+    if (char === '\n') {
+      count++
+    }
+  }
+
+  return count
+}
+
+const RECOVERY_CODES: Set<number> = new Set([
+  1003, // "Identifier expected."
+  1005, // "')' expected."
+  1109, // "Expression expected."
+  1126, // "Unexpected end of text."
+  1160, // "Unterminated template literal."
+  1161, // "Unterminated regular expression literal."
+  2355 // "A function whose declared type is neither 'void' nor 'any' must return a value."
+])
+
+/**
+ * Check if a function can recover gracefully.
+ */
+function isRecoverable (error: TSError) {
+  return error.diagnosticCodes.every(code => RECOVERY_CODES.has(code))
 }
