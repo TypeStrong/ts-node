@@ -3,54 +3,90 @@ import { homedir } from 'os'
 import { join } from 'path'
 import { Recoverable, start } from 'repl'
 import { Script } from 'vm'
-import { Register, TSError } from './index'
+import { Register, CreateOptions, TSError } from './index'
+import { readFileSync, statSync } from 'fs'
 
 /**
  * Eval filename for REPL/debug.
+ * @internal
  */
 export const EVAL_FILENAME = `[eval].ts`
 
-/**
- * @param service - TypeScript compiler instance
- * @param state - Eval state management
- *
- * @returns an evaluator for the node REPL
- */
-export function createReplService (
-  service: Register,
-  state: EvalState = new EvalState(join(process.cwd(), EVAL_FILENAME))
-) {
-  return {
-    /**
-     * Eval code from the REPL.
-     */
-    eval: function (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any) {
-      let err: Error | null = null
-      let result: any
+export interface ReplService {
+  readonly state: EvalState
+  setService (service: Register): void
+  evalCode (code: string): void
+  /**
+   * eval implementation compatible with node's REPL API
+   */
+  nodeReplEval (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any): void
+  evalStateAwareHostFunctions: EvalStateAwareHostFunctions
+  /** Start a node REPL */
+  start (code?: string): void
+}
 
-      // TODO: Figure out how to handle completion here.
-      if (code === '.scope') {
-        callback(err)
-        return
-      }
+export interface CreateReplServiceOptions {
+  service?: Register
+  state?: EvalState
+}
 
-      try {
-        result = _eval(service, state, code)
-      } catch (error) {
-        if (error instanceof TSError) {
-          // Support recoverable compilations using >= node 6.
-          if (Recoverable && isRecoverable(error)) {
-            err = new Recoverable(error)
-          } else {
-            console.error(error)
-          }
-        } else {
-          err = error
-        }
-      }
+export function createReplService (options: CreateReplServiceOptions = {}) {
+  let service = options.service
+  const state = options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME))
+  const evalStateAwareHostFunctions = createEvalStateAwareHostFunctions(state)
 
-      return callback(err, result)
+  const replService: ReplService = {
+    state: options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME)),
+    setService,
+    evalCode,
+    nodeReplEval,
+    evalStateAwareHostFunctions,
+    start
+  }
+  return replService
+
+  function setService (_service: Register) {
+    service = _service
+  }
+
+  function evalCode (code: string) {
+    return _eval(service!, state, code)
+  }
+
+  /**
+   * Eval code from the REPL.
+   */
+  function nodeReplEval (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any) {
+    let err: Error | null = null
+    let result: any
+
+    // TODO: Figure out how to handle completion here.
+    if (code === '.scope') {
+      callback(err)
+      return
     }
+
+    try {
+      result = evalCode(code)
+    } catch (error) {
+      if (error instanceof TSError) {
+        // Support recoverable compilations using >= node 6.
+        if (Recoverable && isRecoverable(error)) {
+          err = new Recoverable(error)
+        } else {
+          console.error(error)
+        }
+      } else {
+        err = error
+      }
+    }
+
+    return callback(err, result)
+  }
+
+  function start (code?: string) {
+    // TODO assert that service is set; remove all ! postfixes
+    return startRepl(replService, service!, state, code)
   }
 }
 
@@ -63,13 +99,36 @@ export class EvalState {
   version = 0
   lines = 0
 
-  constructor (public path: string) {}
+  constructor (public path: string) { }
+}
+
+export type EvalStateAwareHostFunctions = Pick<CreateOptions, 'readFile' | 'fileExists'>
+
+export function createEvalStateAwareHostFunctions (state: EvalState): EvalStateAwareHostFunctions {
+  function readFile (path: string) {
+    if (path === state.path) return state.input
+
+    try {
+      return readFileSync(path, 'utf8')
+    } catch (err) {/* Ignore. */}
+  }
+  function fileExists (path: string) {
+    if (path === state.path) return true
+
+    try {
+      const stats = statSync(path)
+      return stats.isFile() || stats.isFIFO()
+    } catch (err) {
+      return false
+    }
+  }
+  return { readFile, fileExists }
 }
 
 /**
  * Evaluate the code snippet.
  */
-export function _eval (service: Register, state: EvalState, input: string) {
+function _eval (service: Register, state: EvalState, input: string) {
   const lines = state.lines
   const isCompletion = !/\n$/.test(input)
   const undo = appendEval(state, input)
@@ -99,7 +158,7 @@ export function _eval (service: Register, state: EvalState, input: string) {
 /**
  * Execute some code.
  */
-export function exec (code: string, filename: string) {
+function exec (code: string, filename: string) {
   const script = new Script(code, { filename: filename })
 
   return script.runInThisContext()
@@ -108,11 +167,11 @@ export function exec (code: string, filename: string) {
 /**
  * Start a CLI REPL.
  */
-export function startRepl (service: Register, state: EvalState, code?: string) {
+function startRepl (replService: ReplService, service: Register, state: EvalState, code?: string) {
   // Eval incoming code before the REPL starts.
   if (code) {
     try {
-      _eval(service, state, `${code}\n`)
+      replService.evalCode(`${code}\n`)
     } catch (err) {
       console.error(err)
       process.exit(1)
@@ -125,7 +184,7 @@ export function startRepl (service: Register, state: EvalState, code?: string) {
     output: process.stdout,
     // Mimicking node's REPL implementation: https://github.com/nodejs/node/blob/168b22ba073ee1cbf8d0bcb4ded7ff3099335d04/lib/internal/repl.js#L28-L30
     terminal: process.stdout.isTTY && !parseInt(process.env.NODE_NO_READLINE!, 10),
-    eval: createReplService(service, state).eval,
+    eval: replService.nodeReplEval,
     useGlobal: true
   })
 

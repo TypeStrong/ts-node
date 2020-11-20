@@ -13,10 +13,10 @@ import {
   VERSION
 } from './index'
 import {
-  _eval,
   EVAL_FILENAME,
   EvalState,
-  startRepl
+  createReplService,
+  ReplService
  } from './repl'
 
 /**
@@ -151,6 +151,8 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
   /** Unresolved.  May point to a symlink, not realpath.  May be missing file extension */
   const scriptPath = args._.length ? resolve(cwd, args._[0]) : undefined
   const state = new EvalState(scriptPath || join(cwd, EVAL_FILENAME))
+  const replService = createReplService({ state })
+  const { evalStateAwareHostFunctions } = replService
 
   // Register the TypeScript compiler instance.
   const service = register({
@@ -171,28 +173,12 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     ignoreDiagnostics,
     compilerOptions,
     require: argsRequire,
-    readFile: code !== undefined
-      ? (path: string) => {
-        if (path === state.path) return state.input
-
-        try {
-          return readFileSync(path, 'utf8')
-        } catch (err) {/* Ignore. */}
-      }
-      : undefined,
-    fileExists: code !== undefined
-      ? (path: string) => {
-        if (path === state.path) return true
-
-        try {
-          const stats = statSync(path)
-          return stats.isFile() || stats.isFIFO()
-        } catch (err) {
-          return false
-        }
-      }
-      : undefined
+    readFile: code !== undefined ? evalStateAwareHostFunctions.readFile : undefined,
+    fileExists: code !== undefined ? evalStateAwareHostFunctions.fileExists : undefined
   })
+
+  // Bind REPL service to ts-node compiler service (chicken-and-egg problem)
+  replService.setService(service)
 
   // Output project information.
   if (version >= 2) {
@@ -213,7 +199,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 
   // Execute the main contents (either eval, script or piped).
   if (code !== undefined && !interactive) {
-    evalAndExit(service, state, module, code, print)
+    evalAndExit(replService, module, code, print)
   } else {
     if (args._.length) {
       Module.runMain()
@@ -221,11 +207,11 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
       // Piping of execution _only_ occurs when no other script is specified.
       // --interactive flag forces REPL
       if (interactive || process.stdin.isTTY) {
-        startRepl(service, state, code)
+        replService.start(code)
       } else {
         let buffer = code || ''
         process.stdin.on('data', (chunk: Buffer) => buffer += chunk)
-        process.stdin.on('end', () => evalAndExit(service, state, module, buffer, print))
+        process.stdin.on('end', () => evalAndExit(replService, module, buffer, print))
       }
     }
   }
@@ -275,7 +261,7 @@ function getCwd (dir?: string, scriptMode?: boolean, scriptPath?: string) {
 /**
  * Evaluate a script.
  */
-function evalAndExit (service: Register, state: EvalState, module: Module, code: string, isPrinted: boolean) {
+function evalAndExit (replService: ReplService, module: Module, code: string, isPrinted: boolean) {
   let result: any
 
   ;(global as any).__filename = module.filename
@@ -285,7 +271,7 @@ function evalAndExit (service: Register, state: EvalState, module: Module, code:
   ;(global as any).require = module.require.bind(module)
 
   try {
-    result = _eval(service, state, code)
+    result = replService.evalCode(code)
   } catch (error) {
     if (error instanceof TSError) {
       console.error(error)
