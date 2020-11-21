@@ -257,7 +257,7 @@ function startRepl (replService: ReplService, service: Register, state: EvalStat
 /**
  * Append to the eval instance and return an undo function.
  */
-export function appendEval (state: EvalState, input: string) {
+function appendEval (state: EvalState, input: string) {
   const undoInput = state.input
   const undoVersion = state.version
   const undoOutput = state.output
