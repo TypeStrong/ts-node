@@ -8,7 +8,8 @@ import type * as tsNodeTypes from './index'
 import { unlinkSync, existsSync, lstatSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
-import { createRequire, createRequireFromPath } from 'module'
+import type _createRequire from 'create-require'
+const createRequire: typeof _createRequire = require('create-require')
 import { pathToFileURL } from 'url'
 import Module = require('module')
 
@@ -22,7 +23,7 @@ const BIN_SCRIPT_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-script')
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
 
 // `createRequire` does not exist on older node versions
-const testsDirRequire = (createRequire || createRequireFromPath)(join(TEST_DIR, 'index.js')) // tslint:disable-line
+const testsDirRequire = createRequire(join(TEST_DIR, 'index.js')) // tslint:disable-line
 
 // Set after ts-node is installed locally
 let { register, create, VERSION }: typeof tsNodeTypes = {} as any
