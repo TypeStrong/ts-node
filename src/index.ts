@@ -7,6 +7,8 @@ import { fileURLToPath } from 'url'
 import type * as _ts from 'typescript'
 import * as Module from 'module'
 
+export { createReplService, CreateReplServiceOptions, ReplService } from './repl'
+
 /**
  * Does this version of node obey the package.json "type" field
  * and throw ERR_REQUIRE_ESM when attempting to require() an ESM modules.
