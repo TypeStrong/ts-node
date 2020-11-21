@@ -5,6 +5,8 @@ import { Recoverable, start } from 'repl'
 import { Script } from 'vm'
 import { Register, CreateOptions, TSError } from './index'
 import { readFileSync, statSync } from 'fs'
+import { Console } from 'console'
+import * as tty from 'tty'
 
 /**
  * Eval filename for REPL/debug.
@@ -23,17 +25,32 @@ export interface ReplService {
   evalStateAwareHostFunctions: EvalStateAwareHostFunctions
   /** Start a node REPL */
   start (code?: string): void
+  /** @internal */
+  readonly stdin: NodeJS.ReadableStream
+  /** @internal */
+  readonly stdout: NodeJS.WritableStream
+  /** @internal */
+  readonly stderr: NodeJS.WritableStream
+  /** @internal */
+  readonly console: Console
 }
 
 export interface CreateReplServiceOptions {
   service?: Register
   state?: EvalState
+  stdin?: NodeJS.ReadableStream
+  stdout?: NodeJS.WritableStream
+  stderr?: NodeJS.WritableStream
 }
 
 export function createReplService (options: CreateReplServiceOptions = {}) {
   let service = options.service
   const state = options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME))
   const evalStateAwareHostFunctions = createEvalStateAwareHostFunctions(state)
+  const stdin = options.stdin ?? process.stdin
+  const stdout = options.stdout ?? process.stdout
+  const stderr = options.stderr ?? process.stderr
+  const _console = stdout === process.stdout && stderr === process.stderr ? console : new Console(stdout, stderr)
 
   const replService: ReplService = {
     state: options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME)),
@@ -41,7 +58,11 @@ export function createReplService (options: CreateReplServiceOptions = {}) {
     evalCode,
     nodeReplEval,
     evalStateAwareHostFunctions,
-    start
+    start,
+    stdin,
+    stdout,
+    stderr,
+    console: _console
   }
   return replService
 
@@ -173,17 +194,17 @@ function startRepl (replService: ReplService, service: Register, state: EvalStat
     try {
       replService.evalCode(`${code}\n`)
     } catch (err) {
-      console.error(err)
+      replService.console.error(err)
       process.exit(1)
     }
   }
 
   const repl = start({
     prompt: '> ',
-    input: process.stdin,
-    output: process.stdout,
+    input: replService.stdin,
+    output: replService.stdout,
     // Mimicking node's REPL implementation: https://github.com/nodejs/node/blob/168b22ba073ee1cbf8d0bcb4ded7ff3099335d04/lib/internal/repl.js#L28-L30
-    terminal: process.stdout.isTTY && !parseInt(process.env.NODE_NO_READLINE!, 10),
+    terminal: (replService.stdout as tty.WriteStream).isTTY && !parseInt(process.env.NODE_NO_READLINE!, 10),
     eval: replService.nodeReplEval,
     useGlobal: true
   })
@@ -227,7 +248,7 @@ function startRepl (replService: ReplService, service: Register, state: EvalStat
     repl.setupHistory(historyPath, err => {
       if (!err) return
 
-      console.error(err)
+      replService.console.error(err)
       process.exit(1)
     })
   }
