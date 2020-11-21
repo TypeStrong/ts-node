@@ -10,7 +10,9 @@ import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
 import { createRequire, createRequireFromPath } from 'module'
 import { pathToFileURL } from 'url'
-import Module = require('module')
+import type * as Module from 'module'
+import { PassThrough } from 'stream'
+import * as getStream from 'get-stream'
 
 const execP = promisify(exec)
 
@@ -25,7 +27,7 @@ const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset
 const testsDirRequire = (createRequire || createRequireFromPath)(join(TEST_DIR, 'index.js')) // tslint:disable-line
 
 // Set after ts-node is installed locally
-let { register, create, VERSION }: typeof tsNodeTypes = {} as any
+let { register, create, VERSION, createReplService }: typeof tsNodeTypes = {} as any
 
 // Pack and install ts-node locally, necessary to test package "exports"
 before(async function () {
@@ -34,7 +36,7 @@ before(async function () {
   await execP(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
   existsSync(packageLockPath) && unlinkSync(packageLockPath)
-  ;({ register, create, VERSION } = testsDirRequire('ts-node'))
+  ;({ register, create, VERSION, createReplService } = testsDirRequire('ts-node'))
 })
 
 describe('ts-node', function () {
@@ -368,6 +370,34 @@ describe('ts-node', function () {
       })
 
       cp.stdin!.end('\nconst a = 123\n.type a')
+    })
+
+    it('REPL can be created via API', async () => {
+      const stdin = new PassThrough()
+      const stdout = new PassThrough()
+      const stderr = new PassThrough()
+      const replService = createReplService({
+        stdin,
+        stdout,
+        stderr
+      })
+      const service = create(replService.evalStateAwareHostFunctions)
+      replService.setService(service)
+      replService.start()
+      stdin.write(
+        'const a = 123\n' +
+        '.type a\n'
+      )
+      stdin.end()
+      await promisify(setTimeout)(100)
+      stdout.end()
+      stderr.end()
+      expect(await getStream(stderr)).to.equal('')
+      expect(await getStream(stdout)).to.equal(
+        '> \'use strict\'\n' +
+        '> const a: 123\n' +
+        '> '
+      )
     })
 
     it('should support require flags', function (done) {
