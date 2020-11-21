@@ -10,7 +10,7 @@ import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
 import { createRequire, createRequireFromPath } from 'module'
 import { pathToFileURL } from 'url'
-import type * as Module from 'module'
+import Module = require('module')
 import { PassThrough } from 'stream'
 import * as getStream from 'get-stream'
 
@@ -381,7 +381,7 @@ describe('ts-node', function () {
         stdout,
         stderr
       })
-      const service = create(replService.evalStateAwareHostFunctions)
+      const service = create(replService.evalAwarePartialHost)
       replService.setService(service)
       replService.start()
       stdin.write(

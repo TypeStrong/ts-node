@@ -4,10 +4,8 @@ import { join, resolve, dirname } from 'path'
 import { inspect } from 'util'
 import Module = require('module')
 import arg = require('arg')
-import { readFileSync, statSync } from 'fs'
 import {
   parse,
-  Register,
   register,
   TSError,
   VERSION
@@ -152,7 +150,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
   const scriptPath = args._.length ? resolve(cwd, args._[0]) : undefined
   const state = new EvalState(scriptPath || join(cwd, EVAL_FILENAME))
   const replService = createReplService({ state })
-  const { evalStateAwareHostFunctions } = replService
+  const { evalAwarePartialHost } = replService
 
   // Register the TypeScript compiler instance.
   const service = register({
@@ -173,8 +171,8 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     ignoreDiagnostics,
     compilerOptions,
     require: argsRequire,
-    readFile: code !== undefined ? evalStateAwareHostFunctions.readFile : undefined,
-    fileExists: code !== undefined ? evalStateAwareHostFunctions.fileExists : undefined
+    readFile: code !== undefined ? evalAwarePartialHost.readFile : undefined,
+    fileExists: code !== undefined ? evalAwarePartialHost.fileExists : undefined
   })
 
   // Bind REPL service to ts-node compiler service (chicken-and-egg problem)

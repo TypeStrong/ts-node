@@ -16,13 +16,16 @@ export const EVAL_FILENAME = `[eval].ts`
 
 export interface ReplService {
   readonly state: EvalState
+  /**
+   * Bind this REPL to a ts-node compiler service.  A compiler service must be bound before `eval`-ing code or starting the REPL
+   */
   setService (service: Register): void
   evalCode (code: string): void
   /**
-   * eval implementation compatible with node's REPL API
+   * `eval` implementation compatible with node's REPL API
    */
   nodeReplEval (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any): void
-  evalStateAwareHostFunctions: EvalStateAwareHostFunctions
+  evalAwarePartialHost: EvalAwarePartialHost
   /** Start a node REPL */
   start (code?: string): void
   /** @internal */
@@ -46,7 +49,7 @@ export interface CreateReplServiceOptions {
 export function createReplService (options: CreateReplServiceOptions = {}) {
   let service = options.service
   const state = options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME))
-  const evalStateAwareHostFunctions = createEvalStateAwareHostFunctions(state)
+  const evalAwarePartialHost = createEvalAwarePartialHost(state)
   const stdin = options.stdin ?? process.stdin
   const stdout = options.stdout ?? process.stdout
   const stderr = options.stderr ?? process.stderr
@@ -57,7 +60,7 @@ export function createReplService (options: CreateReplServiceOptions = {}) {
     setService,
     evalCode,
     nodeReplEval,
-    evalStateAwareHostFunctions,
+    evalAwarePartialHost,
     start,
     stdin,
     stdout,
@@ -74,9 +77,6 @@ export function createReplService (options: CreateReplServiceOptions = {}) {
     return _eval(service!, state, code)
   }
 
-  /**
-   * Eval code from the REPL.
-   */
   function nodeReplEval (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any) {
     let err: Error | null = null
     let result: any
@@ -112,20 +112,31 @@ export function createReplService (options: CreateReplServiceOptions = {}) {
 }
 
 /**
- * Eval state management.
+ * Eval state management. Stores virtual `[eval].ts` file
  */
 export class EvalState {
+  /** @internal */
   input = ''
+  /** @internal */
   output = ''
+  /** @internal */
   version = 0
+  /** @internal */
   lines = 0
+
+  // tslint:disable-next-line:variable-name
+  __tsNodeEvalStateBrand: unknown
 
   constructor (public path: string) { }
 }
 
-export type EvalStateAwareHostFunctions = Pick<CreateOptions, 'readFile' | 'fileExists'>
+/**
+ * Filesystem host functions which are aware of the "virtual" [eval].ts file used to compile REPL inputs.
+ * Must be passed to `create()` to create a ts-node compiler service which can compile REPL inputs.
+ */
+export type EvalAwarePartialHost = Pick<CreateOptions, 'readFile' | 'fileExists'>
 
-export function createEvalStateAwareHostFunctions (state: EvalState): EvalStateAwareHostFunctions {
+export function createEvalAwarePartialHost (state: EvalState): EvalAwarePartialHost {
   function readFile (path: string) {
     if (path === state.path) return state.input
 
