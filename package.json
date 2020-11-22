@@ -111,6 +111,7 @@
   },
   "dependencies": {
     "arg": "^4.1.0",
+    "create-require": "^1.1.0",
     "diff": "^4.0.1",
     "make-error": "^1.1.1",
     "source-map-support": "^0.5.17",
