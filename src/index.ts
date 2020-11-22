@@ -5,9 +5,9 @@ import { BaseError } from 'make-error'
 import * as util from 'util'
 import { fileURLToPath } from 'url'
 import type * as _ts from 'typescript'
-import * as Module from 'module'
-import {createRequire as nodeCreateRequire, createRequireFromPath as nodeCreateRequireFromPath} from 'module'
+import { Module, createRequire as nodeCreateRequire, createRequireFromPath as nodeCreateRequireFromPath } from 'module'
 import type _createRequire from 'create-require'
+// tslint:disable-next-line
 const createRequire = nodeCreateRequire ?? nodeCreateRequireFromPath ?? require('create-require') as typeof _createRequire
 
 /**
