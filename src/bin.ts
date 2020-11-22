@@ -9,7 +9,7 @@ import { diffLines } from 'diff'
 import { Script } from 'vm'
 import { readFileSync, statSync, realpathSync } from 'fs'
 import { homedir } from 'os'
-import { VERSION, TSError, parse, Register, register } from './index'
+import { VERSION, TSError, parse, Service, register } from './index'
 
 /**
  * Eval filename for REPL/debug.
@@ -284,7 +284,7 @@ function getCwd (dir?: string, scriptMode?: boolean, scriptPath?: string) {
 /**
  * Evaluate a script.
  */
-function evalAndExit (service: Register, state: EvalState, module: Module, code: string, isPrinted: boolean) {
+function evalAndExit (service: Service, state: EvalState, module: Module, code: string, isPrinted: boolean) {
   let result: any
 
   ;(global as any).__filename = module.filename
@@ -312,7 +312,7 @@ function evalAndExit (service: Register, state: EvalState, module: Module, code:
 /**
  * Evaluate the code snippet.
  */
-function _eval (service: Register, state: EvalState, input: string) {
+function _eval (service: Service, state: EvalState, input: string) {
   const lines = state.lines
   const isCompletion = !/\n$/.test(input)
   const undo = appendEval(state, input)
@@ -351,7 +351,7 @@ function exec (code: string, filename: string) {
 /**
  * Start a CLI REPL.
  */
-function startRepl (service: Register, state: EvalState, code?: string) {
+function startRepl (service: Service, state: EvalState, code?: string) {
   // Eval incoming code before the REPL starts.
   if (code) {
     try {
