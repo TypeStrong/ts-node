@@ -24,7 +24,7 @@ export interface ReplService {
   /**
    * `eval` implementation compatible with node's REPL API
    */
-  nodeReplEval (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any): void
+  nodeEval (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any): void
   evalAwarePartialHost: EvalAwarePartialHost
   /** Start a node REPL */
   start (code?: string): void
@@ -38,7 +38,7 @@ export interface ReplService {
   readonly console: Console
 }
 
-export interface CreateReplServiceOptions {
+export interface CreateReplOptions {
   service?: Register
   state?: EvalState
   stdin?: NodeJS.ReadableStream
@@ -46,7 +46,7 @@ export interface CreateReplServiceOptions {
   stderr?: NodeJS.WritableStream
 }
 
-export function createReplService (options: CreateReplServiceOptions = {}) {
+export function createRepl (options: CreateReplOptions = {}) {
   let service = options.service
   const state = options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME))
   const evalAwarePartialHost = createEvalAwarePartialHost(state)
@@ -59,7 +59,7 @@ export function createReplService (options: CreateReplServiceOptions = {}) {
     state: options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME)),
     setService,
     evalCode,
-    nodeReplEval,
+    nodeEval,
     evalAwarePartialHost,
     start,
     stdin,
@@ -77,7 +77,7 @@ export function createReplService (options: CreateReplServiceOptions = {}) {
     return _eval(service!, state, code)
   }
 
-  function nodeReplEval (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any) {
+  function nodeEval (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any) {
     let err: Error | null = null
     let result: any
 
@@ -216,7 +216,7 @@ function startRepl (replService: ReplService, service: Register, state: EvalStat
     output: replService.stdout,
     // Mimicking node's REPL implementation: https://github.com/nodejs/node/blob/168b22ba073ee1cbf8d0bcb4ded7ff3099335d04/lib/internal/repl.js#L28-L30
     terminal: (replService.stdout as tty.WriteStream).isTTY && !parseInt(process.env.NODE_NO_READLINE!, 10),
-    eval: replService.nodeReplEval,
+    eval: replService.nodeEval,
     useGlobal: true
   })
 

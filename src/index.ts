@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url'
 import type * as _ts from 'typescript'
 import * as Module from 'module'
 
-export { createReplService, CreateReplServiceOptions, ReplService } from './repl'
+export { createRepl, CreateReplOptions, ReplService } from './repl'
 
 /**
  * Does this version of node obey the package.json "type" field

@@ -27,7 +27,7 @@ const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset
 const testsDirRequire = (createRequire || createRequireFromPath)(join(TEST_DIR, 'index.js')) // tslint:disable-line
 
 // Set after ts-node is installed locally
-let { register, create, VERSION, createReplService }: typeof tsNodeTypes = {} as any
+let { register, create, VERSION, createRepl }: typeof tsNodeTypes = {} as any
 
 // Pack and install ts-node locally, necessary to test package "exports"
 before(async function () {
@@ -36,7 +36,7 @@ before(async function () {
   await execP(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
   existsSync(packageLockPath) && unlinkSync(packageLockPath)
-  ;({ register, create, VERSION, createReplService } = testsDirRequire('ts-node'))
+  ;({ register, create, VERSION, createRepl } = testsDirRequire('ts-node'))
 })
 
 describe('ts-node', function () {
