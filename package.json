@@ -81,6 +81,7 @@
   },
   "homepage": "https://github.com/TypeStrong/ts-node",
   "devDependencies": {
+    "@swc/core": ">=1.2.38",
     "@types/chai": "^4.0.4",
     "@types/diff": "^4.0.2",
     "@types/lodash": "^4.14.151",
@@ -111,11 +112,12 @@
     "@swc/core": ">=1.2.38",
     "typescript": ">=2.7"
   },
-  "optionalDependencies": {
-    "@swc/core": ">=1.2.38"
+  "peerDependenciesMeta": {
+    "@swc/core": {
+      "optional": true
+    }
   },
   "dependencies": {
-    "@swc/core": ">=1.2.38",
     "arg": "^4.1.0",
     "diff": "^4.0.1",
     "make-error": "^1.1.1",

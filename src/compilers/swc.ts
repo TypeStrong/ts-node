@@ -32,7 +32,7 @@ export const transpileModule: typeof ts.transpileModule = (input: string, transp
           development: false,
           useBuiltins: false,
           pragma: jsxFactory!,
-          pragmaFrag: jsxFragmentFactory!,
+          pragmaFrag: jsxFragmentFactory!
         }
       }
     }
