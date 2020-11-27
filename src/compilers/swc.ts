@@ -1,6 +1,7 @@
 import type * as ts from 'typescript'
 import * as swc from '@swc/core'
-import { JscTarget } from '@swc/core'
+
+export const version = `${ require('../../package').version }-TODO-APPEND-TS-VERSION`
 
 export const transpileModule: typeof ts.transpileModule = (input: string, transpileOptions: ts.TranspileOptions): ts.TranspileOutput => {
   const compilerOptions = transpileOptions.compilerOptions!
@@ -40,7 +41,7 @@ export const transpileModule: typeof ts.transpileModule = (input: string, transp
   return { outputText: code, sourceMapText: map }
 }
 
-const targetMapping = new Map<ts.ScriptTarget, JscTarget>()
+const targetMapping = new Map<ts.ScriptTarget, swc.JscTarget>()
 targetMapping.set(/* ts.ScriptTarget.ES3 */ 0, 'es3')
 targetMapping.set(/* ts.ScriptTarget.ES5 */ 1, 'es5')
 targetMapping.set(/* ts.ScriptTarget.ES2015 */ 2, 'es2015')
