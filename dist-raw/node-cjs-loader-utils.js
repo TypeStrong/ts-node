@@ -3,7 +3,7 @@
 // Each function and variable below must have a comment linking to the source in node's github repo.
 
 const path = require('path');
-const fs = require('fs');
+const {internalModuleReadJSON} = require('./node-internal-fs');
 
 module.exports.assertScriptCanLoadAsCJSImpl = assertScriptCanLoadAsCJSImpl;
 
@@ -74,17 +74,6 @@ function readPackage(requestPath) {
     e.path = jsonPath;
     e.message = 'Error parsing ' + jsonPath + ': ' + e.message;
     throw e;
-  }
-}
-
-// In node's core, this is implemented in C
-// https://github.com/nodejs/node/blob/e9f293750760d59243020d0376edf242c9a26b67/src/node_file.cc#L845-L939
-function internalModuleReadJSON(path) {
-  try {
-    return fs.readFileSync(path, 'utf8')
-  } catch (e) {
-    if (e.code === 'ENOENT') return undefined
-    throw e
   }
 }
 

@@ -1,4 +1,4 @@
-// Copied from https://raw.githubusercontent.com/nodejs/node/v13.12.0/lib/internal/modules/esm/resolve.js
+// Copied from https://raw.githubusercontent.com/nodejs/node/v15.3.0/lib/internal/modules/esm/resolve.js
 // Then modified to suite our needs.
 // Formatting is intentionally bad to keep the diff as small as possible, to make it easier to merge
 // upstream changes and understand our modifications.
@@ -25,11 +25,11 @@ const {
   ObjectFreeze,
   ObjectGetOwnPropertyNames,
   ObjectPrototypeHasOwnProperty,
-  RegExp,
+  // RegExp,
   RegExpPrototypeTest,
   SafeMap,
   SafeSet,
-  String,
+  // String,
   StringPrototypeEndsWith,
   StringPrototypeIndexOf,
   StringPrototypeLastIndexOf,
@@ -38,24 +38,35 @@ const {
   StringPrototypeSplit,
   StringPrototypeStartsWith,
   StringPrototypeSubstr,
-} = primordials;
-const internalFS = require('internal/fs/utils');
-const { NativeModule } = require('internal/bootstrap/loaders');
+} = require('./node-primordials');
+
+// const internalFS = require('internal/fs/utils');
+// const { NativeModule } = require('internal/bootstrap/loaders');
+const Module = require('module')
+const NativeModule = {
+  canBeRequiredByUsers(specifier) {
+    return Module.builtinModules.includes(specifier)
+  }
+}
 const {
   realpathSync,
   statSync,
   Stats,
 } = require('fs');
-const { getOptionValue } = require('internal/options');
-// Do not eagerly grab .manifest, it may be in TDZ
-const policy = getOptionValue('--experimental-policy') ?
-  require('internal/process/policy') :
-  null;
+// const { getOptionValue } = require('internal/options');
+const { getOptionValue } = require('./node-options');
+// // Do not eagerly grab .manifest, it may be in TDZ
+// const policy = getOptionValue('--experimental-policy') ?
+//   require('internal/process/policy') :
+//   null;
+// disabled for now.  I am not sure if/how we should support this
+const policy = null;
 const { sep, relative } = require('path');
 const preserveSymlinks = getOptionValue('--preserve-symlinks');
 const preserveSymlinksMain = getOptionValue('--preserve-symlinks-main');
 const typeFlag = getOptionValue('--input-type');
-const { URL, pathToFileURL, fileURLToPath } = require('internal/url');
+// const { URL, pathToFileURL, fileURLToPath } = require('internal/url');
+const { URL, pathToFileURL, fileURLToPath } = require('url');
 const {
   ERR_INPUT_TYPE_NOT_ALLOWED,
   ERR_INVALID_ARG_VALUE,
@@ -68,15 +79,24 @@ const {
   ERR_PACKAGE_PATH_NOT_EXPORTED,
   ERR_UNSUPPORTED_DIR_IMPORT,
   ERR_UNSUPPORTED_ESM_URL_SCHEME,
-} = require('internal/errors').codes;
-const { Module: CJSModule } = require('internal/modules/cjs/loader');
+// } = require('internal/errors').codes;
+} = require('./errors').codes;
 
-const packageJsonReader = require('internal/modules/package_json_reader');
+// const { Module: CJSModule } = require('internal/modules/cjs/loader');
+const CJSModule = Module;
+
+// const packageJsonReader = require('internal/modules/package_json_reader');
+const packageJsonReader = require('./node-package-json-reader');
 const userConditions = getOptionValue('--conditions');
 const DEFAULT_CONDITIONS = ObjectFreeze(['node', 'import', ...userConditions]);
 const DEFAULT_CONDITIONS_SET = new SafeSet(DEFAULT_CONDITIONS);
 
 const pendingDeprecation = getOptionValue('--pending-deprecation');
+
+function createResolve(opts) {
+// TODO receive cached fs implementations here
+const {tsExtensions, jsExtensions, preferTsExts} = opts;
+
 const emittedPackageWarnings = new SafeSet();
 function emitFolderMapDeprecation(match, pjsonUrl, isExports, base) {
   const pjsonPath = fileURLToPath(pjsonUrl);
@@ -308,7 +328,8 @@ function resolveReplacementExtensions(search) {
     const pathnameWithoutExtension = search.pathname.slice(0, search.pathname.length - 3);
     for (let i = 0; i < replacementExtensions.length; i++) {
       const extension = replacementExtensions[i];
-      const guess = new URL(`${pathnameWithoutExtension}${extension}`, search);
+      const guess = new URL(search.toString());
+      guess.pathname = `${pathnameWithoutExtension}${extension}`;
       if (fileExists(guess)) return guess;
     }
   }
@@ -326,7 +347,10 @@ function finalizeResolution(resolved, base) {
       resolved.pathname, 'must not include encoded "/" or "\\" characters',
       fileURLToPath(base));
 
-  const path = fileURLToPath(resolved);
+  const file = resolveReplacementExtensions(resolved) || resolved;
+
+  const path = fileURLToPath(file);
+
   if (getOptionValue('--experimental-specifier-resolution') === 'node') {
     let file = resolveExtensionsWithTryExactName(resolved);
     if (file !== undefined) return file;
@@ -348,7 +372,7 @@ function finalizeResolution(resolved, base) {
     throw err;
   } else if (!stats.isFile()) {
     throw new ERR_MODULE_NOT_FOUND(
-      path || resolved.pathname, base && fileURLToPath(base), 'module');
+      path || resolved.pathname, fileURLToPath(base), 'module');
   }
 
   return resolved;
@@ -862,13 +886,13 @@ function defaultResolve(specifier, context = {}, defaultResolveUnused) {
       };
     }
   } catch {}
-  if (parsed && parsed.protocol === 'node:')
+  if (parsed && parsed.protocol === builtinModuleProtocol)
     return { url: specifier };
   if (parsed && parsed.protocol !== 'file:' && parsed.protocol !== 'data:')
     throw new ERR_UNSUPPORTED_ESM_URL_SCHEME(parsed);
   if (NativeModule.canBeRequiredByUsers(specifier)) {
     return {
-      url: 'node:' + specifier
+      url: builtinModuleProtocol + specifier
     };
   }
   if (parentURL && StringPrototypeStartsWith(parentURL, 'data:')) {
@@ -932,11 +956,15 @@ function defaultResolve(specifier, context = {}, defaultResolveUnused) {
   return { url: `${url}` };
 }
 
-module.exports = {
+return {
   DEFAULT_CONDITIONS,
   defaultResolve,
   encodedSepRegEx,
   getPackageType,
   packageExportsResolve,
   packageImportsResolve
+};
+}
+module.exports = {
+  createResolve
 };
