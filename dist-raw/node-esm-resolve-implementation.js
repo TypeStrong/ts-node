@@ -347,11 +347,8 @@ function finalizeResolution(resolved, base) {
       resolved.pathname, 'must not include encoded "/" or "\\" characters',
       fileURLToPath(base));
 
-  const file = resolveReplacementExtensions(resolved) || resolved;
-
-  const path = fileURLToPath(file);
-
   if (getOptionValue('--experimental-specifier-resolution') === 'node') {
+    const path = fileURLToPath(resolved);
     let file = resolveExtensionsWithTryExactName(resolved);
     if (file !== undefined) return file;
     if (!StringPrototypeEndsWith(path, '/')) {
@@ -364,6 +361,9 @@ function finalizeResolution(resolved, base) {
       resolved.pathname, fileURLToPath(base), 'module');
   }
 
+  const file = resolveReplacementExtensions(resolved) || resolved;
+  const path = fileURLToPath(file);
+
   const stats = tryStatSync(StringPrototypeEndsWith(path, '/') ?
     StringPrototypeSlice(path, -1) : path);
   if (stats.isDirectory()) {
@@ -375,7 +375,7 @@ function finalizeResolution(resolved, base) {
       path || resolved.pathname, fileURLToPath(base), 'module');
   }
 
-  return resolved;
+  return file;
 }
 
 function throwImportNotDefined(specifier, packageJSONUrl, base) {
