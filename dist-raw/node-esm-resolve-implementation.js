@@ -307,7 +307,8 @@ function resolveReplacementExtensions(search) {
     const pathnameWithoutExtension = search.pathname.slice(0, search.pathname.length - 3);
     for (let i = 0; i < replacementExtensions.length; i++) {
       const extension = replacementExtensions[i];
-      const guess = new URL(`${pathnameWithoutExtension}${extension}`, search);
+      const guess = new URL(search.toString());
+      guess.pathname = `${pathnameWithoutExtension}${extension}`;
       if (fileExists(guess)) return guess;
     }
   }

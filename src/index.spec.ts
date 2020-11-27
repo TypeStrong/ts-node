@@ -932,6 +932,15 @@ describe('ts-node', function () {
         })
       })
 
+      it('should bypass import cache when changing search params', (done) => {
+        exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm-import-cache') }, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('log1\nlog2\nlog2\n')
+
+          return done()
+        })
+      })
+
       it('should support transpile only mode via dedicated loader entrypoint', (done) => {
         exec(`${cmd}/transpile-only index.ts`, { cwd: join(__dirname, '../tests/esm-transpile-only') }, function (err, stdout) {
           expect(err).to.equal(null)
