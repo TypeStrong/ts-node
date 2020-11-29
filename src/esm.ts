@@ -34,7 +34,7 @@ export function registerAndCreateEsmHooks (opts?: RegisterOptions) {
     }
 
     const parsed = parseUrl(specifier)
-    const { pathname, protocol, hostname } = parsed
+    const { protocol, hostname } = parsed
 
     if (!isFileUrlOrNodeStyleSpecifier(parsed)) {
       return defer()
@@ -55,8 +55,8 @@ export function registerAndCreateEsmHooks (opts?: RegisterOptions) {
     return nodeResolveImplementation.defaultResolve(specifier, context, defaultResolve)
   }
 
-  type Format = 'builtin'	| 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm'
-  async function getFormat (url: string, context: {}, defaultGetFormat: typeof getFormat): Promise<{format: Format}> {
+  type Format = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm'
+  async function getFormat (url: string, context: unknown, defaultGetFormat: typeof getFormat): Promise<{format: Format}> {
     const defer = (overrideUrl: string = url) => defaultGetFormat(overrideUrl, context, defaultGetFormat)
 
     const parsed = parseUrl(url)

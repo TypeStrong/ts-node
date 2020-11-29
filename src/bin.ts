@@ -7,7 +7,7 @@ import Module = require('module')
 import arg = require('arg')
 import { diffLines } from 'diff'
 import { Script } from 'vm'
-import { readFileSync, statSync, realpathSync } from 'fs'
+import { readFileSync, statSync } from 'fs'
 import { homedir } from 'os'
 import { VERSION, TSError, parse, Register, register } from './index'
 
@@ -186,7 +186,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 
         try {
           return readFileSync(path, 'utf8')
-        } catch (err) {/* Ignore. */}
+        } catch (err) { /* Ignore. */ }
       }
       : undefined,
     fileExists: code !== undefined
@@ -264,16 +264,16 @@ function getCwd (dir?: string, scriptMode?: boolean, scriptPath?: string) {
     const exts = ['.js', '.jsx', '.ts', '.tsx']
     const extsTemporarilyInstalled: string[] = []
     for (const ext of exts) {
-      if (!hasOwnProperty(require.extensions, ext)) { // tslint:disable-line
+      if (!hasOwnProperty(require.extensions, ext)) {
         extsTemporarilyInstalled.push(ext)
-        require.extensions[ext] = function() {} // tslint:disable-line
+        require.extensions[ext] = function () {}
       }
     }
     try {
       return dirname(require.resolve(scriptPath))
     } finally {
       for (const ext of extsTemporarilyInstalled) {
-        delete require.extensions[ext] // tslint:disable-line
+        delete require.extensions[ext]
       }
     }
   }
@@ -366,7 +366,8 @@ function startRepl (service: Register, state: EvalState, code?: string) {
     prompt: '> ',
     input: process.stdin,
     output: process.stdout,
-    // Mimicking node's REPL implementation: https://github.com/nodejs/node/blob/168b22ba073ee1cbf8d0bcb4ded7ff3099335d04/lib/internal/repl.js#L28-L30
+    // Mimicking node's REPL implementation:
+    // https://github.com/nodejs/node/blob/168b22ba073ee1cbf8d0bcb4ded7ff3099335d04/lib/internal/repl.js#L28-L30
     terminal: process.stdout.isTTY && !parseInt(process.env.NODE_NO_READLINE!, 10),
     eval: replEval,
     useGlobal: true
@@ -375,7 +376,12 @@ function startRepl (service: Register, state: EvalState, code?: string) {
   /**
    * Eval code from the REPL.
    */
-  function replEval (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any) {
+  function replEval (
+    code: string,
+    _context: any,
+    _filename: string,
+    callback: (err: Error | null, result?: any) => any
+  ) {
     let err: Error | null = null
     let result: any
 
@@ -458,7 +464,7 @@ function appendEval (state: EvalState, input: string) {
   const undoLines = state.lines
 
   // Handle ASI issues with TypeScript re-evaluation.
-  if (undoInput.charAt(undoInput.length - 1) === '\n' && /^\s*[\/\[(`-]/.test(input) && !/;\s*$/.test(undoInput)) {
+  if (undoInput.charAt(undoInput.length - 1) === '\n' && /^\s*[/[(`-]/.test(input) && !/;\s*$/.test(undoInput)) {
     state.input = `${state.input.slice(0, -1)};\n`
   }
 

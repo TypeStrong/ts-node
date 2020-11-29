@@ -1,4 +1,4 @@
-import { relative, basename, extname, resolve, dirname, join, isAbsolute } from 'path'
+import { relative, basename, extname, resolve, dirname, join } from 'path'
 import sourceMapSupport = require('source-map-support')
 import * as ynModule from 'yn'
 import { BaseError } from 'make-error'
@@ -7,7 +7,6 @@ import { fileURLToPath } from 'url'
 import type * as _ts from 'typescript'
 import { Module, createRequire as nodeCreateRequire, createRequireFromPath as nodeCreateRequireFromPath } from 'module'
 import type _createRequire from 'create-require'
-// tslint:disable-next-line
 const createRequire = nodeCreateRequire ?? nodeCreateRequireFromPath ?? require('create-require') as typeof _createRequire
 
 /**
@@ -247,14 +246,15 @@ export interface RegisterOptions extends CreateOptions {
 /**
  * Must be an interface to support `typescript-json-schema`.
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface TsConfigOptions extends Omit<RegisterOptions,
-  | 'transformers'
-  | 'readFile'
-  | 'fileExists'
-  | 'skipProject'
-  | 'project'
-  | 'dir'
-  > {}
+| 'transformers'
+| 'readFile'
+| 'fileExists'
+| 'skipProject'
+| 'project'
+| 'dir'
+> {}
 
 /**
  * Like `Object.assign`, but ignores `undefined` properties.
@@ -397,7 +397,7 @@ export function getExtensions (config: _ts.ParsedCommandLine) {
  * Register TypeScript compiler instance onto node.js
  */
 export function register (opts: RegisterOptions = {}): Register {
-  const originalJsHandler = require.extensions['.js'] // tslint:disable-line
+  const originalJsHandler = require.extensions['.js']
   const service = create(opts)
   const { tsExtensions, jsExtensions } = getExtensions(service.config)
   const extensions = [...tsExtensions, ...jsExtensions]
@@ -487,7 +487,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
       if (options.experimentalEsmLoader && path.startsWith('file://')) {
         try {
           path = fileURLToPath(path)
-        } catch (e) {/* swallow error */}
+        } catch (e) { /* swallow error */ }
       }
       path = normalizeSlashes(path)
       return outputCache.get(path)?.content || ''
@@ -543,7 +543,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
     // Get bucket for a source filename.  Bucket is the containing `./node_modules/*/` directory
     // For '/project/node_modules/foo/node_modules/bar/lib/index.js' bucket is '/project/node_modules/foo/node_modules/bar/'
     // For '/project/node_modules/foo/node_modules/@scope/bar/lib/index.js' bucket is '/project/node_modules/foo/node_modules/@scope/bar/'
-    const moduleBucketRe = /.*\/node_modules\/(?:@[^\/]+\/)?[^\/]+\//
+    const moduleBucketRe = /.*\/node_modules\/(?:@[^/]+\/)?[^/]+\//
     function getModuleBucket (filename: string) {
       const find = moduleBucketRe.exec(filename)
       if (find) return find[0]
@@ -589,7 +589,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
      * Older ts versions do not pass `redirectedReference` nor `options`.
      * We must pass `redirectedReference` to newer ts versions, but cannot rely on `options`, hence the weird argument name
      */
-    const resolveModuleNames: _ts.LanguageServiceHost['resolveModuleNames'] = (moduleNames: string[], containingFile: string, reusedNames: string[] | undefined, redirectedReference: _ts.ResolvedProjectReference | undefined, optionsOnlyWithNewerTsVersions: _ts.CompilerOptions): (_ts.ResolvedModule | undefined)[] => {
+    const resolveModuleNames: _ts.LanguageServiceHost['resolveModuleNames'] = (moduleNames: string[], containingFile: string, _reusedNames: string[] | undefined, redirectedReference: _ts.ResolvedProjectReference | undefined, _optionsOnlyWithNewerTsVersions: _ts.CompilerOptions): (_ts.ResolvedModule | undefined)[] => {
       return moduleNames.map(moduleName => {
         const { resolvedModule } = ts.resolveModuleName(moduleName, containingFile, config.options, serviceHost, moduleResolutionCache, redirectedReference)
         if (resolvedModule) {
@@ -608,7 +608,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
       return ret
     }
 
-    const resolveTypeReferenceDirectives: _ts.LanguageServiceHost['resolveTypeReferenceDirectives'] = (typeDirectiveNames: string[], containingFile: string, redirectedReference: _ts.ResolvedProjectReference | undefined, options: _ts.CompilerOptions): (_ts.ResolvedTypeReferenceDirective | undefined)[] => {
+    const resolveTypeReferenceDirectives: _ts.LanguageServiceHost['resolveTypeReferenceDirectives'] = (typeDirectiveNames: string[], containingFile: string, redirectedReference: _ts.ResolvedProjectReference | undefined, _options: _ts.CompilerOptions): (_ts.ResolvedTypeReferenceDirective | undefined)[] => {
       // Note: seems to be called with empty typeDirectiveNames array for all files.
       return typeDirectiveNames.map(typeDirectiveName => {
         const { resolvedTypeReferenceDirective } = ts.resolveTypeReferenceDirective(typeDirectiveName, containingFile, config.options, serviceHost, redirectedReference)
@@ -954,7 +954,7 @@ export function create (rawOptions: CreateOptions = {}): Register {
   }
 
   // Create a simple TypeScript compiler proxy.
-  function compile (code: string, fileName: string, lineOffset = 0) {
+  function compile (code: string, fileName: string, _lineOffset = 0) {
     const normalizedFileName = normalizeSlashes(fileName)
     const [value, sourceMap] = getOutput(code, normalizedFileName)
     const output = updateOutput(value, normalizedFileName, sourceMap, getExtension)
@@ -995,9 +995,9 @@ function createIgnore (ignore: RegExp[]) {
  * @param {string} ext
  */
 function reorderRequireExtension (ext: string) {
-  const old = require.extensions[ext] // tslint:disable-line
-  delete require.extensions[ext] // tslint:disable-line
-  require.extensions[ext] = old // tslint:disable-line
+  const old = require.extensions[ext]
+  delete require.extensions[ext]
+  require.extensions[ext] = old
 }
 
 /**
@@ -1015,7 +1015,6 @@ function registerExtensions (
   }
 
   if (preferTsExts) {
-    // tslint:disable-next-line
     const preferredExtensions = new Set([...extensions, ...Object.keys(require.extensions)])
 
     for (const ext of preferredExtensions) reorderRequireExtension(ext)
@@ -1030,9 +1029,9 @@ function registerExtension (
   register: Register,
   originalHandler: (m: NodeModule, filename: string) => any
 ) {
-  const old = require.extensions[ext] || originalHandler // tslint:disable-line
+  const old = require.extensions[ext] || originalHandler
 
-  require.extensions[ext] = function (m: any, filename) { // tslint:disable-line
+  require.extensions[ext] = function (m: any, filename) {
     if (register.ignored(filename)) return old(m, filename)
 
     if (register.options.experimentalEsmLoader) {
@@ -1085,11 +1084,11 @@ function readConfig (
   ts: TSCommon,
   rawOptions: CreateOptions
 ): {
-  // Parsed TypeScript configuration.
-  config: _ts.ParsedCommandLine
-  // Options pulled from `tsconfig.json`.
-  options: TsConfigOptions
-} {
+    // Parsed TypeScript configuration.
+    config: _ts.ParsedCommandLine
+    // Options pulled from `tsconfig.json`.
+    options: TsConfigOptions
+  } {
   let config: any = { compilerOptions: {} }
   let basePath = cwd
   let configFileName: string | undefined = undefined
@@ -1124,7 +1123,7 @@ function readConfig (
   }
 
   // Fix ts-node options that come from tsconfig.json
-  const tsconfigOptions: TsConfigOptions = Object.assign({}, config['ts-node'])
+  const tsconfigOptions: TsConfigOptions = { ...config['ts-node'] }
 
   // Remove resolution of "files".
   const files = rawOptions.files ?? tsconfigOptions.files ?? DEFAULTS.files
@@ -1134,14 +1133,13 @@ function readConfig (
   }
 
   // Override default configuration options `ts-node` requires.
-  config.compilerOptions = Object.assign(
-    {},
-    config.compilerOptions,
-    DEFAULTS.compilerOptions,
-    tsconfigOptions.compilerOptions,
-    rawOptions.compilerOptions,
-    TS_NODE_COMPILER_OPTIONS
-  )
+  config.compilerOptions = {
+    ...config.compilerOptions,
+    ...DEFAULTS.compilerOptions,
+    ...tsconfigOptions.compilerOptions,
+    ...rawOptions.compilerOptions,
+    ...TS_NODE_COMPILER_OPTIONS
+  }
 
   const fixedConfig = fixConfig(ts, ts.parseJsonConfigFileContent(config, {
     fileExists,
@@ -1200,7 +1198,7 @@ function filterDiagnostics (diagnostics: readonly _ts.Diagnostic[], ignore: numb
  *
  * Reference: https://github.com/microsoft/TypeScript/blob/fcd9334f57d85b73dd66ad2d21c02e84822f4841/src/services/utilities.ts#L705-L731
  */
-function getTokenAtPosition (ts: typeof _ts, sourceFile: _ts.SourceFile, position: number): _ts.Node {
+function getTokenAtPosition (__ts: typeof _ts, sourceFile: _ts.SourceFile, position: number): _ts.Node {
   let current: _ts.Node = sourceFile
 
   outer: while (true) {

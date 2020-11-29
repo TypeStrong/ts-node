@@ -1,0 +1,13 @@
+/.eslintrc.js
+/coverage
+/dist
+/dist-raw
+/esm-usage-example
+/node_modules
+/nyc.config.js
+/raw
+/register
+# I use a ./release directory locally to publish from master
+/release
+/scripts
+/tests

@@ -20,10 +20,10 @@ const PROJECT = join(TEST_DIR, 'tsconfig.json')
 const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node')
 const BIN_SCRIPT_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-script')
 
-const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
+const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf-8;base64,[\w+]+=*$/
 
 // `createRequire` does not exist on older node versions
-const testsDirRequire = createRequire(join(TEST_DIR, 'index.js')) // tslint:disable-line
+const testsDirRequire = createRequire(join(TEST_DIR, 'index.js'))
 
 // Set after ts-node is installed locally
 let { register, create, VERSION }: typeof tsNodeTypes = {} as any
@@ -100,7 +100,7 @@ describe('ts-node', function () {
     it('shows version via -v', function (done) {
       exec(`${cmdNoProject} -v`, function (err, stdout) {
         expect(err).to.equal(null)
-        expect(stdout.trim()).to.equal('v' + testsDirRequire('ts-node/package').version)
+        expect(stdout.trim()).to.equal(`v${ testsDirRequire('ts-node/package').version }`)
         return done()
       })
     })
@@ -170,7 +170,7 @@ describe('ts-node', function () {
         exec(
           [
             cmd,
-            '-O "{\\\"allowJs\\\":true}"',
+            '-O "{\\"allowJs\\":true}"',
             '-pe "import { main } from \'./tests/allow-js/run\';main()"'
           ].join(' '),
           function (err, stdout) {
@@ -186,7 +186,7 @@ describe('ts-node', function () {
         exec(
           [
             cmd,
-            '-O "{\\\"allowJs\\\":true}"',
+            '-O "{\\"allowJs\\":true}"',
             '-pe "import { Foo2 } from \'./tests/allow-js/with-jsx\'; Foo2.sayHi()"'
           ].join(' '),
           function (err, stdout) {
@@ -244,7 +244,7 @@ describe('ts-node', function () {
           }
 
           expect(err.message).to.match(
-            /TypeError: (?:(?:undefined|foo\.toUpperCase) is not a function|.*has no method \'toUpperCase\')/
+            /TypeError: (?:(?:undefined|foo\.toUpperCase) is not a function|.*has no method 'toUpperCase')/
           )
 
           return done()
@@ -390,7 +390,7 @@ describe('ts-node', function () {
     })
 
     it('should use source maps with react tsx', function (done) {
-      exec(`${cmd} tests/throw-react-tsx.tsx`, function (err, stdout) {
+      exec(`${cmd} tests/throw-react-tsx.tsx`, function (err, _stdout) {
         expect(err).not.to.equal(null)
         expect(err!.message).to.contain([
           `${join(__dirname, '../tests/throw-react-tsx.tsx')}:100`,
@@ -404,7 +404,7 @@ describe('ts-node', function () {
     })
 
     it('should allow custom typings', function (done) {
-      exec(`${cmd} tests/custom-types`, function (err, stdout) {
+      exec(`${cmd} tests/custom-types`, function (err, _stdout) {
         expect(err).to.match(/Error: Cannot find module 'does-not-exist'/)
 
         return done()
@@ -618,7 +618,7 @@ describe('ts-node', function () {
 
     describe('should respect maxNodeModulesJsDepth', function () {
       it('for unscoped modules', function (done) {
-        exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth`, function (err, stdout, stderr) {
+        exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth`, function (err, _stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr.replace(/\r\n/g, '\n')).to.contain(
             'TSError: ⨯ Unable to compile TypeScript:\n' +
@@ -630,7 +630,7 @@ describe('ts-node', function () {
       })
 
       it('for @scoped modules', function (done) {
-        exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth-scoped`, function (err, stdout, stderr) {
+        exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth-scoped`, function (err, _stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr.replace(/\r\n/g, '\n')).to.contain(
             'TSError: ⨯ Unable to compile TypeScript:\n' +
@@ -765,8 +765,8 @@ describe('ts-node', function () {
       let compiled: string
 
       before(function () {
-        old = require.extensions['.tsx']! // tslint:disable-line
-        require.extensions['.tsx'] = (m: any, fileName) => { // tslint:disable-line
+        old = require.extensions['.tsx']!
+        require.extensions['.tsx'] = (m: any, fileName) => {
           const _compile = m._compile
 
           m._compile = (code: string, fileName: string) => {
@@ -779,7 +779,7 @@ describe('ts-node', function () {
       })
 
       after(function () {
-        require.extensions['.tsx'] = old // tslint:disable-line
+        require.extensions['.tsx'] = old
       })
 
       it('should use source maps', function (done) {
@@ -866,7 +866,7 @@ describe('ts-node', function () {
         })
       })
       it('should use source maps', function (done) {
-        exec(`${cmd} throw.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
+        exec(`${cmd} throw.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, _stdout) {
           expect(err).not.to.equal(null)
           expect(err!.message).to.contain([
             `${pathToFileURL(join(__dirname, '../tests/esm/throw.ts'))}:100`,
@@ -913,7 +913,7 @@ describe('ts-node', function () {
       })
 
       it('throws ERR_REQUIRE_ESM when attempting to require() an ESM script while ESM loader is enabled', function (done) {
-        exec(`${cmd} ./index.js`, { cwd: join(__dirname, '../tests/esm-err-require-esm') }, function (err, stdout, stderr) {
+        exec(`${cmd} ./index.js`, { cwd: join(__dirname, '../tests/esm-err-require-esm') }, function (err, _stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
 
@@ -924,7 +924,7 @@ describe('ts-node', function () {
       it('defers to fallback loaders when URL should not be handled by ts-node', function (done) {
         exec(`${cmd} index.mjs`, {
           cwd: join(__dirname, '../tests/esm-import-http-url')
-        }, function (err, stdout, stderr) {
+        }, function (err, _stdout, stderr) {
           expect(err).to.not.equal(null)
           // expect error from node's default resolver
           expect(stderr).to.match(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,1}\n *at defaultResolve/)
