@@ -50,7 +50,7 @@
     "build-pack": "node ./scripts/build-pack.js",
     "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
     "test-cov": "nyc mocha -- \"dist/**/*.spec.js\" -R spec --bail",
-    "test": "npm run build && npm run lint && npm run test-cov",
+    "test": "npm run build && npm run lint && npm run test-cov --",
     "coverage-report": "nyc report --reporter=lcov",
     "prepare": "npm run build-nopack"
   },

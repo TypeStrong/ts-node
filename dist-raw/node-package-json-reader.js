@@ -11,8 +11,8 @@ const cache = new SafeMap();
 let manifest;
 
 /**
- *
  * @param {string} jsonPath
+ * @return {[string, boolean]}
  */
 function read(jsonPath) {
   if (cache.has(jsonPath)) {

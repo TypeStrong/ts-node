@@ -860,7 +860,7 @@ describe('ts-node', function () {
       it('should compile and execute as ESM', (done) => {
         exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
           expect(err).to.equal(null)
-          expect(stdout).to.equal('foo bar baz biff\n')
+          expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
           return done()
         })
@@ -883,7 +883,7 @@ describe('ts-node', function () {
         it('via --experimental-specifier-resolution', (done) => {
           exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
             expect(err).to.equal(null)
-            expect(stdout).to.equal('foo bar baz biff\n')
+            expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
             return done()
           })
@@ -891,7 +891,7 @@ describe('ts-node', function () {
         it('via --es-module-specifier-resolution alias', (done) => {
           exec(`${cmd} --experimental-modules --es-module-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
             expect(err).to.equal(null)
-            expect(stdout).to.equal('foo bar baz biff\n')
+            expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
             return done()
           })
@@ -905,7 +905,7 @@ describe('ts-node', function () {
             }
           }, function (err, stdout) {
             expect(err).to.equal(null)
-            expect(stdout).to.equal('foo bar baz biff\n')
+            expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
             return done()
           })
