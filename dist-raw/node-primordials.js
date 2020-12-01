@@ -1,0 +1,22 @@
+module.exports = {
+  ArrayIsArray: Array.isArray,
+  ArrayPrototypeJoin: (obj, separator) => Array.prototype.join.call(obj, separator),
+  ArrayPrototypeShift: (obj) => Array.prototype.shift.call(obj),
+  JSONParse: JSON.parse,
+  JSONStringify: JSON.stringify,
+  ObjectFreeze: Object.freeze,
+  ObjectGetOwnPropertyNames: Object.getOwnPropertyNames,
+  ObjectPrototypeHasOwnProperty: (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop),
+  RegExpPrototypeTest: (obj, string) => RegExp.prototype.test.call(obj, string),
+  SafeMap: Map,
+  SafeSet: Set,
+  StringPrototypeEndsWith: (str, ...rest) => String.prototype.endsWith.apply(str, rest),
+  StringPrototypeIncludes: (str, ...rest) => String.prototype.includes.apply(str, rest),
+  StringPrototypeLastIndexOf: (str, ...rest) => String.prototype.lastIndexOf.apply(str, rest),
+  StringPrototypeIndexOf: (str, ...rest) => String.prototype.indexOf.apply(str, rest),
+  StringPrototypeReplace: (str, ...rest) => String.prototype.replace.apply(str, rest),
+  StringPrototypeSlice: (str, ...rest) => String.prototype.slice.apply(str, rest),
+  StringPrototypeSplit: (str, ...rest) => String.prototype.split.apply(str, rest),
+  StringPrototypeStartsWith: (str, ...rest) => String.prototype.startsWith.apply(str, rest),
+  StringPrototypeSubstr: (str, ...rest) => String.prototype.substr.apply(str, rest)
+};
