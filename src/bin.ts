@@ -2,7 +2,7 @@
 
 import { join, resolve, dirname } from 'path'
 import { start, Recoverable } from 'repl'
-import { inspect } from 'util'
+import { inspect, callbackify } from 'util'
 import Module = require('module')
 import arg = require('arg')
 import { diffLines } from 'diff'
@@ -10,6 +10,8 @@ import { Script } from 'vm'
 import { readFileSync, statSync, realpathSync } from 'fs'
 import { homedir } from 'os'
 import { VERSION, TSError, parse, Register, register } from './index'
+import { CompleterResult } from 'readline'
+import { compare } from 'semver'
 
 /**
  * Eval filename for REPL/debug.
@@ -369,7 +371,10 @@ function startRepl (service: Register, state: EvalState, code?: string) {
     // Mimicking node's REPL implementation: https://github.com/nodejs/node/blob/168b22ba073ee1cbf8d0bcb4ded7ff3099335d04/lib/internal/repl.js#L28-L30
     terminal: process.stdout.isTTY && !parseInt(process.env.NODE_NO_READLINE!, 10),
     eval: replEval,
-    useGlobal: true
+    useGlobal: true,
+    completer: completer,
+    // completer: callbackify(asyncCompleter),
+    preview: true
   })
 
   /**
@@ -401,6 +406,16 @@ function startRepl (service: Register, state: EvalState, code?: string) {
     }
 
     return callback(err, result)
+  }
+
+  function completer(input: string): CompleterResult {
+    const undo = appendEval(state, input)
+    const { completions, context } = service.getCompletions(state.input, state.path, state.input.length)
+    undo()
+    return [completions, context]
+  }
+  async function asyncCompleter(line: string): Promise<CompleterResult> {
+    return [['prefixfoo', 'prefixbar', 'prefixbaz'], line]
   }
 
   // Bookmark the point where we should reset the REPL state.
