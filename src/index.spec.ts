@@ -8,7 +8,8 @@ import type * as tsNodeTypes from './index'
 import { unlinkSync, existsSync, lstatSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
-import { createRequire, createRequireFromPath } from 'module'
+import type _createRequire from 'create-require'
+const createRequire: typeof _createRequire = require('create-require')
 import { pathToFileURL } from 'url'
 import Module = require('module')
 import { PassThrough } from 'stream'
@@ -24,7 +25,7 @@ const BIN_SCRIPT_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-script')
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
 
 // `createRequire` does not exist on older node versions
-const testsDirRequire = (createRequire || createRequireFromPath)(join(TEST_DIR, 'index.js')) // tslint:disable-line
+const testsDirRequire = createRequire(join(TEST_DIR, 'index.js')) // tslint:disable-line
 
 // Set after ts-node is installed locally
 let { register, create, VERSION, createRepl }: typeof tsNodeTypes = {} as any
@@ -889,7 +890,7 @@ describe('ts-node', function () {
       it('should compile and execute as ESM', (done) => {
         exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
           expect(err).to.equal(null)
-          expect(stdout).to.equal('foo bar baz biff\n')
+          expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
           return done()
         })
@@ -912,7 +913,7 @@ describe('ts-node', function () {
         it('via --experimental-specifier-resolution', (done) => {
           exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
             expect(err).to.equal(null)
-            expect(stdout).to.equal('foo bar baz biff\n')
+            expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
             return done()
           })
@@ -920,7 +921,7 @@ describe('ts-node', function () {
         it('via --es-module-specifier-resolution alias', (done) => {
           exec(`${cmd} --experimental-modules --es-module-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
             expect(err).to.equal(null)
-            expect(stdout).to.equal('foo bar baz biff\n')
+            expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
             return done()
           })
@@ -934,7 +935,7 @@ describe('ts-node', function () {
             }
           }, function (err, stdout) {
             expect(err).to.equal(null)
-            expect(stdout).to.equal('foo bar baz biff\n')
+            expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
             return done()
           })
@@ -957,6 +958,15 @@ describe('ts-node', function () {
           expect(err).to.not.equal(null)
           // expect error from node's default resolver
           expect(stderr).to.match(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,1}\n *at defaultResolve/)
+          return done()
+        })
+      })
+
+      it('should bypass import cache when changing search params', (done) => {
+        exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm-import-cache') }, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('log1\nlog2\nlog2\n')
+
           return done()
         })
       })

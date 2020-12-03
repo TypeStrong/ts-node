@@ -5,7 +5,10 @@ import { BaseError } from 'make-error'
 import * as util from 'util'
 import { fileURLToPath } from 'url'
 import type * as _ts from 'typescript'
-import * as Module from 'module'
+import { Module, createRequire as nodeCreateRequire, createRequireFromPath as nodeCreateRequireFromPath } from 'module'
+import type _createRequire from 'create-require'
+// tslint:disable-next-line
+const createRequire = nodeCreateRequire ?? nodeCreateRequireFromPath ?? require('create-require') as typeof _createRequire
 
 export { createRepl, CreateReplOptions, ReplService } from './repl'
 
@@ -1216,13 +1219,4 @@ function getTokenAtPosition (ts: typeof _ts, sourceFile: _ts.SourceFile, positio
 
     return current
   }
-}
-
-let nodeCreateRequire: (path: string) => NodeRequire
-function createRequire (filename: string) {
-  if (!nodeCreateRequire) {
-    // tslint:disable-next-line
-    nodeCreateRequire = Module.createRequire || Module.createRequireFromPath || require('../dist-raw/node-createrequire').createRequireFromPath
-  }
-  return nodeCreateRequire(filename)
 }
