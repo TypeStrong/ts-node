@@ -385,17 +385,15 @@ describe('ts-node', function () {
       const service = create(replService.evalAwarePartialHost)
       replService.setService(service)
       replService.start()
-      stdin.write(
-        'const a = 123\n' +
-        '.type a\n'
-      )
+      stdin.write('\nconst a = 123\n.type a\n')
       stdin.end()
-      await promisify(setTimeout)(100)
+      await promisify(setTimeout)(1e3)
       stdout.end()
       stderr.end()
       expect(await getStream(stderr)).to.equal('')
       expect(await getStream(stdout)).to.equal(
         '> \'use strict\'\n' +
+        '> undefined\n' +
         '> const a: 123\n' +
         '> '
       )
