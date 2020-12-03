@@ -3,7 +3,7 @@ import { homedir } from 'os'
 import { join } from 'path'
 import { Recoverable, start } from 'repl'
 import { Script } from 'vm'
-import { Register, CreateOptions, TSError } from './index'
+import { Service, CreateOptions, TSError } from './index'
 import { readFileSync, statSync } from 'fs'
 import { Console } from 'console'
 import * as tty from 'tty'
@@ -19,7 +19,7 @@ export interface ReplService {
   /**
    * Bind this REPL to a ts-node compiler service.  A compiler service must be bound before `eval`-ing code or starting the REPL
    */
-  setService (service: Register): void
+  setService (service: Service): void
   evalCode (code: string): void
   /**
    * `eval` implementation compatible with node's REPL API
@@ -39,7 +39,7 @@ export interface ReplService {
 }
 
 export interface CreateReplOptions {
-  service?: Register
+  service?: Service
   state?: EvalState
   stdin?: NodeJS.ReadableStream
   stdout?: NodeJS.WritableStream
@@ -69,7 +69,7 @@ export function createRepl (options: CreateReplOptions = {}) {
   }
   return replService
 
-  function setService (_service: Register) {
+  function setService (_service: Service) {
     service = _service
   }
 
@@ -160,7 +160,7 @@ export function createEvalAwarePartialHost (state: EvalState): EvalAwarePartialH
 /**
  * Evaluate the code snippet.
  */
-function _eval (service: Register, state: EvalState, input: string) {
+function _eval (service: Service, state: EvalState, input: string) {
   const lines = state.lines
   const isCompletion = !/\n$/.test(input)
   const undo = appendEval(state, input)
@@ -199,7 +199,7 @@ function exec (code: string, filename: string) {
 /**
  * Start a CLI REPL.
  */
-function startRepl (replService: ReplService, service: Register, state: EvalState, code?: string) {
+function startRepl (replService: ReplService, service: Service, state: EvalState, code?: string) {
   // Eval incoming code before the REPL starts.
   if (code) {
     try {

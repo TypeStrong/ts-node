@@ -5,17 +5,12 @@ import { inspect } from 'util'
 import Module = require('module')
 import arg = require('arg')
 import {
-  parse,
-  register,
-  TSError,
-  VERSION
-} from './index'
-import {
   EVAL_FILENAME,
   EvalState,
   createRepl,
   ReplService
  } from './repl'
+import { VERSION, TSError, parse, register } from './index'
 
 /**
  * Main `bin` functionality.
