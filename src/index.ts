@@ -1,4 +1,4 @@
-import { relative, basename, extname, resolve, dirname, join, isAbsolute } from 'path'
+import { relative, basename, extname, resolve, dirname, join } from 'path'
 import sourceMapSupport = require('source-map-support')
 import * as ynModule from 'yn'
 import { BaseError } from 'make-error'
@@ -9,6 +9,8 @@ import { Module, createRequire as nodeCreateRequire, createRequireFromPath as no
 import type _createRequire from 'create-require'
 // tslint:disable-next-line
 const createRequire = nodeCreateRequire ?? nodeCreateRequireFromPath ?? require('create-require') as typeof _createRequire
+
+export { createRepl, CreateReplOptions, ReplService } from './repl'
 
 /**
  * Does this version of node obey the package.json "type" field

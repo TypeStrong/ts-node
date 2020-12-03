@@ -92,6 +92,7 @@
     "@types/source-map-support": "^0.5.0",
     "axios": "^0.19.0",
     "chai": "^4.0.1",
+    "get-stream": "^6.0.0",
     "lodash": "^4.17.15",
     "mocha": "^6.2.2",
     "ntypescript": "^1.201507091536.1",

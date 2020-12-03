@@ -12,6 +12,8 @@ import type _createRequire from 'create-require'
 const createRequire: typeof _createRequire = require('create-require')
 import { pathToFileURL } from 'url'
 import Module = require('module')
+import { PassThrough } from 'stream'
+import * as getStream from 'get-stream'
 
 const execP = promisify(exec)
 
@@ -26,7 +28,7 @@ const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset
 const testsDirRequire = createRequire(join(TEST_DIR, 'index.js')) // tslint:disable-line
 
 // Set after ts-node is installed locally
-let { register, create, VERSION }: typeof tsNodeTypes = {} as any
+let { register, create, VERSION, createRepl }: typeof tsNodeTypes = {} as any
 
 // Pack and install ts-node locally, necessary to test package "exports"
 before(async function () {
@@ -35,7 +37,7 @@ before(async function () {
   await execP(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
   existsSync(packageLockPath) && unlinkSync(packageLockPath)
-  ;({ register, create, VERSION } = testsDirRequire('ts-node'))
+  ;({ register, create, VERSION, createRepl } = testsDirRequire('ts-node'))
 })
 
 describe('ts-node', function () {
@@ -354,8 +356,8 @@ describe('ts-node', function () {
       })
 
       cp.stdin!.end('console.log("123")\n')
-
     })
+
     it('REPL has command to get type information', function (done) {
       const cp = exec(`${cmd} --interactive`, function (err, stdout) {
         expect(err).to.equal(null)
@@ -369,6 +371,32 @@ describe('ts-node', function () {
       })
 
       cp.stdin!.end('\nconst a = 123\n.type a')
+    })
+
+    it('REPL can be created via API', async () => {
+      const stdin = new PassThrough()
+      const stdout = new PassThrough()
+      const stderr = new PassThrough()
+      const replService = createRepl({
+        stdin,
+        stdout,
+        stderr
+      })
+      const service = create(replService.evalAwarePartialHost)
+      replService.setService(service)
+      replService.start()
+      stdin.write('\nconst a = 123\n.type a\n')
+      stdin.end()
+      await promisify(setTimeout)(1e3)
+      stdout.end()
+      stderr.end()
+      expect(await getStream(stderr)).to.equal('')
+      expect(await getStream(stdout)).to.equal(
+        '> \'use strict\'\n' +
+        '> undefined\n' +
+        '> const a: 123\n' +
+        '> '
+      )
     })
 
     it('should support require flags', function (done) {
