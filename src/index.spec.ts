@@ -377,7 +377,7 @@ describe('ts-node', function () {
       const stdin = new PassThrough()
       const stdout = new PassThrough()
       const stderr = new PassThrough()
-      const replService = createReplService({
+      const replService = createRepl({
         stdin,
         stdout,
         stderr
