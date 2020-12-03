@@ -1031,15 +1031,15 @@ function registerExtensions (
  */
 function registerExtension (
   ext: string,
-  register: Service,
+  service: Service,
   originalHandler: (m: NodeModule, filename: string) => any
 ) {
   const old = require.extensions[ext] || originalHandler // tslint:disable-line
 
   require.extensions[ext] = function (m: any, filename) { // tslint:disable-line
-    if (register.ignored(filename)) return old(m, filename)
+    if (service.ignored(filename)) return old(m, filename)
 
-    if (register.options.experimentalEsmLoader) {
+    if (service.options.experimentalEsmLoader) {
       assertScriptCanLoadAsCJS(filename)
     }
 
@@ -1048,7 +1048,7 @@ function registerExtension (
     m._compile = function (code: string, fileName: string) {
       debug('module._compile', fileName)
 
-      return _compile.call(this, register.compile(code, fileName), fileName)
+      return _compile.call(this, service.compile(code, fileName), fileName)
     }
 
     return old(m, filename)
