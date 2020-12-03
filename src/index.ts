@@ -40,7 +40,7 @@ export const REGISTER_INSTANCE = Symbol.for('ts-node.register.instance')
 declare global {
   namespace NodeJS {
     interface Process {
-      [REGISTER_INSTANCE]?: Register
+      [REGISTER_INSTANCE]?: Service
     }
   }
 }
@@ -354,9 +354,9 @@ export class TSError extends BaseError {
 }
 
 /**
- * Return type for registering `ts-node`.
+ * Primary ts-node service, which wraps the TypeScript API and can compile TypeScript to JavaScript
  */
-export interface Register {
+export interface Service {
   ts: TSCommon
   config: _ts.ParsedCommandLine
   options: RegisterOptions
@@ -365,6 +365,13 @@ export interface Register {
   compile (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
 }
+
+/**
+ * Re-export of `Service` interface for backwards-compatibility
+ * @deprecated use `Service` instead
+ * @see Service
+ */
+export type Register = Service
 
 /**
  * Cached fs operation wrapper.
@@ -396,7 +403,7 @@ export function getExtensions (config: _ts.ParsedCommandLine) {
 /**
  * Register TypeScript compiler instance onto node.js
  */
-export function register (opts: RegisterOptions = {}): Register {
+export function register (opts: RegisterOptions = {}): Service {
   const originalJsHandler = require.extensions['.js'] // tslint:disable-line
   const service = create(opts)
   const { tsExtensions, jsExtensions } = getExtensions(service.config)
@@ -417,7 +424,7 @@ export function register (opts: RegisterOptions = {}): Register {
 /**
  * Create TypeScript compiler instance.
  */
-export function create (rawOptions: CreateOptions = {}): Register {
+export function create (rawOptions: CreateOptions = {}): Service {
   const dir = rawOptions.dir ?? DEFAULTS.dir
   const compilerName = rawOptions.compiler ?? DEFAULTS.compiler
   const cwd = dir ? resolve(dir) : process.cwd()
@@ -1006,12 +1013,12 @@ function reorderRequireExtension (ext: string) {
 function registerExtensions (
   preferTsExts: boolean | null | undefined,
   extensions: string[],
-  register: Register,
+  service: Service,
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
   // Register new extensions.
   for (const ext of extensions) {
-    registerExtension(ext, register, originalJsHandler)
+    registerExtension(ext, service, originalJsHandler)
   }
 
   if (preferTsExts) {
@@ -1027,15 +1034,15 @@ function registerExtensions (
  */
 function registerExtension (
   ext: string,
-  register: Register,
+  service: Service,
   originalHandler: (m: NodeModule, filename: string) => any
 ) {
   const old = require.extensions[ext] || originalHandler // tslint:disable-line
 
   require.extensions[ext] = function (m: any, filename) { // tslint:disable-line
-    if (register.ignored(filename)) return old(m, filename)
+    if (service.ignored(filename)) return old(m, filename)
 
-    if (register.options.experimentalEsmLoader) {
+    if (service.options.experimentalEsmLoader) {
       assertScriptCanLoadAsCJS(filename)
     }
 
@@ -1044,7 +1051,7 @@ function registerExtension (
     m._compile = function (code: string, fileName: string) {
       debug('module._compile', fileName)
 
-      return _compile.call(this, register.compile(code, fileName), fileName)
+      return _compile.call(this, service.compile(code, fileName), fileName)
     }
 
     return old(m, filename)

@@ -644,7 +644,7 @@ describe('ts-node', function () {
   })
 
   describe('register', function () {
-    let registered: tsNodeTypes.Register
+    let registered: tsNodeTypes.Service
     let moduleTestPath: string
     before(() => {
       registered = register({
@@ -797,7 +797,7 @@ describe('ts-node', function () {
   })
 
   describe('create', () => {
-    let service: tsNodeTypes.Register
+    let service: tsNodeTypes.Service
     before(() => {
       service = create({ compilerOptions: { target: 'es5' }, skipProject: true })
     })
@@ -824,7 +824,7 @@ describe('ts-node', function () {
   })
 
   describe('issue #1098', () => {
-    function testIgnored (ignored: tsNodeTypes.Register['ignored'], allowed: string[], disallowed: string[]) {
+    function testIgnored (ignored: tsNodeTypes.Service['ignored'], allowed: string[], disallowed: string[]) {
       for (const ext of allowed) {
         expect(ignored(join(__dirname, `index${ext}`))).equal(false, `should accept ${ext} files`)
       }
