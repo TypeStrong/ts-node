@@ -7,7 +7,6 @@
 /nyc.config.js
 /raw
 /register
-# I use a ./release directory locally to publish from master
 /release
 /scripts
 /tests

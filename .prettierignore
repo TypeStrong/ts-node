@@ -1,0 +1,10 @@
+**/*.md
+**/*.yml
+**/*.json
+**/*.html
+/coverage
+/dist
+/dist-raw
+/node_modules
+/raw
+/release
