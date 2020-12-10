@@ -37,8 +37,12 @@ const transpileModule: typeof ts.transpileModule = (input: string, transpileOpti
         }
       }
     }
-  })
-  return { outputText: code, sourceMapText: map }
+  });
+  // HACK ts-node assumes the last line is a //# sourcemap comment from typescript that can be rewritten.
+  // We must add enough empty space that the rewriting doesn't clobber code
+  const outputText = code + '\n//#                                                                                                                           ';
+  const sourceMapText = map;
+  return { outputText, sourceMapText };
 }
 export = {
   ...require('typescript'),
