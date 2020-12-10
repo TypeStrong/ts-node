@@ -1,9 +1,9 @@
 import type * as ts from 'typescript'
 import * as swc from '@swc/core'
 
-export const version = `${ require('../../package').version }-TODO-APPEND-TS-VERSION`
+const version = `${ require('../../package').version }-TODO-APPEND-TS-VERSION`
 
-export const transpileModule: typeof ts.transpileModule = (input: string, transpileOptions: ts.TranspileOptions): ts.TranspileOutput => {
+const transpileModule: typeof ts.transpileModule = (input: string, transpileOptions: ts.TranspileOptions): ts.TranspileOutput => {
   const compilerOptions = transpileOptions.compilerOptions!
   const { fileName } = transpileOptions
   const { esModuleInterop, sourceMap, importHelpers, experimentalDecorators, emitDecoratorMetadata, target, jsxFactory, jsxFragmentFactory } = compilerOptions
@@ -40,6 +40,11 @@ export const transpileModule: typeof ts.transpileModule = (input: string, transp
   })
   return { outputText: code, sourceMapText: map }
 }
+export = {
+  ...require('typescript'),
+  version,
+  transpileModule
+};
 
 const targetMapping = new Map<ts.ScriptTarget, swc.JscTarget>()
 targetMapping.set(/* ts.ScriptTarget.ES3 */ 0, 'es3')
