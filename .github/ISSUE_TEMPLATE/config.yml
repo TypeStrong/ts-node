@@ -2,8 +2,8 @@
 contact_links: 
   - 
     name: Question
-    about: "Please ask and answer usage questions on Stack Overflow."
-    url: "https://stackoverflow.com/questions/tagged/ts-node"
+    about: "Please ask and answer usage questions in our Discussion forum."
+    url: "https://github.com/TypeStrong/ts-node/discussions"
   - 
     name: Chat
     about: "Alternatively, you can use the TypeScript Community Discord."
