@@ -93,6 +93,18 @@ export interface TSCommon {
   parseJsonConfigFileContent: typeof _ts.parseJsonConfigFileContent
   formatDiagnostics: typeof _ts.formatDiagnostics
   formatDiagnosticsWithColorAndContext: typeof _ts.formatDiagnosticsWithColorAndContext
+
+  createDocumentRegistry: typeof _ts.createDocumentRegistry
+  JsxEmit: typeof _ts.JsxEmit
+  createModuleResolutionCache: typeof _ts.createModuleResolutionCache
+  resolveModuleName: typeof _ts.resolveModuleName
+  resolveModuleNameFromCache: typeof _ts.resolveModuleNameFromCache
+  resolveTypeReferenceDirective: typeof _ts.resolveTypeReferenceDirective
+  createIncrementalCompilerHost: typeof _ts.createIncrementalCompilerHost
+  createSourceFile: typeof _ts.createSourceFile
+  getDefaultLibFileName: typeof _ts.getDefaultLibFileName
+  createIncrementalProgram: typeof _ts.createIncrementalProgram
+  createEmitAndSemanticDiagnosticsBuilderProgram: typeof _ts.createEmitAndSemanticDiagnosticsBuilderProgram
 }
 
 /**
@@ -105,6 +117,10 @@ interface TSInternal {
 namespace TSInternal {
   // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906
   export type GetCanonicalFileName = (fileName: string) => string
+}
+
+export interface TSCompilerFactory {
+  createTypescriptCompiler (options?: any): TSCommon
 }
 
 /**
@@ -425,7 +441,14 @@ export function create (rawOptions: CreateOptions = {}): Register {
    */
   function loadCompiler (name: string | undefined) {
     const compiler = require.resolve(name || 'typescript', { paths: [cwd, __dirname] })
-    const ts: typeof _ts = require(compiler)
+    const tsInstanceOrFactory: TSCommon | TSCompilerFactory = require(compiler)
+    let ts: TSCommon
+    // tslint:disable-next-line
+    if (typeof (tsInstanceOrFactory as TSCompilerFactory).createTypescriptCompiler === 'function') {
+      ts = (tsInstanceOrFactory as TSCompilerFactory).createTypescriptCompiler()
+    } else {
+      ts = tsInstanceOrFactory as TSCommon
+    }
     return { compiler, ts }
   }
 
@@ -1168,10 +1191,11 @@ type SourceOutput = [string, string]
  */
 function updateOutput (outputText: string, fileName: string, sourceMap: string, getExtension: (fileName: string) => string) {
   const base64Map = Buffer.from(updateSourceMap(sourceMap, fileName), 'utf8').toString('base64')
-  const sourceMapContent = `data:application/json;charset=utf-8;base64,${base64Map}`
-  const sourceMapLength = `${basename(fileName)}.map`.length + (getExtension(fileName).length - extname(fileName).length)
-
-  return outputText.slice(0, -sourceMapLength) + sourceMapContent
+  const sourceMapContent = `//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`
+  // Expected form: `//# sourceMappingURL=foo.js.map` for input file foo.tsx
+  const sourceMapLength = /*//# sourceMappingURL=*/ 21 + /*foo.tsx*/ basename(fileName).length - /*.tsx*/ extname(fileName).length + /*.js*/ getExtension(fileName).length + /*.map*/ 4
+  // Only rewrite if existing directive exists, to support compilers that do not append a sourcemap directive
+  return (outputText.slice(-sourceMapLength, -sourceMapLength + 21) === '//# sourceMappingURL=' ? outputText.slice(0, -sourceMapLength) : outputText) + sourceMapContent
 }
 
 /**
@@ -1197,7 +1221,7 @@ function filterDiagnostics (diagnostics: readonly _ts.Diagnostic[], ignore: numb
  *
  * Reference: https://github.com/microsoft/TypeScript/blob/fcd9334f57d85b73dd66ad2d21c02e84822f4841/src/services/utilities.ts#L705-L731
  */
-function getTokenAtPosition (ts: typeof _ts, sourceFile: _ts.SourceFile, position: number): _ts.Node {
+function getTokenAtPosition (ts: TSCommon, sourceFile: _ts.SourceFile, position: number): _ts.Node {
   let current: _ts.Node = sourceFile
 
   outer: while (true) {

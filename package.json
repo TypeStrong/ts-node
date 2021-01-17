@@ -21,7 +21,7 @@
     "./esm.mjs": "./esm.mjs",
     "./esm/transpile-only": "./esm/transpile-only.mjs",
     "./esm/transpile-only.mjs": "./esm/transpile-only.mjs",
-    "./compilers/swc": "./compilers/swc.js"
+    "./compilers/swc-experimental": "./compilers/swc-experimental.js"
   },
   "types": "dist/index.d.ts",
   "bin": {
@@ -31,6 +31,7 @@
     "ts-node-transpile-only": "dist/bin-transpile.js"
   },
   "files": [
+    "compilers/",
     "dist/",
     "dist-raw/",
     "register/",
@@ -81,7 +82,8 @@
   },
   "homepage": "https://github.com/TypeStrong/ts-node",
   "devDependencies": {
-    "@swc/core": ">=1.2.38",
+    "@swc/core": ">=1.2.45",
+    "@swc/wasm": ">=1.2.45",
     "@types/chai": "^4.0.4",
     "@types/diff": "^4.0.2",
     "@types/lodash": "^4.14.151",
@@ -109,11 +111,15 @@
     "util.promisify": "^1.0.1"
   },
   "peerDependencies": {
-    "@swc/core": ">=1.2.38",
+    "@swc/core": ">=1.2.45",
+    "@swc/wasm": ">=1.2.45",
     "typescript": ">=2.7"
   },
   "peerDependenciesMeta": {
     "@swc/core": {
+      "optional": true
+    },
+    "@swc/wasm": {
       "optional": true
     }
   },

@@ -1,56 +1,85 @@
 import type * as ts from 'typescript'
-import * as swc from '@swc/core'
+import type * as swcWasm from '@swc/wasm'
+import type * as swcTypes from '@swc/core'
+import type { TSCommon } from '..'
+export interface Options {
+  /** TypeScript compiler to wrap */
+  compiler?: string | TSCommon
+  /**
+   * swc compiler to use for compilation
+   * Set to '@swc/wasm' to use swc's WASM compiler
+   * Default: '@swc/core'
+   */
+  swc?: string | typeof swcWasm
+}
 
-const version = `${ require('../../package').version }-TODO-APPEND-TS-VERSION`
+export function createTypeScriptCompiler (options: Options = {}) {
+  const { swc, compiler = 'typescript' } = options
+  const compilerInstance = typeof compiler === 'string' ? require(compiler) as TSCommon : compiler
+  let swcResolved
+  if (typeof swc === 'string') {
+    swcResolved = require.resolve(swc)
+  } else {
+    try {
+      swcResolved = require.resolve('@swc/core')
+    } catch (e) {
+      try {
+        swcResolved = require.resolve('@swc/wasm')
+      } catch (e) {
+        throw new Error('swc compiler requires either @swc/core or @swc/wasm to be installed as dependencies')
+      }
+    }
+  }
+  const swcInstance = require(swcResolved) as typeof swcWasm
 
-const transpileModule: typeof ts.transpileModule = (input: string, transpileOptions: ts.TranspileOptions): ts.TranspileOutput => {
-  const compilerOptions = transpileOptions.compilerOptions!
-  const { fileName } = transpileOptions
-  const { esModuleInterop, sourceMap, importHelpers, experimentalDecorators, emitDecoratorMetadata, target, jsxFactory, jsxFragmentFactory } = compilerOptions
-  const { code, map } = swc.transformSync(input, {
-    filename: fileName,
-    sourceMaps: sourceMap,
-    // isModule: true,
-    module: {
-      type: 'commonjs',
-      noInterop: !esModuleInterop
-    },
-    swcrc: false,
-    jsc: {
-      externalHelpers: importHelpers,
-      parser: {
-        syntax: 'typescript',
-        tsx: fileName!.endsWith('.tsx') || fileName!.endsWith('.jsx'),
-        decorators: experimentalDecorators,
-        dynamicImport: true
+  const version = `${ compilerInstance.version }-tsnode-${ require('../../package').version }-swc`
+
+  const transpileModule: TSCommon['transpileModule'] = (input: string, transpileOptions: ts.TranspileOptions): ts.TranspileOutput => {
+    const compilerOptions = transpileOptions.compilerOptions!
+    const { fileName } = transpileOptions
+    const { esModuleInterop, sourceMap, importHelpers, experimentalDecorators, emitDecoratorMetadata, target, jsxFactory, jsxFragmentFactory } = compilerOptions
+    const options: swcTypes.Options = {
+      filename: fileName,
+      sourceMaps: sourceMap,
+      // isModule: true,
+      module: {
+        type: 'commonjs',
+        noInterop: !esModuleInterop
       },
-      target: targetMapping.get(target!) ?? 'es3',
-      transform: {
-        decoratorMetadata: emitDecoratorMetadata,
-        legacyDecorator: true,
-        react: {
-          throwIfNamespace: false,
-          development: false,
-          useBuiltins: false,
-          pragma: jsxFactory!,
-          pragmaFrag: jsxFragmentFactory!
+      swcrc: false,
+      jsc: {
+        externalHelpers: importHelpers,
+        parser: {
+          syntax: 'typescript',
+          tsx: fileName!.endsWith('.tsx') || fileName!.endsWith('.jsx'),
+          decorators: experimentalDecorators,
+          dynamicImport: true
+        },
+        target: targetMapping.get(target!) ?? 'es3',
+        transform: {
+          decoratorMetadata: emitDecoratorMetadata,
+          legacyDecorator: true,
+          react: {
+            throwIfNamespace: false,
+            development: false,
+            useBuiltins: false,
+            pragma: jsxFactory!,
+            pragmaFrag: jsxFragmentFactory!
+          }
         }
       }
     }
-  });
-  // HACK ts-node assumes the last line is a //# sourcemap comment from typescript that can be rewritten.
-  // We must add enough empty space that the rewriting doesn't clobber code
-  const outputText = code + '\n//#                                                                                                                           ';
-  const sourceMapText = map;
-  return { outputText, sourceMapText };
+    const { code, map } = swcInstance.transformSync(input, options)
+    return { outputText: code, sourceMapText: map }
+  }
+  return {
+    ...compilerInstance,
+    version,
+    transpileModule
+  }
 }
-export = {
-  ...require('typescript'),
-  version,
-  transpileModule
-};
 
-const targetMapping = new Map<ts.ScriptTarget, swc.JscTarget>()
+const targetMapping = new Map<ts.ScriptTarget, swcTypes.JscTarget>()
 targetMapping.set(/* ts.ScriptTarget.ES3 */ 0, 'es3')
 targetMapping.set(/* ts.ScriptTarget.ES5 */ 1, 'es5')
 targetMapping.set(/* ts.ScriptTarget.ES2015 */ 2, 'es2015')
