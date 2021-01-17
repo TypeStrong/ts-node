@@ -14,8 +14,12 @@ function parseOptions() {
       '--preserve-symlinks-main': false,
       '--input-type': undefined,
       '--experimental-specifier-resolution': 'explicit',
+      '--experimental-policy': undefined,
+      '--conditions': [],
+      '--pending-deprecation': false,
       ...parseArgv(getNodeOptionsEnvArgv()),
-      ...parseArgv(process.execArgv)
+      ...parseArgv(process.execArgv),
+      ...getOptionValuesFromOtherEnvVars()
     }
   }
 }
@@ -28,6 +32,9 @@ function parseArgv(argv) {
     '--experimental-specifier-resolution': String,
     // Legacy alias for node versions prior to 12.16
     '--es-module-specifier-resolution': '--experimental-specifier-resolution',
+    '--experimental-policy': String,
+    '--conditions': [String],
+    '--pending-deprecation': Boolean
   }, {
     argv,
     permissive: true
@@ -82,4 +89,13 @@ function ParseNodeOptionsEnvVar(node_options, errors) {
           "(unterminated string)\n");
   }
   return env_argv;
+}
+
+// Get option values that can be specified via env vars besides NODE_OPTIONS
+function getOptionValuesFromOtherEnvVars() {
+  const options = {};
+  if(process.env.NODE_PENDING_DEPRECATION === '1') {
+    options['--pending-deprecation'] = true;
+  }
+  return options;
 }

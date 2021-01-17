@@ -1,6 +1,6 @@
 {
   "name": "ts-node",
-  "version": "9.0.0",
+  "version": "9.1.1",
   "description": "TypeScript execution environment and REPL for node.js, with source map support",
   "main": "dist/index.js",
   "exports": {
@@ -52,7 +52,7 @@
     "build-pack": "node ./scripts/build-pack.js",
     "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
     "test-cov": "nyc mocha -- \"dist/**/*.spec.js\" -R spec --bail",
-    "test": "npm run build && npm run lint && npm run test-cov",
+    "test": "npm run build && npm run lint && npm run test-cov --",
     "coverage-report": "nyc report --reporter=lcov",
     "prepare": "npm run build-nopack"
   },
@@ -94,8 +94,9 @@
     "@types/rimraf": "^3.0.0",
     "@types/semver": "^7.1.0",
     "@types/source-map-support": "^0.5.0",
-    "axios": "^0.19.0",
+    "axios": "^0.21.1",
     "chai": "^4.0.1",
+    "get-stream": "^6.0.0",
     "lodash": "^4.17.15",
     "mocha": "^6.2.2",
     "ntypescript": "^1.201507091536.1",
@@ -125,6 +126,7 @@
   },
   "dependencies": {
     "arg": "^4.1.0",
+    "create-require": "^1.1.0",
     "diff": "^4.0.1",
     "make-error": "^1.1.1",
     "source-map-support": "^0.5.17",

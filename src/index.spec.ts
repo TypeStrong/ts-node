@@ -8,9 +8,12 @@ import type * as tsNodeTypes from './index'
 import { unlinkSync, existsSync, lstatSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
-import { createRequire, createRequireFromPath } from 'module'
+import type _createRequire from 'create-require'
+const createRequire: typeof _createRequire = require('create-require')
 import { pathToFileURL } from 'url'
 import Module = require('module')
+import { PassThrough } from 'stream'
+import * as getStream from 'get-stream'
 
 const execP = promisify(exec)
 
@@ -22,10 +25,10 @@ const BIN_SCRIPT_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-script')
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
 
 // `createRequire` does not exist on older node versions
-const testsDirRequire = (createRequire || createRequireFromPath)(join(TEST_DIR, 'index.js')) // tslint:disable-line
+const testsDirRequire = createRequire(join(TEST_DIR, 'index.js')) // tslint:disable-line
 
 // Set after ts-node is installed locally
-let { register, create, VERSION }: typeof tsNodeTypes = {} as any
+let { register, create, VERSION, createRepl }: typeof tsNodeTypes = {} as any
 
 // Pack and install ts-node locally, necessary to test package "exports"
 before(async function () {
@@ -34,7 +37,7 @@ before(async function () {
   await execP(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
   existsSync(packageLockPath) && unlinkSync(packageLockPath)
-  ;({ register, create, VERSION } = testsDirRequire('ts-node'))
+  ;({ register, create, VERSION, createRepl } = testsDirRequire('ts-node'))
 })
 
 describe('ts-node', function () {
@@ -353,8 +356,8 @@ describe('ts-node', function () {
       })
 
       cp.stdin!.end('console.log("123")\n')
-
     })
+
     it('REPL has command to get type information', function (done) {
       const cp = exec(`${cmd} --interactive`, function (err, stdout) {
         expect(err).to.equal(null)
@@ -368,6 +371,32 @@ describe('ts-node', function () {
       })
 
       cp.stdin!.end('\nconst a = 123\n.type a')
+    })
+
+    it('REPL can be created via API', async () => {
+      const stdin = new PassThrough()
+      const stdout = new PassThrough()
+      const stderr = new PassThrough()
+      const replService = createRepl({
+        stdin,
+        stdout,
+        stderr
+      })
+      const service = create(replService.evalAwarePartialHost)
+      replService.setService(service)
+      replService.start()
+      stdin.write('\nconst a = 123\n.type a\n')
+      stdin.end()
+      await promisify(setTimeout)(1e3)
+      stdout.end()
+      stderr.end()
+      expect(await getStream(stderr)).to.equal('')
+      expect(await getStream(stdout)).to.equal(
+        '> \'use strict\'\n' +
+        '> undefined\n' +
+        '> const a: 123\n' +
+        '> '
+      )
     })
 
     it('should support require flags', function (done) {
@@ -643,7 +672,7 @@ describe('ts-node', function () {
   })
 
   describe('register', function () {
-    let registered: tsNodeTypes.Register
+    let registered: tsNodeTypes.Service
     let moduleTestPath: string
     before(() => {
       registered = register({
@@ -796,7 +825,7 @@ describe('ts-node', function () {
   })
 
   describe('create', () => {
-    let service: tsNodeTypes.Register
+    let service: tsNodeTypes.Service
     before(() => {
       service = create({ compilerOptions: { target: 'es5' }, skipProject: true })
     })
@@ -823,7 +852,7 @@ describe('ts-node', function () {
   })
 
   describe('issue #1098', () => {
-    function testIgnored (ignored: tsNodeTypes.Register['ignored'], allowed: string[], disallowed: string[]) {
+    function testIgnored (ignored: tsNodeTypes.Service['ignored'], allowed: string[], disallowed: string[]) {
       for (const ext of allowed) {
         expect(ignored(join(__dirname, `index${ext}`))).equal(false, `should accept ${ext} files`)
       }
@@ -859,7 +888,7 @@ describe('ts-node', function () {
       it('should compile and execute as ESM', (done) => {
         exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
           expect(err).to.equal(null)
-          expect(stdout).to.equal('foo bar baz biff\n')
+          expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
           return done()
         })
@@ -882,7 +911,7 @@ describe('ts-node', function () {
         it('via --experimental-specifier-resolution', (done) => {
           exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
             expect(err).to.equal(null)
-            expect(stdout).to.equal('foo bar baz biff\n')
+            expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
             return done()
           })
@@ -890,7 +919,7 @@ describe('ts-node', function () {
         it('via --es-module-specifier-resolution alias', (done) => {
           exec(`${cmd} --experimental-modules --es-module-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
             expect(err).to.equal(null)
-            expect(stdout).to.equal('foo bar baz biff\n')
+            expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
             return done()
           })
@@ -904,7 +933,7 @@ describe('ts-node', function () {
             }
           }, function (err, stdout) {
             expect(err).to.equal(null)
-            expect(stdout).to.equal('foo bar baz biff\n')
+            expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
             return done()
           })
@@ -927,6 +956,15 @@ describe('ts-node', function () {
           expect(err).to.not.equal(null)
           // expect error from node's default resolver
           expect(stderr).to.match(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,1}\n *at defaultResolve/)
+          return done()
+        })
+      })
+
+      it('should bypass import cache when changing search params', (done) => {
+        exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm-import-cache') }, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.equal('log1\nlog2\nlog2\n')
+
           return done()
         })
       })
