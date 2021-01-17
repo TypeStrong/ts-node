@@ -3,12 +3,13 @@
 // Each function and variable below must have a comment linking to the source in node's github repo.
 
 const path = require('path');
-const fs = require('fs');
+const packageJsonReader = require('./node-package-json-reader');
+const {JSONParse} = require('./node-primordials');
 
 module.exports.assertScriptCanLoadAsCJSImpl = assertScriptCanLoadAsCJSImpl;
 
 // copied from Module._extensions['.js']
-// https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/modules/cjs/loader.js#L1211-L1217
+// https://github.com/nodejs/node/blob/v15.3.0/lib/internal/modules/cjs/loader.js#L1113-L1120
 function assertScriptCanLoadAsCJSImpl(filename) {
   const pkg = readPackageScope(filename);
   // Function require shouldn't be used in ES modules.
@@ -41,31 +42,27 @@ function readPackageScope(checkPath) {
 // Copied from https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/modules/cjs/loader.js#L249
 const packageJsonCache = new Map();
 
-// Copied from https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/modules/cjs/loader.js#L251-L283
+// Copied from https://github.com/nodejs/node/blob/v15.3.0/lib/internal/modules/cjs/loader.js#L275-L304
 function readPackage(requestPath) {
   const jsonPath = path.resolve(requestPath, 'package.json');
 
   const existing = packageJsonCache.get(jsonPath);
   if (existing !== undefined) return existing;
 
-  const json = internalModuleReadJSON(path.toNamespacedPath(jsonPath));
+  const result = packageJsonReader.read(jsonPath);
+  const json = result.containsKeys === false ? '{}' : result.string;
   if (json === undefined) {
     packageJsonCache.set(jsonPath, false);
     return false;
   }
 
-  // TODO Related to `--experimental-policy`?  Disabling for now
-  // if (manifest) {
-  //   const jsonURL = pathToFileURL(jsonPath);
-  //   manifest.assertIntegrity(jsonURL, json);
-  // }
-
   try {
-    const parsed = JSON.parse(json);
+    const parsed = JSONParse(json);
     const filtered = {
       name: parsed.name,
       main: parsed.main,
       exports: parsed.exports,
+      imports: parsed.imports,
       type: parsed.type
     };
     packageJsonCache.set(jsonPath, filtered);
@@ -74,17 +71,6 @@ function readPackage(requestPath) {
     e.path = jsonPath;
     e.message = 'Error parsing ' + jsonPath + ': ' + e.message;
     throw e;
-  }
-}
-
-// In node's core, this is implemented in C
-// https://github.com/nodejs/node/blob/e9f293750760d59243020d0376edf242c9a26b67/src/node_file.cc#L845-L939
-function internalModuleReadJSON(path) {
-  try {
-    return fs.readFileSync(path, 'utf8')
-  } catch (e) {
-    if (e.code === 'ENOENT') return undefined
-    throw e
   }
 }
 
