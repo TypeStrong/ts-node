@@ -47,6 +47,37 @@ declare global {
   }
 }
 
+/** @internal */
+export const env = process.env as ProcessEnv
+/**
+ * Declare all env vars, to aid discoverability.
+ * If an env var affects ts-node's behavior, it should not be buried somewhere in our codebase.
+ * @internal
+ */
+export interface ProcessEnv {
+  TS_NODE_DEBUG?: string
+  TS_NODE_DIR?: string
+  TS_NODE_EMIT?: string
+  TS_NODE_SCOPE?: string
+  TS_NODE_FILES?: string
+  TS_NODE_PRETTY?: string
+  TS_NODE_COMPILER?: string
+  TS_NODE_COMPILER_OPTIONS?: string
+  TS_NODE_IGNORE?: string
+  TS_NODE_PROJECT?: string
+  TS_NODE_SKIP_PROJECT?: string
+  TS_NODE_SKIP_IGNORE?: string
+  TS_NODE_PREFER_TS_EXTS?: string
+  TS_NODE_IGNORE_DIAGNOSTICS?: string
+  TS_NODE_TRANSPILE_ONLY?: string
+  TS_NODE_TYPE_CHECK?: string
+  TS_NODE_COMPILER_HOST?: string
+  TS_NODE_LOG_ERROR?: string
+  TS_NODE_HISTORY?: string
+
+  NODE_NO_READLINE?: string
+}
+
 /**
  * @internal
  */
@@ -63,7 +94,7 @@ function yn (value: string | undefined) {
 /**
  * Debugging `ts-node`.
  */
-const shouldDebug = yn(process.env.TS_NODE_DEBUG)
+const shouldDebug = yn(env.TS_NODE_DEBUG)
 /** @internal */
 export const debug = shouldDebug ?
   (...args: any) => console.log(`[ts-node ${new Date().toISOString()}]`, ...args)
@@ -284,23 +315,23 @@ export interface TypeInfo {
  * variables.
  */
 export const DEFAULTS: RegisterOptions = {
-  dir: process.env.TS_NODE_DIR,
-  emit: yn(process.env.TS_NODE_EMIT),
-  scope: yn(process.env.TS_NODE_SCOPE),
-  files: yn(process.env.TS_NODE_FILES),
-  pretty: yn(process.env.TS_NODE_PRETTY),
-  compiler: process.env.TS_NODE_COMPILER,
-  compilerOptions: parse(process.env.TS_NODE_COMPILER_OPTIONS),
-  ignore: split(process.env.TS_NODE_IGNORE),
-  project: process.env.TS_NODE_PROJECT,
-  skipProject: yn(process.env.TS_NODE_SKIP_PROJECT),
-  skipIgnore: yn(process.env.TS_NODE_SKIP_IGNORE),
-  preferTsExts: yn(process.env.TS_NODE_PREFER_TS_EXTS),
-  ignoreDiagnostics: split(process.env.TS_NODE_IGNORE_DIAGNOSTICS),
-  transpileOnly: yn(process.env.TS_NODE_TRANSPILE_ONLY),
-  typeCheck: yn(process.env.TS_NODE_TYPE_CHECK),
-  compilerHost: yn(process.env.TS_NODE_COMPILER_HOST),
-  logError: yn(process.env.TS_NODE_LOG_ERROR),
+  dir: env.TS_NODE_DIR,
+  emit: yn(env.TS_NODE_EMIT),
+  scope: yn(env.TS_NODE_SCOPE),
+  files: yn(env.TS_NODE_FILES),
+  pretty: yn(env.TS_NODE_PRETTY),
+  compiler: env.TS_NODE_COMPILER,
+  compilerOptions: parse(env.TS_NODE_COMPILER_OPTIONS),
+  ignore: split(env.TS_NODE_IGNORE),
+  project: env.TS_NODE_PROJECT,
+  skipProject: yn(env.TS_NODE_SKIP_PROJECT),
+  skipIgnore: yn(env.TS_NODE_SKIP_IGNORE),
+  preferTsExts: yn(env.TS_NODE_PREFER_TS_EXTS),
+  ignoreDiagnostics: split(env.TS_NODE_IGNORE_DIAGNOSTICS),
+  transpileOnly: yn(env.TS_NODE_TRANSPILE_ONLY),
+  typeCheck: yn(env.TS_NODE_TYPE_CHECK),
+  compilerHost: yn(env.TS_NODE_COMPILER_HOST),
+  logError: yn(env.TS_NODE_LOG_ERROR),
   experimentalEsmLoader: false
 }
 
