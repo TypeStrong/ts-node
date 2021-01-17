@@ -13,7 +13,7 @@ export interface Options {
   swc?: string | typeof swcWasm
 }
 
-export function createTypeScriptCompiler (options: Options = {}) {
+export function createTypescriptCompiler (options: Options = {}) {
   const { swc, compiler = 'typescript' } = options
   const compilerInstance = typeof compiler === 'string' ? require(compiler) as TSCommon : compiler
   let swcInstance: typeof swcWasm
