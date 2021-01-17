@@ -19,7 +19,7 @@ export function createTypeScriptCompiler (options: Options = {}) {
   let swcInstance: typeof swcWasm
   if (typeof swc === 'string') {
     swcInstance = require(swc) as typeof swcWasm
-  } else if (swc == null) {
+  } else if (swc == null) { // tslint:disable-line
     let swcResolved
     try {
       swcResolved = require.resolve('@swc/core')
@@ -32,7 +32,7 @@ export function createTypeScriptCompiler (options: Options = {}) {
     }
     swcInstance = require(swcResolved) as typeof swcWasm
   } else {
-    swcInstance = swc as typeof swcWasm
+    swcInstance = swc
   }
 
   const version = `${ compilerInstance.version }-tsnode-${ require('../../package').version }-swc`
