@@ -8,7 +8,7 @@ import type * as _ts from 'typescript'
 import { Module, createRequire as nodeCreateRequire, createRequireFromPath as nodeCreateRequireFromPath } from 'module'
 import type _createRequire from 'create-require'
 // tslint:disable-next-line
-const createRequire = nodeCreateRequire ?? nodeCreateRequireFromPath ?? require('create-require') as typeof _createRequire
+export const createRequire = nodeCreateRequire ?? nodeCreateRequireFromPath ?? require('create-require') as typeof _createRequire
 
 export { createRepl, CreateReplOptions, ReplService } from './repl'
 

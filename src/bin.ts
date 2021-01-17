@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import * as Path from 'path'
 import { join, resolve, dirname } from 'path'
 import { inspect } from 'util'
 import Module = require('module')
@@ -10,7 +11,7 @@ import {
   createRepl,
   ReplService
  } from './repl'
-import { VERSION, TSError, parse, register } from './index'
+import { VERSION, TSError, parse, register, createRequire } from './index'
 
 /**
  * Main `bin` functionality.
@@ -251,7 +252,7 @@ function getDir (dir?: string, scriptMode?: boolean, cwdMode?: boolean, scriptPa
       }
     }
     try {
-      return dirname(require.resolve(scriptPath!))
+      return dirname(requireResolveNonCached(scriptPath!))
     } finally {
       for (const ext of extsTemporarilyInstalled) {
         delete require.extensions[ext] // tslint:disable-line
@@ -260,6 +261,24 @@ function getDir (dir?: string, scriptMode?: boolean, cwdMode?: boolean, scriptPa
   }
 
   return dir
+}
+
+const guaranteedNonexistentDirectoryPrefix = resolve(__dirname, 'doesnotexist')
+let guaranteedNonexistentDirectorySuffix = 0
+
+/**
+ * require.resolve an absolute path, tricking node into *not* caching the results.
+ * Necessary so that we do not pollute require.resolve cache prior to installing require.extensions
+ *
+ * Is a terrible hack, because node does not expose the necessary cache invalidation APIs
+ * https://stackoverflow.com/questions/59865584/how-to-invalidate-cached-require-resolve-results
+ */
+function requireResolveNonCached(absoluteModuleSpecifier: string) {
+  const {dir, base} = Path.parse(absoluteModuleSpecifier)
+  const relativeModuleSpecifier = `.${Path.sep}${base}`
+
+  const req = createRequire(join(dir, 'imaginaryUncacheableRequireResolveScript'))
+  return req.resolve(relativeModuleSpecifier, {paths: [`${ guaranteedNonexistentDirectoryPrefix }${ guaranteedNonexistentDirectorySuffix++ }`, ...req.resolve.paths(relativeModuleSpecifier) || []]})
 }
 
 /**
