@@ -15,4 +15,4 @@ coverage:
         threshold: 1%
 
 comment:
-  layout: "reach, files"
+  layout: "files"
