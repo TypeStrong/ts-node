@@ -16,10 +16,11 @@ export interface Options {
 export function createTypeScriptCompiler (options: Options = {}) {
   const { swc, compiler = 'typescript' } = options
   const compilerInstance = typeof compiler === 'string' ? require(compiler) as TSCommon : compiler
-  let swcResolved
+  let swcInstance: typeof swcWasm
   if (typeof swc === 'string') {
-    swcResolved = require.resolve(swc)
-  } else {
+    swcInstance = require(swc) as typeof swcWasm
+  } else if (swc == null) {
+    let swcResolved
     try {
       swcResolved = require.resolve('@swc/core')
     } catch (e) {
@@ -29,8 +30,10 @@ export function createTypeScriptCompiler (options: Options = {}) {
         throw new Error('swc compiler requires either @swc/core or @swc/wasm to be installed as dependencies')
       }
     }
+    swcInstance = require(swcResolved) as typeof swcWasm
+  } else {
+    swcInstance = swc as typeof swcWasm
   }
-  const swcInstance = require(swcResolved) as typeof swcWasm
 
   const version = `${ compilerInstance.version }-tsnode-${ require('../../package').version }-swc`
 
