@@ -13,3 +13,6 @@ coverage:
     project:
       default:
         threshold: 1%
+
+comment:
+  layout: "reach, files"
