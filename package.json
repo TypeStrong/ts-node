@@ -74,6 +74,11 @@
     "email": "hello@blakeembrey.com",
     "url": "http://blakeembrey.me"
   },
+  "contributors": [{
+    "name": "Andrew Bradley",
+    "email": "cspotcode@gmail.com",
+    "url": "https://github.com/cspotcode"
+  }],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/TypeStrong/ts-node/issues"
