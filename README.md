@@ -289,6 +289,16 @@ import UntypedJsLib from "untyped_js_lib"
 
 **Tip:** If you _must_ use `files`, `include`, or `exclude`, enable `--files` flags or set `TS_NODE_FILES=true`.
 
+## Help!  I'm getting syntax errors in `ts-node`, but not in `tsc`!
+
+This is probably because the `compilerOptions.target` in your `tsconfig.json` is a higher version of ECMAScript than your current version of Node supports.
+
+For example, if you're using the `?.` optional chaining operator, and you have `"target": "esnext"` or `"target": "es2020"`, the `?.` won't get transpiled at all, 
+so if you're using Node 12, you'll get a syntax error because it doesn't natively support `?.`.  If you lower `"target"` to `"es2019"`, it will transpile the `?.` 
+into a form that can run on Node 12.
+
+To determine which target to use, see https://github.com/microsoft/TypeScript/wiki/Node-Target-Mapping.
+
 ## Watching and Restarting
 
 **TypeScript Node** compiles source code via `require()`, watching files and code reloads are out of scope for the project. If you want to restart the `ts-node` process on file change, existing node.js tools such as [nodemon](https://github.com/remy/nodemon), [onchange](https://github.com/Qard/onchange) and [node-dev](https://github.com/fgnass/node-dev) work.
