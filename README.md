@@ -221,9 +221,18 @@ Most options can be specified by a `"ts-node"` object in `tsconfig.json` using t
 
 Our bundled [JSON schema](https://unpkg.com/browse/ts-node@8.8.2/tsconfig.schema.json) lists all compatible options.
 
-## SyntaxError
+## Help! I'm getting a `SyntaxError` in `ts-node`, but my code compiles with `tsc`!
 
-Any error that is not a `TSError` is from node.js (e.g. `SyntaxError`), and cannot be fixed by TypeScript or `ts-node`. These are runtime issues with your code.
+This happens when your `compileOptions.target` is too high, so TypeScript leaves some fancy new syntax as-is, instead of transpiling it into a form your version of Node understands.
+
+For example, if you're using the `?.` optional chaining operator with `"target": "esnext"` or `"target": "es2020"`, `tsc` won't transpile it, 
+and Node 12, which doesn't support `?.`, will throw a `SyntaxError`.  If you lower `"target"` to `"es2019"`, `tsc` will transpile the `?.` 
+into a form that works on Node 12.
+
+To determine which target to use, see https://github.com/microsoft/TypeScript/wiki/Node-Target-Mapping.
+
+Any error that is not a `TSError` is thrown while running the transpiled code in Node.js after compilation succeeds.
+If you see a `SyntaxError` or a `TypeError` from a builtin API being undefined, then you definitely need to lower your `target`.
 
 ### Import Statements
 
@@ -288,16 +297,6 @@ import UntypedJsLib from "untyped_js_lib"
 ```
 
 **Tip:** If you _must_ use `files`, `include`, or `exclude`, enable `--files` flags or set `TS_NODE_FILES=true`.
-
-## Help!  I'm getting syntax errors in `ts-node`, but not in `tsc`!
-
-This is probably because the `compilerOptions.target` in your `tsconfig.json` is a higher version of ECMAScript than your current version of Node supports.
-
-For example, if you're using the `?.` optional chaining operator, and you have `"target": "esnext"` or `"target": "es2020"`, the `?.` won't get transpiled at all, 
-so if you're using Node 12, you'll get a syntax error because it doesn't natively support `?.`.  If you lower `"target"` to `"es2019"`, it will transpile the `?.` 
-into a form that can run on Node 12.
-
-To determine which target to use, see https://github.com/microsoft/TypeScript/wiki/Node-Target-Mapping.
 
 ## Watching and Restarting
 
