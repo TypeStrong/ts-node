@@ -661,3 +661,4 @@ module.exports = {
   defaultResolve,
   getPackageType
 };
+
