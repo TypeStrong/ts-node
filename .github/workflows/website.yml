@@ -1,0 +1,36 @@
+name: Publish website
+on:
+  # branches pushed by collaborators
+  push:
+    branches:
+      - master
+      # Only publish from PR while in development
+      - ab/docsite
+    paths: &docspaths
+      - "/website/**"
+  # pull request from non-collaborators DANGEROUS UNLESS WE PREVENT IT FROM PUBLISHING
+  # pull_request:
+  #   paths: *docspaths
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      # checkout code
+      - uses: actions/checkout@v2
+      # install node
+      - name: Use Node.js 14
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14
+      # Build
+      - run: cd website && yarn build
+  deploy:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      # Build
+      - run: cd website && yarn deploy
+        env:
+          GIT_PASS: ${{ secrets.GITHUB_TOKEN }}
+
