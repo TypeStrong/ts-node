@@ -7,16 +7,16 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  /* Generating by pasting TS's blue color from our logo into the palette generator at https://v2.docusaurus.io/docs/styling-layout/ */
-  --ifm-color-primary: #2261a8;
-  --ifm-color-primary-dark: #1f5797;
-  --ifm-color-primary-darker: #1d528f;
-  --ifm-color-primary-darkest: #184476;
-  --ifm-color-primary-light: #256bb9;
-  --ifm-color-primary-lighter: #2770c1;
-  --ifm-color-primary-lightest: #317ed5;
+  /* Generating by pasting #3178C6, the shade of blue from typescriptlang.org's navbar, into the palette generator at https://v2.docusaurus.io/docs/styling-layout/ */
+  --ifm-color-primary: #3178c6;
+  --ifm-color-primary-dark: #2c6cb2;
+  --ifm-color-primary-darker: #2a66a8;
+  --ifm-color-primary-darkest: #22548b;
+  --ifm-color-primary-light: #4084d0;
+  --ifm-color-primary-lighter: #4a8bd2;
+  --ifm-color-primary-lightest: #689eda;
 
-  /* defaults */
+  /* Docusaurus defaults */
   /* --ifm-color-primary: #25c2a0;
   --ifm-color-primary-dark: rgb(33, 175, 144);
   --ifm-color-primary-darker: rgb(31, 165, 136);

@@ -4,7 +4,8 @@ module.exports = {
       'getting-started',
       'configuration',
       'shebang',
-      'interpreting-errors'
+      'interpreting-errors',
+      'esm',
     ],
   },
 };
