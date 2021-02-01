@@ -13,7 +13,7 @@ module.exports = {
       title: 'ts-node',
       logo: {
         alt: 'ts-node logo',
-        src: 'img/logo.svg',
+        src: 'img/logo-icon.svg',
       },
       items: [
         {
