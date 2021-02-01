@@ -1,5 +1,5 @@
 {
-  "name": "ts-node",
+  "name": "@ts-node/website",
   "version": "0.0.0",
   "private": true,
   "scripts": {
