@@ -5,15 +5,6 @@ title: Getting Started
 slug: /
 ---
 
-![TypeScript Node](/img/logo.svg)
-
-[![NPM version][npm-image]][npm-url]
-[![NPM downloads][downloads-image]][downloads-url]
-[![Build status][github-actions-image]][github-actions-url]
-[![Test coverage][codecov-image]][codecov-url]
-
-> TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.7`**.
-
 ### *Experimental ESM support*
 
 Native ESM support is currently experimental. For usage, limitations, and to provide feedback, see [#1007](https://github.com/TypeStrong/ts-node/issues/1007).
