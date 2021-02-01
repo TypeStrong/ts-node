@@ -1,8 +1,8 @@
 module.exports = {
   title: 'ts-node',
   tagline: 'TypeScript execution and REPL for node.js',
-  url: 'https://ts-node.TypeStrong.com',
-  baseUrl: '/',
+  url: 'https://typestrong.org/ts-node',
+  baseUrl: '/ts-node/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
