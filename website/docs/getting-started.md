@@ -5,7 +5,7 @@ title: Getting Started
 slug: /
 ---
 
-# ![TypeScript Node](logo.svg?sanitize=true)
+![TypeScript Node](/img/logo.svg)
 
 [![NPM version][npm-image]][npm-url]
 [![NPM downloads][downloads-image]][downloads-url]
