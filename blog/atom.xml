@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://ts-node.TypeStrong.com/blog</id>
+    <title>ts-node Blog</title>
+    <updated>2015-10-25T23:29:00.000Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://ts-node.TypeStrong.com/blog"/>
+    <subtitle>ts-node Blog</subtitle>
+    <icon>https://ts-node.TypeStrong.com/img/favicon.ico</icon>
+</feed>
