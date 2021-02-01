@@ -56,6 +56,8 @@ export const env = process.env as ProcessEnv
  */
 export interface ProcessEnv {
   TS_NODE_DEBUG?: string
+  TS_NODE_CWD?: string
+  /** @deprecated legacy alias to TS_NODE_CWD */
   TS_NODE_DIR?: string
   TS_NODE_EMIT?: string
   TS_NODE_SCOPE?: string
@@ -153,9 +155,15 @@ export const VERSION = require('../package.json').version
  */
 export interface CreateOptions {
   /**
-   * Specify working directory for config resolution.
+   * Behave as if invoked within this working directory.  Roughly equivalent to `cd $dir && ts-node ...`
    *
    * @default process.cwd()
+   */
+  cwd?: string
+  /**
+   * Legacy alias for `cwd`
+   *
+   * @deprecated use `projectSearchPath` or `cwd`
    */
   dir?: string
   /**
@@ -189,7 +197,7 @@ export interface CreateOptions {
    */
   typeCheck?: boolean
   /**
-   * Use TypeScript's compiler host API.
+   * Use TypeScript's compiler host API instead of the language service API.
    *
    * @default false
    */
@@ -201,7 +209,9 @@ export interface CreateOptions {
    */
   logError?: boolean
   /**
-   * Load files from `tsconfig.json` on startup.
+   * Load "files" and "include" from `tsconfig.json` on startup.
+   *
+   * Default is to override `tsconfig.json` "files" and "include" to only include the entrypoint script.
    *
    * @default false
    */
@@ -213,16 +223,24 @@ export interface CreateOptions {
    */
   compiler?: string
   /**
-   * Override the path patterns to skip compilation.
+   * Paths which should not be compiled.
    *
-   * @default /node_modules/
-   * @docsDefault "/node_modules/"
+   * Each string in the array is converted to a regular expression via `new RegExp()` and tested against source paths prior to compilation.
+   *
+   * Default is to ignore all node_modules subdirectories.
+   *
+   * @default ["(?:^|/)node_modules/"]
    */
   ignore?: string[]
   /**
-   * Path to TypeScript JSON project file.
+   * Path to TypeScript config file or directory containing a `tsconfig.json`.
+   * Similar to the `tsc --project` flag: https://www.typescriptlang.org/docs/handbook/compiler-options.html
    */
   project?: string
+  /**
+   * Search for TypeScript config file (`tsconfig.json`) in this or parent directories.
+   */
+  projectSearchPath?: string
   /**
    * Skip project config resolution and loading.
    *
@@ -230,13 +248,13 @@ export interface CreateOptions {
    */
   skipProject?: boolean
   /**
-   * Skip ignore check.
+   * Skip ignore check, so that compilation will be attempted for all files with matching extensions.
    *
    * @default false
    */
   skipIgnore?: boolean
   /**
-   * JSON object to merge with compiler options.
+   * JSON object to merge with TypeScript `compilerOptions`.
    *
    * @allOf [{"$ref": "https://schemastore.azurewebsites.net/schemas/json/tsconfig.json#definitions/compilerOptionsDefinition/properties/compilerOptions"}]
    */
@@ -248,7 +266,7 @@ export interface CreateOptions {
   /**
    * Modules to require, like node's `--require` flag.
    *
-   * If specified in tsconfig.json, the modules will be resolved relative to the tsconfig.json file.
+   * If specified in `tsconfig.json`, the modules will be resolved relative to the `tsconfig.json` file.
    *
    * If specified programmatically, each input string should be pre-resolved to an absolute path for
    * best results.
@@ -272,6 +290,8 @@ export interface RegisterOptions extends CreateOptions {
   /**
    * Re-order file extensions so that TypeScript imports are preferred.
    *
+   * For example, when both `index.js` and `index.ts` exist, enabling this option causes `require('./index')` to resolve to `index.ts` instead of `index.js`
+   *
    * @default false
    */
   preferTsExts?: boolean
@@ -287,6 +307,8 @@ export interface TsConfigOptions extends Omit<RegisterOptions,
   | 'skipProject'
   | 'project'
   | 'dir'
+  | 'cwd'
+  | 'projectSearchPath'
   > {}
 
 /**
@@ -315,7 +337,7 @@ export interface TypeInfo {
  * variables.
  */
 export const DEFAULTS: RegisterOptions = {
-  dir: env.TS_NODE_DIR,
+  cwd: env.TS_NODE_CWD ?? env.TS_NODE_DIR,
   emit: yn(env.TS_NODE_EMIT),
   scope: yn(env.TS_NODE_SCOPE),
   files: yn(env.TS_NODE_FILES),
@@ -458,9 +480,9 @@ export function register (opts: RegisterOptions = {}): Service {
  * Create TypeScript compiler instance.
  */
 export function create (rawOptions: CreateOptions = {}): Service {
-  const dir = rawOptions.dir ?? DEFAULTS.dir
+  const cwd = resolve(rawOptions.cwd ?? DEFAULTS.cwd ?? process.cwd())
   const compilerName = rawOptions.compiler ?? DEFAULTS.compiler
-  const cwd = dir ? resolve(dir) : process.cwd()
+  const projectSearchPath = resolve(cwd, rawOptions.projectSearchPath ?? cwd)
 
   /**
    * Load the typescript compiler. It is required to load the tsconfig but might

@@ -33,7 +33,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
       '--version': arg.COUNT,
 
       // Project options.
-      '--dir': String,
+      '--cwd': String,
       '--files': Boolean,
       '--compiler': String,
       '--compiler-options': parse,
@@ -64,7 +64,8 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
       '-P': '--project',
       '-C': '--compiler',
       '-D': '--ignore-diagnostics',
-      '-O': '--compiler-options'
+      '-O': '--compiler-options',
+      '--dir': '--cwd'
     }, {
       argv,
       stopAtPositional: true
@@ -75,7 +76,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
   // Anything passed to `register()` can be `undefined`; `create()` will apply
   // defaults.
   const {
-    '--dir': dir,
+    '--cwd': cwdArg,
     '--help': help = false,
     '--script-mode': scriptMode,
     '--cwd-mode': cwdMode,
@@ -124,7 +125,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     -D, --ignore-diagnostics [code] Ignore TypeScript warnings by diagnostic code
     -O, --compiler-options [opts]   JSON object to merge with compiler options
 
-    --dir                          Specify working directory for config resolution
+    --cwd                          Behave as if invoked within this working directory.
     --scope                        Scope compiler to files within \`cwd\` only
     --files                        Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
     --pretty                       Use pretty diagnostic formatter (usually enabled by default)
@@ -143,7 +144,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     process.exit(0)
   }
 
-  const cwd = dir || process.cwd()
+  const cwd = cwdArg || process.cwd()
   /** Unresolved.  May point to a symlink, not realpath.  May be missing file extension */
   const scriptPath = args._.length ? resolve(cwd, args._[0]) : undefined
   const state = new EvalState(scriptPath || join(cwd, EVAL_FILENAME))
@@ -152,7 +153,8 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 
   // Register the TypeScript compiler instance.
   const service = register({
-    dir: getDir(dir, scriptMode, cwdMode, scriptPath),
+    cwd,
+    projectSearchPath: getProjectSearchPath(cwd, scriptMode, cwdMode, scriptPath),
     emit,
     files,
     pretty,
@@ -214,16 +216,10 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 }
 
 /**
- * Get project path from args.
+ * Get project search path from args.
  */
-function getDir (dir?: string, scriptMode?: boolean, cwdMode?: boolean, scriptPath?: string) {
-  // Validate `--script-mode` / `--cwd-mode` / `--dir` usage is correct.
-  if (dir && scriptMode) {
-    throw new TypeError('--script-mode cannot be combined with --dir')
-  }
-  if (dir && cwdMode) {
-    throw new TypeError('--cwd-mode cannot be combined with --dir')
-  }
+function getProjectSearchPath (cwd?: string, scriptMode?: boolean, cwdMode?: boolean, scriptPath?: string) {
+  // Validate `--script-mode` / `--cwd-mode` / `--cwd` usage is correct.
   if (scriptMode && cwdMode) {
     throw new TypeError('--cwd-mode cannot be combined with --script-mode')
   }
@@ -233,7 +229,6 @@ function getDir (dir?: string, scriptMode?: boolean, cwdMode?: boolean, scriptPa
   const doScriptMode =
     scriptMode === true ? true
     : cwdMode === true ? false
-    : dir !== undefined ? false
     : !!scriptPath
   if (doScriptMode) {
     // Use node's own resolution behavior to ensure we follow symlinks.
@@ -260,7 +255,7 @@ function getDir (dir?: string, scriptMode?: boolean, cwdMode?: boolean, scriptPa
     }
   }
 
-  return dir
+  return cwd
 }
 
 const guaranteedNonexistentDirectoryPrefix = resolve(__dirname, 'doesnotexist')
