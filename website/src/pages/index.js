@@ -9,7 +9,7 @@ import styles from './styles.module.css';
 const features = [
   {
     // title: 'Easy to Use',
-    imageUrl: 'https://github.com/TypeStrong/ts-node/raw/master/screenshot.png',
+    imageUrl: 'screenshot.png',
     // description: (
     //   <>
     //     Docusaurus was designed from the ground up to be easily installed and
@@ -94,7 +94,7 @@ function Home() {
               <div className={clsx('col col--4', styles.feature)}> */}
                 <div className="text--center">
                     {/* <img className={styles.featureImage} src="https://github.com/TypeStrong/ts-node/raw/master/screenshot.png" alt="screenshot of ts-node" /> */}
-                    <img src="/static/img/screenshot.png" alt="screenshot of ts-node" />
+                    <img src={useBaseUrl('img/screenshot.png')} alt="screenshot of ts-node" />
                 </div>
               {/* </div>
             </div> */}
