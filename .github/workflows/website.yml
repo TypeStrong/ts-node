@@ -24,6 +24,6 @@ jobs:
       # Render typedoc
       - run: npm install && ./node_modules/.bin/typedoc
       # Render docusaurus and deploy website
-      - run: cd website && yarn deploy
+      - run: cd website && yarn && yarn deploy
         env:
           GIT_PASS: ${{ secrets.GITHUB_TOKEN }}
