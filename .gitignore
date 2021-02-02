@@ -9,3 +9,4 @@ tsconfig.schema.json
 tsconfig.schemastore-schema.json
 .idea/
 /.vscode/
+/website/static/api

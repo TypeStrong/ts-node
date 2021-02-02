@@ -23,6 +23,11 @@ module.exports = {
           position: 'left',
         },
         {
+          href: 'https://typestrong.org/ts-node/api/',
+          label: 'API',
+          position: 'right',
+        },
+        {
           href: 'https://github.com/TypeStrong/ts-node',
           label: 'GitHub',
           position: 'right',

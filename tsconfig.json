@@ -16,5 +16,10 @@
   },
   "include": [
     "src/**/*"
-  ]
+  ],
+  "typedocOptions": {
+    "entryPoints": ["./src/index.ts"],
+    "readme": "none",
+    "out": "website/static/api"
+  }
 }

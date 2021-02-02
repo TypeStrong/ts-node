@@ -6,14 +6,12 @@ on:
       - master
       # Only publish from PR while in development
       - ab/docsite
-    paths: &docspaths
-      - "/website/**"
   # pull request from non-collaborators DANGEROUS UNLESS WE PREVENT IT FROM PUBLISHING
   # pull_request:
   #   paths: *docspaths
 jobs:
   build:
-    name: Build
+    name: Build & Deploy
     runs-on: ubuntu-20.04
     steps:
       # checkout code
@@ -23,14 +21,9 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 14
-      # Build
-      - run: cd website && yarn build
-  deploy:
-    name: Publish
-    runs-on: ubuntu-20.04
-    steps:
-      # Build
+      # Render typedoc
+      - run: npm install && ./node_modules/.bin/typedoc
+      # Render docusaurus and deploy website
       - run: cd website && yarn deploy
         env:
           GIT_PASS: ${{ secrets.GITHUB_TOKEN }}
-
