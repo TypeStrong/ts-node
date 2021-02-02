@@ -1,3 +1,0 @@
----
-title: Native ECMAScript modules
----
