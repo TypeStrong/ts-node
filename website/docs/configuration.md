@@ -43,7 +43,7 @@ ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 
 Use `--skip-project` to skip loading the `tsconfig.json`.
 
-Our bundled [JSON schema](https://unpkg.com/browse/ts-node@8.8.2/tsconfig.schema.json) lists all compatible options.
+Our bundled [JSON schema](https://unpkg.com/browse/ts-node@latest/tsconfig.schema.json) lists all compatible options.
 
 ### Finding `tsconfig.json`
 
