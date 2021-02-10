@@ -57,7 +57,6 @@ export const env = process.env as ProcessEnv
 export interface ProcessEnv {
   TS_NODE_DEBUG?: string
   TS_NODE_CWD?: string
-  /** @deprecated legacy alias to TS_NODE_CWD */
   TS_NODE_DIR?: string
   TS_NODE_EMIT?: string
   TS_NODE_SCOPE?: string
