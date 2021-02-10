@@ -2,7 +2,7 @@
 title: "Imports: CommonJS vs native modules"
 ---
 
-Code should usually be written using `import` statements.  You can either compile them to CommonJS or use node's native ESM support.  You do not need to use node's native modules to write import statements.
+TypeScript should almost always be written using `import` and `export` syntax.  You can either compile it to CommonJS or use node's native ESM support.  You do not need to use node's native modules to use `import` syntax.
 
 ### CommonJS (recommended)
 

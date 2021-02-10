@@ -4,11 +4,6 @@ on:
   push:
     branches:
       - master
-      # Only publish from PR while in development
-      - ab/docsite
-  # pull request from non-collaborators DANGEROUS UNLESS WE PREVENT IT FROM PUBLISHING
-  # pull_request:
-  #   paths: *docspaths
 jobs:
   build:
     name: Build & Deploy
