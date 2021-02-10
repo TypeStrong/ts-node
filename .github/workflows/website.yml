@@ -21,8 +21,8 @@ jobs:
       # Render docusaurus and deploy website
       - run: |
           set -euo pipefail
-          git config --global user.email "github-actions@github.com"
-          git config --global user.name "github-actions"
+          git config --global user.name "GitHub Action"
+          git config --global user.email "github-action@users.noreply.github.com"
           cd website
           yarn
           yarn deploy
