@@ -107,7 +107,8 @@ describe('ts-node', function () {
       })
     })
     it('shows version of compiler via -vv', function (done) {
-      exec(`${cmdNoProject} -vv`, function (err, stdout) {
+      exec(`${cmdNoProject} -vv`, function (err, stdout, stderr) {
+        console.log(stderr)
         expect(err).to.equal(null)
         expect(stdout.trim()).to.equal(
           `ts-node v${ testsDirRequire('ts-node/package').version }\n` +
@@ -724,8 +725,8 @@ describe('ts-node', function () {
         registered.enabled(false)
 
         const compilers = [
-          register({ dir: join(TEST_DIR, 'scope/a'), scope: true }),
-          register({ dir: join(TEST_DIR, 'scope/b'), scope: true })
+          register({ scopeDir: join(TEST_DIR, 'scope/a'), scope: true }),
+          register({ scopeDir: join(TEST_DIR, 'scope/b'), scope: true })
         ]
 
         compilers.forEach(c => {

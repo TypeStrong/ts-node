@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
-import * as Path from 'path'
-import { join, resolve, dirname } from 'path'
+import { join, resolve, dirname, parse as parsePath, sep as pathSep } from 'path'
 import { inspect } from 'util'
 import Module = require('module')
 import arg = require('arg')
@@ -126,7 +125,6 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     -O, --compiler-options [opts]   JSON object to merge with compiler options
 
     --cwd                          Behave as if invoked within this working directory.
-    --scope                        Scope compiler to files within \`cwd\` only
     --files                        Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
     --pretty                       Use pretty diagnostic formatter (usually enabled by default)
     --skip-project                 Skip reading \`tsconfig.json\`
@@ -151,10 +149,10 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
   const replService = createRepl({ state })
   const { evalAwarePartialHost } = replService
 
+  console.error([{__filename, cwd, scriptMode, cwdMode, scriptPath}, getProjectSearchPath(cwd, scriptMode, cwdMode, scriptPath)])
   // Register the TypeScript compiler instance.
   const service = register({
     cwd,
-    projectSearchPath: getProjectSearchPath(cwd, scriptMode, cwdMode, scriptPath),
     emit,
     files,
     pretty,
@@ -164,6 +162,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     ignore,
     preferTsExts,
     logError,
+    projectSearchPath: getProjectSearchPath(cwd, scriptMode, cwdMode, scriptPath),
     project,
     skipProject,
     skipIgnore,
@@ -268,12 +267,12 @@ let guaranteedNonexistentDirectorySuffix = 0
  * Is a terrible hack, because node does not expose the necessary cache invalidation APIs
  * https://stackoverflow.com/questions/59865584/how-to-invalidate-cached-require-resolve-results
  */
-function requireResolveNonCached(absoluteModuleSpecifier: string) {
-  const {dir, base} = Path.parse(absoluteModuleSpecifier)
-  const relativeModuleSpecifier = `.${Path.sep}${base}`
+function requireResolveNonCached (absoluteModuleSpecifier: string) {
+  const { dir, base } = parsePath(absoluteModuleSpecifier)
+  const relativeModuleSpecifier = `.${pathSep}${base}`
 
   const req = createRequire(join(dir, 'imaginaryUncacheableRequireResolveScript'))
-  return req.resolve(relativeModuleSpecifier, {paths: [`${ guaranteedNonexistentDirectoryPrefix }${ guaranteedNonexistentDirectorySuffix++ }`, ...req.resolve.paths(relativeModuleSpecifier) || []]})
+  return req.resolve(relativeModuleSpecifier, { paths: [`${ guaranteedNonexistentDirectoryPrefix }${ guaranteedNonexistentDirectorySuffix++ }`, ...req.resolve.paths(relativeModuleSpecifier) || []] })
 }
 
 /**

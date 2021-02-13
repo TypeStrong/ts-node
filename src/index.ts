@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url'
 import type * as _ts from 'typescript'
 import { Module, createRequire as nodeCreateRequire, createRequireFromPath as nodeCreateRequireFromPath } from 'module'
 import type _createRequire from 'create-require'
-// tslint:disable-next-line
+// tslint:disable-next-line:deprecation
 export const createRequire = nodeCreateRequire ?? nodeCreateRequireFromPath ?? require('create-require') as typeof _createRequire
 
 export { createRepl, CreateReplOptions, ReplService } from './repl'
@@ -57,8 +57,10 @@ export const env = process.env as ProcessEnv
 export interface ProcessEnv {
   TS_NODE_DEBUG?: string
   TS_NODE_CWD?: string
+  /** @deprecated */
   TS_NODE_DIR?: string
   TS_NODE_EMIT?: string
+  /** @deprecated */
   TS_NODE_SCOPE?: string
   TS_NODE_FILES?: string
   TS_NODE_PRETTY?: string
@@ -172,11 +174,15 @@ export interface CreateOptions {
    */
   emit?: boolean
   /**
-   * Scope compiler to files within `cwd`.
+   * Scope compiler to files within `scopeDir`.
    *
    * @default false
    */
   scope?: boolean
+  /**
+   * @default First of: `tsconfig.json` "rootDir" if specified, directory containing `tsconfig.json`, or cwd if no `tsconfig.json` is loaded.
+   */
+  scopeDir?: string
   /**
    * Use pretty diagnostic formatter.
    *
@@ -225,6 +231,8 @@ export interface CreateOptions {
    * Paths which should not be compiled.
    *
    * Each string in the array is converted to a regular expression via `new RegExp()` and tested against source paths prior to compilation.
+   *
+   * Source paths are normalized to posix-style separators, relative to the directory containing `tsconfig.json` or to cwd if no `tsconfig.json` is loaded.
    *
    * Default is to ignore all node_modules subdirectories.
    *
@@ -308,6 +316,9 @@ export interface TsConfigOptions extends Omit<RegisterOptions,
   | 'dir'
   | 'cwd'
   | 'projectSearchPath'
+  | 'scope'
+  | 'scopeDir'
+  | 'experimentalEsmLoader'
   > {}
 
 /**
@@ -336,9 +347,9 @@ export interface TypeInfo {
  * variables.
  */
 export const DEFAULTS: RegisterOptions = {
-  cwd: env.TS_NODE_CWD ?? env.TS_NODE_DIR,
+  cwd: env.TS_NODE_CWD ?? env.TS_NODE_DIR, // tslint:disable-line:deprecation
   emit: yn(env.TS_NODE_EMIT),
-  scope: yn(env.TS_NODE_SCOPE),
+  scope: yn(env.TS_NODE_SCOPE), // tslint:disable-line:deprecation
   files: yn(env.TS_NODE_FILES),
   pretty: yn(env.TS_NODE_PRETTY),
   compiler: env.TS_NODE_COMPILER,
@@ -479,25 +490,25 @@ export function register (opts: RegisterOptions = {}): Service {
  * Create TypeScript compiler instance.
  */
 export function create (rawOptions: CreateOptions = {}): Service {
-  const cwd = resolve(rawOptions.cwd ?? DEFAULTS.cwd ?? process.cwd())
+  const cwd = resolve(rawOptions.cwd ?? rawOptions.dir ?? DEFAULTS.cwd ?? process.cwd()) // tslint:disable-line:deprecation
   const compilerName = rawOptions.compiler ?? DEFAULTS.compiler
-  const projectSearchPath = resolve(cwd, rawOptions.projectSearchPath ?? cwd)
 
   /**
    * Load the typescript compiler. It is required to load the tsconfig but might
    * be changed by the tsconfig, so we sometimes have to do this twice.
    */
-  function loadCompiler (name: string | undefined) {
-    const compiler = require.resolve(name || 'typescript', { paths: [cwd, __dirname] })
+  function loadCompiler (name: string | undefined, relativeToPath: string) {
+    console.log(relativeToPath)
+    const compiler = require.resolve(name || 'typescript', { paths: [relativeToPath, __dirname] })
     const ts: typeof _ts = require(compiler)
     return { compiler, ts }
   }
 
   // Compute minimum options to read the config file.
-  let { compiler, ts } = loadCompiler(compilerName)
+  let { compiler, ts } = loadCompiler(compilerName, rawOptions.projectSearchPath ?? rawOptions.project ?? cwd)
 
   // Read config file and merge new options between env and CLI options.
-  const { config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
+  const { configFilePath, config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
   const options = assign<RegisterOptions>({}, DEFAULTS, tsconfigOptions || {}, rawOptions)
   options.require = [
     ...tsconfigOptions.require || [],
@@ -506,7 +517,10 @@ export function create (rawOptions: CreateOptions = {}): Service {
 
   // If `compiler` option changed based on tsconfig, re-load the compiler.
   if (options.compiler !== compilerName) {
-    ({ compiler, ts } = loadCompiler(options.compiler))
+    // TODO compiler name might not have changed, but compiler to load might be different based on where
+    // tsconfig is located
+    // Should re-attempt compiler resolution
+    ({ compiler, ts } = loadCompiler(options.compiler, configFilePath!))
   }
 
   const readFile = options.readFile || ts.sys.readFile
@@ -526,8 +540,11 @@ export function create (rawOptions: CreateOptions = {}): Service {
     content: string
   }>()
 
-  const isScoped = options.scope ? (relname: string) => relname.charAt(0) !== '.' : () => true
-  const shouldIgnore = createIgnore(options.skipIgnore ? [] : (
+  const configFileDirname = configFilePath ? dirname(configFilePath) : null
+  const scopeDir = options.scopeDir ?? config.options.rootDir ?? configFileDirname ?? cwd
+  const ignoreBaseDir = configFileDirname ?? cwd
+  const isScoped = options.scope ? (fileName: string) => relative(scopeDir, fileName).charAt(0) !== '.' : () => true
+  const shouldIgnore = createIgnore(ignoreBaseDir, options.skipIgnore ? [] : (
     options.ignore || ['(?:^|/)node_modules/']
   ).map(str => new RegExp(str)))
 
@@ -1030,8 +1047,7 @@ export function create (rawOptions: CreateOptions = {}): Service {
     if (!active) return true
     const ext = extname(fileName)
     if (extensions.tsExtensions.includes(ext) || extensions.jsExtensions.includes(ext)) {
-      const relname = relative(cwd, fileName)
-      return !isScoped(relname) || shouldIgnore(relname)
+      return !isScoped(fileName) || shouldIgnore(fileName)
     }
     return true
   }
@@ -1042,8 +1058,9 @@ export function create (rawOptions: CreateOptions = {}): Service {
 /**
  * Check if the filename should be ignored.
  */
-function createIgnore (ignore: RegExp[]) {
-  return (relname: string) => {
+function createIgnore (ignoreBaseDir: string, ignore: RegExp[]) {
+  return (fileName: string) => {
+    const relname = relative(ignoreBaseDir, fileName)
     const path = normalizeSlashes(relname)
 
     return ignore.some(x => x.test(path))
@@ -1076,7 +1093,7 @@ function registerExtensions (
   }
 
   if (preferTsExts) {
-    // tslint:disable-next-line
+    // tslint:disable-next-line:deprecation
     const preferredExtensions = new Set([...extensions, ...Object.keys(require.extensions)])
 
     for (const ext of preferredExtensions) reorderRequireExtension(ext)
@@ -1146,6 +1163,8 @@ function readConfig (
   ts: TSCommon,
   rawOptions: CreateOptions
 ): {
+  // Path of tsconfig file
+  configFilePath: string | undefined,
   // Parsed TypeScript configuration.
   config: _ts.ParsedCommandLine
   // Options pulled from `tsconfig.json`.
@@ -1153,7 +1172,8 @@ function readConfig (
 } {
   let config: any = { compilerOptions: {} }
   let basePath = cwd
-  let configFileName: string | undefined = undefined
+  let configFilePath: string | undefined = undefined
+  const projectSearchPath = resolve(cwd, rawOptions.projectSearchPath ?? cwd)
 
   const {
     fileExists = ts.sys.fileExists,
@@ -1164,28 +1184,29 @@ function readConfig (
 
   // Read project configuration when available.
   if (!skipProject) {
-    configFileName = project
+    configFilePath = project
       ? resolve(cwd, project)
-      : ts.findConfigFile(cwd, fileExists)
+      : ts.findConfigFile(projectSearchPath, fileExists)
 
-    if (configFileName) {
-      const result = ts.readConfigFile(configFileName, readFile)
+    if (configFilePath) {
+      const result = ts.readConfigFile(configFilePath, readFile)
 
       // Return diagnostics.
       if (result.error) {
         return {
+          configFilePath,
           config: { errors: [result.error], fileNames: [], options: {} },
           options: {}
         }
       }
 
       config = result.config
-      basePath = dirname(configFileName)
+      basePath = dirname(configFilePath)
     }
   }
 
   // Fix ts-node options that come from tsconfig.json
-  const tsconfigOptions: TsConfigOptions = Object.assign({}, config['ts-node'])
+  const tsconfigOptions: TsConfigOptions = Object.assign({}, filterRecognizedTsConfigTsNodeOptions(config['ts-node']))
 
   // Remove resolution of "files".
   const files = rawOptions.files ?? tsconfigOptions.files ?? DEFAULTS.files
@@ -1209,17 +1230,39 @@ function readConfig (
     readFile,
     readDirectory: ts.sys.readDirectory,
     useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames
-  }, basePath, undefined, configFileName))
+  }, basePath, undefined, configFilePath))
 
   if (tsconfigOptions.require) {
     // Modules are found relative to the tsconfig file, not the `dir` option
-    const tsconfigRelativeRequire = createRequire(configFileName!)
+    const tsconfigRelativeRequire = createRequire(configFilePath!)
     tsconfigOptions.require = tsconfigOptions.require.map((path: string) => {
       return tsconfigRelativeRequire.resolve(path)
     })
   }
 
-  return { config: fixedConfig, options: tsconfigOptions }
+  return { configFilePath, config: fixedConfig, options: tsconfigOptions }
+}
+
+/**
+ * Given the raw "ts-node" sub-object from a tsconfig, return an object with only the properties
+ * recognized by "ts-node"
+ */
+function filterRecognizedTsConfigTsNodeOptions (jsonObject: any): TsConfigOptions {
+  if (jsonObject == null) return jsonObject
+  const {
+    compiler, compilerHost, compilerOptions, emit, files, ignore,
+    ignoreDiagnostics, logError, preferTsExts, pretty, require, skipIgnore,
+    transpileOnly, typeCheck
+  } = jsonObject as TsConfigOptions
+  const filteredTsConfigOptions = {
+    compiler, compilerHost, compilerOptions, emit, files, ignore,
+    ignoreDiagnostics, logError, preferTsExts, pretty, require, skipIgnore,
+    transpileOnly, typeCheck
+  }
+  // Use the typechecker to make sure this implementation has the correct set of properties
+  const catchExtraneousProps: keyof TsConfigOptions = null as any as keyof typeof filteredTsConfigOptions
+  const catchMissingProps: keyof typeof filteredTsConfigOptions = null as any as keyof TsConfigOptions
+  return filteredTsConfigOptions
 }
 
 /**
