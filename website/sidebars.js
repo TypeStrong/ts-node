@@ -7,7 +7,7 @@ module.exports = {
       'imports',
       'integrations',
       'shebang',
-      'interpreting-errors',
+      'errors',
     ],
   },
 };
