@@ -110,8 +110,7 @@ describe('ts-node', function () {
       })
     })
     it('shows version of compiler via -vv', function (done) {
-      exec(`${cmdNoProject} -vv`, function (err, stdout, stderr) {
-        console.log(stderr)
+      exec(`${cmdNoProject} -vv`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout.trim()).to.equal(
           `ts-node v${ testsDirRequire('ts-node/package').version }\n` +
