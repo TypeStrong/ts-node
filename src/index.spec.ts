@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { exec } from 'child_process'
+import { ChildProcess, exec as childProcessExec, ExecException, ExecOptions } from 'child_process'
 import { join } from 'path'
 import semver = require('semver')
 import ts = require('typescript')
@@ -15,7 +15,17 @@ import Module = require('module')
 import { PassThrough } from 'stream'
 import * as getStream from 'get-stream'
 
-const execP = promisify(exec)
+function exec (cmd: string, callback: (err: ExecException | null, stdout: string, stderr: string) => void): ChildProcess
+function exec (cmd: string, opts: ExecOptions, callback: (err: ExecException | null, stdout: string, stderr: string) => void): ChildProcess
+function exec (cmd: string, opts: ExecOptions | ((err: ExecException | null, stdout: string, stderr: string) => void), callback?: (err: ExecException | null, stdout: string, stderr: string) => void) {
+  const _opts = typeof opts === 'function' ? {} : opts
+  const _callback = typeof opts === 'function' ? opts : callback
+  return childProcessExec(cmd, {
+    cwd: TEST_DIR,
+    ..._opts
+  }, _callback)
+}
+const execP = promisify(exec) as any as typeof childProcessExec['__promisify__']
 
 const TEST_DIR = join(__dirname, '../tests')
 const PROJECT = join(TEST_DIR, 'tsconfig.json')
@@ -84,7 +94,7 @@ describe('ts-node', function () {
     this.slow(1000)
 
     it('should execute cli', function (done) {
-      exec(`${cmd} tests/hello-world`, function (err, stdout) {
+      exec(`${cmd} hello-world`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\n')
 
@@ -139,7 +149,7 @@ describe('ts-node', function () {
     })
 
     it('should print scripts', function (done) {
-      exec(`${cmd} -pe "import { example } from './tests/complex/index';example()"`, function (err, stdout) {
+      exec(`${cmd} -pe "import { example } from './complex/index';example()"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('example\n')
 
@@ -148,7 +158,7 @@ describe('ts-node', function () {
     })
 
     it('should provide registered information globally', function (done) {
-      exec(`${cmd} tests/env`, function (err, stdout) {
+      exec(`${cmd} env`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('object\n')
 
@@ -173,7 +183,7 @@ describe('ts-node', function () {
           [
             cmd,
             '-O "{\\\"allowJs\\\":true}"',
-            '-pe "import { main } from \'./tests/allow-js/run\';main()"'
+            '-pe "import { main } from \'./allow-js/run\';main()"'
           ].join(' '),
           function (err, stdout) {
             expect(err).to.equal(null)
@@ -189,7 +199,7 @@ describe('ts-node', function () {
           [
             cmd,
             '-O "{\\\"allowJs\\\":true}"',
-            '-pe "import { Foo2 } from \'./tests/allow-js/with-jsx\'; Foo2.sayHi()"'
+            '-pe "import { Foo2 } from \'./allow-js/with-jsx\'; Foo2.sayHi()"'
           ].join(' '),
           function (err, stdout) {
             expect(err).to.equal(null)
@@ -203,7 +213,7 @@ describe('ts-node', function () {
 
     it('should eval code', function (done) {
       exec(
-        `${cmd} -e "import * as m from './tests/module';console.log(m.example('test'))"`,
+        `${cmd} -e "import * as m from './module';console.log(m.example('test'))"`,
         function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('TEST\n')
@@ -214,7 +224,7 @@ describe('ts-node', function () {
     })
 
     it('should import empty files', function (done) {
-      exec(`${cmd} -e "import './tests/empty'"`, function (err, stdout) {
+      exec(`${cmd} -e "import './empty'"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('')
 
@@ -223,7 +233,7 @@ describe('ts-node', function () {
     })
 
     it('should throw errors', function (done) {
-      exec(`${cmd} -e "import * as m from './tests/module';console.log(m.example(123))"`, function (err) {
+      exec(`${cmd} -e "import * as m from './module';console.log(m.example(123))"`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
@@ -239,7 +249,7 @@ describe('ts-node', function () {
 
     it('should be able to ignore diagnostic', function (done) {
       exec(
-        `${cmd} --ignore-diagnostics 2345 -e "import * as m from './tests/module';console.log(m.example(123))"`,
+        `${cmd} --ignore-diagnostics 2345 -e "import * as m from './module';console.log(m.example(123))"`,
         function (err) {
           if (err === null) {
             return done('Command was expected to fail, but it succeeded.')
@@ -255,13 +265,13 @@ describe('ts-node', function () {
     })
 
     it('should work with source maps', function (done) {
-      exec(`${cmd} tests/throw`, function (err) {
+      exec(`${cmd} throw`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
 
         expect(err.message).to.contain([
-          `${join(__dirname, '../tests/throw.ts')}:100`,
+          `${join(TEST_DIR, 'throw.ts')}:100`,
           '  bar () { throw new Error(\'this is a demo\') }',
           '                 ^',
           'Error: this is a demo'
@@ -272,13 +282,13 @@ describe('ts-node', function () {
     })
 
     it('eval should work with source maps', function (done) {
-      exec(`${cmd} -pe "import './tests/throw'"`, function (err) {
+      exec(`${cmd} -pe "import './throw'"`, function (err) {
         if (err === null) {
           return done('Command was expected to fail, but it succeeded.')
         }
 
         expect(err.message).to.contain([
-          `${join(__dirname, '../tests/throw.ts')}:100`,
+          `${join(TEST_DIR, 'throw.ts')}:100`,
           '  bar () { throw new Error(\'this is a demo\') }',
           '                 ^'
         ].join('\n'))
@@ -400,7 +410,7 @@ describe('ts-node', function () {
     })
 
     it('should support require flags', function (done) {
-      exec(`${cmd} -r ./tests/hello-world -pe "console.log('success')"`, function (err, stdout) {
+      exec(`${cmd} -r ./hello-world -pe "console.log('success')"`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\nsuccess\nundefined\n')
 
@@ -418,10 +428,10 @@ describe('ts-node', function () {
     })
 
     it('should use source maps with react tsx', function (done) {
-      exec(`${cmd} tests/throw-react-tsx.tsx`, function (err, stdout) {
+      exec(`${cmd} throw-react-tsx.tsx`, function (err, stdout) {
         expect(err).not.to.equal(null)
         expect(err!.message).to.contain([
-          `${join(__dirname, '../tests/throw-react-tsx.tsx')}:100`,
+          `${join(TEST_DIR, './throw-react-tsx.tsx')}:100`,
           '  bar () { throw new Error(\'this is a demo\') }',
           '                 ^',
           'Error: this is a demo'
@@ -432,7 +442,7 @@ describe('ts-node', function () {
     })
 
     it('should allow custom typings', function (done) {
-      exec(`${cmd} tests/custom-types`, function (err, stdout) {
+      exec(`${cmd} custom-types`, function (err, stdout) {
         expect(err).to.match(/Error: Cannot find module 'does-not-exist'/)
 
         return done()
@@ -440,7 +450,7 @@ describe('ts-node', function () {
     })
 
     it('should preserve `ts-node` context with child process', function (done) {
-      exec(`${cmd} tests/child-process`, function (err, stdout) {
+      exec(`${cmd} child-process`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, world!\n')
 
@@ -449,7 +459,7 @@ describe('ts-node', function () {
     })
 
     it('should import js before ts by default', function (done) {
-      exec(`${cmd} tests/import-order/compiled`, function (err, stdout) {
+      exec(`${cmd} import-order/compiled`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, JavaScript!\n')
 
@@ -458,7 +468,7 @@ describe('ts-node', function () {
     })
 
     it('should import ts before js when --prefer-ts-exts flag is present', function (done) {
-      exec(`${cmd} --prefer-ts-exts tests/import-order/compiled`, function (err, stdout) {
+      exec(`${cmd} --prefer-ts-exts import-order/compiled`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, TypeScript!\n')
 
@@ -467,7 +477,7 @@ describe('ts-node', function () {
     })
 
     it('should import ts before js when TS_NODE_PREFER_TS_EXTS env is present', function (done) {
-      exec(`${cmd} tests/import-order/compiled`, { env: { ...process.env, TS_NODE_PREFER_TS_EXTS: 'true' } }, function (err, stdout) {
+      exec(`${cmd} import-order/compiled`, { env: { ...process.env, TS_NODE_PREFER_TS_EXTS: 'true' } }, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, TypeScript!\n')
 
@@ -476,7 +486,7 @@ describe('ts-node', function () {
     })
 
     it('should ignore .d.ts files', function (done) {
-      exec(`${cmd} tests/import-order/importer`, function (err, stdout) {
+      exec(`${cmd} import-order/importer`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, World!\n')
 
@@ -490,7 +500,7 @@ describe('ts-node', function () {
         if (process.platform === 'win32' && semver.satisfies(ts.version, '2.7')) {
           this.skip()
         } else {
-          exec(`"${BIN_PATH}" --project tests/issue-884/tsconfig.json tests/issue-884`, function (err, stdout) {
+          exec(`"${BIN_PATH}" --project issue-884/tsconfig.json issue-884`, function (err, stdout) {
             expect(err).to.equal(null)
             expect(stdout).to.equal('')
 
@@ -502,7 +512,7 @@ describe('ts-node', function () {
 
     describe('issue #986', function () {
       it('should not compile', function (done) {
-        exec(`"${BIN_PATH}" --project tests/issue-986/tsconfig.json tests/issue-986`, function (err, stdout, stderr) {
+        exec(`"${BIN_PATH}" --project issue-986/tsconfig.json issue-986`, function (err, stdout, stderr) {
           expect(err).not.to.equal(null)
           expect(stderr).to.contain('Cannot find name \'TEST\'') // TypeScript error.
           expect(stdout).to.equal('')
@@ -512,7 +522,7 @@ describe('ts-node', function () {
       })
 
       it('should compile with `--files`', function (done) {
-        exec(`"${BIN_PATH}" --files --project tests/issue-986/tsconfig.json tests/issue-986`, function (err, stdout, stderr) {
+        exec(`"${BIN_PATH}" --files --project issue-986/tsconfig.json issue-986`, function (err, stdout, stderr) {
           expect(err).not.to.equal(null)
           expect(stderr).to.contain('ReferenceError: TEST is not defined') // Runtime error.
           expect(stdout).to.equal('')
@@ -524,7 +534,7 @@ describe('ts-node', function () {
 
     if (semver.gte(ts.version, '2.7.0')) {
       it('should support script mode', function (done) {
-        exec(`${BIN_SCRIPT_PATH} tests/scope/a/log`, function (err, stdout) {
+        exec(`${BIN_SCRIPT_PATH} scope/a/log`, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('.ts\n')
 
@@ -533,7 +543,7 @@ describe('ts-node', function () {
       })
       it('should read tsconfig relative to realpath, not symlink, in scriptMode', function (done) {
         if (lstatSync(join(TEST_DIR, 'main-realpath/symlink/symlink.tsx')).isSymbolicLink()) {
-          exec(`${BIN_SCRIPT_PATH} tests/main-realpath/symlink/symlink.tsx`, function (err, stdout) {
+          exec(`${BIN_SCRIPT_PATH} main-realpath/symlink/symlink.tsx`, function (err, stdout) {
             expect(err).to.equal(null)
             expect(stdout).to.equal('')
 
@@ -546,10 +556,10 @@ describe('ts-node', function () {
     }
 
     describe('should read ts-node options from tsconfig.json', function () {
-      const BIN_EXEC = `"${BIN_PATH}" --project tests/tsconfig-options/tsconfig.json`
+      const BIN_EXEC = `"${BIN_PATH}" --project tsconfig-options/tsconfig.json`
 
       it('should override compiler options from env', function (done) {
-        exec(`${BIN_EXEC} tests/tsconfig-options/log-options1.js`, {
+        exec(`${BIN_EXEC} tsconfig-options/log-options1.js`, {
           env: {
             ...process.env,
             TS_NODE_COMPILER_OPTIONS: '{"typeRoots": ["env-typeroots"]}'
@@ -557,44 +567,44 @@ describe('ts-node', function () {
         }, function (err, stdout) {
           expect(err).to.equal(null)
           const { config } = JSON.parse(stdout)
-          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/env-typeroots').replace(/\\/g, '/')])
+          expect(config.options.typeRoots).to.deep.equal([join(TEST_DIR, './tsconfig-options/env-typeroots').replace(/\\/g, '/')])
           return done()
         })
       })
 
       it('should use options from `tsconfig.json`', function (done) {
-        exec(`${BIN_EXEC} tests/tsconfig-options/log-options1.js`, function (err, stdout) {
+        exec(`${BIN_EXEC} tsconfig-options/log-options1.js`, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
-          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots').replace(/\\/g, '/')])
+          expect(config.options.typeRoots).to.deep.equal([join(TEST_DIR, './tsconfig-options/tsconfig-typeroots').replace(/\\/g, '/')])
           expect(config.options.types).to.deep.equal(['tsconfig-tsnode-types'])
           expect(options.pretty).to.equal(undefined)
           expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
-          expect(options.require).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required1.js')])
+          expect(options.require).to.deep.equal([join(TEST_DIR, './tsconfig-options/required1.js')])
           return done()
         })
       })
 
       it('should have flags override / merge with `tsconfig.json`', function (done) {
-        exec(`${BIN_EXEC} --skip-ignore --compiler-options "{\\"types\\":[\\"flags-types\\"]}" --require ./tests/tsconfig-options/required2.js tests/tsconfig-options/log-options2.js`, function (err, stdout) {
+        exec(`${BIN_EXEC} --skip-ignore --compiler-options "{\\"types\\":[\\"flags-types\\"]}" --require ./tsconfig-options/required2.js tsconfig-options/log-options2.js`, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
-          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots').replace(/\\/g, '/')])
+          expect(config.options.typeRoots).to.deep.equal([join(TEST_DIR, './tsconfig-options/tsconfig-typeroots').replace(/\\/g, '/')])
           expect(config.options.types).to.deep.equal(['flags-types'])
           expect(options.pretty).to.equal(undefined)
           expect(options.skipIgnore).to.equal(true)
           expect(options.transpileOnly).to.equal(true)
           expect(options.require).to.deep.equal([
-            join(__dirname, '../tests/tsconfig-options/required1.js'),
-            './tests/tsconfig-options/required2.js'
+            join(TEST_DIR, './tsconfig-options/required1.js'),
+            './tsconfig-options/required2.js'
           ])
           return done()
         })
       })
 
       it('should have `tsconfig.json` override environment', function (done) {
-        exec(`${BIN_EXEC} tests/tsconfig-options/log-options1.js`, {
+        exec(`${BIN_EXEC} tsconfig-options/log-options1.js`, {
           env: {
             ...process.env,
             TS_NODE_PRETTY: 'true',
@@ -603,12 +613,12 @@ describe('ts-node', function () {
         }, function (err, stdout) {
           expect(err).to.equal(null)
           const { options, config } = JSON.parse(stdout)
-          expect(config.options.typeRoots).to.deep.equal([join(__dirname, '../tests/tsconfig-options/tsconfig-typeroots').replace(/\\/g, '/')])
+          expect(config.options.typeRoots).to.deep.equal([join(TEST_DIR, './tsconfig-options/tsconfig-typeroots').replace(/\\/g, '/')])
           expect(config.options.types).to.deep.equal(['tsconfig-tsnode-types'])
           expect(options.pretty).to.equal(true)
           expect(options.skipIgnore).to.equal(false)
           expect(options.transpileOnly).to.equal(true)
-          expect(options.require).to.deep.equal([join(__dirname, '../tests/tsconfig-options/required1.js')])
+          expect(options.require).to.deep.equal([join(TEST_DIR, './tsconfig-options/required1.js')])
           return done()
         })
       })
@@ -616,7 +626,7 @@ describe('ts-node', function () {
 
     describe('compiler host', function () {
       it('should execute cli', function (done) {
-        exec(`${cmd} --compiler-host tests/hello-world`, function (err, stdout) {
+        exec(`${cmd} --compiler-host hello-world`, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('Hello, world!\n')
 
@@ -626,7 +636,7 @@ describe('ts-node', function () {
     })
 
     it('should transpile files inside a node_modules directory when not ignored', function (done) {
-      exec(`${cmdNoProject} --script-mode tests/from-node-modules/from-node-modules`, function (err, stdout, stderr) {
+      exec(`${cmdNoProject} --script-mode from-node-modules/from-node-modules`, function (err, stdout, stderr) {
         if (err) return done(`Unexpected error: ${err}\nstdout:\n${stdout}\nstderr:\n${stderr}`)
         expect(JSON.parse(stdout)).to.deep.equal({
           external: {
@@ -646,7 +656,7 @@ describe('ts-node', function () {
 
     describe('should respect maxNodeModulesJsDepth', function () {
       it('for unscoped modules', function (done) {
-        exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth`, function (err, stdout, stderr) {
+        exec(`${cmdNoProject} --script-mode maxnodemodulesjsdepth`, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr.replace(/\r\n/g, '\n')).to.contain(
             'TSError: ⨯ Unable to compile TypeScript:\n' +
@@ -658,7 +668,7 @@ describe('ts-node', function () {
       })
 
       it('for @scoped modules', function (done) {
-        exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth-scoped`, function (err, stdout, stderr) {
+        exec(`${cmdNoProject} --script-mode maxnodemodulesjsdepth-scoped`, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr.replace(/\r\n/g, '\n')).to.contain(
             'TSError: ⨯ Unable to compile TypeScript:\n' +
@@ -781,7 +791,7 @@ describe('ts-node', function () {
       } catch (error) {
         expect(error.stack).to.contain([
           'Error: this is a demo',
-          `    at Foo.bar (${join(__dirname, '../tests/throw.ts')}:100:18)`
+          `    at Foo.bar (${join(TEST_DIR, './throw.ts')}:100:18)`
         ].join('\n'))
 
         done()
@@ -886,7 +896,7 @@ describe('ts-node', function () {
 
     if (semver.gte(process.version, '13.0.0')) {
       it('should compile and execute as ESM', (done) => {
-        exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
+        exec(`${cmd} index.ts`, { cwd: join(TEST_DIR, './esm') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
@@ -894,10 +904,10 @@ describe('ts-node', function () {
         })
       })
       it('should use source maps', function (done) {
-        exec(`${cmd} throw.ts`, { cwd: join(__dirname, '../tests/esm') }, function (err, stdout) {
+        exec(`${cmd} throw.ts`, { cwd: join(TEST_DIR, './esm') }, function (err, stdout) {
           expect(err).not.to.equal(null)
           expect(err!.message).to.contain([
-            `${pathToFileURL(join(__dirname, '../tests/esm/throw.ts'))}:100`,
+            `${pathToFileURL(join(TEST_DIR, './esm/throw.ts'))}:100`,
             '  bar () { throw new Error(\'this is a demo\') }',
             '                 ^',
             'Error: this is a demo'
@@ -909,7 +919,7 @@ describe('ts-node', function () {
 
       describe('supports experimental-specifier-resolution=node', () => {
         it('via --experimental-specifier-resolution', (done) => {
-          exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
+          exec(`${cmd} --experimental-specifier-resolution=node index.ts`, { cwd: join(TEST_DIR, './esm-node-resolver') }, function (err, stdout) {
             expect(err).to.equal(null)
             expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
@@ -917,7 +927,7 @@ describe('ts-node', function () {
           })
         })
         it('via --es-module-specifier-resolution alias', (done) => {
-          exec(`${cmd} --experimental-modules --es-module-specifier-resolution=node index.ts`, { cwd: join(__dirname, '../tests/esm-node-resolver') }, function (err, stdout) {
+          exec(`${cmd} --experimental-modules --es-module-specifier-resolution=node index.ts`, { cwd: join(TEST_DIR, './esm-node-resolver') }, function (err, stdout) {
             expect(err).to.equal(null)
             expect(stdout).to.equal('foo bar baz biff libfoo\n')
 
@@ -926,7 +936,7 @@ describe('ts-node', function () {
         })
         it('via NODE_OPTIONS', (done) => {
           exec(`${cmd} index.ts`, {
-            cwd: join(__dirname, '../tests/esm-node-resolver'),
+            cwd: join(TEST_DIR, './esm-node-resolver'),
             env: {
               ...process.env,
               NODE_OPTIONS: '--experimental-specifier-resolution=node'
@@ -941,7 +951,7 @@ describe('ts-node', function () {
       })
 
       it('throws ERR_REQUIRE_ESM when attempting to require() an ESM script while ESM loader is enabled', function (done) {
-        exec(`${cmd} ./index.js`, { cwd: join(__dirname, '../tests/esm-err-require-esm') }, function (err, stdout, stderr) {
+        exec(`${cmd} ./index.js`, { cwd: join(TEST_DIR, './esm-err-require-esm') }, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
 
@@ -951,7 +961,7 @@ describe('ts-node', function () {
 
       it('defers to fallback loaders when URL should not be handled by ts-node', function (done) {
         exec(`${cmd} index.mjs`, {
-          cwd: join(__dirname, '../tests/esm-import-http-url')
+          cwd: join(TEST_DIR, './esm-import-http-url')
         }, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           // expect error from node's default resolver
@@ -961,7 +971,7 @@ describe('ts-node', function () {
       })
 
       it('should bypass import cache when changing search params', (done) => {
-        exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm-import-cache') }, function (err, stdout) {
+        exec(`${cmd} index.ts`, { cwd: join(TEST_DIR, './esm-import-cache') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('log1\nlog2\nlog2\n')
 
@@ -970,7 +980,7 @@ describe('ts-node', function () {
       })
 
       it('should support transpile only mode via dedicated loader entrypoint', (done) => {
-        exec(`${cmd}/transpile-only index.ts`, { cwd: join(__dirname, '../tests/esm-transpile-only') }, function (err, stdout) {
+        exec(`${cmd}/transpile-only index.ts`, { cwd: join(TEST_DIR, './esm-transpile-only') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.equal('')
 
@@ -978,7 +988,7 @@ describe('ts-node', function () {
         })
       })
       it('should throw type errors without transpile-only enabled', (done) => {
-        exec(`${cmd} index.ts`, { cwd: join(__dirname, '../tests/esm-transpile-only') }, function (err, stdout) {
+        exec(`${cmd} index.ts`, { cwd: join(TEST_DIR, './esm-transpile-only') }, function (err, stdout) {
           if (err === null) {
             return done('Command was expected to fail, but it succeeded.')
           }
@@ -994,7 +1004,7 @@ describe('ts-node', function () {
     }
 
     it('executes ESM as CJS, ignoring package.json "types" field (for backwards compatibility; should be changed in next major release to throw ERR_REQUIRE_ESM)', function (done) {
-      exec(`${BIN_PATH} ./tests/esm-err-require-esm/index.js`, function (err, stdout) {
+      exec(`${BIN_PATH} ./esm-err-require-esm/index.js`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('CommonJS\n')
 
