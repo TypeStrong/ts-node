@@ -661,7 +661,7 @@ describe('ts-node', function () {
     })
 
     it('should transpile files inside a node_modules directory when not ignored', function (done) {
-      exec(`${cmdNoProject} --script-mode tests/from-node-modules/from-node-modules`, function (err, stdout, stderr) {
+      exec(`${cmdNoProject} tests/from-node-modules/from-node-modules`, function (err, stdout, stderr) {
         if (err) return done(`Unexpected error: ${err}\nstdout:\n${stdout}\nstderr:\n${stderr}`)
         expect(JSON.parse(stdout)).to.deep.equal({
           external: {
@@ -681,11 +681,11 @@ describe('ts-node', function () {
 
     describe('should respect maxNodeModulesJsDepth', function () {
       it('for unscoped modules', function (done) {
-        exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth`, function (err, stdout, stderr) {
+        exec(`${cmdNoProject} tests/maxnodemodulesjsdepth`, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr.replace(/\r\n/g, '\n')).to.contain(
             'TSError: ⨯ Unable to compile TypeScript:\n' +
-            "other.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
+            "tests/maxnodemodulesjsdepth/other.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
             '\n'
           )
           done()
@@ -693,11 +693,11 @@ describe('ts-node', function () {
       })
 
       it('for @scoped modules', function (done) {
-        exec(`${cmdNoProject} --script-mode tests/maxnodemodulesjsdepth-scoped`, function (err, stdout, stderr) {
+        exec(`${cmdNoProject} tests/maxnodemodulesjsdepth-scoped`, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr.replace(/\r\n/g, '\n')).to.contain(
             'TSError: ⨯ Unable to compile TypeScript:\n' +
-            "other.ts(7,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
+            "tests/maxnodemodulesjsdepth-scoped/other.ts(7,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
             '\n'
           )
           done()
