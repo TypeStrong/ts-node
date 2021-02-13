@@ -149,7 +149,6 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
   const replService = createRepl({ state })
   const { evalAwarePartialHost } = replService
 
-  console.error([{__filename, cwd, scriptMode, cwdMode, scriptPath}, getProjectSearchPath(cwd, scriptMode, cwdMode, scriptPath)])
   // Register the TypeScript compiler instance.
   const service = register({
     cwd,

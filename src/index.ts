@@ -498,7 +498,6 @@ export function create (rawOptions: CreateOptions = {}): Service {
    * be changed by the tsconfig, so we sometimes have to do this twice.
    */
   function loadCompiler (name: string | undefined, relativeToPath: string) {
-    console.log(relativeToPath)
     const compiler = require.resolve(name || 'typescript', { paths: [relativeToPath, __dirname] })
     const ts: typeof _ts = require(compiler)
     return { compiler, ts }
