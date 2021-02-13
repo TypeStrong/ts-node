@@ -162,7 +162,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     ignore,
     preferTsExts,
     logError,
-    projectSearchPath: getProjectSearchPath(cwd, scriptMode, cwdMode, scriptPath),
+    projectSearchDir: getProjectSearchDir(cwd, scriptMode, cwdMode, scriptPath),
     project,
     skipProject,
     skipIgnore,
@@ -217,7 +217,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 /**
  * Get project search path from args.
  */
-function getProjectSearchPath (cwd?: string, scriptMode?: boolean, cwdMode?: boolean, scriptPath?: string) {
+function getProjectSearchDir (cwd?: string, scriptMode?: boolean, cwdMode?: boolean, scriptPath?: string) {
   // Validate `--script-mode` / `--cwd-mode` / `--cwd` usage is correct.
   if (scriptMode && cwdMode) {
     throw new TypeError('--cwd-mode cannot be combined with --script-mode')

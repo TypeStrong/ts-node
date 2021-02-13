@@ -164,7 +164,7 @@ export interface CreateOptions {
   /**
    * Legacy alias for `cwd`
    *
-   * @deprecated use `projectSearchPath` or `cwd`
+   * @deprecated use `projectSearchDir` or `cwd`
    */
   dir?: string
   /**
@@ -247,7 +247,7 @@ export interface CreateOptions {
   /**
    * Search for TypeScript config file (`tsconfig.json`) in this or parent directories.
    */
-  projectSearchPath?: string
+  projectSearchDir?: string
   /**
    * Skip project config resolution and loading.
    *
@@ -315,7 +315,7 @@ export interface TsConfigOptions extends Omit<RegisterOptions,
   | 'project'
   | 'dir'
   | 'cwd'
-  | 'projectSearchPath'
+  | 'projectSearchDir'
   | 'scope'
   | 'scopeDir'
   | 'experimentalEsmLoader'
@@ -505,7 +505,7 @@ export function create (rawOptions: CreateOptions = {}): Service {
   }
 
   // Compute minimum options to read the config file.
-  let { compiler, ts } = loadCompiler(compilerName, rawOptions.projectSearchPath ?? rawOptions.project ?? cwd)
+  let { compiler, ts } = loadCompiler(compilerName, rawOptions.projectSearchDir ?? rawOptions.project ?? cwd)
 
   // Read config file and merge new options between env and CLI options.
   const { configFilePath, config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
@@ -1173,7 +1173,7 @@ function readConfig (
   let config: any = { compilerOptions: {} }
   let basePath = cwd
   let configFilePath: string | undefined = undefined
-  const projectSearchPath = resolve(cwd, rawOptions.projectSearchPath ?? cwd)
+  const projectSearchDir = resolve(cwd, rawOptions.projectSearchDir ?? cwd)
 
   const {
     fileExists = ts.sys.fileExists,
@@ -1186,7 +1186,7 @@ function readConfig (
   if (!skipProject) {
     configFilePath = project
       ? resolve(cwd, project)
-      : ts.findConfigFile(projectSearchPath, fileExists)
+      : ts.findConfigFile(projectSearchDir, fileExists)
 
     if (configFilePath) {
       const result = ts.readConfigFile(configFilePath, readFile)
