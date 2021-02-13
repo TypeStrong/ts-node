@@ -759,8 +759,8 @@ describe('ts-node', function () {
         registered.enabled(false)
 
         const compilers = [
-          register({ scopeDir: join(TEST_DIR, 'scope/a'), scope: true }),
-          register({ scopeDir: join(TEST_DIR, 'scope/b'), scope: true })
+          register({ projectSearchDir: join(TEST_DIR, 'scope/a'), scopeDir: join(TEST_DIR, 'scope/a'), scope: true }),
+          register({ projectSearchDir: join(TEST_DIR, 'scope/a'), scopeDir: join(TEST_DIR, 'scope/b'), scope: true })
         ]
 
         compilers.forEach(c => {
