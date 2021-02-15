@@ -184,10 +184,6 @@ ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 
 _The name of the environment variable and the option's default value are denoted in parentheses._
 
-| CLI | Environment | API | Description |
-|---|---|---|---|
-| `-T, --transpile-only` | `TS_NODE_TRANSPILE_ONLY` | `transpileOnly` | Use TypeScript's faster `transpileModule` (default: `false`) |
-
 * `-T, --transpile-only` Use TypeScript's faster `transpileModule` (`TS_NODE_TRANSPILE_ONLY`, default: `false`)
 * `-H, --compiler-host` Use TypeScript's compiler host API (`TS_NODE_COMPILER_HOST`, default: `false`)
 * `-I, --ignore [pattern]` Override the path patterns to skip compilation (`TS_NODE_IGNORE`, default: `/node_modules/`)
