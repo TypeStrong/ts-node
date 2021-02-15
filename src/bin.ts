@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { join, resolve, dirname, parse as parsePath, sep as pathSep } from 'path'
+import { join, resolve, dirname, parse as parsePath } from 'path'
 import { inspect } from 'util'
 import Module = require('module')
 import arg = require('arg')
