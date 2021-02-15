@@ -381,6 +381,7 @@ const TS_NODE_COMPILER_OPTIONS = {
 
 /**
  * Split a string array of values.
+ * @internal
  */
 export function split (value: string | undefined) {
   return typeof value === 'string' ? value.split(/ *, */g) : undefined
@@ -388,6 +389,7 @@ export function split (value: string | undefined) {
 
 /**
  * Parse a string as JSON.
+ * @internal
  */
 export function parse (value: string | undefined): object | undefined {
   return typeof value === 'string' ? JSON.parse(value) : undefined
@@ -395,6 +397,7 @@ export function parse (value: string | undefined): object | undefined {
 
 /**
  * Replace backslashes with forward slashes.
+ * @internal
  */
 export function normalizeSlashes (value: string): string {
   return value.replace(/\\/g, '/')
