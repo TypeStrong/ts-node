@@ -537,15 +537,15 @@ describe('ts-node', function () {
 
     if (semver.gte(ts.version, '2.7.0')) {
       it('should locate tsconfig relative to entry-point by default', function (done) {
-        exec(`${BIN_PATH} --cwd-mode ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
+        exec(`${BIN_PATH} ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
           expect(err).to.equal(null)
-          expect(stdout).to.match(/plugin-b/)
+          expect(stdout).to.match(/plugin-a/)
 
           return done()
         })
       })
       it('should locate tsconfig relative to entry-point via ts-node-script', function (done) {
-        exec(`${BIN_SCRIPT_PATH} --script-mode ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
+        exec(`${BIN_SCRIPT_PATH} ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.match(/plugin-a/)
 
@@ -560,16 +560,16 @@ describe('ts-node', function () {
           return done()
         })
       })
-      it('should locate tsconfig relative to cwd in --cwd-mode', function (done) {
-        exec(`${BIN_PATH} --cwd-mode ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
+      it('should locate tsconfig relative to cwd via ts-node-cwd', function (done) {
+        exec(`${BIN_CWD_PATH} ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.match(/plugin-b/)
 
           return done()
         })
       })
-      it('should locate tsconfig relative to cwd via ts-node-cwd', function (done) {
-        exec(`${BIN_CWD_PATH} ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
+      it('should locate tsconfig relative to cwd in --cwd-mode', function (done) {
+        exec(`${BIN_PATH} --cwd-mode ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.match(/plugin-b/)
 
@@ -695,7 +695,7 @@ describe('ts-node', function () {
           expect(err).to.not.equal(null)
           expect(stderr.replace(/\r\n/g, '\n')).to.contain(
             'TSError: ⨯ Unable to compile TypeScript:\n' +
-            "tests/maxnodemodulesjsdepth/other.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
+            "maxnodemodulesjsdepth/other.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
             '\n'
           )
           done()
@@ -707,7 +707,7 @@ describe('ts-node', function () {
           expect(err).to.not.equal(null)
           expect(stderr.replace(/\r\n/g, '\n')).to.contain(
             'TSError: ⨯ Unable to compile TypeScript:\n' +
-            "tests/maxnodemodulesjsdepth-scoped/other.ts(7,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
+            "maxnodemodulesjsdepth-scoped/other.ts(7,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
             '\n'
           )
           done()
