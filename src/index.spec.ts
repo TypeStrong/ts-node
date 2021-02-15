@@ -470,8 +470,10 @@ describe('ts-node', function () {
       })
     })
 
+    const preferTsExtsEntrypoint = semver.gte(process.version, '12.0.0') ? 'import-order/compiled' : 'import-order/require-compiled'
     it('should import ts before js when --prefer-ts-exts flag is present', function (done) {
-      exec(`${cmd} --prefer-ts-exts import-order/compiled`, function (err, stdout) {
+
+      exec(`${cmd} --prefer-ts-exts ${preferTsExtsEntrypoint}`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, TypeScript!\n')
 
@@ -480,7 +482,7 @@ describe('ts-node', function () {
     })
 
     it('should import ts before js when TS_NODE_PREFER_TS_EXTS env is present', function (done) {
-      exec(`${cmd} import-order/compiled`, { env: { ...process.env, TS_NODE_PREFER_TS_EXTS: 'true' } }, function (err, stdout) {
+      exec(`${cmd} ${preferTsExtsEntrypoint}`, { env: { ...process.env, TS_NODE_PREFER_TS_EXTS: 'true' } }, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, TypeScript!\n')
 
