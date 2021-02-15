@@ -527,7 +527,7 @@ describe('ts-node', function () {
 
     if (semver.gte(ts.version, '2.7.0')) {
       it('should locate tsconfig relative to entry-point by default', function (done) {
-        exec(`${BIN_PATH} --cwd-mode ../a/index`, {cwd: join(TEST_DIR, 'cwd-and-script-mode/b')}, function (err, stdout) {
+        exec(`${BIN_PATH} --cwd-mode ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.match(/plugin-b/)
 
@@ -535,7 +535,7 @@ describe('ts-node', function () {
         })
       })
       it('should locate tsconfig relative to entry-point via ts-node-script', function (done) {
-        exec(`${BIN_SCRIPT_PATH} --script-mode ../a/index`, {cwd: join(TEST_DIR, 'cwd-and-script-mode/b')}, function (err, stdout) {
+        exec(`${BIN_SCRIPT_PATH} --script-mode ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.match(/plugin-a/)
 
@@ -543,7 +543,7 @@ describe('ts-node', function () {
         })
       })
       it('should locate tsconfig relative to entry-point with --script-mode', function (done) {
-        exec(`${BIN_PATH} --script-mode ../a/index`, {cwd: join(TEST_DIR, 'cwd-and-script-mode/b')}, function (err, stdout) {
+        exec(`${BIN_PATH} --script-mode ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.match(/plugin-a/)
 
@@ -551,7 +551,7 @@ describe('ts-node', function () {
         })
       })
       it('should locate tsconfig relative to cwd in --cwd-mode', function (done) {
-        exec(`${BIN_PATH} --cwd-mode ../a/index`, {cwd: join(TEST_DIR, 'cwd-and-script-mode/b')}, function (err, stdout) {
+        exec(`${BIN_PATH} --cwd-mode ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.match(/plugin-b/)
 
@@ -559,7 +559,7 @@ describe('ts-node', function () {
         })
       })
       it('should locate tsconfig relative to cwd via ts-node-cwd', function (done) {
-        exec(`${BIN_CWD_PATH} ../a/index`, {cwd: join(TEST_DIR, 'cwd-and-script-mode/b')}, function (err, stdout) {
+        exec(`${BIN_CWD_PATH} ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
           expect(err).to.equal(null)
           expect(stdout).to.match(/plugin-b/)
 
