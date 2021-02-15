@@ -498,7 +498,7 @@ export function create (rawOptions: CreateOptions = {}): Service {
 
   /**
    * Load the typescript compiler. It is required to load the tsconfig but might
-   * be changed by the tsconfig, so we sometimes have to do this twice.
+   * be changed by the tsconfig, so we have to do this twice.
    */
   function loadCompiler (name: string | undefined, relativeToPath: string) {
     const compiler = require.resolve(name || 'typescript', { paths: [relativeToPath, __dirname] })
@@ -517,9 +517,11 @@ export function create (rawOptions: CreateOptions = {}): Service {
     ...rawOptions.require || []
   ]
 
-  // If `compiler` option changed based on tsconfig, re-load the compiler.
-  if (options.compiler !== compilerName) {
-    ({ compiler, ts } = loadCompiler(options.compiler, configFilePath!))
+  // Re-load the compiler in case it has changed.
+  // Compiler is loaded relative to tsconfig.json, so tsconfig discovery may cause us to load a
+  // different compiler than we did above, even if the name has not changed.
+  if (configFilePath) {
+    ({ compiler, ts } = loadCompiler(options.compiler, configFilePath))
   }
 
   const readFile = options.readFile || ts.sys.readFile
