@@ -1167,7 +1167,7 @@ function readConfig (
   }
 
   // Fix ts-node options that come from tsconfig.json
-  const tsconfigOptions: TsConfigOptions = Object.assign({}, config['ts-node'])
+  const tsconfigOptions: TsConfigOptions = Object.assign({}, filterRecognizedTsConfigTsNodeOptions(config['ts-node']))
 
   // Remove resolution of "files".
   const files = rawOptions.files ?? tsconfigOptions.files ?? DEFAULTS.files
@@ -1202,6 +1202,28 @@ function readConfig (
   }
 
   return { config: fixedConfig, options: tsconfigOptions }
+}
+
+/**
+ * Given the raw "ts-node" sub-object from a tsconfig, return an object with only the properties
+ * recognized by "ts-node"
+ */
+function filterRecognizedTsConfigTsNodeOptions (jsonObject: any): TsConfigOptions {
+  if (jsonObject == null) return jsonObject
+  const {
+    compiler, compilerHost, compilerOptions, emit, files, ignore,
+    ignoreDiagnostics, logError, preferTsExts, pretty, require, skipIgnore,
+    transpileOnly, typeCheck
+  } = jsonObject as TsConfigOptions
+  const filteredTsConfigOptions = {
+    compiler, compilerHost, compilerOptions, emit, files, ignore,
+    ignoreDiagnostics, logError, preferTsExts, pretty, require, skipIgnore,
+    transpileOnly, typeCheck
+  }
+  // Use the typechecker to make sure this implementation has the correct set of properties
+  const catchExtraneousProps: keyof TsConfigOptions = null as any as keyof typeof filteredTsConfigOptions
+  const catchMissingProps: keyof typeof filteredTsConfigOptions = null as any as keyof TsConfigOptions
+  return filteredTsConfigOptions
 }
 
 /**
