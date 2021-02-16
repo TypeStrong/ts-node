@@ -95,6 +95,7 @@
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#compiler" class="tsd-kind-icon">compiler</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#compilerhost" class="tsd-kind-icon">compiler<wbr>Host</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#compileroptions" class="tsd-kind-icon">compiler<wbr>Options</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#cwd" class="tsd-kind-icon">cwd</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#dir" class="tsd-kind-icon">dir</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#emit" class="tsd-kind-icon">emit</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#fileexists" class="tsd-kind-icon">file<wbr>Exists</a></li>
@@ -105,9 +106,11 @@
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="registeroptions.html#prefertsexts" class="tsd-kind-icon">prefer<wbr>TsExts</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#pretty" class="tsd-kind-icon">pretty</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#project" class="tsd-kind-icon">project</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#projectsearchdir" class="tsd-kind-icon">project<wbr>Search<wbr>Dir</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#readfile" class="tsd-kind-icon">read<wbr>File</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#require" class="tsd-kind-icon">require</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#scope" class="tsd-kind-icon">scope</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#scopedir" class="tsd-kind-icon">scope<wbr>Dir</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#skipignore" class="tsd-kind-icon">skip<wbr>Ignore</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#skipproject" class="tsd-kind-icon">skip<wbr>Project</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="registeroptions.html#transformers" class="tsd-kind-icon">transformers</a></li>
@@ -127,7 +130,7 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#compiler">compiler</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L214">src/index.ts:214</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L229">src/index.ts:229</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -148,12 +151,12 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#compilerhost">compilerHost</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L196">src/index.ts:196</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L209">src/index.ts:209</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Use TypeScript&#39;s compiler host API.</p>
+							<p>Use TypeScript&#39;s compiler host API instead of the language service API.</p>
 						</div>
 						<dl class="tsd-comment-tags">
 							<dt>default</dt>
@@ -169,16 +172,37 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#compileroptions">compilerOptions</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L243">src/index.ts:243</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L268">src/index.ts:268</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>JSON object to merge with compiler options.</p>
+							<p>JSON object to merge with TypeScript <code>compilerOptions</code>.</p>
 						</div>
 						<dl class="tsd-comment-tags">
 							<dt>allof</dt>
 							<dd><p>[{&quot;$ref&quot;: &quot;<a href="https://schemastore.azurewebsites.net/schemas/json/tsconfig.json#definitions/compilerOptionsDefinition/properties/compilerOptions&quot;%7D%5D">https://schemastore.azurewebsites.net/schemas/json/tsconfig.json#definitions/compilerOptionsDefinition/properties/compilerOptions&quot;}]</a></p>
+							</dd>
+						</dl>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
+					<a name="cwd" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> cwd</h3>
+					<div class="tsd-signature tsd-kind-icon">cwd<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></div>
+					<aside class="tsd-sources">
+						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#cwd">cwd</a></p>
+						<ul>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L163">src/index.ts:163</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Behave as if invoked within this working directory.  Roughly equivalent to <code>cd $dir &amp;&amp; ts-node ...</code></p>
+						</div>
+						<dl class="tsd-comment-tags">
+							<dt>default</dt>
+							<dd><p>process.cwd()</p>
 							</dd>
 						</dl>
 					</div>
@@ -190,16 +214,16 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#dir">dir</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L160">src/index.ts:160</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L169">src/index.ts:169</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Specify working directory for config resolution.</p>
+							<p>Legacy alias for <code>cwd</code></p>
 						</div>
 						<dl class="tsd-comment-tags">
-							<dt>default</dt>
-							<dd><p>process.cwd()</p>
+							<dt>deprecated</dt>
+							<dd><p>use <code>projectSearchDir</code> or <code>cwd</code></p>
 							</dd>
 						</dl>
 					</div>
@@ -211,7 +235,7 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#emit">emit</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L166">src/index.ts:166</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L175">src/index.ts:175</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -232,7 +256,7 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#fileexists">fileExists</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L258">src/index.ts:258</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L283">src/index.ts:283</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -243,13 +267,14 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#files">files</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L208">src/index.ts:208</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L223">src/index.ts:223</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Load files from <code>tsconfig.json</code> on startup.</p>
+							<p>Load &quot;files&quot; and &quot;include&quot; from <code>tsconfig.json</code> on startup.</p>
 						</div>
+						<p>Default is to override <code>tsconfig.json</code> &quot;files&quot; and &quot;include&quot; to only include the entrypoint script.</p>
 						<dl class="tsd-comment-tags">
 							<dt>default</dt>
 							<dd><p>false</p>
@@ -264,19 +289,19 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#ignore">ignore</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L221">src/index.ts:221</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L241">src/index.ts:241</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Override the path patterns to skip compilation.</p>
+							<p>Paths which should not be compiled.</p>
 						</div>
+						<p>Each string in the array is converted to a regular expression via <code>new RegExp()</code> and tested against source paths prior to compilation.</p>
+						<p>Source paths are normalized to posix-style separators, relative to the directory containing <code>tsconfig.json</code> or to cwd if no <code>tsconfig.json</code> is loaded.</p>
+						<p>Default is to ignore all node_modules subdirectories.</p>
 						<dl class="tsd-comment-tags">
 							<dt>default</dt>
-							<dd><p>/node_modules/</p>
-							</dd>
-							<dt>docsdefault</dt>
-							<dd><p>&quot;/node_modules/&quot;</p>
+							<dd><p>[&quot;(?:^|/)node_modules/&quot;]</p>
 							</dd>
 						</dl>
 					</div>
@@ -288,7 +313,7 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#ignorediagnostics">ignoreDiagnostics</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L247">src/index.ts:247</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L272">src/index.ts:272</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -304,7 +329,7 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#logerror">logError</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L202">src/index.ts:202</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L215">src/index.ts:215</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -324,13 +349,14 @@
 					<div class="tsd-signature tsd-kind-icon">prefer<wbr>TsExts<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L277">src/index.ts:277</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L304">src/index.ts:304</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
 							<p>Re-order file extensions so that TypeScript imports are preferred.</p>
 						</div>
+						<p>For example, when both <code>index.js</code> and <code>index.ts</code> exist, enabling this option causes <code>require(&#39;./index&#39;)</code> to resolve to <code>index.ts</code> instead of <code>index.js</code></p>
 						<dl class="tsd-comment-tags">
 							<dt>default</dt>
 							<dd><p>false</p>
@@ -345,7 +371,7 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#pretty">pretty</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L178">src/index.ts:178</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L191">src/index.ts:191</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -366,12 +392,29 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#project">project</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L225">src/index.ts:225</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L246">src/index.ts:246</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Path to TypeScript JSON project file.</p>
+							<p>Path to TypeScript config file or directory containing a <code>tsconfig.json</code>.
+							Similar to the <code>tsc --project</code> flag: <a href="https://www.typescriptlang.org/docs/handbook/compiler-options.html">https://www.typescriptlang.org/docs/handbook/compiler-options.html</a></p>
+						</div>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
+					<a name="projectsearchdir" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> project<wbr>Search<wbr>Dir</h3>
+					<div class="tsd-signature tsd-kind-icon">project<wbr>Search<wbr>Dir<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></div>
+					<aside class="tsd-sources">
+						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#projectsearchdir">projectSearchDir</a></p>
+						<ul>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L250">src/index.ts:250</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Search for TypeScript config file (<code>tsconfig.json</code>) in this or parent directories.</p>
 						</div>
 					</div>
 				</section>
@@ -382,7 +425,7 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#readfile">readFile</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L257">src/index.ts:257</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L282">src/index.ts:282</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -393,14 +436,14 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#require">require</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L256">src/index.ts:256</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L281">src/index.ts:281</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
 							<p>Modules to require, like node&#39;s <code>--require</code> flag.</p>
 						</div>
-						<p>If specified in tsconfig.json, the modules will be resolved relative to the tsconfig.json file.</p>
+						<p>If specified in <code>tsconfig.json</code>, the modules will be resolved relative to the <code>tsconfig.json</code> file.</p>
 						<p>If specified programmatically, each input string should be pre-resolved to an absolute path for
 						best results.</p>
 					</div>
@@ -412,16 +455,34 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#scope">scope</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L172">src/index.ts:172</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L181">src/index.ts:181</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Scope compiler to files within <code>cwd</code>.</p>
+							<p>Scope compiler to files within <code>scopeDir</code>.</p>
 						</div>
 						<dl class="tsd-comment-tags">
 							<dt>default</dt>
 							<dd><p>false</p>
+							</dd>
+						</dl>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
+					<a name="scopedir" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> scope<wbr>Dir</h3>
+					<div class="tsd-signature tsd-kind-icon">scope<wbr>Dir<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></div>
+					<aside class="tsd-sources">
+						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#scopedir">scopeDir</a></p>
+						<ul>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L185">src/index.ts:185</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<dl class="tsd-comment-tags">
+							<dt>default</dt>
+							<dd><p>First of: <code>tsconfig.json</code> &quot;rootDir&quot; if specified, directory containing <code>tsconfig.json</code>, or cwd if no <code>tsconfig.json</code> is loaded.</p>
 							</dd>
 						</dl>
 					</div>
@@ -433,12 +494,12 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#skipignore">skipIgnore</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L237">src/index.ts:237</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L262">src/index.ts:262</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Skip ignore check.</p>
+							<p>Skip ignore check, so that compilation will be attempted for all files with matching extensions.</p>
 						</div>
 						<dl class="tsd-comment-tags">
 							<dt>default</dt>
@@ -454,7 +515,7 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#skipproject">skipProject</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L231">src/index.ts:231</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L256">src/index.ts:256</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -475,7 +536,7 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#transformers">transformers</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L259">src/index.ts:259</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L284">src/index.ts:284</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -486,7 +547,7 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#transpileonly">transpileOnly</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L184">src/index.ts:184</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L197">src/index.ts:197</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -507,7 +568,7 @@
 					<aside class="tsd-sources">
 						<p>Inherited from <a href="createoptions.html">CreateOptions</a>.<a href="createoptions.html#typecheck">typeCheck</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L190">src/index.ts:190</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L203">src/index.ts:203</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -557,6 +618,9 @@
 								<a href="registeroptions.html#compileroptions" class="tsd-kind-icon">compiler<wbr>Options</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
+								<a href="registeroptions.html#cwd" class="tsd-kind-icon">cwd</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
 								<a href="registeroptions.html#dir" class="tsd-kind-icon">dir</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
@@ -587,6 +651,9 @@
 								<a href="registeroptions.html#project" class="tsd-kind-icon">project</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
+								<a href="registeroptions.html#projectsearchdir" class="tsd-kind-icon">project<wbr>Search<wbr>Dir</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
 								<a href="registeroptions.html#readfile" class="tsd-kind-icon">read<wbr>File</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
@@ -594,6 +661,9 @@
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
 								<a href="registeroptions.html#scope" class="tsd-kind-icon">scope</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
+								<a href="registeroptions.html#scopedir" class="tsd-kind-icon">scope<wbr>Dir</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
 								<a href="registeroptions.html#skipignore" class="tsd-kind-icon">skip<wbr>Ignore</a>
@@ -646,6 +716,9 @@
 					</li>
 					<li class=" tsd-kind-function">
 						<a href="../index.html#createrepl" class="tsd-kind-icon">create<wbr>Repl</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="../index.html#createrequire" class="tsd-kind-icon">create<wbr>Require</a>
 					</li>
 					<li class=" tsd-kind-function">
 						<a href="../index.html#register" class="tsd-kind-icon">register</a>

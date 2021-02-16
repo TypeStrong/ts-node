@@ -99,6 +99,7 @@
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-function"><a href="index.html#create" class="tsd-kind-icon">create</a></li>
 								<li class="tsd-kind-function"><a href="index.html#createrepl" class="tsd-kind-icon">create<wbr>Repl</a></li>
+								<li class="tsd-kind-function"><a href="index.html#createrequire" class="tsd-kind-icon">create<wbr>Require</a></li>
 								<li class="tsd-kind-function"><a href="index.html#register" class="tsd-kind-icon">register</a></li>
 							</ul>
 						</section>
@@ -113,7 +114,7 @@
 					<div class="tsd-signature tsd-kind-icon">Register<span class="tsd-signature-symbol">:</span> <a href="interfaces/service.html" class="tsd-signature-type" data-tsd-kind="Interface">Service</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L410">src/index.ts:410</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L442">src/index.ts:442</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -139,7 +140,7 @@
 					<div class="tsd-signature tsd-kind-icon">DEFAULTS<span class="tsd-signature-symbol">:</span> <a href="interfaces/registeroptions.html" class="tsd-signature-type" data-tsd-kind="Interface">RegisterOptions</a><span class="tsd-signature-symbol"> = ...</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L317">src/index.ts:317</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L349">src/index.ts:349</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -155,7 +156,7 @@
 					<div class="tsd-signature tsd-kind-icon">REGISTER_<wbr>INSTANCE<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">typeof </span><a href="index.html#register_instance" class="tsd-signature-type" data-tsd-kind="Variable">REGISTER_INSTANCE</a><span class="tsd-signature-symbol"> = ...</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L37">src/index.ts:37</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L37">src/index.ts:37</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -170,7 +171,7 @@
 					<div class="tsd-signature tsd-kind-icon">VERSION<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol"> = ...</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L149">src/index.ts:149</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L152">src/index.ts:152</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -192,7 +193,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L463">src/index.ts:463</a></li>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L495">src/index.ts:495</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -220,7 +221,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/repl.ts#L49">src/repl.ts:49</a></li>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/repl.ts#L49">src/repl.ts:49</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -234,6 +235,29 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-function">
+					<a name="createrequire" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> create<wbr>Require</h3>
+					<ul class="tsd-signatures tsd-kind-function">
+						<li class="tsd-signature tsd-kind-icon">create<wbr>Require<span class="tsd-signature-symbol">(</span>path<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">URL</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">NodeRequire</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L11">src/index.ts:11</a></li>
+								</ul>
+							</aside>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>path: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">URL</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">NodeRequire</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function">
 					<a name="register" class="tsd-anchor"></a>
 					<h3>register</h3>
 					<ul class="tsd-signatures tsd-kind-function">
@@ -243,7 +267,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/080af32/src/index.ts#L442">src/index.ts:442</a></li>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/bacbeaf/src/index.ts#L474">src/index.ts:474</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -317,6 +341,9 @@
 					</li>
 					<li class=" tsd-kind-function">
 						<a href="index.html#createrepl" class="tsd-kind-icon">create<wbr>Repl</a>
+					</li>
+					<li class=" tsd-kind-function">
+						<a href="index.html#createrequire" class="tsd-kind-icon">create<wbr>Require</a>
 					</li>
 					<li class=" tsd-kind-function">
 						<a href="index.html#register" class="tsd-kind-icon">register</a>
