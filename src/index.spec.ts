@@ -31,6 +31,7 @@ const TEST_DIR = join(__dirname, '../tests')
 const PROJECT = join(TEST_DIR, 'tsconfig.json')
 const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node')
 const BIN_SCRIPT_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-script')
+const BIN_CWD_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-cwd')
 
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
 
@@ -76,6 +77,8 @@ describe('ts-node', function () {
     testsDirRequire.resolve('ts-node/dist/bin-transpile.js')
     testsDirRequire.resolve('ts-node/dist/bin-script')
     testsDirRequire.resolve('ts-node/dist/bin-script.js')
+    testsDirRequire.resolve('ts-node/dist/bin-cwd')
+    testsDirRequire.resolve('ts-node/dist/bin-cwd.js')
 
     // Must be `require()`able obviously
     testsDirRequire.resolve('ts-node/register')
@@ -467,8 +470,10 @@ describe('ts-node', function () {
       })
     })
 
+    const preferTsExtsEntrypoint = semver.gte(process.version, '12.0.0') ? 'import-order/compiled' : 'import-order/require-compiled'
     it('should import ts before js when --prefer-ts-exts flag is present', function (done) {
-      exec(`${cmd} --prefer-ts-exts import-order/compiled`, function (err, stdout) {
+
+      exec(`${cmd} --prefer-ts-exts ${preferTsExtsEntrypoint}`, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, TypeScript!\n')
 
@@ -477,7 +482,7 @@ describe('ts-node', function () {
     })
 
     it('should import ts before js when TS_NODE_PREFER_TS_EXTS env is present', function (done) {
-      exec(`${cmd} import-order/compiled`, { env: { ...process.env, TS_NODE_PREFER_TS_EXTS: 'true' } }, function (err, stdout) {
+      exec(`${cmd} ${preferTsExtsEntrypoint}`, { env: { ...process.env, TS_NODE_PREFER_TS_EXTS: 'true' } }, function (err, stdout) {
         expect(err).to.equal(null)
         expect(stdout).to.equal('Hello, TypeScript!\n')
 
@@ -533,17 +538,49 @@ describe('ts-node', function () {
     })
 
     if (semver.gte(ts.version, '2.7.0')) {
-      it('should support script mode', function (done) {
-        exec(`${BIN_SCRIPT_PATH} scope/a/log`, function (err, stdout) {
+      it('should locate tsconfig relative to entry-point by default', function (done) {
+        exec(`${BIN_PATH} ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
           expect(err).to.equal(null)
-          expect(stdout).to.equal('.ts\n')
+          expect(stdout).to.match(/plugin-a/)
 
           return done()
         })
       })
-      it('should read tsconfig relative to realpath, not symlink, in scriptMode', function (done) {
+      it('should locate tsconfig relative to entry-point via ts-node-script', function (done) {
+        exec(`${BIN_SCRIPT_PATH} ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.match(/plugin-a/)
+
+          return done()
+        })
+      })
+      it('should locate tsconfig relative to entry-point with --script-mode', function (done) {
+        exec(`${BIN_PATH} --script-mode ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.match(/plugin-a/)
+
+          return done()
+        })
+      })
+      it('should locate tsconfig relative to cwd via ts-node-cwd', function (done) {
+        exec(`${BIN_CWD_PATH} ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.match(/plugin-b/)
+
+          return done()
+        })
+      })
+      it('should locate tsconfig relative to cwd in --cwd-mode', function (done) {
+        exec(`${BIN_PATH} --cwd-mode ../a/index`, { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }, function (err, stdout) {
+          expect(err).to.equal(null)
+          expect(stdout).to.match(/plugin-b/)
+
+          return done()
+        })
+      })
+      it('should locate tsconfig relative to realpath, not symlink, when entrypoint is a symlink', function (done) {
         if (lstatSync(join(TEST_DIR, 'main-realpath/symlink/symlink.tsx')).isSymbolicLink()) {
-          exec(`${BIN_SCRIPT_PATH} main-realpath/symlink/symlink.tsx`, function (err, stdout) {
+          exec(`${BIN_PATH} main-realpath/symlink/symlink.tsx`, function (err, stdout) {
             expect(err).to.equal(null)
             expect(stdout).to.equal('')
 
@@ -636,7 +673,7 @@ describe('ts-node', function () {
     })
 
     it('should transpile files inside a node_modules directory when not ignored', function (done) {
-      exec(`${cmdNoProject} --script-mode from-node-modules/from-node-modules`, function (err, stdout, stderr) {
+      exec(`${cmdNoProject} from-node-modules/from-node-modules`, function (err, stdout, stderr) {
         if (err) return done(`Unexpected error: ${err}\nstdout:\n${stdout}\nstderr:\n${stderr}`)
         expect(JSON.parse(stdout)).to.deep.equal({
           external: {
@@ -656,11 +693,11 @@ describe('ts-node', function () {
 
     describe('should respect maxNodeModulesJsDepth', function () {
       it('for unscoped modules', function (done) {
-        exec(`${cmdNoProject} --script-mode maxnodemodulesjsdepth`, function (err, stdout, stderr) {
+        exec(`${cmdNoProject} maxnodemodulesjsdepth`, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr.replace(/\r\n/g, '\n')).to.contain(
             'TSError: ⨯ Unable to compile TypeScript:\n' +
-            "other.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
+            "maxnodemodulesjsdepth/other.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
             '\n'
           )
           done()
@@ -668,11 +705,11 @@ describe('ts-node', function () {
       })
 
       it('for @scoped modules', function (done) {
-        exec(`${cmdNoProject} --script-mode maxnodemodulesjsdepth-scoped`, function (err, stdout, stderr) {
+        exec(`${cmdNoProject} maxnodemodulesjsdepth-scoped`, function (err, stdout, stderr) {
           expect(err).to.not.equal(null)
           expect(stderr.replace(/\r\n/g, '\n')).to.contain(
             'TSError: ⨯ Unable to compile TypeScript:\n' +
-            "other.ts(7,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
+            "maxnodemodulesjsdepth-scoped/other.ts(7,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
             '\n'
           )
           done()
@@ -734,8 +771,8 @@ describe('ts-node', function () {
         registered.enabled(false)
 
         const compilers = [
-          register({ dir: join(TEST_DIR, 'scope/a'), scope: true }),
-          register({ dir: join(TEST_DIR, 'scope/b'), scope: true })
+          register({ projectSearchDir: join(TEST_DIR, 'scope/a'), scopeDir: join(TEST_DIR, 'scope/a'), scope: true }),
+          register({ projectSearchDir: join(TEST_DIR, 'scope/a'), scopeDir: join(TEST_DIR, 'scope/b'), scope: true })
         ]
 
         compilers.forEach(c => {
