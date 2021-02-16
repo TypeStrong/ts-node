@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { join, resolve, dirname } from 'path'
+import { join, resolve, dirname, parse as parsePath } from 'path'
 import { inspect } from 'util'
 import Module = require('module')
 import arg = require('arg')
@@ -10,7 +10,7 @@ import {
   createRepl,
   ReplService
  } from './repl'
-import { VERSION, TSError, parse, register } from './index'
+import { VERSION, TSError, parse, register, createRequire } from './index'
 
 /**
  * Main `bin` functionality.
@@ -27,11 +27,12 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 
       // CLI options.
       '--help': Boolean,
+      '--cwd-mode': Boolean,
       '--script-mode': Boolean,
       '--version': arg.COUNT,
 
       // Project options.
-      '--dir': String,
+      '--cwd': String,
       '--files': Boolean,
       '--compiler': String,
       '--compiler-options': parse,
@@ -62,7 +63,8 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
       '-P': '--project',
       '-C': '--compiler',
       '-D': '--ignore-diagnostics',
-      '-O': '--compiler-options'
+      '-O': '--compiler-options',
+      '--dir': '--cwd'
     }, {
       argv,
       stopAtPositional: true
@@ -73,9 +75,10 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
   // Anything passed to `register()` can be `undefined`; `create()` will apply
   // defaults.
   const {
-    '--dir': dir,
+    '--cwd': cwdArg,
     '--help': help = false,
-    '--script-mode': scriptMode = false,
+    '--script-mode': scriptMode,
+    '--cwd-mode': cwdMode,
     '--version': version = 0,
     '--require': argsRequire = [],
     '--eval': code = undefined,
@@ -111,7 +114,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 
     -h, --help                     Print CLI usage
     -v, --version                  Print module version information
-    -s, --script-mode              Use cwd from <script.ts> instead of current directory
+    --cwd-mode                     Use current directory instead of <script.ts> for config resolution
 
     -T, --transpile-only           Use TypeScript's faster \`transpileModule\`
     -H, --compiler-host            Use TypeScript's compiler host API
@@ -121,8 +124,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     -D, --ignore-diagnostics [code] Ignore TypeScript warnings by diagnostic code
     -O, --compiler-options [opts]   JSON object to merge with compiler options
 
-    --dir                          Specify working directory for config resolution
-    --scope                        Scope compiler to files within \`cwd\` only
+    --cwd                          Behave as if invoked within this working directory.
     --files                        Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
     --pretty                       Use pretty diagnostic formatter (usually enabled by default)
     --skip-project                 Skip reading \`tsconfig.json\`
@@ -140,7 +142,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     process.exit(0)
   }
 
-  const cwd = dir || process.cwd()
+  const cwd = cwdArg || process.cwd()
   /** Unresolved.  May point to a symlink, not realpath.  May be missing file extension */
   const scriptPath = args._.length ? resolve(cwd, args._[0]) : undefined
   const state = new EvalState(scriptPath || join(cwd, EVAL_FILENAME))
@@ -149,7 +151,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 
   // Register the TypeScript compiler instance.
   const service = register({
-    dir: getCwd(dir, scriptMode, scriptPath),
+    cwd,
     emit,
     files,
     pretty,
@@ -159,6 +161,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     ignore,
     preferTsExts,
     logError,
+    projectSearchDir: getProjectSearchDir(cwd, scriptMode, cwdMode, scriptPath),
     project,
     skipProject,
     skipIgnore,
@@ -211,19 +214,21 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 }
 
 /**
- * Get project path from args.
+ * Get project search path from args.
  */
-function getCwd (dir?: string, scriptMode?: boolean, scriptPath?: string) {
-  // Validate `--script-mode` usage is correct.
-  if (scriptMode) {
-    if (!scriptPath) {
-      throw new TypeError('Script mode must be used with a script name, e.g. `ts-node -s <script.ts>`')
-    }
-
-    if (dir) {
-      throw new TypeError('Script mode cannot be combined with `--dir`')
-    }
-
+function getProjectSearchDir (cwd?: string, scriptMode?: boolean, cwdMode?: boolean, scriptPath?: string) {
+  // Validate `--script-mode` / `--cwd-mode` / `--cwd` usage is correct.
+  if (scriptMode && cwdMode) {
+    throw new TypeError('--cwd-mode cannot be combined with --script-mode')
+  }
+  if (scriptMode && !scriptPath) {
+    throw new TypeError('--script-mode must be used with a script name, e.g. `ts-node --script-mode <script.ts>`')
+  }
+  const doScriptMode =
+    scriptMode === true ? true
+    : cwdMode === true ? false
+    : !!scriptPath
+  if (doScriptMode) {
     // Use node's own resolution behavior to ensure we follow symlinks.
     // scriptPath may omit file extension or point to a directory with or without package.json.
     // This happens before we are registered, so we tell node's resolver to consider ts, tsx, and jsx files.
@@ -240,7 +245,7 @@ function getCwd (dir?: string, scriptMode?: boolean, scriptPath?: string) {
       }
     }
     try {
-      return dirname(require.resolve(scriptPath))
+      return dirname(requireResolveNonCached(scriptPath!))
     } finally {
       for (const ext of extsTemporarilyInstalled) {
         delete require.extensions[ext] // tslint:disable-line
@@ -248,7 +253,32 @@ function getCwd (dir?: string, scriptMode?: boolean, scriptPath?: string) {
     }
   }
 
-  return dir
+  return cwd
+}
+
+const guaranteedNonexistentDirectoryPrefix = resolve(__dirname, 'doesnotexist')
+let guaranteedNonexistentDirectorySuffix = 0
+
+/**
+ * require.resolve an absolute path, tricking node into *not* caching the results.
+ * Necessary so that we do not pollute require.resolve cache prior to installing require.extensions
+ *
+ * Is a terrible hack, because node does not expose the necessary cache invalidation APIs
+ * https://stackoverflow.com/questions/59865584/how-to-invalidate-cached-require-resolve-results
+ */
+function requireResolveNonCached (absoluteModuleSpecifier: string) {
+  // node 10 and 11 fallback: The trick below triggers a node 10 & 11 bug
+  // On those node versions, pollute the require cache instead.  This is a deliberate
+  // ts-node limitation that will *rarely* manifest, and will not matter once node 10
+  // is end-of-life'd on 2021-04-30
+  const isSupportedNodeVersion = parseInt(process.versions.node.split('.')[0], 10) >= 12
+  if (!isSupportedNodeVersion) return require.resolve(absoluteModuleSpecifier)
+
+  const { dir, base } = parsePath(absoluteModuleSpecifier)
+  const relativeModuleSpecifier = `./${base}`
+
+  const req = createRequire(join(dir, 'imaginaryUncacheableRequireResolveScript'))
+  return req.resolve(relativeModuleSpecifier, { paths: [`${ guaranteedNonexistentDirectoryPrefix }${ guaranteedNonexistentDirectorySuffix++ }`, ...req.resolve.paths(relativeModuleSpecifier) || []] })
 }
 
 /**

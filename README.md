@@ -45,8 +45,8 @@ ts-node -p -e '"Hello, world!"'
 # Pipe scripts to execute with TypeScript.
 echo 'console.log("Hello, world!")' | ts-node
 
-# Equivalent to ts-node --script-mode
-ts-node-script scripts.ts
+# Equivalent to ts-node --cwd-mode
+ts-node-cwd scripts.ts
 
 # Equivalent to ts-node --transpile-only
 ts-node-transpile-only scripts.ts
@@ -57,17 +57,15 @@ ts-node-transpile-only scripts.ts
 ### Shebang
 
 ```typescript
-#!/usr/bin/env ts-node-script
+#!/usr/bin/env ts-node
 
 console.log("Hello, world!")
 ```
 
-`ts-node-script` is recommended because it enables `--script-mode`, discovering `tsconfig.json` relative to the script's location instead of `process.cwd()`.  This makes scripts more portable.
-
 Passing CLI arguments via shebang is allowed on Mac but not Linux.  For example, the following will fail on Linux:
 
 ```
-#!/usr/bin/env ts-node --script-mode --transpile-only --files
+#!/usr/bin/env ts-node --transpile-only --files
 // This shebang is not portable.  It only works on Mac
 ```
 
@@ -152,11 +150,14 @@ When node.js has an extension registered (via `require.extensions`), it will use
 
 ## Loading `tsconfig.json`
 
-**Typescript Node** loads `tsconfig.json` automatically. Use `--skip-project` to skip loading the `tsconfig.json`.
+**Typescript Node** finds and loads `tsconfig.json` automatically. Use `--skip-project` to skip loading the `tsconfig.json`.  Use `--project` to explicitly specify the path to a `tsconfig.json`
 
-It is resolved relative to `--dir` using [the same search behavior as `tsc`](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html).  In `--script-mode`, this is the directory containing the script.  Otherwise it is resolved relative to `process.cwd()`, which matches the behavior of `tsc`.
+When searching, it is resolved using [the same search behavior as `tsc`](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html).  By default, this search is performed relative to the directory containing the entrypoint script.  In `--cwd-mode` or if no entrypoint is specified -- for example when using the REPL -- the search is performed relative to `--cwd` / `process.cwd()`, which matches the behavior of `tsc`.
 
-Use `--project` to specify the path to your `tsconfig.json`, ignoring `--dir`.
+For example:
+
+* if you run `ts-node ./src/app/index.ts`, we will automatically use `./src/tsconfig.json`.
+* if you run `ts-node`, we will automatically use `./tsconfig.json`.
 
 **Tip**: You can use `ts-node` together with [tsconfig-paths](https://www.npmjs.com/package/tsconfig-paths) to load modules according to the `paths` section in `tsconfig.json`.
 
@@ -176,7 +177,8 @@ ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 
 * `-h, --help` Prints the help text
 * `-v, --version` Prints the version. `-vv` prints node and typescript compiler versions, too
-* `-s, --script-mode` Resolve config relative to the directory of the passed script instead of the current directory. Changes default of `--dir`
+* `-c, --cwd-mode` Resolve config relative to the current directory instead of the directory of the entrypoint script.
+* `--script-mode` Resolve config relative to the directory of the entrypoint script.  This is the default behavior.
 
 ### CLI and Programmatic Options
 
@@ -189,8 +191,7 @@ _The name of the environment variable and the option's default value are denoted
 * `-C, --compiler [name]` Specify a custom TypeScript compiler (`TS_NODE_COMPILER`, default: `typescript`)
 * `-D, --ignore-diagnostics [code]` Ignore TypeScript warnings by diagnostic code (`TS_NODE_IGNORE_DIAGNOSTICS`)
 * `-O, --compiler-options [opts]` JSON object to merge with compiler options (`TS_NODE_COMPILER_OPTIONS`)
-* `--dir` Specify working directory for config resolution (`TS_NODE_CWD`, default: `process.cwd()`, or `dirname(scriptPath)` if `--script-mode`)
-* `--scope` Scope compiler to files within `cwd` (`TS_NODE_SCOPE`, default: `false`)
+* `--cwd` Behave as if invoked within this working directory. (`TS_NODE_CWD`, default: `process.cwd()`)
 * `--files` Load `files`, `include` and `exclude` from `tsconfig.json` on startup (`TS_NODE_FILES`, default: `false`)
 * `--pretty` Use pretty diagnostic formatter (`TS_NODE_PRETTY`, default: `false`)
 * `--skip-project` Skip project config resolution and loading (`TS_NODE_SKIP_PROJECT`, default: `false`)
@@ -201,6 +202,9 @@ _The name of the environment variable and the option's default value are denoted
 
 ### Programmatic-only Options
 
+* `scope` Scope compiler to files within `scopeDir`.  Files outside this directory will be ignored.  (default: `false`)
+* `scopeDir` Sets directory for `scope`.  Defaults to tsconfig `rootDir`, directory containing `tsconfig.json`, or `cwd`
+* `projectSearchDir` Search for TypeScript config file (`tsconfig.json`) in this or parent directories.
 * `transformers` `_ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers)`: An object with transformers or a factory function that accepts a program and returns a transformers object to pass to TypeScript. Factory function cannot be used with `transpileOnly` flag
 * `readFile`: Custom TypeScript-compatible file reading function
 * `fileExists`: Custom TypeScript-compatible file existence function
@@ -219,7 +223,7 @@ Most options can be specified by a `"ts-node"` object in `tsconfig.json` using t
 }
 ```
 
-Our bundled [JSON schema](https://unpkg.com/browse/ts-node@8.8.2/tsconfig.schema.json) lists all compatible options.
+Our bundled [JSON schema](https://unpkg.com/browse/ts-node@latest/tsconfig.schema.json) lists all compatible options.
 
 ## SyntaxError
 
