@@ -69,6 +69,8 @@ Passing CLI arguments via shebang is allowed on Mac but not Linux.  For example,
 // This shebang is not portable.  It only works on Mac
 ```
 
+Instead, specify all `ts-node` options in your `tsconfig.json`.
+
 ### Programmatic
 
 You can require `ts-node` and register the loader for future requires by using `require('ts-node').register({ /* options */ })`. You can also use file shortcuts - `node -r ts-node/register` or `node -r ts-node/register/transpile-only` - depending on your preferences.
@@ -150,9 +152,9 @@ When node.js has an extension registered (via `require.extensions`), it will use
 
 ## Loading `tsconfig.json`
 
-**Typescript Node** finds and loads `tsconfig.json` automatically. Use `--skip-project` to skip loading the `tsconfig.json`.  Use `--project` to explicitly specify the path to a `tsconfig.json`
+**Typescript Node** automatically finds and loads `tsconfig.json`. Use `--skip-project` to skip loading the `tsconfig.json`.  Use `--project` to explicitly specify the path to a `tsconfig.json`
 
-When searching, it is resolved using [the same search behavior as `tsc`](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html).  By default, this search is performed relative to the directory containing the entrypoint script.  In `--cwd-mode` or if no entrypoint is specified -- for example when using the REPL -- the search is performed relative to `--cwd` / `process.cwd()`, which matches the behavior of `tsc`.
+When searching, it is resolved using [the same search behavior as `tsc`](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html).  By default, this search is performed relative to the entrypoint script.  In `--cwd-mode` or if no entrypoint is specified -- for example when using the REPL -- the search is performed relative to `--cwd` / `process.cwd()`.
 
 For example:
 
@@ -161,21 +163,33 @@ For example:
 
 **Tip**: You can use `ts-node` together with [tsconfig-paths](https://www.npmjs.com/package/tsconfig-paths) to load modules according to the `paths` section in `tsconfig.json`.
 
-## Configuration Options
+### `ts-node` options via `tsconfig.json`
 
-You can set options by passing them before the script path, via programmatic usage, via `tsconfig.json`, or via environment variables.
+Most `ts-node` options can be specified by a `"ts-node"` object in `tsconfig.json` using their programmatic, camelCase names. For example, to enable `--transpile-only`:
 
-```sh
-ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
+```json
+// tsconfig.json
+{
+  "ts-node": {
+    "transpileOnly": true
+  },
+  "compilerOptions": {}
+}
 ```
 
-**Note:** [`ntypescript`](https://github.com/TypeStrong/ntypescript#readme) is an example of a TypeScript-compatible `compiler`.
+Our bundled [JSON schema](https://unpkg.com/browse/ts-node@latest/tsconfig.schema.json) lists all compatible options.
 
-### Options
+## Options
 
 `ts-node` supports a variety of options which can be specified via `tsconfig.json`, as CLI flags, as environment variables, and programmatically.
 
-The `ts-node` CLI also supports `--print` (`-p`), `--eval` (`-e`), `--require` (`-r`) and `--interactive` (`-i`) similar to the [node.js CLI options](https://nodejs.org/api/cli.html).\
+`ts-node` CLI flags must come *before* the entrypoint script. For example:
+
+```sh
+ts-node --compiler ntypescript --project src/tsconfig.json my-app.ts --my-app-flags
+```
+
+The `ts-node` CLI also supports `--print` (`-p`), `--eval` (`-e`), `--require` (`-r`) and `--interactive` (`-i`) similar to the [node.js CLI options](https://nodejs.org/api/cli.html).
 
 _API options with an * can only be specified programmatically, not via `tsconfig.json`_
 
@@ -206,22 +220,6 @@ _API options with an * can only be specified programmatically, not via `tsconfig
 |  |  | `transformers`* | An object with transformers or a factory function that accepts a program and returns a transformers object to pass to TypeScript. Factory function cannot be used with `transpileOnly` flag |
 |  |  | `readFile`* | Custom TypeScript-compatible file reading function |
 |  |  | `fileExists`* | Custom TypeScript-compatible file existence function |
-
-### Options via tsconfig.json
-
-Most options can be specified by a `"ts-node"` object in `tsconfig.json` using their programmatic, camelCase names. For example, to enable `--transpile-only`:
-
-```json
-// tsconfig.json
-{
-  "ts-node": {
-    "transpileOnly": true
-  },
-  "compilerOptions": {}
-}
-```
-
-Our bundled [JSON schema](https://unpkg.com/browse/ts-node@latest/tsconfig.schema.json) lists all compatible options.
 
 ## SyntaxError
 
