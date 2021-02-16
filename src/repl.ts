@@ -95,7 +95,7 @@ export function createRepl (options: CreateReplOptions = {}) {
         if (Recoverable && isRecoverable(error)) {
           err = new Recoverable(error)
         } else {
-          console.error(error)
+          _console.error(error)
         }
       } else {
         err = error
