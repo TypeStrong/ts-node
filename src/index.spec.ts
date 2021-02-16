@@ -1,3 +1,5 @@
+import test from 'ava';
+import {TestInterface} from 'ava';
 import { expect } from 'chai'
 import { ChildProcess, exec as childProcessExec, ExecException, ExecOptions } from 'child_process'
 import { join } from 'path'
@@ -14,6 +16,33 @@ import { pathToFileURL } from 'url'
 import Module = require('module')
 import { PassThrough } from 'stream'
 import * as getStream from 'get-stream'
+
+const it = test
+type DescribeOpts<T> = {
+  it: TestInterface<T>,
+  describe: <T>(suiteName: string, callback: (opts: DescribeOpts<T>) => void) => void
+}
+const describe: DescribeOpts<unknown>['describe'] = (suiteName: string, callback: any) => {
+  const separator = ' > '
+  innerIt.serial = innerSerial
+  const describeOpts = { it: innerIt, describe: innerDescribe }
+  callback(describeOpts)
+  function innerIt(name: string, callback: any) {
+    return test(`${ suiteName }${ separator }${ name }`, async () => {
+      if(callback.length === 0) return callback()
+      return promisify(callback)()
+    })
+  }
+  function innerSerial(name: string, callback: any) {
+    return test.serial(`${ suiteName }${ separator }${ name }`, async () => {
+      if(callback.length === 0) return callback()
+      return promisify(callback)()
+    })
+  }
+  function innerDescribe(name: string, callback: any) {
+    return describe(`${ suiteName }${ name }`, callback)
+  }
+}
 
 function exec (cmd: string, callback: (err: ExecException | null, stdout: string, stderr: string) => void): ChildProcess
 function exec (cmd: string, opts: ExecOptions, callback: (err: ExecException | null, stdout: string, stderr: string) => void): ChildProcess
