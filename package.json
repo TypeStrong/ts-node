@@ -94,7 +94,7 @@
       "dist/*.spec.js"
     ],
     "failWithoutAssertions": false,
-    "timeout": "100s"
+    "timeout": "300s"
   },
   "devDependencies": {
     "@types/chai": "^4.0.4",
