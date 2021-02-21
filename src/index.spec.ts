@@ -327,7 +327,10 @@ test.suite('ts-node', function (test) {
         stdout,
         stderr
       })
-      const service = create(replService.evalAwarePartialHost)
+      const service = create({
+        ...replService.evalAwarePartialHost,
+        project: `${ TEST_DIR }/tsconfig.json`
+      })
       replService.setService(service)
       replService.start()
       stdin.write('\nconst a = 123\n.type a\n')
