@@ -1,5 +1,8 @@
 import avaTest, { ExecutionContext, Implementation, OneOrMoreMacros } from 'ava'
 import * as assert from 'assert'
+import throat from 'throat'
+
+const concurrencyLimiter = throat(8)
 
 // TODO switch to passing ExecutionContext to test cases and macros
 // TODO passing array of macro functions declares multiple test cases, which is not what we want.
@@ -92,12 +95,14 @@ function createTestInterface<Context> (opts: {
   function declareTest (title: string | undefined, macros: Function[], avaDeclareFunction: Function, args: any[]) {
     const wrappedMacros = macros.map(macro => {
       return async function (t: ExecutionContext<Context>, ...args: any[]) {
-        let i = 0
-        for (const func of beforeEachFunctions) {
-          await func(t)
-          i++
-        }
-        return macro(t, ...args)
+        return concurrencyLimiter(async () => {
+          let i = 0
+          for (const func of beforeEachFunctions) {
+            await func(t)
+            i++
+          }
+          return macro(t, ...args)
+        })
       }
     })
     const computedTitle = computeTitle(title)
