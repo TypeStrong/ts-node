@@ -12,7 +12,9 @@
     "sourceMap": true,
     "inlineSources": true,
     "types": ["node"],
-    "stripInternal": true
+    "stripInternal": true,
+    "incremental": true,
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*"
