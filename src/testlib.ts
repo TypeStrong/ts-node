@@ -142,7 +142,7 @@ function createTestInterface<Context> (opts: {
   test.macro = function<Args extends any[]>(cb: (...args: Args) => [(title: string | undefined) => string, (t: ExecutionContext<Context>) => Promise<void>] | ((t: ExecutionContext<Context>) => Promise<void>)) {
     function macro (testInterface: ExecutionContext<Context>, ...args: Args) {
       const ret = cb(...args)
-      const [, macroFunction] = Array.isArray(ret) ? ret : [, ret]
+      const macroFunction = Array.isArray(ret) ? ret[1] : ret
       return macroFunction(testInterface)
     }
     macro.title = function (givenTitle: string | undefined, ...args: Args) {
