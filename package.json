@@ -22,7 +22,10 @@
     "./esm": "./esm.mjs",
     "./esm.mjs": "./esm.mjs",
     "./esm/transpile-only": "./esm/transpile-only.mjs",
-    "./esm/transpile-only.mjs": "./esm/transpile-only.mjs"
+    "./esm/transpile-only.mjs": "./esm/transpile-only.mjs",
+    "./node10/tsconfig.json": "./node10/tsconfig.json",
+    "./node12/tsconfig.json": "./node12/tsconfig.json",
+    "./node14/tsconfig.json": "./node14/tsconfig.json"
   },
   "types": "dist/index.d.ts",
   "bin": {
@@ -40,7 +43,10 @@
     "esm.mjs",
     "LICENSE",
     "tsconfig.schema.json",
-    "tsconfig.schemastore-schema.json"
+    "tsconfig.schemastore-schema.json",
+    "node10/",
+    "node12/",
+    "node14/"
   ],
   "scripts": {
     "lint": "tslint \"src/**/*.ts\" --project tsconfig.json",
@@ -131,6 +137,9 @@
     "typescript": ">=2.7"
   },
   "dependencies": {
+    "@tsconfig/node10": "^1.0.7",
+    "@tsconfig/node12": "^1.0.7",
+    "@tsconfig/node14": "^1.0.0",
     "arg": "^4.1.0",
     "create-require": "^1.1.0",
     "diff": "^4.0.1",
