@@ -412,7 +412,7 @@ test.suite('ts-node', (test) => {
       test('should compile', async (t) => {
         // TODO disabled because it consistently fails on Windows on TS 2.7
         if (process.platform === 'win32' && semver.satisfies(ts.version, '2.7')) {
-          // TODO mark as skipped instead of silently passing?
+          t.log('Skipping')
           return
         } else {
           const { err, stdout } = await exec(`"${BIN_PATH}" --project issue-884/tsconfig.json issue-884`)
@@ -464,13 +464,13 @@ test.suite('ts-node', (test) => {
         expect(err).to.equal(null)
         expect(stdout).to.match(/plugin-b/)
       })
-      test('should locate tsconfig relative to realpath, not symlink, when entrypoint is a symlink', async () => {
+      test('should locate tsconfig relative to realpath, not symlink, when entrypoint is a symlink', async (t) => {
         if (lstatSync(join(TEST_DIR, 'main-realpath/symlink/symlink.tsx')).isSymbolicLink()) {
           const { err, stdout } = await exec(`${BIN_PATH} main-realpath/symlink/symlink.tsx`)
           expect(err).to.equal(null)
           expect(stdout).to.equal('')
         } else {
-          // TODO mark as skipped instead of silently passing
+          t.log('Skipping')
           return
         }
       })
