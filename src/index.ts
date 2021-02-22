@@ -1114,9 +1114,7 @@ function registerExtension (
   require.extensions[ext] = function (m: any, filename) { // tslint:disable-line
     if (service.ignored(filename)) return old(m, filename)
 
-    if (service.options.experimentalEsmLoader) {
-      assertScriptCanLoadAsCJS(filename)
-    }
+    assertScriptCanLoadAsCJS(filename)
 
     const _compile = m._compile
 

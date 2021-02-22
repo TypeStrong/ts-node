@@ -838,6 +838,12 @@ describe('ts-node', function () {
         expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
       })
 
+      it('throws ERR_REQUIRE_ESM when attempting to require() an ESM script even when while ESM loader is not enabled', async () => {
+        const { err, stdout, stderr } = await exec(`${BIN_PATH} ./index.js`, { cwd: join(TEST_DIR, './esm-err-require-esm') })
+        expect(err).to.not.equal(null)
+        expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
+      })
+
       it('defers to fallback loaders when URL should not be handled by ts-node', async () => {
         const { err, stdout, stderr } = await exec(`${cmd} index.mjs`, {
           cwd: join(TEST_DIR, './esm-import-http-url')
@@ -870,11 +876,5 @@ describe('ts-node', function () {
         expect(stdout).to.equal('')
       })
     }
-
-    it('executes ESM as CJS, ignoring package.json "types" field (for backwards compatibility; should be changed in next major release to throw ERR_REQUIRE_ESM)', async () => {
-      const { err, stdout } = await exec(`${BIN_PATH} ./esm-err-require-esm/index.js`)
-      expect(err).to.equal(null)
-      expect(stdout).to.equal('CommonJS\n')
-    })
   })
 })
