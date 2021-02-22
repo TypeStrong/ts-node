@@ -4,9 +4,6 @@ import throat from 'throat'
 
 const concurrencyLimiter = throat(8)
 
-// TODO switch to passing ExecutionContext to test cases and macros
-// TODO passing array of macro functions declares multiple test cases, which is not what we want.
-
 function once<T extends Function> (func: T): T {
   let run = false
   let ret: any = undefined
@@ -167,44 +164,4 @@ function createTestInterface<Context> (opts: {
     automaticallyDoSerial = true
   }
   return test as any
-
-  // innerIt.serial = innerSerial
-  // function api(...args) {
-  //   return ava(...args)
-  // }
-  // api.serial = innerSerial
-  // api.describe = innerDescribe
-  // function innerIt(name: string, callback: any) {
-  //   return test(`${ prefix }${ name }`, callback)
-  // }
-  // function innerSerial(name: string, callback: any) {
-  //   return test.serial(`${ titlePrefix }${ separator }${ name }`, callback)
-  // }
-  // function innerDescribe(name: string, callback: any) {
-  //   return describe(`${ titlePrefix }${ separator }${ name }`, callback)
-  // }
 }
-
-/////////////////
-// test.suite('suite name', t => {
-//   const test = t
-//     .buildContext(t => {
-//       return {
-//         contextField: 'returned from here'
-//       }
-//     })
-
-//   const macroFunc = test.macro((arg1: string, arg2: string) => [
-//     givenTitle => `${ givenTitle } + ${ request } + ${ expectedResult }`,
-//     async t => {
-//       const result = doRequest(request);
-//       t.is(result, expected)
-//     }
-//   ])
-//   test(macroFunc, 'request', 'expected response')
-
-//   const macroFunc2 = test.macro((arg1: string, arg2: string) => async t => {
-//     // do the test here
-//   })
-//   test([macroFunc, macroFunc2], 'test1', 'test2')
-// })
