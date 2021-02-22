@@ -835,20 +835,10 @@ test.suite('ts-node', (test) => {
         })
       })
 
-      test.suite('throws ERR_REQUIRE_ESM when attempting to require() an ESM script', async (test) => {
-        const macro = test.macro((cmd: string) => async t => {
-          const { err, stdout, stderr } = await exec(`${cmd} ./index.js`, { cwd: join(TEST_DIR, './esm-err-require-esm') })
-          expect(err).to.not.equal(null)
-          expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
-        })
-        test('when ESM loader is enabled', macro, cmd)
-        test('when ESM loader is not enabled', macro, BIN_PATH)
-
-        test('when ESM loader is not enabled', async () => {
-          const { err, stdout, stderr } = await exec(`${BIN_PATH} ./index.js`, { cwd: join(TEST_DIR, './esm-err-require-esm') })
-          expect(err).to.not.equal(null)
-          expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
-        })
+      test('throws ERR_REQUIRE_ESM when attempting to require() an ESM script when ESM loader is enabled', async () => {
+        const { err, stderr } = await exec(`${cmd} ./index.js`, { cwd: join(TEST_DIR, './esm-err-require-esm') })
+        expect(err).to.not.equal(null)
+        expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
       })
 
       test('defers to fallback loaders when URL should not be handled by ts-node', async () => {
@@ -883,5 +873,22 @@ test.suite('ts-node', (test) => {
         expect(stdout).to.equal('')
       })
     }
+
+    if (semver.gte(process.version, '12.0.0')) {
+      test('throws ERR_REQUIRE_ESM when attempting to require() an ESM script when ESM loader is *not* enabled and node version is >= 12', async () => {
+        // Node versions >= 12 support package.json "type" field and so will throw an error when attempting to load ESM as CJS
+        const { err, stderr } = await exec(`${BIN_PATH} ./index.js`, { cwd: join(TEST_DIR, './esm-err-require-esm') })
+        expect(err).to.not.equal(null)
+        expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
+      })
+    } else {
+      test('Loads as CommonJS when attempting to require() an ESM script when ESM loader is *not* enabled and node version is < 12', async () => {
+        // Node versions less than 12 do not support package.json "type" field and so will load ESM as CommonJS
+        const { err, stdout } = await exec(`${BIN_PATH} ./index.js`, { cwd: join(TEST_DIR, './esm-err-require-esm') })
+        expect(err).to.equal(null)
+        expect(stdout).to.contain('CommonJS')
+      })
+    }
+
   })
 })
