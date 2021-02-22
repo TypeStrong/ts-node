@@ -311,7 +311,7 @@ test.suite('ts-node', function (test) {
       const { err, stdout } = await execPromise
       expect(err).to.equal(null)
       expect(stdout).to.equal(
-        '> undefined\n' +
+        '> \'use strict\'\n' +
         '> undefined\n' +
         '> const a: 123\n' +
         '> '
