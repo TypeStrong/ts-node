@@ -43,14 +43,14 @@ const BIN_CWD_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-cwd')
 
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/
 
-// `createRequire` does not exist on older node versionit\(
+// `createRequire` does not exist on older node versions
 const testsDirRequire = createRequire(join(TEST_DIR, 'index.js')) // tslint:disable-line
 
 // Set after ts-node is installed locally
 let { register, create, VERSION, createRepl }: typeof tsNodeTypes = {} as any
 
 // Pack and install ts-node locally, necessary to test package "exports"
-test.beforeAll(async function () {
+test.beforeAll(async () => {
   rimrafSync(join(TEST_DIR, 'node_modules'))
   await promisify(childProcessExec)(`npm install`, { cwd: TEST_DIR })
   const packageLockPath = join(TEST_DIR, 'package-lock.json')
@@ -58,7 +58,7 @@ test.beforeAll(async function () {
     ; ({ register, create, VERSION, createRepl } = testsDirRequire('ts-node'))
 })
 
-test.suite('ts-node', function (test) {
+test.suite('ts-node', (test) => {
   const cmd = `"${BIN_PATH}" --project "${PROJECT}"`
   const cmdNoProject = `"${BIN_PATH}"`
 
@@ -318,6 +318,7 @@ test.suite('ts-node', function (test) {
       )
     })
 
+    // Serial because it's timing-sensitive
     test.serial('REPL can be created via API', async () => {
       const stdin = new PassThrough()
       const stdout = new PassThrough()
@@ -408,7 +409,7 @@ test.suite('ts-node', function (test) {
     })
 
     test.suite('issue #884', (test) => {
-      test('should compile', async function (t) {
+      test('should compile', async (t) => {
         // TODO disabled because it consistently fails on Windows on TS 2.7
         if (process.platform === 'win32' && semver.satisfies(ts.version, '2.7')) {
           // TODO mark as skipped instead of silently passing?
@@ -463,7 +464,7 @@ test.suite('ts-node', function (test) {
         expect(err).to.equal(null)
         expect(stdout).to.match(/plugin-b/)
       })
-      test('should locate tsconfig relative to realpath, not symlink, when entrypoint is a symlink', async function () {
+      test('should locate tsconfig relative to realpath, not symlink, when entrypoint is a symlink', async () => {
         if (lstatSync(join(TEST_DIR, 'main-realpath/symlink/symlink.tsx')).isSymbolicLink()) {
           const { err, stdout } = await exec(`${BIN_PATH} main-realpath/symlink/symlink.tsx`)
           expect(err).to.equal(null)
@@ -585,9 +586,7 @@ test.suite('ts-node', function (test) {
   })
 
   test.suite('register', (_test) => {
-    let registered: tsNodeTypes.Service
-    let moduleTestPath: string
-    const _test2 = _test.context(once(async () => {
+    const test = _test.context(once(async () => {
       return {
         registered: register({
           project: PROJECT,
@@ -598,21 +597,19 @@ test.suite('ts-node', function (test) {
         moduleTestPath: require.resolve('../tests/module')
       }
     }))
-    _test2.beforeEach(async ({ context }) => {
-      registered = context.registered
-      moduleTestPath = context.moduleTestPath
+    test.beforeEach(async ({ context: { registered } }) => {
       // Re-enable project for every test.
       registered.enabled(true)
     })
-    const test = _test2.serial
+    test.runSerially()
 
-    test('should be able to require typescript', () => {
+    test('should be able to require typescript', ({ context: { moduleTestPath } }) => {
       const m = require(moduleTestPath)
 
       expect(m.example('foo')).to.equal('FOO')
     })
 
-    test('should support dynamically disabling', () => {
+    test('should support dynamically disabling', ({ context: { registered, moduleTestPath } }) => {
       delete require.cache[moduleTestPath]
 
       expect(registered.enabled(false)).to.equal(false)
@@ -635,7 +632,7 @@ test.suite('ts-node', function (test) {
     })
 
     if (semver.gte(ts.version, '2.7.0')) {
-      test('should support compiler scopes', () => {
+      test('should support compiler scopes', ({ context: { registered, moduleTestPath } }) => {
         const calls: string[] = []
 
         registered.enabled(false)
@@ -703,10 +700,11 @@ test.suite('ts-node', function (test) {
       }
     })
 
-    _test2.suite('JSX preserve', (test) => {
+    test.suite('JSX preserve', (test) => {
       let old: (m: Module, filename: string) => any
       let compiled: string
 
+      test.runSerially()
       test.beforeAll(async () => {
         old = require.extensions['.tsx']! // tslint:disable-line
         require.extensions['.tsx'] = (m: any, fileName) => { // tslint:disable-line
@@ -721,7 +719,7 @@ test.suite('ts-node', function (test) {
         }
       })
 
-      test.serial('should use source maps', async (t) => {
+      test('should use source maps', async (t) => {
         t.teardown(() => {
           require.extensions['.tsx'] = old // tslint:disable-line
         })

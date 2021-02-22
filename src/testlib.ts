@@ -51,6 +51,8 @@ export interface TestInterface<Context> /*extends Omit<AvaTestInterface<Context>
   context<T extends object> (cb: (t: ExecutionContext<Context>) => Promise<T>): TestInterface<Context & T>
   suite (title: string, cb: (test: TestInterface<Context>) => void): void
 
+  runSerially (): void
+
   // TODO add teardownEach
 }
 function createTestInterface<Context> (opts: {
@@ -160,6 +162,9 @@ function createTestInterface<Context> (opts: {
       beforeEachFunctions
     })
     cb(newApi)
+  }
+  test.runSerially = function () {
+    automaticallyDoSerial = true
   }
   return test as any
 
