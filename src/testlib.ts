@@ -39,7 +39,7 @@ export interface TestInterface<Context> /*extends Omit<AvaTestInterface<Context>
 	/** Declare a concurrent test that uses one or more macros. The macro is responsible for generating a unique test title. */
   serial<T extends any[]> (macros: OneOrMoreMacros<T, Context>, ...rest: T): void
 
-  macro<Args extends any[]> (cb: (...args: Args) => [(title: string | undefined) => string, (t: TestInterface<Context>) => Promise<void>]): (test: TestInterface<Context>, ...args: Args) => Promise<void> & {
+  macro<Args extends any[]> (cb: (...args: Args) => ([(title: string | undefined) => string, (t: ExecutionContext<Context>) => Promise<void>] | ((t: ExecutionContext<Context>) => Promise<void>))): (test: ExecutionContext<Context>, ...args: Args) => Promise<void> & {
     title (givenTitle: string | undefined, ...args: Args): string;
   }
 
@@ -139,14 +139,15 @@ function createTestInterface<Context> (opts: {
     mustDoSerial = true
     beforeEachFunctions.push(once(cb))
   }
-  test.macro = function<Args extends any[]>(cb: (...args: Args) => [(title: string | undefined) => string, (t: ExecutionContext<Context>) => Promise<void>]) {
+  test.macro = function<Args extends any[]>(cb: (...args: Args) => [(title: string | undefined) => string, (t: ExecutionContext<Context>) => Promise<void>] | ((t: ExecutionContext<Context>) => Promise<void>)) {
     function macro (testInterface: ExecutionContext<Context>, ...args: Args) {
-      const [, macroFunction] = cb(...args)
+      const ret = cb(...args)
+      const macroFunction = Array.isArray(ret) ? ret[1] : ret
       return macroFunction(testInterface)
     }
     macro.title = function (givenTitle: string | undefined, ...args: Args) {
-      const [macroTitleFunction ] = cb(...args)
-      return macroTitleFunction(givenTitle)
+      const ret = cb(...args)
+      return Array.isArray(ret) ? ret[0](givenTitle) : givenTitle
     }
     return macro
   }

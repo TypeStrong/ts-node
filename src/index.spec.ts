@@ -835,8 +835,8 @@ test.suite('ts-node', (test) => {
         })
       })
 
-      test('throws ERR_REQUIRE_ESM when attempting to require() an ESM script while ESM loader is enabled', async () => {
-        const { err, stdout, stderr } = await exec(`${cmd} ./index.js`, { cwd: join(TEST_DIR, './esm-err-require-esm') })
+      test('throws ERR_REQUIRE_ESM when attempting to require() an ESM script when ESM loader is enabled', async () => {
+        const { err, stderr } = await exec(`${cmd} ./index.js`, { cwd: join(TEST_DIR, './esm-err-require-esm') })
         expect(err).to.not.equal(null)
         expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
       })
@@ -874,10 +874,21 @@ test.suite('ts-node', (test) => {
       })
     }
 
-    test('executes ESM as CJS, ignoring package.json "types" field (for backwards compatibility; should be changed in next major release to throw ERR_REQUIRE_ESM)', async () => {
-      const { err, stdout } = await exec(`${BIN_PATH} ./esm-err-require-esm/index.js`)
-      expect(err).to.equal(null)
-      expect(stdout).to.equal('CommonJS\n')
-    })
+    if (semver.gte(process.version, '12.0.0')) {
+      test('throws ERR_REQUIRE_ESM when attempting to require() an ESM script when ESM loader is *not* enabled and node version is >= 12', async () => {
+        // Node versions >= 12 support package.json "type" field and so will throw an error when attempting to load ESM as CJS
+        const { err, stderr } = await exec(`${BIN_PATH} ./index.js`, { cwd: join(TEST_DIR, './esm-err-require-esm') })
+        expect(err).to.not.equal(null)
+        expect(stderr).to.contain('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:')
+      })
+    } else {
+      test('Loads as CommonJS when attempting to require() an ESM script when ESM loader is *not* enabled and node version is < 12', async () => {
+        // Node versions less than 12 do not support package.json "type" field and so will load ESM as CommonJS
+        const { err, stdout } = await exec(`${BIN_PATH} ./index.js`, { cwd: join(TEST_DIR, './esm-err-require-esm') })
+        expect(err).to.equal(null)
+        expect(stdout).to.contain('CommonJS')
+      })
+    }
+
   })
 })

@@ -19,18 +19,16 @@ export { createRepl, CreateReplOptions, ReplService } from './repl'
  */
 const engineSupportsPackageTypeField = parseInt(process.versions.node.split('.')[0], 10) >= 12
 
-// Loaded conditionally so we don't need to support older node versions
-let assertScriptCanLoadAsCJSImpl: ((filename: string) => void) | undefined
-
 /**
  * Assert that script can be loaded as CommonJS when we attempt to require it.
  * If it should be loaded as ESM, throw ERR_REQUIRE_ESM like node does.
+ *
+ * Loaded conditionally so we don't need to support older node versions
  */
-function assertScriptCanLoadAsCJS (filename: string) {
-  if (!engineSupportsPackageTypeField) return
-  if (!assertScriptCanLoadAsCJSImpl) assertScriptCanLoadAsCJSImpl = require('../dist-raw/node-cjs-loader-utils').assertScriptCanLoadAsCJSImpl
-  assertScriptCanLoadAsCJSImpl!(filename)
-}
+const assertScriptCanLoadAsCJS: (filename: string) => void =
+  engineSupportsPackageTypeField
+  ? require('../dist-raw/node-cjs-loader-utils').assertScriptCanLoadAsCJSImpl
+  : () => {/* noop */}
 
 /**
  * Registered `ts-node` instance information.
@@ -1115,9 +1113,7 @@ function registerExtension (
   require.extensions[ext] = function (m: any, filename) { // tslint:disable-line
     if (service.ignored(filename)) return old(m, filename)
 
-    if (service.options.experimentalEsmLoader) {
-      assertScriptCanLoadAsCJS(filename)
-    }
+    assertScriptCanLoadAsCJS(filename)
 
     const _compile = m._compile
 
