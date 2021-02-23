@@ -1233,18 +1233,25 @@ function readConfig (
     config.include = []
   }
 
-  const skipDefaultCompilerOptions = configFilePath != null || (rawApiOptions.skipDefaultCompilerOptions ?? DEFAULTS.skipDefaultCompilerOptions)
+  // Only if a config file is *not* loaded, load an implicit configuration from @tsconfig/bases
+  const skipDefaultCompilerOptions = configFilePath != null || (rawApiOptions.skipDefaultCompilerOptions ?? DEFAULTS.skipDefaultCompilerOptions) // tslint:disable-line
   const defaultCompilerOptionsForNodeVersion = skipDefaultCompilerOptions ? undefined : getDefaultTsconfigJsonForNodeVersion().compilerOptions
-  console.error(util.inspect({ skipDefaultCompilerOptions, defaultCompilerOptionsForNodeVersion }))
-  // Override default configuration options `ts-node` requires.
+
+  // Merge compilerOptions from all sources
   config.compilerOptions = Object.assign(
     {},
-    defaultCompilerOptionsForNodeVersion, // automatically-applied options from @tsconfig/bases
-    config.compilerOptions, // tsconfig.json "compilerOptions"
-    DEFAULTS.compilerOptions, // from env var
-    tsNodeOptionsFromTsconfig.compilerOptions, // tsconfig.json "ts-node": "compilerOptions"
-    rawApiOptions.compilerOptions, // passed programmatically
-    TS_NODE_COMPILER_OPTIONS // overrides required by ts-node, cannot be changed
+    // automatically-applied options from @tsconfig/bases
+    defaultCompilerOptionsForNodeVersion,
+    // tsconfig.json "compilerOptions"
+    config.compilerOptions,
+    // from env var
+    DEFAULTS.compilerOptions,
+    // tsconfig.json "ts-node": "compilerOptions"
+    tsNodeOptionsFromTsconfig.compilerOptions,
+    // passed programmatically
+    rawApiOptions.compilerOptions,
+    // overrides required by ts-node, cannot be changed
+    TS_NODE_COMPILER_OPTIONS
   )
 
   const fixedConfig = fixConfig(ts, ts.parseJsonConfigFileContent(config, {
