@@ -1,0 +1,11 @@
+{
+  "ts-node": {
+    "transpileOnly": true,
+    "transpiler": "ts-node/transpilers/swc-experimental"
+  },
+  "compilerOptions": {
+    "module": "ESNext",
+    "allowJs": true,
+    "jsx": "react"
+  }
+}
