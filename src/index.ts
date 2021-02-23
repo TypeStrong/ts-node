@@ -7,8 +7,9 @@ import { fileURLToPath } from 'url'
 import type * as _ts from 'typescript'
 import { Module, createRequire as nodeCreateRequire, createRequireFromPath as nodeCreateRequireFromPath } from 'module'
 import type _createRequire from 'create-require'
-// tslint:disable-next-line:deprecation
-export const createRequire = nodeCreateRequire ?? nodeCreateRequireFromPath ?? require('create-require') as typeof _createRequire
+
+/** @internal */
+export const createRequire = nodeCreateRequire ?? nodeCreateRequireFromPath ?? require('create-require') as typeof _createRequire // tslint:disable-line:deprecation
 
 export { createRepl, CreateReplOptions, ReplService } from './repl'
 
@@ -343,6 +344,7 @@ export interface TypeInfo {
 /**
  * Default register options, including values specified via environment
  * variables.
+ * @internal
  */
 export const DEFAULTS: RegisterOptions = {
   cwd: env.TS_NODE_CWD ?? env.TS_NODE_DIR, // tslint:disable-line:deprecation
@@ -435,7 +437,7 @@ export interface Service {
 /**
  * Re-export of `Service` interface for backwards-compatibility
  * @deprecated use `Service` instead
- * @see Service
+ * @see {Service}
  */
 export type Register = Service
 
