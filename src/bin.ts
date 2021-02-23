@@ -10,7 +10,7 @@ import {
   createRepl,
   ReplService
  } from './repl'
-import { VERSION, TSError, parse, register, createRequire } from './index'
+import { VERSION, TSError, parse, register, createRequire, TSInternal } from './index'
 
 /**
  * Main `bin` functionality.
@@ -30,6 +30,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
       '--cwd-mode': Boolean,
       '--script-mode': Boolean,
       '--version': arg.COUNT,
+      '--show-config': Boolean,
 
       // Project options.
       '--cwd': String,
@@ -64,7 +65,8 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
       '-C': '--compiler',
       '-D': '--ignore-diagnostics',
       '-O': '--compiler-options',
-      '--dir': '--cwd'
+      '--dir': '--cwd',
+      '--showConfig': '--show-config'
     }, {
       argv,
       stopAtPositional: true
@@ -80,6 +82,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     '--script-mode': scriptMode,
     '--cwd-mode': cwdMode,
     '--version': version = 0,
+    '--show-config': showConfig,
     '--require': argsRequire = [],
     '--eval': code = undefined,
     '--print': print = false,
@@ -115,6 +118,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     -h, --help                     Print CLI usage
     -v, --version                  Print module version information
     --cwd-mode                     Use current directory instead of <script.ts> for config resolution
+    --show-config                  Print resolved configuration and exit
 
     -T, --transpile-only           Use TypeScript's faster \`transpileModule\`
     -H, --compiler-host            Use TypeScript's compiler host API
@@ -181,6 +185,29 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     console.log(`ts-node v${VERSION}`)
     console.log(`node ${process.version}`)
     console.log(`compiler v${service.ts.version}`)
+    process.exit(0)
+  }
+
+  if (showConfig) {
+    const ts = service.ts as any as TSInternal
+    if (typeof ts.convertToTSConfig !== 'function') {
+      console.error('Error: --show-config requires a typescript versions >=3.2 that support --showConfig')
+    }
+    const json = ts.convertToTSConfig(service.config, service.configFilePath ?? join(cwd, 'ts-node-implicit-tsconfig.json'), service.ts.sys)
+    json['ts-node'] = {
+      ...service.options,
+      experimentalEsmLoader: undefined,
+      compilerOptions: undefined,
+      project: service.configFilePath ?? service.options.project
+    }
+    console.log(
+      JSON.stringify(json, (key: string, value: any) => {
+        if(typeof value === 'function') {
+          return "<function>"
+        }
+        return value
+      }, 2)
+    )
     process.exit(0)
   }
 
