@@ -1,21 +1,29 @@
+// TODO
+// Rewrite into transpiler factory
+// Takes options, returns a transpileModule-equivalent function.
+// throw if transpiler specified without transpileOnly
+// throw if transpiler specified with transformers
+// Create spec for returning diagnostics?  Or allow transpiler to throw an error?
+
 import type * as ts from 'typescript'
 import type * as swcWasm from '@swc/wasm'
 import type * as swcTypes from '@swc/core'
-import type { TSCommon } from '..'
-export interface Options {
-  /** TypeScript compiler to wrap */
-  compiler?: string | TSCommon
+import { CreateTranspilerOptions, Transpiler } from './types'
+
+export interface SwcTranspilerOptions extends CreateTranspilerOptions {
   /**
    * swc compiler to use for compilation
    * Set to '@swc/wasm' to use swc's WASM compiler
-   * Default: '@swc/core'
+   * Default: '@swc/core', falling back to '@swc/wasm'
    */
   swc?: string | typeof swcWasm
+  // TODO Receive RegisterOptions somehow
 }
 
-export function createTypescriptCompiler (options: Options = {}) {
-  const { swc, compiler = 'typescript' } = options
-  const compilerInstance = typeof compiler === 'string' ? require(compiler) as TSCommon : compiler
+export function create (createOptions: SwcTranspilerOptions): Transpiler {
+  const { swc, service: { config } } = createOptions
+
+  // Load swc compiler
   let swcInstance: typeof swcWasm
   if (typeof swc === 'string') {
     swcInstance = require(swc) as typeof swcWasm
@@ -35,14 +43,13 @@ export function createTypescriptCompiler (options: Options = {}) {
     swcInstance = swc
   }
 
-  const version = `${ compilerInstance.version }-tsnode-${ require('../../package').version }-swc`
-
-  const transpileModule: TSCommon['transpileModule'] = (input: string, transpileOptions: ts.TranspileOptions): ts.TranspileOutput => {
-    const compilerOptions = transpileOptions.compilerOptions!
-    const { fileName } = transpileOptions
-    const { esModuleInterop, sourceMap, importHelpers, experimentalDecorators, emitDecoratorMetadata, target, jsxFactory, jsxFragmentFactory } = compilerOptions
-    const options: swcTypes.Options = {
-      filename: fileName,
+  // Prepare SWC options derived from typescript compiler options
+  const compilerOptions = config.options
+  const { esModuleInterop, sourceMap, importHelpers, experimentalDecorators, emitDecoratorMetadata, target, jsxFactory, jsxFragmentFactory } = compilerOptions
+  const nonTsxOptions = createSwcOptions(false)
+  const tsxOptions = createSwcOptions(true)
+  function createSwcOptions (isTsx: boolean): swcTypes.Options {
+    return {
       sourceMaps: sourceMap,
       // isModule: true,
       module: {
@@ -54,7 +61,7 @@ export function createTypescriptCompiler (options: Options = {}) {
         externalHelpers: importHelpers,
         parser: {
           syntax: 'typescript',
-          tsx: fileName!.endsWith('.tsx') || fileName!.endsWith('.jsx'),
+          tsx: isTsx,
           decorators: experimentalDecorators,
           dynamicImport: true
         },
@@ -72,13 +79,20 @@ export function createTypescriptCompiler (options: Options = {}) {
         }
       }
     }
-    const { code, map } = swcInstance.transformSync(input, options)
+  }
+
+  const transpile: Transpiler['transpile'] = (input, transpileOptions) => {
+    const { fileName } = transpileOptions
+    const swcOptions = fileName.endsWith('.tsx') || fileName.endsWith('.jsx') ? tsxOptions : nonTsxOptions
+    const { code, map } = swcInstance.transformSync(input, {
+      ...swcOptions,
+      filename: fileName
+    })
     return { outputText: code, sourceMapText: map }
   }
+
   return {
-    ...compilerInstance,
-    version,
-    transpileModule
+    transpile
   }
 }
 
@@ -92,4 +106,3 @@ targetMapping.set(/* ts.ScriptTarget.ES2018 */ 5, 'es2018')
 targetMapping.set(/* ts.ScriptTarget.ES2019 */ 6, 'es2019')
 targetMapping.set(/* ts.ScriptTarget.ES2020 */ 7, 'es2019')
 targetMapping.set(/* ts.ScriptTarget.ESNext */ 99, 'es2019')
-targetMapping.set(/* ts.ScriptTarget.Latest */ 99, 'es2019')

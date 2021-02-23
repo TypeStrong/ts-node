@@ -21,7 +21,7 @@
     "./esm.mjs": "./esm.mjs",
     "./esm/transpile-only": "./esm/transpile-only.mjs",
     "./esm/transpile-only.mjs": "./esm/transpile-only.mjs",
-    "./compilers/swc-experimental": "./compilers/swc-experimental.js"
+    "./transpilers/swc-experimental": "./transpilers/swc-experimental.js"
   },
   "types": "dist/index.d.ts",
   "bin": {

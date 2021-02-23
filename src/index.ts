@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url'
 import type * as _ts from 'typescript'
 import { Module, createRequire as nodeCreateRequire, createRequireFromPath as nodeCreateRequireFromPath } from 'module'
 import type _createRequire from 'create-require'
+import { Transpiler, TranspilerFactory } from './transpilers/types'
 // tslint:disable-next-line
 const createRequire = nodeCreateRequire ?? nodeCreateRequireFromPath ?? require('create-require') as typeof _createRequire
 
@@ -197,6 +198,14 @@ export interface CreateOptions {
    * @default "typescript"
    */
   compiler?: string
+  /**
+   * Specify a custom transpiler for use with transpileOnly
+   */
+  transpiler?: string | {
+    name: string
+    // TODO how to allow additional fields?
+    // TODO will JSON schema allow additional fields?
+  }
   /**
    * Override the path patterns to skip compilation.
    *
@@ -453,14 +462,7 @@ export function create (rawOptions: CreateOptions = {}): Service {
    */
   function loadCompiler (name: string | undefined) {
     const compiler = require.resolve(name || 'typescript', { paths: [cwd, __dirname] })
-    const tsInstanceOrFactory: TSCommon | TSCompilerFactory = require(compiler)
-    let ts: TSCommon
-    // tslint:disable-next-line
-    if (typeof (tsInstanceOrFactory as TSCompilerFactory).createTypescriptCompiler === 'function') {
-      ts = (tsInstanceOrFactory as TSCompilerFactory).createTypescriptCompiler()
-    } else {
-      ts = tsInstanceOrFactory as TSCommon
-    }
+    const ts: TSCommon = require(compiler)
     return { compiler, ts }
   }
 
@@ -506,6 +508,23 @@ export function create (rawOptions: CreateOptions = {}): Service {
     getNewLine: () => ts.sys.newLine,
     getCurrentDirectory: () => cwd,
     getCanonicalFileName: ts.sys.useCaseSensitiveFileNames ? x => x : x => x.toLowerCase()
+  }
+
+  if (options.transpileOnly && typeof transformers === 'function') {
+    throw new TypeError('Transformers function is unavailable in "--transpile-only"')
+  }
+  let customTranspiler: Transpiler | undefined = undefined
+  if (options.transpiler) {
+    if (!options.transpileOnly) throw new Error('Custom transpiler can only be used when transpileOnly is enabled.')
+    const transpilerOptions = typeof options.transpiler === 'string' ? { name: options.transpiler } : options.transpiler
+    // TODO mimic fixed resolution logic from loadCompiler master
+    // TODO refactor into a more generic "resolve dep relative to project" helper
+    const transpilerPath = require.resolve(transpilerOptions.name, { paths: [cwd, __dirname] })
+    const transpilerFactory: TranspilerFactory = require(transpilerPath).create
+    customTranspiler = transpilerFactory({
+      service: { options, config },
+      ...transpilerOptions
+    })
   }
 
   // Install source map support and read from memory cache.
@@ -962,17 +981,22 @@ export function create (rawOptions: CreateOptions = {}): Service {
       }
     }
   } else {
-    if (typeof transformers === 'function') {
-      throw new TypeError('Transformers function is unavailable in "--transpile-only"')
-    }
-
     getOutput = (code: string, fileName: string): SourceOutput => {
-      const result = ts.transpileModule(code, {
-        fileName,
-        compilerOptions: config.options,
-        reportDiagnostics: true,
-        transformers: transformers
-      })
+      let result: _ts.TranspileOutput
+      if (customTranspiler) {
+        // TODO allow custom transpilers to report diagnostics?
+        // Or keep it simple and let them throw?
+        result = customTranspiler.transpile(code, {
+          fileName
+        })
+      } else {
+        result = ts.transpileModule(code, {
+          fileName,
+          compilerOptions: config.options,
+          reportDiagnostics: true,
+          transformers: transformers as _ts.CustomTransformers | undefined
+        })
+      }
 
       const diagnosticList = filterDiagnostics(result.diagnostics || [], ignoreDiagnostics)
       if (diagnosticList.length) reportTSError(diagnosticList)
