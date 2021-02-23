@@ -116,7 +116,6 @@ jobs:
       - if: ${{ matrix.downgradeNpm }}
         run: npm install -g npm@6
       - run: npm install
-      - run: npm run build-nopack
       - name: Download package artifact
         uses: actions/download-artifact@v1
         with:
