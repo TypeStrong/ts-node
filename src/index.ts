@@ -1,4 +1,3 @@
-import { test } from './testlib'
 import { relative, basename, extname, resolve, dirname, join } from 'path'
 import sourceMapSupport = require('source-map-support')
 import * as ynModule from 'yn'
