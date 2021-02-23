@@ -588,7 +588,7 @@ test.suite('ts-node', (test) => {
     test('--show-config should log resolved configuration', async (t) => {
       const { err, stdout } = await exec(`${cmd} --showConfig`)
       expect(err).to.equal(null)
-      expect(stdout).to.contain([
+      t.is(stdout, [
         `{`,
         `  "compilerOptions": {`,
         `    "target": "es6",`,
