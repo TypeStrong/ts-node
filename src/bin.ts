@@ -192,6 +192,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     const ts = service.ts as any as TSInternal
     if (typeof ts.convertToTSConfig !== 'function') { // tslint:disable-line:strict-type-predicates
       console.error('Error: --show-config requires a typescript versions >=3.2 that support --showConfig')
+      process.exit(1)
     }
     const json = ts.convertToTSConfig(service.config, service.configFilePath ?? join(cwd, 'ts-node-implicit-tsconfig.json'), service.ts.sys)
     json['ts-node'] = {
