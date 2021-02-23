@@ -158,7 +158,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     emit,
     files,
     pretty,
-    transpileOnly: transpileOnly ?? transpiler != null,
+    transpileOnly: transpileOnly ?? transpiler != null ? true : undefined, // tslint:disable-line:strict-type-predicates
     typeCheck,
     transpiler,
     compilerHost,

@@ -584,7 +584,7 @@ export function create (rawOptions: CreateOptions = {}): Service {
   }
   let customTranspiler: Transpiler | undefined = undefined
   if (options.transpiler) {
-    if (!options.transpileOnly) throw new Error('Custom transpiler can only be used when transpileOnly is enabled.')
+    if (!transpileOnly) throw new Error('Custom transpiler can only be used when transpileOnly is enabled.')
     const transpilerOptions = typeof options.transpiler === 'string' ? { name: options.transpiler } : options.transpiler
     // TODO mimic fixed resolution logic from loadCompiler master
     // TODO refactor into a more generic "resolve dep relative to project" helper
