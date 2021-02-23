@@ -158,7 +158,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     emit,
     files,
     pretty,
-    transpileOnly,
+    transpileOnly: transpileOnly ?? transpiler != null,
     typeCheck,
     transpiler,
     compilerHost,

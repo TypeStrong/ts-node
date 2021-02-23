@@ -268,6 +268,18 @@ test.suite('ts-node', (test) => {
       expect(err.message).to.contain('error TS1003: Identifier expected')
     })
 
+    test('should support third-party transpilers via --transpiler', async () => {
+      const { err, stdout } = await exec(`${cmdNoProject} --transpiler ts-node/transpilers/swc-experimental transpile-only-swc`)
+      expect(err).to.equal(null)
+      expect(stdout).to.contain('hello world')
+    })
+
+    test('should support third-party transpilers via tsconfig', async () => {
+      const { err, stdout } = await exec(`${cmdNoProject} transpile-only-swc-via-tsconfig`)
+      expect(err).to.equal(null)
+      expect(stdout).to.contain('hello world')
+    })
+
     test('should pipe into `ts-node` and evaluate', async () => {
       const execPromise = exec(cmd)
       execPromise.child.stdin!.end("console.log('hello')")
