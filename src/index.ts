@@ -1233,8 +1233,9 @@ function readConfig (
     config.include = []
   }
 
-  const skipDefaultCompilerOptions = rawApiOptions.skipDefaultCompilerOptions ?? DEFAULTS.skipDefaultCompilerOptions ?? configFilePath != null // tslint:disable-line:strict-type-predicates
+  const skipDefaultCompilerOptions = configFilePath != null || (rawApiOptions.skipDefaultCompilerOptions ?? DEFAULTS.skipDefaultCompilerOptions)
   const defaultCompilerOptionsForNodeVersion = skipDefaultCompilerOptions ? undefined : getDefaultTsconfigJsonForNodeVersion().compilerOptions
+  console.error(util.inspect({ skipDefaultCompilerOptions, defaultCompilerOptionsForNodeVersion }))
   // Override default configuration options `ts-node` requires.
   config.compilerOptions = Object.assign(
     {},
