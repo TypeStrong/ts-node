@@ -132,6 +132,7 @@ export interface TSCommon {
   parseJsonConfigFileContent: typeof _ts.parseJsonConfigFileContent
   formatDiagnostics: typeof _ts.formatDiagnostics
   formatDiagnosticsWithColorAndContext: typeof _ts.formatDiagnosticsWithColorAndContext
+  libs?: string[]
 }
 
 /**
@@ -1235,7 +1236,7 @@ function readConfig (
 
   // Only if a config file is *not* loaded, load an implicit configuration from @tsconfig/bases
   const skipDefaultCompilerOptions = configFilePath != null || (rawApiOptions.skipDefaultCompilerOptions ?? DEFAULTS.skipDefaultCompilerOptions) // tslint:disable-line
-  const defaultCompilerOptionsForNodeVersion = skipDefaultCompilerOptions ? undefined : getDefaultTsconfigJsonForNodeVersion().compilerOptions
+  const defaultCompilerOptionsForNodeVersion = skipDefaultCompilerOptions ? undefined : getDefaultTsconfigJsonForNodeVersion(ts).compilerOptions
 
   // Merge compilerOptions from all sources
   config.compilerOptions = Object.assign(
