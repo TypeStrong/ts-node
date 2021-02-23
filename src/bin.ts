@@ -190,7 +190,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
 
   if (showConfig) {
     const ts = service.ts as any as TSInternal
-    if (typeof ts.convertToTSConfig !== 'function') {
+    if (typeof ts.convertToTSConfig !== 'function') { // tslint:disable-line:strict-type-predicates
       console.error('Error: --show-config requires a typescript versions >=3.2 that support --showConfig')
     }
     const json = ts.convertToTSConfig(service.config, service.configFilePath ?? join(cwd, 'ts-node-implicit-tsconfig.json'), service.ts.sys)
@@ -201,12 +201,10 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
       project: service.configFilePath ?? service.options.project
     }
     console.log(
-      JSON.stringify(json, (key: string, value: any) => {
-        if(typeof value === 'function') {
-          return "<function>"
-        }
-        return value
-      }, 2)
+      // Assumes that all configuration options which can possibly be specified via the CLI are JSON-compatible.
+      // If, in the future, we must log functions, for example readFile and fileExists, then we can implement a JSON
+      // replacer function.
+      JSON.stringify(json, null, 2)
     )
     process.exit(0)
   }

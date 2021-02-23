@@ -140,7 +140,7 @@ export interface TSInternal {
   // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906-L1909
   createGetCanonicalFileName (useCaseSensitiveFileNames: boolean): TSInternal.GetCanonicalFileName
   // https://github.com/microsoft/TypeScript/blob/c117c266e09c80e8a06b24a6e94b9d018f5fae6b/src/compiler/commandLineParser.ts#L2054
-  convertToTSConfig(configParseResult: _ts.ParsedCommandLine, configFileName: string, host: TSInternal.ConvertToTSConfigHost): any
+  convertToTSConfig (configParseResult: _ts.ParsedCommandLine, configFileName: string, host: TSInternal.ConvertToTSConfigHost): any
 }
 /** @internal */
 export namespace TSInternal {
@@ -148,8 +148,8 @@ export namespace TSInternal {
   export type GetCanonicalFileName = (fileName: string) => string
   // https://github.com/microsoft/TypeScript/blob/c117c266e09c80e8a06b24a6e94b9d018f5fae6b/src/compiler/commandLineParser.ts#L2041
   export interface ConvertToTSConfigHost {
-    getCurrentDirectory(): string;
-    useCaseSensitiveFileNames: boolean;
+    getCurrentDirectory (): string
+    useCaseSensitiveFileNames: boolean
   }
 }
 

@@ -1,7 +1,7 @@
 import { test, TestInterface } from './testlib'
 import { expect } from 'chai'
 import { ChildProcess, exec as childProcessExec, ExecException, ExecOptions } from 'child_process'
-import { join } from 'path'
+import { join, resolve } from 'path'
 import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
@@ -35,6 +35,7 @@ function exec (cmd: string, opts: ExecOptions = {}): Promise<TestExecReturn> & {
   )
 }
 
+const ROOT_DIR = resolve(__dirname, '..')
 const TEST_DIR = join(__dirname, '../tests')
 const PROJECT = join(TEST_DIR, 'tsconfig.json')
 const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node')
@@ -582,6 +583,40 @@ test.suite('ts-node', (test) => {
           '\n'
         )
       })
+    })
+
+    test('--show-config should log resolved configuration', async (t) => {
+      const { err, stdout } = await exec(`${cmd} --showConfig`)
+      expect(err).to.equal(null)
+      expect(stdout).to.contain([
+        `{`,
+        `  "compilerOptions": {`,
+        `    "target": "es6",`,
+        `    "jsx": "react",`,
+        `    "noEmit": false,`,
+        `    "strict": true,`,
+        `    "typeRoots": [`,
+        `      "${ ROOT_DIR }/tests/typings",`,
+        `      "${ ROOT_DIR }/node_modules/@types"`,
+        `    ],`,
+        `    "sourceMap": true,`,
+        `    "inlineSourceMap": false,`,
+        `    "inlineSources": true,`,
+        `    "declaration": false,`,
+        `    "outDir": "./.ts-node",`,
+        `    "module": "commonjs"`,
+        `  },`,
+        `  "exclude": [`,
+        `    ".ts-node"`,
+        `  ],`,
+        `  "ts-node": {`,
+        `    "cwd": "${ ROOT_DIR }/tests",`,
+        `    "projectSearchDir": "${ ROOT_DIR }/tests",`,
+        `    "project": "${ ROOT_DIR }/tests/tsconfig.json",`,
+        `    "require": []`,
+        `  }`,
+        `}`
+      ].join('\n'))
     })
   })
 
