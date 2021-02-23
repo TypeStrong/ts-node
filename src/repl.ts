@@ -3,7 +3,7 @@ import { homedir } from 'os'
 import { join } from 'path'
 import { Recoverable, start } from 'repl'
 import { Script } from 'vm'
-import { Service, CreateOptions, TSError } from './index'
+import { Service, CreateOptions, TSError, env } from './index'
 import { readFileSync, statSync } from 'fs'
 import { Console } from 'console'
 import * as tty from 'tty'
@@ -95,7 +95,7 @@ export function createRepl (options: CreateReplOptions = {}) {
         if (Recoverable && isRecoverable(error)) {
           err = new Recoverable(error)
         } else {
-          console.error(error)
+          _console.error(error)
         }
       } else {
         err = error
@@ -215,7 +215,7 @@ function startRepl (replService: ReplService, service: Service, state: EvalState
     input: replService.stdin,
     output: replService.stdout,
     // Mimicking node's REPL implementation: https://github.com/nodejs/node/blob/168b22ba073ee1cbf8d0bcb4ded7ff3099335d04/lib/internal/repl.js#L28-L30
-    terminal: (replService.stdout as tty.WriteStream).isTTY && !parseInt(process.env.NODE_NO_READLINE!, 10),
+    terminal: (replService.stdout as tty.WriteStream).isTTY && !parseInt(env.NODE_NO_READLINE!, 10),
     eval: replService.nodeEval,
     useGlobal: true
   })
@@ -254,7 +254,7 @@ function startRepl (replService: ReplService, service: Service, state: EvalState
 
   // Set up REPL history when available natively via node.js >= 11.
   if (repl.setupHistory) {
-    const historyPath = process.env.TS_NODE_HISTORY || join(homedir(), '.ts_node_repl_history')
+    const historyPath = env.TS_NODE_HISTORY || join(homedir(), '.ts_node_repl_history')
 
     repl.setupHistory(historyPath, err => {
       if (!err) return

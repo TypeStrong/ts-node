@@ -1,0 +1,31 @@
+name: Publish website
+on:
+  # branches pushed by collaborators
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    name: Build & Deploy
+    runs-on: ubuntu-20.04
+    steps:
+      # checkout code
+      - uses: actions/checkout@v2
+      # install node
+      - name: Use Node.js 14
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14
+      # Render typedoc
+      - run: npm install && ./node_modules/.bin/typedoc
+      # Render docusaurus and deploy website
+      - run: |
+          set -euo pipefail
+          git config --global user.name "GitHub Action"
+          git config --global user.email "github-action@users.noreply.github.com"
+          cd website
+          yarn
+          yarn deploy
+        env:
+          GIT_USER: ${{ github.actor }}
+          GIT_PASS: ${{ secrets.GITHUB_TOKEN }}

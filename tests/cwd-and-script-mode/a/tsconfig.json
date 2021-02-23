@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "plugins": [{
+      "name": "plugin-a"
+    }]
+  }
+}
