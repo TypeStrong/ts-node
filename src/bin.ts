@@ -40,6 +40,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
       '--ignore-diagnostics': [String],
       '--ignore': [String],
       '--transpile-only': Boolean,
+      '--transpiler': String,
       '--type-check': Boolean,
       '--compiler-host': Boolean,
       '--pretty': Boolean,
@@ -92,6 +93,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     '--ignore': ignore,
     '--transpile-only': transpileOnly,
     '--type-check': typeCheck,
+    '--transpiler': transpiler,
     '--compiler-host': compilerHost,
     '--pretty': pretty,
     '--skip-project': skipProject,
@@ -116,11 +118,12 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     -v, --version                  Print module version information
     --cwd-mode                     Use current directory instead of <script.ts> for config resolution
 
-    -T, --transpile-only           Use TypeScript's faster \`transpileModule\`
+    -T, --transpile-only           Use TypeScript's faster \`transpileModule\` or a third-party transpiler
     -H, --compiler-host            Use TypeScript's compiler host API
     -I, --ignore [pattern]         Override the path patterns to skip compilation
     -P, --project [path]           Path to TypeScript JSON project file
     -C, --compiler [name]          Specify a custom TypeScript compiler
+    --transpiler [name]            Specify a third-party, non-typechecking transpiler
     -D, --ignore-diagnostics [code] Ignore TypeScript warnings by diagnostic code
     -O, --compiler-options [opts]   JSON object to merge with compiler options
 
@@ -157,6 +160,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     pretty,
     transpileOnly,
     typeCheck,
+    transpiler,
     compilerHost,
     ignore,
     preferTsExts,

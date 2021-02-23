@@ -34,7 +34,7 @@
     "ts-node-transpile-only": "dist/bin-transpile.js"
   },
   "files": [
-    "compilers/",
+    "transpilers/",
     "dist/",
     "dist-raw/",
     "register/",
