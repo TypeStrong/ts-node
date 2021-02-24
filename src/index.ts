@@ -1,4 +1,3 @@
-import { test } from './testlib'
 import { relative, basename, extname, resolve, dirname, join } from 'path'
 import sourceMapSupport = require('source-map-support')
 import * as ynModule from 'yn'
@@ -9,8 +8,9 @@ import type * as _ts from 'typescript'
 import { Module, createRequire as nodeCreateRequire, createRequireFromPath as nodeCreateRequireFromPath } from 'module'
 import type _createRequire from 'create-require'
 import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs'
-// tslint:disable-next-line:deprecation
-export const createRequire = nodeCreateRequire ?? nodeCreateRequireFromPath ?? require('create-require') as typeof _createRequire
+
+/** @internal */
+export const createRequire = nodeCreateRequire ?? nodeCreateRequireFromPath ?? require('create-require') as typeof _createRequire // tslint:disable-line:deprecation
 
 export { createRepl, CreateReplOptions, ReplService } from './repl'
 
@@ -137,14 +137,23 @@ export interface TSCommon {
 
 /**
  * Compiler APIs we use that are marked internal and not included in TypeScript's public API declarations
+ * @internal
  */
-interface TSInternal {
+export interface TSInternal {
   // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906-L1909
   createGetCanonicalFileName (useCaseSensitiveFileNames: boolean): TSInternal.GetCanonicalFileName
+  // https://github.com/microsoft/TypeScript/blob/c117c266e09c80e8a06b24a6e94b9d018f5fae6b/src/compiler/commandLineParser.ts#L2054
+  convertToTSConfig (configParseResult: _ts.ParsedCommandLine, configFileName: string, host: TSInternal.ConvertToTSConfigHost): any
 }
-namespace TSInternal {
+/** @internal */
+export namespace TSInternal {
   // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906
   export type GetCanonicalFileName = (fileName: string) => string
+  // https://github.com/microsoft/TypeScript/blob/c117c266e09c80e8a06b24a6e94b9d018f5fae6b/src/compiler/commandLineParser.ts#L2041
+  export interface ConvertToTSConfigHost {
+    getCurrentDirectory (): string
+    useCaseSensitiveFileNames: boolean
+  }
 }
 
 /**
@@ -354,6 +363,7 @@ export interface TypeInfo {
 /**
  * Default register options, including values specified via environment
  * variables.
+ * @internal
  */
 export const DEFAULTS: RegisterOptions = {
   cwd: env.TS_NODE_CWD ?? env.TS_NODE_DIR, // tslint:disable-line:deprecation
@@ -442,12 +452,14 @@ export interface Service {
   ignored (fileName: string): boolean
   compile (code: string, fileName: string, lineOffset?: number): string
   getTypeInfo (code: string, fileName: string, position: number): TypeInfo
+  /** @internal */
+  configFilePath: string | undefined
 }
 
 /**
  * Re-export of `Service` interface for backwards-compatibility
  * @deprecated use `Service` instead
- * @see Service
+ * @see {Service}
  */
 export type Register = Service
 
@@ -1063,7 +1075,7 @@ export function create (rawOptions: CreateOptions = {}): Service {
     return true
   }
 
-  return { ts, config, compile, getTypeInfo, ignored, enabled, options }
+  return { ts, config, compile, getTypeInfo, ignored, enabled, options, configFilePath }
 }
 
 /**
