@@ -6,7 +6,7 @@ import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
 import type * as tsNodeTypes from './index'
-import { unlinkSync, existsSync, lstatSync } from 'fs'
+import { unlinkSync, existsSync, lstatSync, mkdtempSync, fstat, copyFileSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
 import type _createRequire from 'create-require'
@@ -535,6 +535,15 @@ test.suite('ts-node', (test) => {
         expect(options.transpileOnly).to.equal(true)
         expect(options.require).to.deep.equal([join(TEST_DIR, './tsconfig-options/required1.js')])
       })
+    })
+
+    test('should use implicit @tsconfig/bases config when one is not loaded from disk', async (t) => {
+      const tempDir = mkdtempSync('ts-node-spec')
+      // const fixtureDir = join(TEST_DIR, 'implicit-tsconfig')
+      // copyFileSync(join(fixtureDir, 'script.ts'), join(tempDir, 'script.ts'))
+      const { err, stdout, stderr } = await exec(`${BIN_PATH} -pe 10n`, { cwd: tempDir })
+      expect(err).to.equal(null)
+      expect(stdout).to.equal('10n\n')
     })
 
     test.suite('compiler host', (test) => {
