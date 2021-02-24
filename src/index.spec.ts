@@ -1,7 +1,7 @@
 import { test, TestInterface } from './testlib'
 import { expect } from 'chai'
 import { ChildProcess, exec as childProcessExec, ExecException, ExecOptions } from 'child_process'
-import { join } from 'path'
+import { join, resolve, sep as pathSep } from 'path'
 import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
@@ -35,6 +35,7 @@ function exec (cmd: string, opts: ExecOptions = {}): Promise<TestExecReturn> & {
   )
 }
 
+const ROOT_DIR = resolve(__dirname, '..')
 const TEST_DIR = join(__dirname, '../tests')
 const PROJECT = join(TEST_DIR, 'tsconfig.json')
 const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node')
@@ -583,6 +584,45 @@ test.suite('ts-node', (test) => {
         )
       })
     })
+
+    if (semver.gte(ts.version, '3.2.0')) {
+      test('--show-config should log resolved configuration', async (t) => {
+        function native (path: string) { return path.replace(/\/|\\/g, pathSep) }
+        function posix (path: string) { return path.replace(/\/|\\/g, '/') }
+        const { err, stdout } = await exec(`${cmd} --showConfig`)
+        expect(err).to.equal(null)
+        t.is(stdout, JSON.stringify({
+          'compilerOptions': {
+            'target': 'es6',
+            'jsx': 'react',
+            'noEmit': false,
+            'strict': true,
+            'typeRoots': [
+              posix(`${ ROOT_DIR }/tests/typings`),
+              posix(`${ ROOT_DIR }/node_modules/@types`)
+            ],
+            'sourceMap': true,
+            'inlineSourceMap': false,
+            'inlineSources': true,
+            'declaration': false,
+            'outDir': './.ts-node',
+            'module': 'commonjs'
+          },
+          'ts-node': {
+            'cwd': native(`${ ROOT_DIR }/tests`),
+            'projectSearchDir': native(`${ ROOT_DIR }/tests`),
+            'project': native(`${ ROOT_DIR }/tests/tsconfig.json`),
+            'require': []
+          }
+        }, null, 2) + '\n')
+      })
+    } else {
+      test('--show-config should log error message when used with old typescript versions', async (t) => {
+        const { err, stderr } = await exec(`${cmd} --showConfig`)
+        expect(err).to.not.equal(null)
+        expect(stderr).to.contain('Error: --show-config requires')
+      })
+    }
   })
 
   test.suite('register', (_test) => {
