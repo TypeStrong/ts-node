@@ -45,6 +45,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
       '--compiler-host': Boolean,
       '--pretty': Boolean,
       '--skip-project': Boolean,
+      '--no-implicit-compiler-options': Boolean,
       '--skip-ignore': Boolean,
       '--prefer-ts-exts': Boolean,
       '--log-error': Boolean,
@@ -90,6 +91,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     '--files': files,
     '--compiler': compiler,
     '--compiler-options': compilerOptions,
+    '--no-implicit-compiler-options': noImplicitCompilerOptions,
     '--project': project,
     '--ignore-diagnostics': ignoreDiagnostics,
     '--ignore': ignore,
@@ -132,6 +134,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     --files                        Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
     --pretty                       Use pretty diagnostic formatter (usually enabled by default)
     --skip-project                 Skip reading \`tsconfig.json\`
+    --no-implicit-compiler-options Do not use a default \`tsconfig.json\` from @tsconfig/bases matching your node version.
     --skip-ignore                  Skip \`--ignore\` checks
     --prefer-ts-exts               Prefer importing TypeScript files over JavaScript files
     --log-error                    Logs TypeScript errors to stderr instead of throwing exceptions
@@ -172,6 +175,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     compiler,
     ignoreDiagnostics,
     compilerOptions,
+    noImplicitCompilerOptions,
     require: argsRequire,
     readFile: code !== undefined ? evalAwarePartialHost.readFile : undefined,
     fileExists: code !== undefined ? evalAwarePartialHost.fileExists : undefined
