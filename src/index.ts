@@ -265,15 +265,6 @@ export interface CreateOptions {
    */
   skipProject?: boolean
   /**
-   * Do not apply compiler options from the @tsconfig/bases configuration matching your node version
-   *
-   * This option has no effect if a tsconfig.json is loaded, because loading a tsconfig.json disables
-   * implicit compiler options.
-   *
-   * @default false
-   */
-  noImplicitCompilerOptions?: boolean
-  /**
    * Skip ignore check, so that compilation will be attempted for all files with matching extensions.
    *
    * @default false
@@ -331,7 +322,6 @@ export interface TsConfigOptions extends Omit<RegisterOptions,
   | 'readFile'
   | 'fileExists'
   | 'skipProject'
-  | 'noImplicitCompilerOptions'
   | 'project'
   | 'dir'
   | 'cwd'
@@ -385,8 +375,7 @@ export const DEFAULTS: RegisterOptions = {
   typeCheck: yn(env.TS_NODE_TYPE_CHECK),
   compilerHost: yn(env.TS_NODE_COMPILER_HOST),
   logError: yn(env.TS_NODE_LOG_ERROR),
-  experimentalEsmLoader: false,
-  noImplicitCompilerOptions: false
+  experimentalEsmLoader: false
 }
 
 /**
@@ -1249,7 +1238,7 @@ function readConfig (
   }
 
   // Only if a config file is *not* loaded, load an implicit configuration from @tsconfig/bases
-  const skipDefaultCompilerOptions = configFilePath != null || (rawApiOptions.noImplicitCompilerOptions ?? DEFAULTS.noImplicitCompilerOptions) // tslint:disable-line
+  const skipDefaultCompilerOptions = configFilePath != null // tslint:disable-line
   const defaultCompilerOptionsForNodeVersion = skipDefaultCompilerOptions ? undefined : getDefaultTsconfigJsonForNodeVersion(ts).compilerOptions
 
   // Merge compilerOptions from all sources
