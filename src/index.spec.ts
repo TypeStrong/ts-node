@@ -1,12 +1,13 @@
 import { test, TestInterface } from './testlib'
 import { expect } from 'chai'
 import { ChildProcess, exec as childProcessExec, ExecException, ExecOptions } from 'child_process'
-import { join } from 'path'
+import { join, resolve, sep as pathSep } from 'path'
+import { tmpdir } from 'os'
 import semver = require('semver')
 import ts = require('typescript')
 import proxyquire = require('proxyquire')
 import type * as tsNodeTypes from './index'
-import { unlinkSync, existsSync, lstatSync } from 'fs'
+import { unlinkSync, existsSync, lstatSync, mkdtempSync, fstat, copyFileSync, writeFileSync } from 'fs'
 import * as promisify from 'util.promisify'
 import { sync as rimrafSync } from 'rimraf'
 import type _createRequire from 'create-require'
@@ -35,6 +36,7 @@ function exec (cmd: string, opts: ExecOptions = {}): Promise<TestExecReturn> & {
   )
 }
 
+const ROOT_DIR = resolve(__dirname, '..')
 const TEST_DIR = join(__dirname, '../tests')
 const PROJECT = join(TEST_DIR, 'tsconfig.json')
 const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node')
@@ -98,6 +100,10 @@ test.suite('ts-node', (test) => {
     testsDirRequire.resolve('ts-node/esm/transpile-only.mjs')
 
     testsDirRequire.resolve('ts-node/transpilers/swc-experimental')
+
+    testsDirRequire.resolve('ts-node/node10/tsconfig.json')
+    testsDirRequire.resolve('ts-node/node12/tsconfig.json')
+    testsDirRequire.resolve('ts-node/node14/tsconfig.json')
   })
 
   test.suite('cli', (test) => {
@@ -551,6 +557,53 @@ test.suite('ts-node', (test) => {
       })
     })
 
+    test.suite('should use implicit @tsconfig/bases config when one is not loaded from disk', _test => {
+      const test = _test.context(async t => ({
+        tempDir: mkdtempSync(join(tmpdir(), 'ts-node-spec'))
+      }))
+      if (semver.gte(ts.version, '3.5.0') && semver.gte(process.versions.node, '14.0.0')) {
+        test('implicitly uses @tsconfig/node14 compilerOptions when both TS and node versions support it', async t => {
+          const { context: { tempDir } } = t
+          const { err: err1, stdout: stdout1, stderr: stderr1 } = await exec(`${BIN_PATH} --showConfig`, { cwd: tempDir })
+          expect(err1).to.equal(null)
+          t.like(JSON.parse(stdout1), {
+            compilerOptions: {
+              target: 'es2020',
+              lib: ['es2020']
+            }
+          })
+          const { err: err2, stdout: stdout2, stderr: stderr2 } = await exec(`${BIN_PATH} -pe 10n`, { cwd: tempDir })
+          expect(err2).to.equal(null)
+          expect(stdout2).to.equal('10n\n')
+        })
+      } else {
+        test('implicitly uses @tsconfig/* lower than node14 (node10 or node12) when either TS or node versions do not support @tsconfig/node14', async ({ context: { tempDir } }) => {
+          const { err, stdout, stderr } = await exec(`${BIN_PATH} -pe 10n`, { cwd: tempDir })
+          expect(err).to.not.equal(null)
+          expect(stderr).to.match(/BigInt literals are not available when targeting lower than|error TS2304: Cannot find name 'n'/)
+        })
+      }
+    })
+
+    if (semver.gte(ts.version, '3.2.0')) {
+      test.suite('should bundle @tsconfig/bases to be used in your own tsconfigs', test => {
+        const macro = test.macro((nodeVersion: string) => async t => {
+          const config = require(`@tsconfig/${ nodeVersion }/tsconfig.json`)
+          const { err, stdout, stderr } = await exec(`${BIN_PATH} --showConfig -e 10n`, { cwd: join(TEST_DIR, 'tsconfig-bases', nodeVersion) })
+          expect(err).to.equal(null)
+          t.like(JSON.parse(stdout), {
+            compilerOptions: {
+              target: config.compilerOptions.target,
+              lib: config.compilerOptions.lib
+            }
+          })
+        })
+        test(`ts-node/node10/tsconfig.json`, macro, 'node10')
+        test(`ts-node/node12/tsconfig.json`, macro, 'node12')
+        test(`ts-node/node14/tsconfig.json`, macro, 'node14')
+      })
+    }
+
     test.suite('compiler host', (test) => {
       test('should execute cli', async () => {
         const { err, stdout } = await exec(`${cmd} --compiler-host hello-world`)
@@ -597,6 +650,45 @@ test.suite('ts-node', (test) => {
         )
       })
     })
+
+    if (semver.gte(ts.version, '3.2.0')) {
+      test('--show-config should log resolved configuration', async (t) => {
+        function native (path: string) { return path.replace(/\/|\\/g, pathSep) }
+        function posix (path: string) { return path.replace(/\/|\\/g, '/') }
+        const { err, stdout } = await exec(`${cmd} --showConfig`)
+        expect(err).to.equal(null)
+        t.is(stdout, JSON.stringify({
+          'compilerOptions': {
+            'target': 'es6',
+            'jsx': 'react',
+            'noEmit': false,
+            'strict': true,
+            'typeRoots': [
+              posix(`${ ROOT_DIR }/tests/typings`),
+              posix(`${ ROOT_DIR }/node_modules/@types`)
+            ],
+            'sourceMap': true,
+            'inlineSourceMap': false,
+            'inlineSources': true,
+            'declaration': false,
+            'outDir': './.ts-node',
+            'module': 'commonjs'
+          },
+          'ts-node': {
+            'cwd': native(`${ ROOT_DIR }/tests`),
+            'projectSearchDir': native(`${ ROOT_DIR }/tests`),
+            'project': native(`${ ROOT_DIR }/tests/tsconfig.json`),
+            'require': []
+          }
+        }, null, 2) + '\n')
+      })
+    } else {
+      test('--show-config should log error message when used with old typescript versions', async (t) => {
+        const { err, stderr } = await exec(`${cmd} --showConfig`)
+        expect(err).to.not.equal(null)
+        expect(stderr).to.contain('Error: --show-config requires')
+      })
+    }
   })
 
   test.suite('register', (_test) => {

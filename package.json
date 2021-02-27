@@ -23,7 +23,10 @@
     "./esm.mjs": "./esm.mjs",
     "./esm/transpile-only": "./esm/transpile-only.mjs",
     "./esm/transpile-only.mjs": "./esm/transpile-only.mjs",
-    "./transpilers/swc-experimental": "./transpilers/swc-experimental.js"
+    "./transpilers/swc-experimental": "./transpilers/swc-experimental.js",
+    "./node10/tsconfig.json": "./node10/tsconfig.json",
+    "./node12/tsconfig.json": "./node12/tsconfig.json",
+    "./node14/tsconfig.json": "./node14/tsconfig.json"
   },
   "types": "dist/index.d.ts",
   "bin": {
@@ -42,7 +45,10 @@
     "esm.mjs",
     "LICENSE",
     "tsconfig.schema.json",
-    "tsconfig.schemastore-schema.json"
+    "tsconfig.schemastore-schema.json",
+    "node10/",
+    "node12/",
+    "node14/"
   ],
   "scripts": {
     "lint": "tslint \"src/**/*.ts\" --project tsconfig.json",
@@ -126,8 +132,8 @@
     "throat": "^6.0.1",
     "tslint": "^6.1.0",
     "tslint-config-standard": "^9.0.0",
-    "typedoc": "^0.20.20",
-    "typescript": "4.1.2",
+    "typedoc": "^0.20.28",
+    "typescript": "4.2.2",
     "typescript-json-schema": "^0.42.0",
     "util.promisify": "^1.0.1"
   },
@@ -145,6 +151,9 @@
     }
   },
   "dependencies": {
+    "@tsconfig/node10": "^1.0.7",
+    "@tsconfig/node12": "^1.0.7",
+    "@tsconfig/node14": "^1.0.0",
     "arg": "^4.1.0",
     "create-require": "^1.1.0",
     "diff": "^4.0.1",
