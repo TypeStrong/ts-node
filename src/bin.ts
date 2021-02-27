@@ -10,7 +10,7 @@ import {
   createRepl,
   ReplService
  } from './repl'
-import { VERSION, TSError, parse, register, createRequire } from './index'
+import { VERSION, TSError, parse, register, createRequire, TSInternal } from './index'
 
 /**
  * Main `bin` functionality.
@@ -30,6 +30,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
       '--cwd-mode': Boolean,
       '--script-mode': Boolean,
       '--version': arg.COUNT,
+      '--show-config': Boolean,
 
       // Project options.
       '--cwd': String,
@@ -40,6 +41,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
       '--ignore-diagnostics': [String],
       '--ignore': [String],
       '--transpile-only': Boolean,
+      '--transpiler': String,
       '--type-check': Boolean,
       '--compiler-host': Boolean,
       '--pretty': Boolean,
@@ -64,7 +66,8 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
       '-C': '--compiler',
       '-D': '--ignore-diagnostics',
       '-O': '--compiler-options',
-      '--dir': '--cwd'
+      '--dir': '--cwd',
+      '--showConfig': '--show-config'
     }, {
       argv,
       stopAtPositional: true
@@ -80,6 +83,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     '--script-mode': scriptMode,
     '--cwd-mode': cwdMode,
     '--version': version = 0,
+    '--show-config': showConfig,
     '--require': argsRequire = [],
     '--eval': code = undefined,
     '--print': print = false,
@@ -92,6 +96,7 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     '--ignore': ignore,
     '--transpile-only': transpileOnly,
     '--type-check': typeCheck,
+    '--transpiler': transpiler,
     '--compiler-host': compilerHost,
     '--pretty': pretty,
     '--skip-project': skipProject,
@@ -115,12 +120,14 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     -h, --help                     Print CLI usage
     -v, --version                  Print module version information
     --cwd-mode                     Use current directory instead of <script.ts> for config resolution
+    --show-config                  Print resolved configuration and exit
 
-    -T, --transpile-only           Use TypeScript's faster \`transpileModule\`
+    -T, --transpile-only           Use TypeScript's faster \`transpileModule\` or a third-party transpiler
     -H, --compiler-host            Use TypeScript's compiler host API
     -I, --ignore [pattern]         Override the path patterns to skip compilation
     -P, --project [path]           Path to TypeScript JSON project file
     -C, --compiler [name]          Specify a custom TypeScript compiler
+    --transpiler [name]            Specify a third-party, non-typechecking transpiler
     -D, --ignore-diagnostics [code] Ignore TypeScript warnings by diagnostic code
     -O, --compiler-options [opts]   JSON object to merge with compiler options
 
@@ -155,8 +162,9 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     emit,
     files,
     pretty,
-    transpileOnly,
+    transpileOnly: transpileOnly ?? transpiler != null ? true : undefined, // tslint:disable-line:strict-type-predicates
     typeCheck,
+    transpiler,
     compilerHost,
     ignore,
     preferTsExts,
@@ -181,6 +189,28 @@ export function main (argv: string[] = process.argv.slice(2), entrypointArgs: Re
     console.log(`ts-node v${VERSION}`)
     console.log(`node ${process.version}`)
     console.log(`compiler v${service.ts.version}`)
+    process.exit(0)
+  }
+
+  if (showConfig) {
+    const ts = service.ts as any as TSInternal
+    if (typeof ts.convertToTSConfig !== 'function') { // tslint:disable-line:strict-type-predicates
+      console.error('Error: --show-config requires a typescript versions >=3.2 that support --showConfig')
+      process.exit(1)
+    }
+    const json = ts.convertToTSConfig(service.config, service.configFilePath ?? join(cwd, 'ts-node-implicit-tsconfig.json'), service.ts.sys)
+    json['ts-node'] = {
+      ...service.options,
+      experimentalEsmLoader: undefined,
+      compilerOptions: undefined,
+      project: service.configFilePath ?? service.options.project
+    }
+    console.log(
+      // Assumes that all configuration options which can possibly be specified via the CLI are JSON-compatible.
+      // If, in the future, we must log functions, for example readFile and fileExists, then we can implement a JSON
+      // replacer function.
+      JSON.stringify(json, null, 2)
+    )
     process.exit(0)
   }
 

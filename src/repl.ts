@@ -46,6 +46,16 @@ export interface CreateReplOptions {
   stderr?: NodeJS.WritableStream
 }
 
+/**
+ * Create a ts-node REPL instance.
+ *
+ * Usage example:
+ *
+ *     const repl = tsNode.createRepl()
+ *     const service = tsNode.create({...repl.evalAwarePartialHost})
+ *     repl.setService(service)
+ *     repl.start()
+ */
 export function createRepl (options: CreateReplOptions = {}) {
   let service = options.service
   const state = options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME))

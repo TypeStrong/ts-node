@@ -8,7 +8,7 @@ const { join } = require('path')
 const testDir = join(__dirname, '../tests')
 const tarballPath = join(testDir, 'ts-node-packed.tgz')
 const tempDir = mkdtempSync(join(testDir, 'tmp'))
-exec(`npm pack "${join(__dirname, '..')}"`, { cwd: tempDir }, (err, stdout) => {
+exec(`npm pack --ignore-scripts "${join(__dirname, '..')}"`, { cwd: tempDir }, (err, stdout) => {
   if (err) {
     console.error(err)
     process.exit(1)
