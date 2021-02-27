@@ -5,9 +5,6 @@
     "noEmit": true,
     "strict": true,
     // Global type definitions.
-    "typeRoots": [
-      "./typings",
-      "../node_modules/@types",
-    ],
+    "typeRoots": ["./typings", "../node_modules/@types"]
   }
 }

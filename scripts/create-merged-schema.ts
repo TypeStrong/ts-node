@@ -7,8 +7,8 @@
  */
 
 import axios from 'axios';
-import {resolve} from 'path';
-import {writeFileSync} from 'fs';
+import { resolve } from 'path';
+import { writeFileSync } from 'fs';
 
 async function main() {
   /** schemastore definition */
@@ -26,27 +26,34 @@ async function main() {
         properties: {
           'ts-node': {
             ...typescriptNodeSchema.definitions.TsConfigOptions,
-            description: typescriptNodeSchema.definitions.TsConfigSchema.properties['ts-node'].description,
+            description:
+              typescriptNodeSchema.definitions.TsConfigSchema.properties[
+                'ts-node'
+              ].description,
             properties: {
               ...typescriptNodeSchema.definitions.TsConfigOptions.properties,
               compilerOptions: {
-                ...typescriptNodeSchema.definitions.TsConfigOptions.properties.compilerOptions,
-                allOf: [{
-                  $ref: '#/definitions/compilerOptionsDefinition/properties/compilerOptions'
-                }]
-              }
-            }
-          }
-        }
+                ...typescriptNodeSchema.definitions.TsConfigOptions.properties
+                  .compilerOptions,
+                allOf: [
+                  {
+                    $ref:
+                      '#/definitions/compilerOptionsDefinition/properties/compilerOptions',
+                  },
+                ],
+              },
+            },
+          },
+        },
       },
     },
     allOf: [
       // Splice into the allOf array at a spot that looks good.  Does not affect
       // behavior of the schema, but looks nicer if we want to submit as a PR to schemastore.
       ...schemastoreSchema.allOf.slice(0, 4),
-      { "$ref": "#/definitions/tsNodeDefinition" },
+      { $ref: '#/definitions/tsNodeDefinition' },
       ...schemastoreSchema.allOf.slice(4),
-    ]
+    ],
   };
   writeFileSync(
     resolve(__dirname, '../tsconfig.schemastore-schema.json'),
@@ -55,9 +62,11 @@ async function main() {
 }
 
 export async function getSchemastoreSchema() {
-  const {data: schemastoreSchema} = await axios.get(
+  const {
+    data: schemastoreSchema,
+  } = await axios.get(
     'https://schemastore.azurewebsites.net/schemas/json/tsconfig.json',
-    { responseType: "json" }
+    { responseType: 'json' }
   );
   return schemastoreSchema;
 }

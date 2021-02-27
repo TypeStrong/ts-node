@@ -1,1 +1,1 @@
-declare const TEST: string
+declare const TEST: string;
