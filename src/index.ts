@@ -725,6 +725,7 @@ export function create (rawOptions: CreateOptions = {}): Service {
     const fileContents = new Map<string, string>()
     const rootFileNames = new Set(config.fileNames)
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile))
+    const diagnosticsReportedFor = new Set<string>()
 
     // Use language services by default (TODO: invert next major version).
     if (!options.compilerHost) {
@@ -811,22 +812,31 @@ export function create (rawOptions: CreateOptions = {}): Service {
       getOutput = (code: string, fileName: string) => {
         updateMemoryCache(code, fileName)
 
-        const programBefore = service.getProgram()
-        if (programBefore !== previousProgram) {
+        const program = service.getProgram()
+        if (program !== previousProgram) {
           debug(`compiler rebuilt Program instance when getting output for ${fileName}`)
         }
 
         const output = service.getEmitOutput(fileName)
 
-        // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.
-        const diagnostics = service.getSemanticDiagnostics(fileName)
-          .concat(service.getSyntacticDiagnostics(fileName))
+        // Emit diagnostics for all newly-encountered files.
+        // This matches node, where require()ing one file that require()s many others will throw
+        // when *any* file has an error.
+        const diagnostics = []
+        for (const sourceFile of program!.getSourceFiles()) {
+          const { fileName } = sourceFile
+          if (!diagnosticsReportedFor.has(fileName)) {
+            diagnosticsReportedFor.add(fileName)
+            // Get the relevant diagnostics - this is 3x faster than `getPreEmitDiagnostics`.
+            diagnostics.push(...service.getSemanticDiagnostics(fileName), ...service.getSyntacticDiagnostics(fileName))
+          }
+        }
 
         const programAfter = service.getProgram()
 
         debug(
           'invariant: Is service.getProject() identical before and after getting emit output and diagnostics? (should always be true) ',
-          programBefore === programAfter
+          program === programAfter
         )
 
         previousProgram = programAfter
