@@ -740,6 +740,8 @@ export function create (rawOptions: CreateOptions = {}): Service {
         return transformers
       }
 
+      const compilerHost: _ts.TODO
+
       // Create the compiler host for type checking.
       const serviceHost: _ts.LanguageServiceHost & Required<Pick<_ts.LanguageServiceHost, 'fileExists' | 'readFile'>> = {
         getProjectVersion: () => String(projectVersion),
@@ -775,7 +777,15 @@ export function create (rawOptions: CreateOptions = {}): Service {
         getCurrentDirectory: () => cwd,
         getCompilationSettings: () => config.options,
         getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
-        getCustomTransformers: getCustomTransformers
+        getCustomTransformers: getCustomTransformers,
+        getProjectReferences() { return config.projectReferences },
+        // TODO Add both of the following function signatures to an "Internals" declaration somewhere,
+        // copied from TS source code
+        useSourceOfProjectReferenceRedirect() { return true },
+        setCompilerHost(_compilerHost: _ts.CompilerHost) {
+          compilerHost = _compilerHost
+          setResolverHost(compilerHost)
+        }
       }
       const { resolveModuleNames, getResolvedModuleWithFailedLookupLocationsFromCache, resolveTypeReferenceDirectives, isFileKnownToBeInternal, markBucketOfFilenameInternal } = createResolverFunctions(serviceHost)
       serviceHost.resolveModuleNames = resolveModuleNames
@@ -784,6 +794,11 @@ export function create (rawOptions: CreateOptions = {}): Service {
 
       const registry = ts.createDocumentRegistry(ts.sys.useCaseSensitiveFileNames, cwd)
       const service = ts.createLanguageService(serviceHost, registry)
+      setResolverHost(serviceHost)
+      // TODO ADD THIS TO THE RESOLVER FACTORY AFTER THAT'S BEEN MERGED
+      function setResolverHost(newHost: _ts.ModuleResolutionHost) {
+        serviceHost = newHost
+      }
 
       const updateMemoryCache = (contents: string, fileName: string) => {
         // Add to `rootFiles` as necessary, either to make TS include a file it has not seen,
