@@ -567,22 +567,24 @@ test.suite('ts-node', (test) => {
       }
     })
 
-    test.suite('should bundle @tsconfig/bases to be used in your own tsconfigs', test => {
-      const macro = test.macro((nodeVersion: string) => async t => {
-        const config = require(`@tsconfig/${ nodeVersion }/tsconfig.json`)
-        const { err, stdout, stderr } = await exec(`${BIN_PATH} --showConfig -e 10n`, { cwd: join(TEST_DIR, 'tsconfig-bases', nodeVersion) })
-        expect(err).to.equal(null)
-        t.like(JSON.parse(stdout), {
-          compilerOptions: {
-            target: config.compilerOptions.target,
-            lib: config.compilerOptions.lib
-          }
+    if (semver.gte(ts.version, '3.2.0')) {
+      test.suite('should bundle @tsconfig/bases to be used in your own tsconfigs', test => {
+        const macro = test.macro((nodeVersion: string) => async t => {
+          const config = require(`@tsconfig/${ nodeVersion }/tsconfig.json`)
+          const { err, stdout, stderr } = await exec(`${BIN_PATH} --showConfig -e 10n`, { cwd: join(TEST_DIR, 'tsconfig-bases', nodeVersion) })
+          expect(err).to.equal(null)
+          t.like(JSON.parse(stdout), {
+            compilerOptions: {
+              target: config.compilerOptions.target,
+              lib: config.compilerOptions.lib
+            }
+          })
         })
+        test(`ts-node/node10/tsconfig.json`, macro, 'node10')
+        test(`ts-node/node12/tsconfig.json`, macro, 'node12')
+        test(`ts-node/node14/tsconfig.json`, macro, 'node14')
       })
-      test(`ts-node/node10/tsconfig.json`, macro, 'node10')
-      test(`ts-node/node12/tsconfig.json`, macro, 'node12')
-      test(`ts-node/node14/tsconfig.json`, macro, 'node14')
-    })
+    }
 
     test.suite('compiler host', (test) => {
       test('should execute cli', async () => {
