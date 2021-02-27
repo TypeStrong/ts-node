@@ -3,7 +3,7 @@ on:
   # branches pushed by collaborators
   push:
     branches:
-      - master
+      - main
   # pull request from non-collaborators
   pull_request: {}
   # nightly

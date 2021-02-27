@@ -667,7 +667,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         : options.transpiler[0];
     const transpilerOptions =
       typeof options.transpiler === 'string' ? {} : options.transpiler[1] ?? {};
-    // TODO mimic fixed resolution logic from loadCompiler master
+    // TODO mimic fixed resolution logic from loadCompiler main
     // TODO refactor into a more generic "resolve dep relative to project" helper
     const transpilerPath = require.resolve(transpilerName, {
       paths: [cwd, __dirname],

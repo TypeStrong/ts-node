@@ -149,5 +149,5 @@ MIT
 [downloads-url]: https://npmjs.org/package/ts-node
 [github-actions-image]: https://img.shields.io/github/workflow/status/TypeStrong/ts-node/Continuous%20Integration
 [github-actions-url]: https://github.com/TypeStrong/ts-node/actions?query=workflow%3A%22Continuous+Integration%22
-[codecov-image]: https://codecov.io/gh/TypeStrong/ts-node/branch/master/graph/badge.svg
+[codecov-image]: https://codecov.io/gh/TypeStrong/ts-node/branch/main/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/TypeStrong/ts-node
