@@ -7,3 +7,6 @@
 !/src
 !/tests
 tests/main-realpath/symlink/tsconfig.json
+tests/throw.ts
+tests/throw-react-tsx.tsx
+tests/esm/throw.ts

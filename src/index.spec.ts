@@ -278,8 +278,8 @@ test.suite('ts-node', (test) => {
       expect(err.message).to.contain(
         [
           `${join(TEST_DIR, 'throw.ts')}:100`,
-          "  bar () { throw new Error('this is a demo') }",
-          '                 ^',
+          "  bar() { throw new Error('this is a demo'); }",
+          '                ^',
           'Error: this is a demo',
         ].join('\n')
       );
@@ -294,8 +294,8 @@ test.suite('ts-node', (test) => {
       expect(err.message).to.contain(
         [
           `${join(TEST_DIR, 'throw.ts')}:100`,
-          "  bar () { throw new Error('this is a demo') }",
-          '                 ^',
+          "  bar() { throw new Error('this is a demo'); }",
+          '                ^',
         ].join('\n')
       );
     });
@@ -427,8 +427,8 @@ test.suite('ts-node', (test) => {
       expect(err!.message).to.contain(
         [
           `${join(TEST_DIR, './throw-react-tsx.tsx')}:100`,
-          "  bar () { throw new Error('this is a demo') }",
-          '                 ^',
+          "  bar() { throw new Error('this is a demo'); }",
+          '                ^',
           'Error: this is a demo',
         ].join('\n')
       );
@@ -981,7 +981,7 @@ test.suite('ts-node', (test) => {
         expect(error.stack).to.contain(
           [
             'Error: this is a demo',
-            `    at Foo.bar (${join(TEST_DIR, './throw.ts')}:100:18)`,
+            `    at Foo.bar (${join(TEST_DIR, './throw.ts')}:100:17)`,
           ].join('\n')
         );
       }
@@ -1142,8 +1142,8 @@ test.suite('ts-node', (test) => {
         expect(err!.message).to.contain(
           [
             `${pathToFileURL(join(TEST_DIR, './esm/throw.ts'))}:100`,
-            "  bar () { throw new Error('this is a demo') }",
-            '                 ^',
+            "  bar() { throw new Error('this is a demo'); }",
+            '                ^',
             'Error: this is a demo',
           ].join('\n')
         );
