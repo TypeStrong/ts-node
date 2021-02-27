@@ -98,11 +98,11 @@ function createTestInterface<Context>(opts: {
     assert(title);
     // return `${ titlePrefix }${ separator }${ title }`;
     if (titlePrefix != null && title != null) {
-      // tslint:disable-line:strict-type-predicates
+
       return `${titlePrefix}${separator}${title}`;
     }
     if (titlePrefix == null && title != null) {
-      // tslint:disable-line:strict-type-predicates
+
       return title;
     }
   }

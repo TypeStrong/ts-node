@@ -148,7 +148,6 @@ export class EvalState {
   /** @internal */
   lines = 0;
 
-  // tslint:disable-next-line:variable-name
   __tsNodeEvalStateBrand: unknown;
 
   constructor(public path: string) {}

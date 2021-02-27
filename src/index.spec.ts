@@ -70,7 +70,7 @@ const BIN_CWD_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-cwd');
 const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/;
 
 // `createRequire` does not exist on older node versions
-const testsDirRequire = createRequire(join(TEST_DIR, 'index.js')); // tslint:disable-line
+const testsDirRequire = createRequire(join(TEST_DIR, 'index.js'));
 
 // Set after ts-node is installed locally
 let { register, create, VERSION, createRepl }: typeof tsNodeTypes = {} as any;
@@ -994,9 +994,9 @@ test.suite('ts-node', (test) => {
 
       test.runSerially();
       test.beforeAll(async () => {
-        old = require.extensions['.tsx']!; // tslint:disable-line
+        old = require.extensions['.tsx']!;
         require.extensions['.tsx'] = (m: any, fileName) => {
-          // tslint:disable-line
+
           const _compile = m._compile;
 
           m._compile = function (code: string, fileName: string) {
@@ -1010,7 +1010,7 @@ test.suite('ts-node', (test) => {
 
       test('should use source maps', async (t) => {
         t.teardown(() => {
-          require.extensions['.tsx'] = old; // tslint:disable-line
+          require.extensions['.tsx'] = old;
         });
         try {
           require('../tests/with-jsx.tsx');

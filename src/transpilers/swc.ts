@@ -23,7 +23,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   if (typeof swc === 'string') {
     swcInstance = require(swc) as typeof swcWasm;
   } else if (swc == null) {
-    // tslint:disable-line
+
     let swcResolved;
     try {
       swcResolved = require.resolve('@swc/core');

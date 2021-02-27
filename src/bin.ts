@@ -170,7 +170,7 @@ export function main(
     emit,
     files,
     pretty,
-    transpileOnly: transpileOnly ?? transpiler != null ? true : undefined, // tslint:disable-line:strict-type-predicates
+    transpileOnly: transpileOnly ?? transpiler != null ? true : undefined,
     typeCheck,
     transpiler,
     compilerHost,
@@ -204,7 +204,7 @@ export function main(
   if (showConfig) {
     const ts = (service.ts as any) as TSInternal;
     if (typeof ts.convertToTSConfig !== 'function') {
-      // tslint:disable-line:strict-type-predicates
+
       console.error(
         'Error: --show-config requires a typescript versions >=3.2 that support --showConfig'
       );
@@ -298,16 +298,16 @@ function getProjectSearchDir(
     const extsTemporarilyInstalled: string[] = [];
     for (const ext of exts) {
       if (!hasOwnProperty(require.extensions, ext)) {
-        // tslint:disable-line
+
         extsTemporarilyInstalled.push(ext);
-        require.extensions[ext] = function () {}; // tslint:disable-line
+        require.extensions[ext] = function () {};
       }
     }
     try {
       return dirname(requireResolveNonCached(scriptPath!));
     } finally {
       for (const ext of extsTemporarilyInstalled) {
-        delete require.extensions[ext]; // tslint:disable-line
+        delete require.extensions[ext];
       }
     }
   }
