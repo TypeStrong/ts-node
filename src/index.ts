@@ -246,11 +246,7 @@ export interface CreateOptions {
   /**
    * Specify a custom transpiler for use with transpileOnly
    */
-  transpiler?: string | {
-    name: string
-    // TODO how to allow additional fields?
-    // TODO will JSON schema allow additional fields?
-  }
+  transpiler?: string | [string, object]
   /**
    * Paths which should not be compiled.
    *
@@ -585,14 +581,15 @@ export function create (rawOptions: CreateOptions = {}): Service {
   let customTranspiler: Transpiler | undefined = undefined
   if (options.transpiler) {
     if (!transpileOnly) throw new Error('Custom transpiler can only be used when transpileOnly is enabled.')
-    const transpilerOptions = typeof options.transpiler === 'string' ? { name: options.transpiler } : options.transpiler
+    const transpilerName = typeof options.transpiler === 'string' ? options.transpiler : options.transpiler[0]
+    const transpilerOptions = typeof options.transpiler === 'string' ? {} : options.transpiler[1] ?? {}
     // TODO mimic fixed resolution logic from loadCompiler master
     // TODO refactor into a more generic "resolve dep relative to project" helper
-    const transpilerPath = require.resolve(transpilerOptions.name, { paths: [cwd, __dirname] })
+    const transpilerPath = require.resolve(transpilerName, { paths: [cwd, __dirname] })
     const transpilerFactory: TranspilerFactory = require(transpilerPath).create
     customTranspiler = transpilerFactory({
       service: { options, config },
-      ...transpilerOptions
+      ...transpilerOptions[1]
     })
   }
 
