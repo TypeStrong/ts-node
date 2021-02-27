@@ -546,7 +546,7 @@ test.suite('ts-node', (test) => {
       if (semver.gte(ts.version, '3.5.0') && semver.gte(process.versions.node, '14.0.0')) {
         test('implicitly uses @tsconfig/node14 compilerOptions when both TS and node versions support it', async t => {
           const { context: { tempDir } } = t
-          const { err: err1, stdout: stdout1, stderr: stderr1 } = await exec(`${BIN_PATH} --showConfig -e 10n`, { cwd: tempDir })
+          const { err: err1, stdout: stdout1, stderr: stderr1 } = await exec(`${BIN_PATH} --showConfig`, { cwd: tempDir })
           expect(err1).to.equal(null)
           t.like(JSON.parse(stdout1), {
             compilerOptions: {
@@ -562,7 +562,7 @@ test.suite('ts-node', (test) => {
         test('implicitly uses @tsconfig/* lower than node14 (node10 or node12) when either TS or node versions do not support @tsconfig/node14', async ({ context: { tempDir } }) => {
           const { err, stdout, stderr } = await exec(`${BIN_PATH} -pe 10n`, { cwd: tempDir })
           expect(err).to.not.equal(null)
-          expect(stderr).to.contain('BigInt literals are not available when targeting lower than')
+          expect(stderr).to.match(/BigInt literals are not available when targeting lower than|error TS2304: Cannot find name 'n'/)
         })
       }
     })
