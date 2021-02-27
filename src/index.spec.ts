@@ -99,6 +99,8 @@ test.suite('ts-node', (test) => {
     testsDirRequire.resolve('ts-node/esm/transpile-only')
     testsDirRequire.resolve('ts-node/esm/transpile-only.mjs')
 
+    testsDirRequire.resolve('ts-node/transpilers/swc-experimental')
+
     testsDirRequire.resolve('ts-node/node10/tsconfig.json')
     testsDirRequire.resolve('ts-node/node12/tsconfig.json')
     testsDirRequire.resolve('ts-node/node14/tsconfig.json')
@@ -270,6 +272,18 @@ test.suite('ts-node', (test) => {
       }
 
       expect(err.message).to.contain('error TS1003: Identifier expected')
+    })
+
+    test('should support third-party transpilers via --transpiler', async () => {
+      const { err, stdout } = await exec(`${cmdNoProject} --transpiler ts-node/transpilers/swc-experimental transpile-only-swc`)
+      expect(err).to.equal(null)
+      expect(stdout).to.contain('hello world')
+    })
+
+    test('should support third-party transpilers via tsconfig', async () => {
+      const { err, stdout } = await exec(`${cmdNoProject} transpile-only-swc-via-tsconfig`)
+      expect(err).to.equal(null)
+      expect(stdout).to.contain('hello world')
     })
 
     test('should pipe into `ts-node` and evaluate', async () => {

@@ -23,6 +23,7 @@
     "./esm.mjs": "./esm.mjs",
     "./esm/transpile-only": "./esm/transpile-only.mjs",
     "./esm/transpile-only.mjs": "./esm/transpile-only.mjs",
+    "./transpilers/swc-experimental": "./transpilers/swc-experimental.js",
     "./node10/tsconfig.json": "./node10/tsconfig.json",
     "./node12/tsconfig.json": "./node12/tsconfig.json",
     "./node14/tsconfig.json": "./node14/tsconfig.json"
@@ -36,6 +37,7 @@
     "ts-node-transpile-only": "dist/bin-transpile.js"
   },
   "files": [
+    "transpilers/",
     "dist/",
     "dist-raw/",
     "register/",
@@ -105,6 +107,8 @@
     "timeout": "300s"
   },
   "devDependencies": {
+    "@swc/core": ">=1.2.45",
+    "@swc/wasm": ">=1.2.45",
     "@types/chai": "^4.0.4",
     "@types/diff": "^4.0.2",
     "@types/lodash": "^4.14.151",
@@ -134,7 +138,17 @@
     "util.promisify": "^1.0.1"
   },
   "peerDependencies": {
+    "@swc/core": ">=1.2.45",
+    "@swc/wasm": ">=1.2.45",
     "typescript": ">=2.7"
+  },
+  "peerDependenciesMeta": {
+    "@swc/core": {
+      "optional": true
+    },
+    "@swc/wasm": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@tsconfig/node10": "^1.0.7",

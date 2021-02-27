@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "ts-node": "file:ts-node-packed.tgz"
+    "ts-node": "file:ts-node-packed.tgz",
+    "@swc/core": "latest"
   }
 }

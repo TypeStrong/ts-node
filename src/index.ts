@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url'
 import type * as _ts from 'typescript'
 import { Module, createRequire as nodeCreateRequire, createRequireFromPath as nodeCreateRequireFromPath } from 'module'
 import type _createRequire from 'create-require'
+import { Transpiler, TranspilerFactory } from './transpilers/types'
 import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs'
 
 /** @internal */
@@ -132,6 +133,19 @@ export interface TSCommon {
   parseJsonConfigFileContent: typeof _ts.parseJsonConfigFileContent
   formatDiagnostics: typeof _ts.formatDiagnostics
   formatDiagnosticsWithColorAndContext: typeof _ts.formatDiagnosticsWithColorAndContext
+
+  createDocumentRegistry: typeof _ts.createDocumentRegistry
+  JsxEmit: typeof _ts.JsxEmit
+  createModuleResolutionCache: typeof _ts.createModuleResolutionCache
+  resolveModuleName: typeof _ts.resolveModuleName
+  resolveModuleNameFromCache: typeof _ts.resolveModuleNameFromCache
+  resolveTypeReferenceDirective: typeof _ts.resolveTypeReferenceDirective
+  createIncrementalCompilerHost: typeof _ts.createIncrementalCompilerHost
+  createSourceFile: typeof _ts.createSourceFile
+  getDefaultLibFileName: typeof _ts.getDefaultLibFileName
+  createIncrementalProgram: typeof _ts.createIncrementalProgram
+  createEmitAndSemanticDiagnosticsBuilderProgram: typeof _ts.createEmitAndSemanticDiagnosticsBuilderProgram
+
   libs?: string[]
 }
 
@@ -154,6 +168,10 @@ export namespace TSInternal {
     getCurrentDirectory (): string
     useCaseSensitiveFileNames: boolean
   }
+}
+
+export interface TSCompilerFactory {
+  createTypescriptCompiler (options?: any): TSCommon
 }
 
 /**
@@ -237,6 +255,10 @@ export interface CreateOptions {
    * @default "typescript"
    */
   compiler?: string
+  /**
+   * Specify a custom transpiler for use with transpileOnly
+   */
+  transpiler?: string | [string, object]
   /**
    * Paths which should not be compiled.
    *
@@ -566,6 +588,24 @@ export function create (rawOptions: CreateOptions = {}): Service {
     getNewLine: () => ts.sys.newLine,
     getCurrentDirectory: () => cwd,
     getCanonicalFileName: ts.sys.useCaseSensitiveFileNames ? x => x : x => x.toLowerCase()
+  }
+
+  if (options.transpileOnly && typeof transformers === 'function') {
+    throw new TypeError('Transformers function is unavailable in "--transpile-only"')
+  }
+  let customTranspiler: Transpiler | undefined = undefined
+  if (options.transpiler) {
+    if (!transpileOnly) throw new Error('Custom transpiler can only be used when transpileOnly is enabled.')
+    const transpilerName = typeof options.transpiler === 'string' ? options.transpiler : options.transpiler[0]
+    const transpilerOptions = typeof options.transpiler === 'string' ? {} : options.transpiler[1] ?? {}
+    // TODO mimic fixed resolution logic from loadCompiler master
+    // TODO refactor into a more generic "resolve dep relative to project" helper
+    const transpilerPath = require.resolve(transpilerName, { paths: [cwd, __dirname] })
+    const transpilerFactory: TranspilerFactory = require(transpilerPath).create
+    customTranspiler = transpilerFactory({
+      service: { options, config },
+      ...transpilerOptions
+    })
   }
 
   // Install source map support and read from memory cache.
@@ -1022,17 +1062,20 @@ export function create (rawOptions: CreateOptions = {}): Service {
       }
     }
   } else {
-    if (typeof transformers === 'function') {
-      throw new TypeError('Transformers function is unavailable in "--transpile-only"')
-    }
-
     getOutput = (code: string, fileName: string): SourceOutput => {
-      const result = ts.transpileModule(code, {
-        fileName,
-        compilerOptions: config.options,
-        reportDiagnostics: true,
-        transformers: transformers
-      })
+      let result: _ts.TranspileOutput
+      if (customTranspiler) {
+        result = customTranspiler.transpile(code, {
+          fileName
+        })
+      } else {
+        result = ts.transpileModule(code, {
+          fileName,
+          compilerOptions: config.options,
+          reportDiagnostics: true,
+          transformers: transformers as _ts.CustomTransformers | undefined
+        })
+      }
 
       const diagnosticList = filterDiagnostics(result.diagnostics || [], ignoreDiagnostics)
       if (diagnosticList.length) reportTSError(diagnosticList)
@@ -1285,12 +1328,12 @@ function filterRecognizedTsConfigTsNodeOptions (jsonObject: any): TsConfigOption
   const {
     compiler, compilerHost, compilerOptions, emit, files, ignore,
     ignoreDiagnostics, logError, preferTsExts, pretty, require, skipIgnore,
-    transpileOnly, typeCheck
+    transpileOnly, typeCheck, transpiler
   } = jsonObject as TsConfigOptions
   const filteredTsConfigOptions = {
     compiler, compilerHost, compilerOptions, emit, files, ignore,
     ignoreDiagnostics, logError, preferTsExts, pretty, require, skipIgnore,
-    transpileOnly, typeCheck
+    transpileOnly, typeCheck, transpiler
   }
   // Use the typechecker to make sure this implementation has the correct set of properties
   const catchExtraneousProps: keyof TsConfigOptions = null as any as keyof typeof filteredTsConfigOptions
@@ -1308,10 +1351,11 @@ type SourceOutput = [string, string]
  */
 function updateOutput (outputText: string, fileName: string, sourceMap: string, getExtension: (fileName: string) => string) {
   const base64Map = Buffer.from(updateSourceMap(sourceMap, fileName), 'utf8').toString('base64')
-  const sourceMapContent = `data:application/json;charset=utf-8;base64,${base64Map}`
-  const sourceMapLength = `${basename(fileName)}.map`.length + (getExtension(fileName).length - extname(fileName).length)
-
-  return outputText.slice(0, -sourceMapLength) + sourceMapContent
+  const sourceMapContent = `//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`
+  // Expected form: `//# sourceMappingURL=foo.js.map` for input file foo.tsx
+  const sourceMapLength = /*//# sourceMappingURL=*/ 21 + /*foo.tsx*/ basename(fileName).length - /*.tsx*/ extname(fileName).length + /*.js*/ getExtension(fileName).length + /*.map*/ 4
+  // Only rewrite if existing directive exists, to support compilers that do not append a sourcemap directive
+  return (outputText.slice(-sourceMapLength, -sourceMapLength + 21) === '//# sourceMappingURL=' ? outputText.slice(0, -sourceMapLength) : outputText) + sourceMapContent
 }
 
 /**
@@ -1337,7 +1381,7 @@ function filterDiagnostics (diagnostics: readonly _ts.Diagnostic[], ignore: numb
  *
  * Reference: https://github.com/microsoft/TypeScript/blob/fcd9334f57d85b73dd66ad2d21c02e84822f4841/src/services/utilities.ts#L705-L731
  */
-function getTokenAtPosition (ts: typeof _ts, sourceFile: _ts.SourceFile, position: number): _ts.Node {
+function getTokenAtPosition (ts: TSCommon, sourceFile: _ts.SourceFile, position: number): _ts.Node {
   let current: _ts.Node = sourceFile
 
   outer: while (true) {
