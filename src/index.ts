@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url'
 import type * as _ts from 'typescript'
 import { Module, createRequire as nodeCreateRequire, createRequireFromPath as nodeCreateRequireFromPath } from 'module'
 import type _createRequire from 'create-require'
+import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs'
 
 /** @internal */
 export const createRequire = nodeCreateRequire ?? nodeCreateRequireFromPath ?? require('create-require') as typeof _createRequire // tslint:disable-line:deprecation
@@ -131,6 +132,7 @@ export interface TSCommon {
   parseJsonConfigFileContent: typeof _ts.parseJsonConfigFileContent
   formatDiagnostics: typeof _ts.formatDiagnostics
   formatDiagnosticsWithColorAndContext: typeof _ts.formatDiagnosticsWithColorAndContext
+  libs?: string[]
 }
 
 /**
@@ -521,10 +523,10 @@ export function create (rawOptions: CreateOptions = {}): Service {
   let { compiler, ts } = loadCompiler(compilerName, rawOptions.projectSearchDir ?? rawOptions.project ?? cwd)
 
   // Read config file and merge new options between env and CLI options.
-  const { configFilePath, config, options: tsconfigOptions } = readConfig(cwd, ts, rawOptions)
-  const options = assign<RegisterOptions>({}, DEFAULTS, tsconfigOptions || {}, rawOptions)
+  const { configFilePath, config, tsNodeOptionsFromTsconfig } = readConfig(cwd, ts, rawOptions)
+  const options = assign<RegisterOptions>({}, DEFAULTS, tsNodeOptionsFromTsconfig || {}, rawOptions)
   options.require = [
-    ...tsconfigOptions.require || [],
+    ...tsNodeOptionsFromTsconfig.require || [],
     ...rawOptions.require || []
   ]
 
@@ -1167,30 +1169,40 @@ function fixConfig (ts: TSCommon, config: _ts.ParsedCommandLine) {
 /**
  * Load TypeScript configuration. Returns the parsed TypeScript config and
  * any `ts-node` options specified in the config file.
+ *
+ * Even when a tsconfig.json is not loaded, this function still handles merging
+ * compilerOptions from various sources: API, environment variables, etc.
  */
 function readConfig (
   cwd: string,
   ts: TSCommon,
-  rawOptions: CreateOptions
+  rawApiOptions: CreateOptions
 ): {
-  // Path of tsconfig file
+  /**
+   * Path of tsconfig file if one was loaded
+   */
   configFilePath: string | undefined,
-  // Parsed TypeScript configuration.
+  /**
+   * Parsed TypeScript configuration with compilerOptions merged from all other sources (env vars, etc)
+   */
   config: _ts.ParsedCommandLine
-  // Options pulled from `tsconfig.json`.
-  options: TsConfigOptions
+  /**
+   * ts-node options pulled from `tsconfig.json`, NOT merged with any other sources.  Merging must happen outside
+   * this function.
+   */
+  tsNodeOptionsFromTsconfig: TsConfigOptions
 } {
   let config: any = { compilerOptions: {} }
   let basePath = cwd
   let configFilePath: string | undefined = undefined
-  const projectSearchDir = resolve(cwd, rawOptions.projectSearchDir ?? cwd)
+  const projectSearchDir = resolve(cwd, rawApiOptions.projectSearchDir ?? cwd)
 
   const {
     fileExists = ts.sys.fileExists,
     readFile = ts.sys.readFile,
     skipProject = DEFAULTS.skipProject,
     project = DEFAULTS.project
-  } = rawOptions
+  } = rawApiOptions
 
   // Read project configuration when available.
   if (!skipProject) {
@@ -1206,7 +1218,7 @@ function readConfig (
         return {
           configFilePath,
           config: { errors: [result.error], fileNames: [], options: {} },
-          options: {}
+          tsNodeOptionsFromTsconfig: {}
         }
       }
 
@@ -1216,22 +1228,33 @@ function readConfig (
   }
 
   // Fix ts-node options that come from tsconfig.json
-  const tsconfigOptions: TsConfigOptions = Object.assign({}, filterRecognizedTsConfigTsNodeOptions(config['ts-node']))
+  const tsNodeOptionsFromTsconfig: TsConfigOptions = Object.assign({}, filterRecognizedTsConfigTsNodeOptions(config['ts-node']))
 
   // Remove resolution of "files".
-  const files = rawOptions.files ?? tsconfigOptions.files ?? DEFAULTS.files
+  const files = rawApiOptions.files ?? tsNodeOptionsFromTsconfig.files ?? DEFAULTS.files
   if (!files) {
     config.files = []
     config.include = []
   }
 
-  // Override default configuration options `ts-node` requires.
+  // Only if a config file is *not* loaded, load an implicit configuration from @tsconfig/bases
+  const skipDefaultCompilerOptions = configFilePath != null // tslint:disable-line
+  const defaultCompilerOptionsForNodeVersion = skipDefaultCompilerOptions ? undefined : getDefaultTsconfigJsonForNodeVersion(ts).compilerOptions
+
+  // Merge compilerOptions from all sources
   config.compilerOptions = Object.assign(
     {},
+    // automatically-applied options from @tsconfig/bases
+    defaultCompilerOptionsForNodeVersion,
+    // tsconfig.json "compilerOptions"
     config.compilerOptions,
+    // from env var
     DEFAULTS.compilerOptions,
-    tsconfigOptions.compilerOptions,
-    rawOptions.compilerOptions,
+    // tsconfig.json "ts-node": "compilerOptions"
+    tsNodeOptionsFromTsconfig.compilerOptions,
+    // passed programmatically
+    rawApiOptions.compilerOptions,
+    // overrides required by ts-node, cannot be changed
     TS_NODE_COMPILER_OPTIONS
   )
 
@@ -1242,15 +1265,15 @@ function readConfig (
     useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames
   }, basePath, undefined, configFilePath))
 
-  if (tsconfigOptions.require) {
+  if (tsNodeOptionsFromTsconfig.require) {
     // Modules are found relative to the tsconfig file, not the `dir` option
     const tsconfigRelativeRequire = createRequire(configFilePath!)
-    tsconfigOptions.require = tsconfigOptions.require.map((path: string) => {
+    tsNodeOptionsFromTsconfig.require = tsNodeOptionsFromTsconfig.require.map((path: string) => {
       return tsconfigRelativeRequire.resolve(path)
     })
   }
 
-  return { configFilePath, config: fixedConfig, options: tsconfigOptions }
+  return { configFilePath, config: fixedConfig, tsNodeOptionsFromTsconfig }
 }
 
 /**
