@@ -1,10 +1,3 @@
-// TODO
-// Rewrite into transpiler factory
-// Takes options, returns a transpileModule-equivalent function.
-// throw if transpiler specified without transpileOnly
-// throw if transpiler specified with transformers
-// Create spec for returning diagnostics?  Or allow transpiler to throw an error?
-
 import type * as ts from 'typescript'
 import type * as swcWasm from '@swc/wasm'
 import type * as swcTypes from '@swc/core'
@@ -17,7 +10,6 @@ export interface SwcTranspilerOptions extends CreateTranspilerOptions {
    * Default: '@swc/core', falling back to '@swc/wasm'
    */
   swc?: string | typeof swcWasm
-  // TODO Receive RegisterOptions somehow
 }
 
 export function create (createOptions: SwcTranspilerOptions): Transpiler {

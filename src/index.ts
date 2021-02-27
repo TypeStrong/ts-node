@@ -1065,8 +1065,6 @@ export function create (rawOptions: CreateOptions = {}): Service {
     getOutput = (code: string, fileName: string): SourceOutput => {
       let result: _ts.TranspileOutput
       if (customTranspiler) {
-        // TODO allow custom transpilers to report diagnostics?
-        // Or keep it simple and let them throw?
         result = customTranspiler.transpile(code, {
           fileName
         })

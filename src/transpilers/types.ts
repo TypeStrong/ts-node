@@ -17,6 +17,9 @@ export interface CreateTranspilerOptions {
   service: Pick<Service, 'config' | 'options'>
 }
 export interface Transpiler {
+  // TODOs
+  // Create spec for returning diagnostics?  Currently transpilers are allowed to
+  // throw an error but that's it.
   transpile (input: string, options: TranspileOptions): TranspileOutput
 }
 export interface TranspileOptions {
