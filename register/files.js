@@ -1,3 +1,3 @@
 require('../dist').register({
-  files: true
-})
+  files: true,
+});

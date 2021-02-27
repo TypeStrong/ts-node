@@ -1,3 +1,3 @@
-const v = require('./defined')
+const v = require('./defined');
 
-console.log(v)
+console.log(v);

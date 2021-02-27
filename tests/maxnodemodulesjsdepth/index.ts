@@ -1,2 +1,2 @@
-import {foo, bar} from 'external'
-import './other'
+import { foo, bar } from 'external';
+import './other';

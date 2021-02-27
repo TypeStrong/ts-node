@@ -1,3 +1,3 @@
-declare const v = 'Hello, World!'
+declare const v = 'Hello, World!';
 
-export default v
+export default v;

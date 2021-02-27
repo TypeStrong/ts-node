@@ -1,5 +1,5 @@
-function upper (str: string) {
-  return str.toUpperCase()
+function upper(str: string) {
+  return str.toUpperCase();
 }
 
-upper(10)
+upper(10);

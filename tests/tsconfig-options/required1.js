@@ -1,1 +1,1 @@
-process.required1 = true
+process.required1 = true;

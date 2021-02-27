@@ -1,1 +1,1 @@
-require('./esm-package/loaded-as')
+require('./esm-package/loaded-as');

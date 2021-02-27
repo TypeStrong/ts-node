@@ -1,32 +1,34 @@
-import type * as ts from 'typescript'
-import { Service } from '..'
+import type * as ts from 'typescript';
+import { Service } from '..';
 
 /**
  * Third-party transpilers are implemented as a CommonJS module with a
  * named export "create"
  */
 export interface TranspilerModule {
-  create: TranspilerFactory
+  create: TranspilerFactory;
 }
 /**
  * Called by ts-node to create a custom transpiler.
  */
-export type TranspilerFactory = (options: CreateTranspilerOptions) => Transpiler
+export type TranspilerFactory = (
+  options: CreateTranspilerOptions
+) => Transpiler;
 export interface CreateTranspilerOptions {
   // TODO this is confusing because its only a partial Service.  Rename?
-  service: Pick<Service, 'config' | 'options'>
+  service: Pick<Service, 'config' | 'options'>;
 }
 export interface Transpiler {
   // TODOs
   // Create spec for returning diagnostics?  Currently transpilers are allowed to
   // throw an error but that's it.
-  transpile (input: string, options: TranspileOptions): TranspileOutput
+  transpile(input: string, options: TranspileOptions): TranspileOutput;
 }
 export interface TranspileOptions {
-  fileName: string
+  fileName: string;
 }
 export interface TranspileOutput {
-  outputText: string
-  diagnostics?: ts.Diagnostic[]
-  sourceMapText?: string
+  outputText: string;
+  diagnostics?: ts.Diagnostic[];
+  sourceMapText?: string;
 }

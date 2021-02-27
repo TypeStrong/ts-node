@@ -1,3 +1,3 @@
 require('../').register({
-  transpileOnly: true
-})
+  transpileOnly: true,
+});

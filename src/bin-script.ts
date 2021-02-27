@@ -1,5 +1,5 @@
 #!/usr/bin/env node
 
-import { main } from './bin'
+import { main } from './bin';
 
-main(undefined, { '--script-mode': true })
+main(undefined, { '--script-mode': true });

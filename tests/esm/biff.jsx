@@ -1,8 +1,9 @@
-export const biff = 'biff'
+export const biff = 'biff';
 
 const React = {
-  createElement() {}
-}
-const div = <div></div>
+  createElement() {},
+};
+const div = <div></div>;
 
-if(typeof module !== 'undefined') throw new Error('module should not exist in ESM')
+if (typeof module !== 'undefined')
+  throw new Error('module should not exist in ESM');
