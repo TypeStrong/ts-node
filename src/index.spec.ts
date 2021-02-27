@@ -98,6 +98,10 @@ test.suite('ts-node', (test) => {
     testsDirRequire.resolve('ts-node/esm.mjs')
     testsDirRequire.resolve('ts-node/esm/transpile-only')
     testsDirRequire.resolve('ts-node/esm/transpile-only.mjs')
+
+    testsDirRequire.resolve('ts-node/node10/tsconfig.json')
+    testsDirRequire.resolve('ts-node/node12/tsconfig.json')
+    testsDirRequire.resolve('ts-node/node14/tsconfig.json')
   })
 
   test.suite('cli', (test) => {
