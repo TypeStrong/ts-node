@@ -1,0 +1,9 @@
+/*
+!/*.js
+!/*.mjs
+!/esm
+!/register
+!/scripts
+!/src
+!/tests
+tests/main-realpath/symlink/tsconfig.json
