@@ -604,7 +604,7 @@ export function create (rawOptions: CreateOptions = {}): Service {
     const transpilerFactory: TranspilerFactory = require(transpilerPath).create
     customTranspiler = transpilerFactory({
       service: { options, config },
-      ...transpilerOptions[1]
+      ...transpilerOptions
     })
   }
 
