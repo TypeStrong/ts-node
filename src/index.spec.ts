@@ -531,12 +531,12 @@ test.suite('ts-node', (test) => {
         expect(stdout).to.match(/plugin-a/);
       });
       test('should locate tsconfig relative to entry-point with --script-mode', async () => {
-        const {
-          err,
-          stdout,
-        } = await exec(`${BIN_PATH} --script-mode ../a/index`, {
-          cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
-        });
+        const { err, stdout } = await exec(
+          `${BIN_PATH} --script-mode ../a/index`,
+          {
+            cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
+          }
+        );
         expect(err).to.equal(null);
         expect(stdout).to.match(/plugin-a/);
       });
@@ -724,13 +724,12 @@ test.suite('ts-node', (test) => {
         (test) => {
           const macro = test.macro((nodeVersion: string) => async (t) => {
             const config = require(`@tsconfig/${nodeVersion}/tsconfig.json`);
-            const {
-              err,
-              stdout,
-              stderr,
-            } = await exec(`${BIN_PATH} --showConfig -e 10n`, {
-              cwd: join(TEST_DIR, 'tsconfig-bases', nodeVersion),
-            });
+            const { err, stdout, stderr } = await exec(
+              `${BIN_PATH} --showConfig -e 10n`,
+              {
+                cwd: join(TEST_DIR, 'tsconfig-bases', nodeVersion),
+              }
+            );
             expect(err).to.equal(null);
             t.like(JSON.parse(stdout), {
               compilerOptions: {
@@ -996,7 +995,6 @@ test.suite('ts-node', (test) => {
       test.beforeAll(async () => {
         old = require.extensions['.tsx']!;
         require.extensions['.tsx'] = (m: any, fileName) => {
-
           const _compile = m._compile;
 
           m._compile = function (code: string, fileName: string) {

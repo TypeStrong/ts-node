@@ -1384,7 +1384,6 @@ function registerExtension(
   const old = require.extensions[ext] || originalHandler;
 
   require.extensions[ext] = function (m: any, filename) {
-
     if (service.ignored(filename)) return old(m, filename);
 
     assertScriptCanLoadAsCJS(filename);

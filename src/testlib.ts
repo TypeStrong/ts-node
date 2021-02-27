@@ -98,11 +98,9 @@ function createTestInterface<Context>(opts: {
     assert(title);
     // return `${ titlePrefix }${ separator }${ title }`;
     if (titlePrefix != null && title != null) {
-
       return `${titlePrefix}${separator}${title}`;
     }
     if (titlePrefix == null && title != null) {
-
       return title;
     }
   }
