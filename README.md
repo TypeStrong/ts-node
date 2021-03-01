@@ -135,6 +135,8 @@ Create a new Node.js configuration and add `-r ts-node/register` to "Node parame
 
 **Note:** If you are using the `--project <tsconfig.json>` command line argument as per the [Configuration Options](#configuration-options), and want to apply this same behavior when launching in IntelliJ, specify under "Environment Variables": `TS_NODE_PROJECT=<tsconfig.json>`.
 
+**Note:** There also exists a plugin [Run Configuration for TypeScript](https://plugins.jetbrains.com/plugin/10841-run-configuration-for-typescript/) can be easy Run/Debug TypeScript.
+
 ## How It Works
 
 **TypeScript Node** works by registering the TypeScript compiler for `.ts`, `.tsx`, `.js`, and `.jsx` extensions.
