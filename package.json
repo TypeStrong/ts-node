@@ -118,6 +118,7 @@
     "@types/rimraf": "^3.0.0",
     "@types/semver": "^7.1.0",
     "@types/source-map-support": "^0.5.0",
+    "@yarnpkg/fslib": "^2.4.0",
     "ava": "^3.15.0",
     "axios": "^0.21.1",
     "chai": "^4.0.1",
@@ -139,6 +140,7 @@
   "peerDependencies": {
     "@swc/core": ">=1.2.45",
     "@swc/wasm": ">=1.2.45",
+    "@types/node": "*",
     "typescript": ">=2.7"
   },
   "peerDependenciesMeta": {

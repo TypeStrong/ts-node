@@ -855,7 +855,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     ): (_ts.ResolvedTypeReferenceDirective | undefined)[] => {
       // Note: seems to be called with empty typeDirectiveNames array for all files.
       return typeDirectiveNames.map((typeDirectiveName) => {
-        const {
+        let {
           resolvedTypeReferenceDirective,
         } = ts.resolveTypeReferenceDirective(
           typeDirectiveName,
@@ -864,6 +864,28 @@ export function create(rawOptions: CreateOptions = {}): Service {
           serviceHost,
           redirectedReference
         );
+        if (typeDirectiveName === 'node' && !resolvedTypeReferenceDirective) {
+          // Resolve @types/node relative to project first, then __dirname (copy logic from elsewhere / refactor into reusable function)
+          const typesNodePackageJsonPath = require.resolve(
+            '@types/node/package.json',
+            {
+              paths: [configFilePath ?? cwd, __dirname],
+            }
+          );
+          const typeRoots = [resolve(typesNodePackageJsonPath, '../..')];
+          ({
+            resolvedTypeReferenceDirective,
+          } = ts.resolveTypeReferenceDirective(
+            typeDirectiveName,
+            containingFile,
+            {
+              ...config.options,
+              typeRoots,
+            },
+            serviceHost,
+            redirectedReference
+          ));
+        }
         if (resolvedTypeReferenceDirective) {
           fixupResolvedModule(resolvedTypeReferenceDirective);
         }
@@ -1504,7 +1526,10 @@ function readConfig(
   const skipDefaultCompilerOptions = configFilePath != null;
   const defaultCompilerOptionsForNodeVersion = skipDefaultCompilerOptions
     ? undefined
-    : getDefaultTsconfigJsonForNodeVersion(ts).compilerOptions;
+    : {
+        ...getDefaultTsconfigJsonForNodeVersion(ts).compilerOptions,
+        types: ['node'],
+      };
 
   // Merge compilerOptions from all sources
   config.compilerOptions = Object.assign(

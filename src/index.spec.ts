@@ -12,6 +12,7 @@ import semver = require('semver');
 import ts = require('typescript');
 import proxyquire = require('proxyquire');
 import type * as tsNodeTypes from './index';
+import * as fs from 'fs';
 import {
   unlinkSync,
   existsSync,
@@ -21,6 +22,7 @@ import {
   copyFileSync,
   writeFileSync,
 } from 'fs';
+import { NodeFS, npath } from '@yarnpkg/fslib';
 import * as promisify from 'util.promisify';
 import { sync as rimrafSync } from 'rimraf';
 import type _createRequire from 'create-require';
@@ -30,6 +32,8 @@ import Module = require('module');
 import { PassThrough } from 'stream';
 import * as getStream from 'get-stream';
 import { once } from 'lodash';
+
+const xfs = new NodeFS(fs);
 
 type TestExecReturn = {
   stdout: string;
@@ -715,6 +719,38 @@ test.suite('ts-node', (test) => {
             );
           });
         }
+        test('implicitly loads @types/node even when not installed within local directory', async ({
+          context: { tempDir },
+        }) => {
+          const { err, stdout, stderr } = await exec(
+            `${BIN_PATH} -pe process.env.foo`,
+            {
+              cwd: tempDir,
+              env: { ...process.env, foo: 'hello world' },
+            }
+          );
+          expect(err).to.equal(null);
+          expect(stdout).to.equal('hello world\n');
+        });
+        test('implicitly loads local @types/node', async ({
+          context: { tempDir },
+        }) => {
+          await xfs.copyPromise(
+            npath.toPortablePath(tempDir),
+            npath.toPortablePath(join(TEST_DIR, 'local-types-node'))
+          );
+          const { err, stdout, stderr } = await exec(
+            `${BIN_PATH} -pe process.env.foo`,
+            {
+              cwd: tempDir,
+              env: { ...process.env, foo: 'hello world' },
+            }
+          );
+          expect(err).to.not.equal(null);
+          expect(stderr).to.contain(
+            "Property 'env' does not exist on type 'LocalNodeTypes_Process'"
+          );
+        });
       }
     );
 
