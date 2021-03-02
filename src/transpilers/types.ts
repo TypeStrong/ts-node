@@ -1,5 +1,5 @@
 import type * as ts from 'typescript';
-import { Service } from '..';
+import type { Service } from '../index';
 
 /**
  * Third-party transpilers are implemented as a CommonJS module with a

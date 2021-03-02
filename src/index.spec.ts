@@ -28,7 +28,7 @@ import { sync as rimrafSync } from 'rimraf';
 import type _createRequire from 'create-require';
 const createRequire: typeof _createRequire = require('create-require');
 import { pathToFileURL } from 'url';
-import Module = require('module');
+import type * as Module from 'module';
 import { PassThrough } from 'stream';
 import * as getStream from 'get-stream';
 import { once } from 'lodash';

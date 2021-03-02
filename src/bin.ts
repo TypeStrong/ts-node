@@ -4,15 +4,10 @@ import { join, resolve, dirname, parse as parsePath } from 'path';
 import { inspect } from 'util';
 import Module = require('module');
 import arg = require('arg');
+import { parse, createRequire } from './util';
 import { EVAL_FILENAME, EvalState, createRepl, ReplService } from './repl';
-import {
-  VERSION,
-  TSError,
-  parse,
-  register,
-  createRequire,
-  TSInternal,
-} from './index';
+import { VERSION, TSError, register } from './index';
+import type { TSInternal } from './ts-compiler-types';
 
 /**
  * Main `bin` functionality.
