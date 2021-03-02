@@ -1,4 +1,4 @@
-import { TsConfigOptions } from '.';
+import type { TsConfigOptions } from './index';
 
 /*
  * This interface exists solely for generating a JSON schema for tsconfig.json.

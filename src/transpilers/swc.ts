@@ -1,7 +1,7 @@
 import type * as ts from 'typescript';
 import type * as swcWasm from '@swc/wasm';
 import type * as swcTypes from '@swc/core';
-import { CreateTranspilerOptions, Transpiler } from './types';
+import type { CreateTranspilerOptions, Transpiler } from './types';
 
 export interface SwcTranspilerOptions extends CreateTranspilerOptions {
   /**
