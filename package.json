@@ -37,18 +37,19 @@
     "ts-node-transpile-only": "dist/bin-transpile.js"
   },
   "files": [
-    "transpilers/",
-    "dist/",
-    "dist-raw/",
-    "register/",
-    "esm/",
-    "esm.mjs",
-    "LICENSE",
-    "tsconfig.schema.json",
-    "tsconfig.schemastore-schema.json",
-    "node10/",
-    "node12/",
-    "node14/"
+    "/transpilers/",
+    "/dist/",
+    "!/dist/test",
+    "/dist-raw/",
+    "/register/",
+    "/esm/",
+    "/esm.mjs",
+    "/LICENSE",
+    "/tsconfig.schema.json",
+    "/tsconfig.schemastore-schema.json",
+    "/node10/",
+    "/node12/",
+    "/node14/"
   ],
   "scripts": {
     "lint": "prettier --check .",
@@ -101,7 +102,7 @@
   "homepage": "https://github.com/TypeStrong/ts-node",
   "ava": {
     "files": [
-      "dist/*.spec.js"
+      "dist/test/*.spec.js"
     ],
     "failWithoutAssertions": false,
     "timeout": "300s"

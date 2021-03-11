@@ -11,7 +11,7 @@ import { tmpdir } from 'os';
 import semver = require('semver');
 import ts = require('typescript');
 import proxyquire = require('proxyquire');
-import type * as tsNodeTypes from './index';
+import type * as tsNodeTypes from '../index';
 import * as fs from 'fs';
 import {
   unlinkSync,
@@ -64,8 +64,9 @@ function exec(
   );
 }
 
-const ROOT_DIR = resolve(__dirname, '..');
-const TEST_DIR = join(__dirname, '../tests');
+const ROOT_DIR = resolve(__dirname, '../..');
+const DIST_DIR = resolve(__dirname, '..');
+const TEST_DIR = join(__dirname, '../../tests');
 const PROJECT = join(TEST_DIR, 'tsconfig.json');
 const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node');
 const BIN_SCRIPT_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-script');
@@ -93,7 +94,7 @@ test.suite('ts-node', (test) => {
   const cmdNoProject = `"${BIN_PATH}"`;
 
   test('should export the correct version', () => {
-    expect(VERSION).to.equal(require('../package.json').version);
+    expect(VERSION).to.equal(require('../../package.json').version);
   });
   test('should export all CJS entrypoints', () => {
     // Ensure our package.json "exports" declaration allows `require()`ing all our entrypoints
@@ -900,7 +901,7 @@ test.suite('ts-node', (test) => {
               jsx: 'preserve',
             },
           }),
-          moduleTestPath: require.resolve('../tests/module'),
+          moduleTestPath: require.resolve('../../tests/module'),
         };
       })
     );
@@ -973,8 +974,8 @@ test.suite('ts-node', (test) => {
         });
 
         try {
-          expect(require('../tests/scope/a').ext).to.equal('.ts');
-          expect(require('../tests/scope/b').ext).to.equal('.ts');
+          expect(require('../../tests/scope/a').ext).to.equal('.ts');
+          expect(require('../../tests/scope/b').ext).to.equal('.ts');
         } finally {
           compilers.forEach((c) => c.enabled(false));
         }
@@ -991,13 +992,13 @@ test.suite('ts-node', (test) => {
     }
 
     test('should compile through js and ts', () => {
-      const m = require('../tests/complex');
+      const m = require('../../tests/complex');
 
       expect(m.example()).to.equal('example');
     });
 
     test('should work with proxyquire', () => {
-      const m = proxyquire('../tests/complex', {
+      const m = proxyquire('../../tests/complex', {
         './example': 'hello',
       });
 
@@ -1005,14 +1006,14 @@ test.suite('ts-node', (test) => {
     });
 
     test('should work with `require.cache`', () => {
-      const { example1, example2 } = require('../tests/require-cache');
+      const { example1, example2 } = require('../../tests/require-cache');
 
       expect(example1).to.not.equal(example2);
     });
 
     test('should use source maps', async () => {
       try {
-        require('../tests/throw');
+        require('../../tests/throw');
       } catch (error) {
         expect(error.stack).to.contain(
           [
@@ -1047,7 +1048,7 @@ test.suite('ts-node', (test) => {
           require.extensions['.tsx'] = old;
         });
         try {
-          require('../tests/with-jsx.tsx');
+          require('../../tests/with-jsx.tsx');
         } catch (error) {
           expect(error.stack).to.contain('SyntaxError: Unexpected token');
         }
@@ -1103,13 +1104,13 @@ test.suite('ts-node', (test) => {
       disallowed: string[]
     ) {
       for (const ext of allowed) {
-        expect(ignored(join(__dirname, `index${ext}`))).equal(
+        expect(ignored(join(DIST_DIR, `index${ext}`))).equal(
           false,
           `should accept ${ext} files`
         );
       }
       for (const ext of disallowed) {
-        expect(ignored(join(__dirname, `index${ext}`))).equal(
+        expect(ignored(join(DIST_DIR, `index${ext}`))).equal(
           true,
           `should ignore ${ext} files`
         );
