@@ -14,7 +14,8 @@
     "types": ["node"],
     "stripInternal": true,
     "incremental": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "importsNotUsedAsValues": "error"
   },
   "include": [
     "src/**/*"

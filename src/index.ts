@@ -1,25 +1,18 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path';
-import sourceMapSupport = require('source-map-support');
-import * as ynModule from 'yn';
-import { BaseError } from 'make-error';
+import { Module } from 'module';
 import * as util from 'util';
 import { fileURLToPath } from 'url';
+
+import sourceMapSupport = require('source-map-support');
+import { BaseError } from 'make-error';
 import type * as _ts from 'typescript';
-import {
-  Module,
-  createRequire as nodeCreateRequire,
-  createRequireFromPath as nodeCreateRequireFromPath,
-} from 'module';
-import type _createRequire from 'create-require';
-import { Transpiler, TranspilerFactory } from './transpilers/types';
-import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs';
 
-/** @internal */
-export const createRequire =
-  nodeCreateRequire ??
-  nodeCreateRequireFromPath ??
-  (require('create-require') as typeof _createRequire);
+import type { Transpiler, TranspilerFactory } from './transpilers/types';
+import { assign, normalizeSlashes, parse, split, yn } from './util';
+import { readConfig } from './configuration';
+import type { TSCommon, TSInternal } from './ts-compiler-types';
 
+export { TSCommon };
 export { createRepl, CreateReplOptions, ReplService } from './repl';
 
 /**
@@ -99,14 +92,6 @@ export interface ProcessEnv {
 export const INSPECT_CUSTOM = util.inspect.custom || 'inspect';
 
 /**
- * Wrapper around yn module that returns `undefined` instead of `null`.
- * This is implemented by yn v4, but we're staying on v3 to avoid v4's node 10 requirement.
- */
-function yn(value: string | undefined) {
-  return ynModule(value) ?? undefined;
-}
-
-/**
  * Debugging `ts-node`.
  */
 const shouldDebug = yn(env.TS_NODE_DEBUG);
@@ -124,69 +109,6 @@ const debugFn = shouldDebug
       };
     }
   : <T, U>(_: string, fn: (arg: T) => U) => fn;
-
-/**
- * Common TypeScript interfaces between versions.
- */
-export interface TSCommon {
-  version: typeof _ts.version;
-  sys: typeof _ts.sys;
-  ScriptSnapshot: typeof _ts.ScriptSnapshot;
-  displayPartsToString: typeof _ts.displayPartsToString;
-  createLanguageService: typeof _ts.createLanguageService;
-  getDefaultLibFilePath: typeof _ts.getDefaultLibFilePath;
-  getPreEmitDiagnostics: typeof _ts.getPreEmitDiagnostics;
-  flattenDiagnosticMessageText: typeof _ts.flattenDiagnosticMessageText;
-  transpileModule: typeof _ts.transpileModule;
-  ModuleKind: typeof _ts.ModuleKind;
-  ScriptTarget: typeof _ts.ScriptTarget;
-  findConfigFile: typeof _ts.findConfigFile;
-  readConfigFile: typeof _ts.readConfigFile;
-  parseJsonConfigFileContent: typeof _ts.parseJsonConfigFileContent;
-  formatDiagnostics: typeof _ts.formatDiagnostics;
-  formatDiagnosticsWithColorAndContext: typeof _ts.formatDiagnosticsWithColorAndContext;
-
-  createDocumentRegistry: typeof _ts.createDocumentRegistry;
-  JsxEmit: typeof _ts.JsxEmit;
-  createModuleResolutionCache: typeof _ts.createModuleResolutionCache;
-  resolveModuleName: typeof _ts.resolveModuleName;
-  resolveModuleNameFromCache: typeof _ts.resolveModuleNameFromCache;
-  resolveTypeReferenceDirective: typeof _ts.resolveTypeReferenceDirective;
-  createIncrementalCompilerHost: typeof _ts.createIncrementalCompilerHost;
-  createSourceFile: typeof _ts.createSourceFile;
-  getDefaultLibFileName: typeof _ts.getDefaultLibFileName;
-  createIncrementalProgram: typeof _ts.createIncrementalProgram;
-  createEmitAndSemanticDiagnosticsBuilderProgram: typeof _ts.createEmitAndSemanticDiagnosticsBuilderProgram;
-
-  libs?: string[];
-}
-
-/**
- * Compiler APIs we use that are marked internal and not included in TypeScript's public API declarations
- * @internal
- */
-export interface TSInternal {
-  // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906-L1909
-  createGetCanonicalFileName(
-    useCaseSensitiveFileNames: boolean
-  ): TSInternal.GetCanonicalFileName;
-  // https://github.com/microsoft/TypeScript/blob/c117c266e09c80e8a06b24a6e94b9d018f5fae6b/src/compiler/commandLineParser.ts#L2054
-  convertToTSConfig(
-    configParseResult: _ts.ParsedCommandLine,
-    configFileName: string,
-    host: TSInternal.ConvertToTSConfigHost
-  ): any;
-}
-/** @internal */
-export namespace TSInternal {
-  // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906
-  export type GetCanonicalFileName = (fileName: string) => string;
-  // https://github.com/microsoft/TypeScript/blob/c117c266e09c80e8a06b24a6e94b9d018f5fae6b/src/compiler/commandLineParser.ts#L2041
-  export interface ConvertToTSConfigHost {
-    getCurrentDirectory(): string;
-    useCaseSensitiveFileNames: boolean;
-  }
-}
 
 export interface TSCompilerFactory {
   createTypescriptCompiler(options?: any): TSCommon;
@@ -379,19 +301,6 @@ export type ReadFileFunction = (path: string) => string | undefined;
 export type FileExistsFunction = (path: string) => boolean;
 
 /**
- * Like `Object.assign`, but ignores `undefined` properties.
- */
-function assign<T extends object>(initialValue: T, ...sources: Array<T>): T {
-  for (const source of sources) {
-    for (const key of Object.keys(source)) {
-      const value = (source as any)[key];
-      if (value !== undefined) (initialValue as any)[key] = value;
-    }
-  }
-  return initialValue;
-}
-
-/**
  * Information retrieved from type info check.
  */
 export interface TypeInfo {
@@ -424,42 +333,6 @@ export const DEFAULTS: RegisterOptions = {
   logError: yn(env.TS_NODE_LOG_ERROR),
   experimentalEsmLoader: false,
 };
-
-/**
- * TypeScript compiler option values required by `ts-node` which cannot be overridden.
- */
-const TS_NODE_COMPILER_OPTIONS = {
-  sourceMap: true,
-  inlineSourceMap: false,
-  inlineSources: true,
-  declaration: false,
-  noEmit: false,
-  outDir: '.ts-node',
-};
-
-/**
- * Split a string array of values.
- * @internal
- */
-export function split(value: string | undefined) {
-  return typeof value === 'string' ? value.split(/ *, */g) : undefined;
-}
-
-/**
- * Parse a string as JSON.
- * @internal
- */
-export function parse(value: string | undefined): object | undefined {
-  return typeof value === 'string' ? JSON.parse(value) : undefined;
-}
-
-/**
- * Replace backslashes with forward slashes.
- * @internal
- */
-export function normalizeSlashes(value: string): string {
-  return value.replace(/\\/g, '/');
-}
 
 /**
  * TypeScript diagnostics error.
@@ -1474,209 +1347,6 @@ function registerExtension(
 
     return old(m, filename);
   };
-}
-
-/**
- * Do post-processing on config options to support `ts-node`.
- */
-function fixConfig(ts: TSCommon, config: _ts.ParsedCommandLine) {
-  // Delete options that *should not* be passed through.
-  delete config.options.out;
-  delete config.options.outFile;
-  delete config.options.composite;
-  delete config.options.declarationDir;
-  delete config.options.declarationMap;
-  delete config.options.emitDeclarationOnly;
-
-  // Target ES5 output by default (instead of ES3).
-  if (config.options.target === undefined) {
-    config.options.target = ts.ScriptTarget.ES5;
-  }
-
-  // Target CommonJS modules by default (instead of magically switching to ES6 when the target is ES6).
-  if (config.options.module === undefined) {
-    config.options.module = ts.ModuleKind.CommonJS;
-  }
-
-  return config;
-}
-
-/**
- * Load TypeScript configuration. Returns the parsed TypeScript config and
- * any `ts-node` options specified in the config file.
- *
- * Even when a tsconfig.json is not loaded, this function still handles merging
- * compilerOptions from various sources: API, environment variables, etc.
- */
-function readConfig(
-  cwd: string,
-  ts: TSCommon,
-  rawApiOptions: CreateOptions
-): {
-  /**
-   * Path of tsconfig file if one was loaded
-   */
-  configFilePath: string | undefined;
-  /**
-   * Parsed TypeScript configuration with compilerOptions merged from all other sources (env vars, etc)
-   */
-  config: _ts.ParsedCommandLine;
-  /**
-   * ts-node options pulled from `tsconfig.json`, NOT merged with any other sources.  Merging must happen outside
-   * this function.
-   */
-  tsNodeOptionsFromTsconfig: TsConfigOptions;
-} {
-  let config: any = { compilerOptions: {} };
-  let basePath = cwd;
-  let configFilePath: string | undefined = undefined;
-  const projectSearchDir = resolve(cwd, rawApiOptions.projectSearchDir ?? cwd);
-
-  const {
-    fileExists = ts.sys.fileExists,
-    readFile = ts.sys.readFile,
-    skipProject = DEFAULTS.skipProject,
-    project = DEFAULTS.project,
-  } = rawApiOptions;
-
-  // Read project configuration when available.
-  if (!skipProject) {
-    configFilePath = project
-      ? resolve(cwd, project)
-      : ts.findConfigFile(projectSearchDir, fileExists);
-
-    if (configFilePath) {
-      const result = ts.readConfigFile(configFilePath, readFile);
-
-      // Return diagnostics.
-      if (result.error) {
-        return {
-          configFilePath,
-          config: { errors: [result.error], fileNames: [], options: {} },
-          tsNodeOptionsFromTsconfig: {},
-        };
-      }
-
-      config = result.config;
-      basePath = dirname(configFilePath);
-    }
-  }
-
-  // Fix ts-node options that come from tsconfig.json
-  const tsNodeOptionsFromTsconfig: TsConfigOptions = Object.assign(
-    {},
-    filterRecognizedTsConfigTsNodeOptions(config['ts-node'])
-  );
-
-  // Remove resolution of "files".
-  const files =
-    rawApiOptions.files ?? tsNodeOptionsFromTsconfig.files ?? DEFAULTS.files;
-  if (!files) {
-    config.files = [];
-    config.include = [];
-  }
-
-  // Only if a config file is *not* loaded, load an implicit configuration from @tsconfig/bases
-  const skipDefaultCompilerOptions = configFilePath != null;
-  const defaultCompilerOptionsForNodeVersion = skipDefaultCompilerOptions
-    ? undefined
-    : {
-        ...getDefaultTsconfigJsonForNodeVersion(ts).compilerOptions,
-        types: ['node'],
-      };
-
-  // Merge compilerOptions from all sources
-  config.compilerOptions = Object.assign(
-    {},
-    // automatically-applied options from @tsconfig/bases
-    defaultCompilerOptionsForNodeVersion,
-    // tsconfig.json "compilerOptions"
-    config.compilerOptions,
-    // from env var
-    DEFAULTS.compilerOptions,
-    // tsconfig.json "ts-node": "compilerOptions"
-    tsNodeOptionsFromTsconfig.compilerOptions,
-    // passed programmatically
-    rawApiOptions.compilerOptions,
-    // overrides required by ts-node, cannot be changed
-    TS_NODE_COMPILER_OPTIONS
-  );
-
-  const fixedConfig = fixConfig(
-    ts,
-    ts.parseJsonConfigFileContent(
-      config,
-      {
-        fileExists,
-        readFile,
-        readDirectory: ts.sys.readDirectory,
-        useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
-      },
-      basePath,
-      undefined,
-      configFilePath
-    )
-  );
-
-  if (tsNodeOptionsFromTsconfig.require) {
-    // Modules are found relative to the tsconfig file, not the `dir` option
-    const tsconfigRelativeRequire = createRequire(configFilePath!);
-    tsNodeOptionsFromTsconfig.require = tsNodeOptionsFromTsconfig.require.map(
-      (path: string) => {
-        return tsconfigRelativeRequire.resolve(path);
-      }
-    );
-  }
-
-  return { configFilePath, config: fixedConfig, tsNodeOptionsFromTsconfig };
-}
-
-/**
- * Given the raw "ts-node" sub-object from a tsconfig, return an object with only the properties
- * recognized by "ts-node"
- */
-function filterRecognizedTsConfigTsNodeOptions(
-  jsonObject: any
-): TsConfigOptions {
-  if (jsonObject == null) return jsonObject;
-  const {
-    compiler,
-    compilerHost,
-    compilerOptions,
-    emit,
-    files,
-    ignore,
-    ignoreDiagnostics,
-    logError,
-    preferTsExts,
-    pretty,
-    require,
-    skipIgnore,
-    transpileOnly,
-    typeCheck,
-    transpiler,
-  } = jsonObject as TsConfigOptions;
-  const filteredTsConfigOptions = {
-    compiler,
-    compilerHost,
-    compilerOptions,
-    emit,
-    files,
-    ignore,
-    ignoreDiagnostics,
-    logError,
-    preferTsExts,
-    pretty,
-    require,
-    skipIgnore,
-    transpileOnly,
-    typeCheck,
-    transpiler,
-  };
-  // Use the typechecker to make sure this implementation has the correct set of properties
-  const catchExtraneousProps: keyof TsConfigOptions = (null as any) as keyof typeof filteredTsConfigOptions;
-  const catchMissingProps: keyof typeof filteredTsConfigOptions = (null as any) as keyof TsConfigOptions;
-  return filteredTsConfigOptions;
 }
 
 /**

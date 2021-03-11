@@ -6,7 +6,7 @@ import { Script } from 'vm';
 import { Service, CreateOptions, TSError, env } from './index';
 import { readFileSync, statSync } from 'fs';
 import { Console } from 'console';
-import * as tty from 'tty';
+import type * as tty from 'tty';
 
 /**
  * Eval filename for REPL/debug.

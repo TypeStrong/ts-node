@@ -1,4 +1,4 @@
-import { TSCommon } from '.';
+import type { TSCommon, TSInternal } from './ts-compiler-types';
 
 const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
 /**
@@ -7,6 +7,7 @@ const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
  * @internal
  */
 export function getDefaultTsconfigJsonForNodeVersion(ts: TSCommon): any {
+  const tsInternal = (ts as any) as TSInternal;
   if (nodeMajor >= 14) {
     const config = require('@tsconfig/node14/tsconfig.json');
     if (configCompatible(config)) return config;
@@ -28,8 +29,8 @@ export function getDefaultTsconfigJsonForNodeVersion(ts: TSCommon): any {
       typeof (ts.ScriptTarget as any)[
         config.compilerOptions.target.toUpperCase()
       ] === 'number' &&
-      ts.libs &&
-      config.compilerOptions.lib.every((lib) => ts.libs!.includes(lib))
+      tsInternal.libs &&
+      config.compilerOptions.lib.every((lib) => tsInternal.libs!.includes(lib))
     );
   }
 }
