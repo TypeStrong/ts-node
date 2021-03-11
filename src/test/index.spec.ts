@@ -11,7 +11,7 @@ import { tmpdir } from 'os';
 import semver = require('semver');
 import ts = require('typescript');
 import proxyquire = require('proxyquire');
-import type * as tsNodeTypes from './index';
+import type * as tsNodeTypes from '../index';
 import * as fs from 'fs';
 import {
   unlinkSync,
@@ -64,8 +64,9 @@ function exec(
   );
 }
 
-const ROOT_DIR = resolve(__dirname, '..');
-const TEST_DIR = join(__dirname, '../tests');
+const ROOT_DIR = resolve(__dirname, '../..');
+const DIST_DIR = resolve(__dirname, '..');
+const TEST_DIR = join(__dirname, '../../tests');
 const PROJECT = join(TEST_DIR, 'tsconfig.json');
 const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node');
 const BIN_SCRIPT_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-script');
@@ -1103,13 +1104,13 @@ test.suite('ts-node', (test) => {
       disallowed: string[]
     ) {
       for (const ext of allowed) {
-        expect(ignored(join(__dirname, `index${ext}`))).equal(
+        expect(ignored(join(DIST_DIR, `index${ext}`))).equal(
           false,
           `should accept ${ext} files`
         );
       }
       for (const ext of disallowed) {
-        expect(ignored(join(__dirname, `index${ext}`))).equal(
+        expect(ignored(join(DIST_DIR, `index${ext}`))).equal(
           true,
           `should ignore ${ext} files`
         );
