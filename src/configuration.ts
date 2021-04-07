@@ -41,6 +41,36 @@ function fixConfig(ts: TSCommon, config: _ts.ParsedCommandLine) {
   return config;
 }
 
+function readTsConfigExtendForTsNodeRecursively(
+  cwd: string,
+  ts: TSCommon,
+  rawConfig: { [key: string]: any } = {}
+): TsConfigOptions {
+  const configKey = 'ts-node';
+  const recurse = (
+    extending: { [key: string]: any } = {},
+    original: { [key: string]: any } = {}
+  ) => {
+    return readTsConfigExtendForTsNodeRecursively(cwd, ts, {
+      [configKey]: { ...extending[configKey], ...original[configKey] },
+    });
+  };
+
+  const { extends: extendFile, ...config } = rawConfig;
+
+  const result =
+    extendFile === undefined
+      ? filterRecognizedTsConfigTsNodeOptions(config[configKey])
+      : [extendFile]
+          .filter((x) => x && typeof x === 'string')
+          .map((x) => x as string)
+          .map((extended) => resolve(cwd, extended))
+          .map((pathString) => ts.readConfigFile(pathString, ts.sys.readFile))
+          .map((readFile) => readFile.config)
+          .map((extendedConfig) => recurse(extendedConfig, config))[0];
+
+  return result ?? {};
+}
 /**
  * Load TypeScript configuration. Returns the parsed TypeScript config and
  * any `ts-node` options specified in the config file.
@@ -105,11 +135,11 @@ export function readConfig(
   }
 
   // Fix ts-node options that come from tsconfig.json
-  const tsNodeOptionsFromTsconfig: TsConfigOptions = Object.assign(
-    {},
-    filterRecognizedTsConfigTsNodeOptions(config['ts-node'])
+  const tsNodeOptionsFromTsconfig: TsConfigOptions = readTsConfigExtendForTsNodeRecursively(
+    cwd,
+    ts,
+    config
   );
-
   // Remove resolution of "files".
   const files =
     rawApiOptions.files ?? tsNodeOptionsFromTsconfig.files ?? DEFAULTS.files;
@@ -179,8 +209,8 @@ export function readConfig(
  */
 function filterRecognizedTsConfigTsNodeOptions(
   jsonObject: any
-): TsConfigOptions {
-  if (jsonObject == null) return jsonObject;
+): TsConfigOptions | undefined {
+  if (jsonObject == null) return undefined;
   const {
     compiler,
     compilerHost,
