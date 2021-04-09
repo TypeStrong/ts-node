@@ -1,4 +1,4 @@
-import { resolve, dirname } from 'path';
+import { resolve, dirname, isAbsolute } from 'path';
 import type * as _ts from 'typescript';
 import { CreateOptions, DEFAULTS, TSCommon, TsConfigOptions } from './index';
 import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs';
@@ -42,16 +42,17 @@ function fixConfig(ts: TSCommon, config: _ts.ParsedCommandLine) {
 }
 
 function readTsConfigExtendForTsNodeRecursively(
-  cwd: string,
+  dir: string,
   ts: TSCommon,
-  rawConfig: { [key: string]: any } = {}
+  rawConfig: Record<string, any> = {}
 ): TsConfigOptions {
   const configKey = 'ts-node';
   const recurse = (
-    extending: { [key: string]: any } = {},
-    original: { [key: string]: any } = {}
+    newDir: string,
+    extending: Record<string, any> = {},
+    original: Record<string, any> = {}
   ) => {
-    return readTsConfigExtendForTsNodeRecursively(cwd, ts, {
+    return readTsConfigExtendForTsNodeRecursively(newDir, ts, {
       [configKey]: { ...extending[configKey], ...original[configKey] },
     });
   };
@@ -62,12 +63,19 @@ function readTsConfigExtendForTsNodeRecursively(
     extendFile === undefined
       ? filterRecognizedTsConfigTsNodeOptions(config[configKey])
       : [extendFile]
-          .filter((x) => x && typeof x === 'string')
-          .map((x) => x as string)
-          .map((extended) => resolve(cwd, extended))
-          .map((pathString) => ts.readConfigFile(pathString, ts.sys.readFile))
-          .map((readFile) => readFile.config)
-          .map((extendedConfig) => recurse(extendedConfig, config))[0];
+        .filter(x => x && typeof x === 'string')
+        .map(x => x as string)
+        .map(confPath => isAbsolute(confPath) ? [confPath] : [dir, confPath])
+        .map(x => {
+          console.log(x)
+          return x
+        })
+        .map(paths => resolve(...paths))
+        .map(newPath => ({
+          dir: dirname(newPath),
+          value: ts.readConfigFile(newPath, ts.sys.readFile).config
+        }))
+        .map(newConfig => recurse(newConfig.dir, newConfig.value, config))[0];
 
   return result ?? {};
 }
@@ -136,7 +144,7 @@ export function readConfig(
 
   // Fix ts-node options that come from tsconfig.json
   const tsNodeOptionsFromTsconfig: TsConfigOptions = readTsConfigExtendForTsNodeRecursively(
-    cwd,
+    basePath,
     ts,
     config
   );
@@ -153,9 +161,9 @@ export function readConfig(
   const defaultCompilerOptionsForNodeVersion = skipDefaultCompilerOptions
     ? undefined
     : {
-        ...getDefaultTsconfigJsonForNodeVersion(ts).compilerOptions,
-        types: ['node'],
-      };
+      ...getDefaultTsconfigJsonForNodeVersion(ts).compilerOptions,
+      types: ['node'],
+    };
 
   // Merge compilerOptions from all sources
   config.compilerOptions = Object.assign(
