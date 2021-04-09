@@ -15,7 +15,7 @@ ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 
 `ts-node` loads `tsconfig.json` automatically. Use this recommended configuration as a starting point.
 
-```jsonc
+```json
 // tsconfig.json
 {
   "ts-node": {
@@ -94,12 +94,12 @@ _The name of the environment variable and the option's default value are denoted
 
 We recommend using the `NODE_OPTIONS`](https://nodejs.org/api/cli.html#cli_node_options_options) environment variable to pass options to `node`.
 
-```
+```sh
 NODE_OPTIONS='--trace-deprecation --abort-on-uncaught-exception' ts-node ./index.ts
 ```
 
 Alternatively, you can invoke `node` directly and install `ts-node` via `--require`/`-r`
 
-```
+```sh
 node --trace-deprecation --abort-on-uncaught-exception -r ts-node/register ./index.ts
 ```
