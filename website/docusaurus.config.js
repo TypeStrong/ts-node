@@ -71,6 +71,10 @@ module.exports = {
       ],
       // copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
     },
+    prism: {
+      // for syntax highlighting
+      // additionalLanguages: ['powershell'],
+    },
   },
   presets: [
     [
