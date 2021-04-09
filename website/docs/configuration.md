@@ -4,7 +4,7 @@ title: Configuration
 
 You can set options by passing them before the script path, via programmatic usage, via `tsconfig.json`, or via environment variables.
 
-```sh
+```shell
 ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 ```
 
@@ -15,8 +15,7 @@ ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 
 `ts-node` loads `tsconfig.json` automatically. Use this recommended configuration as a starting point.
 
-```json
-// tsconfig.json
+```json title="tsconfig.json"
 {
   "ts-node": {
     // Most ts-node options can be specified here using their programmatic, camel-case names.
@@ -94,12 +93,12 @@ _The name of the environment variable and the option's default value are denoted
 
 We recommend using the `NODE_OPTIONS`](https://nodejs.org/api/cli.html#cli_node_options_options) environment variable to pass options to `node`.
 
-```sh
+```shell
 NODE_OPTIONS='--trace-deprecation --abort-on-uncaught-exception' ts-node ./index.ts
 ```
 
 Alternatively, you can invoke `node` directly and install `ts-node` via `--require`/`-r`
 
-```sh
+```shell
 node --trace-deprecation --abort-on-uncaught-exception -r ts-node/register ./index.ts
 ```
