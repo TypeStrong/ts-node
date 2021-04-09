@@ -99,7 +99,7 @@
   "bugs": {
     "url": "https://github.com/TypeStrong/ts-node/issues"
   },
-  "homepage": "https://github.com/TypeStrong/ts-node",
+  "homepage": "https://typestrong.org/ts-node",
   "ava": {
     "files": [
       "dist/test/*.spec.js"
