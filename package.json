@@ -161,6 +161,7 @@
     "diff": "^4.0.1",
     "make-error": "^1.1.1",
     "source-map-support": "^0.5.17",
+    "v8-compile-cache": "^2.2.0",
     "yn": "3.1.1"
   },
   "prettier": {
