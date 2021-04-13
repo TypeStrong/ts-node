@@ -3,7 +3,7 @@ on:
   # branches pushed by collaborators
   push:
     branches:
-      - main
+      - docs
 jobs:
   build:
     name: Build & Deploy
