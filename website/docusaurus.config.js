@@ -82,9 +82,8 @@ module.exports = {
       {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
-          // Please change this to your repo.
           editUrl:
-            'https://github.com/TypeStrong/ts-node/edit/main/website/',
+            'https://github.com/TypeStrong/ts-node/edit/docs/website/',
         },
         // blog: {
         //   showReadingTime: true,

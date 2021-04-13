@@ -2,19 +2,28 @@
 title: "Imports: CommonJS vs native modules"
 ---
 
-TypeScript should almost always be written using `import` and `export` syntax.  You can either compile it to CommonJS or use node's native ESM support.  You do not need to use node's native modules to use `import` syntax.
+TypeScript should almost always be written using modern `import` and `export` syntax.  However, you can either downlevel it to CommonJS or use node's native ESM support.  You do not need to use node's native ECMAScript modules support to use `import` syntax.
 
 ### CommonJS (recommended)
 
-We recommend compiling to CommonJS.  To do this, you must set `"module": "CommonJS"` in your `tsconfig.json` or compiler options, and make sure your package.json does *not* have `"type": "module"`.
+We recommend downleveling to CommonJS.  To do this, you must set `"module": "CommonJS"` in your `tsconfig.json` or compiler options, and make sure your package.json does *not* have `"type": "module"`.
 
-```
+```json title="tsconfig.json"
 {
   "compilerOptions": {
     "module": "CommonJS"
   }
 }
 ```
+
+```json title="package.json"
+{
+  // This can be omitted; commonjs is the default
+  "type": "commonjs"
+}
+```
+
+See also: https://nodejs.org/api/packages.html#packages_type
 
 ### Native ECMAScript modules
 
