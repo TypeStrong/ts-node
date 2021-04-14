@@ -1,97 +1,60 @@
 # ![TypeScript Node](logo.svg?sanitize=true)
 
-\[!\[NPM version]\[https://img.shields.io/npm/v/ts-node.svg?style=flat]]\[https://npmjs.org/package/ts-node]
-\[!\[NPM downloads]\[https://img.shields.io/npm/dm/ts-node.svg?style=flat]]\[https://npmjs.org/package/ts-node]
-\[!\[Build status]\[https://img.shields.io/github/workflow/status/TypeStrong/ts-node/Continuous%20Integration]]\[https://github.com/TypeStrong/ts-node/actions?query=workflow%3A%22Continuous+Integration%22]
-\[!\[Test coverage]\[https://codecov.io/gh/TypeStrong/ts-node/branch/main/graph/badge.svg]]\[https://codecov.io/gh/TypeStrong/ts-node]
+[![NPM version](https://img.shields.io/npm/v/ts-node.svg?style=flat)](https://npmjs.org/package/ts-node)
+[![NPM downloads](https://img.shields.io/npm/dm/ts-node.svg?style=flat)](https://npmjs.org/package/ts-node)
+[![Build status](https://img.shields.io/github/workflow/status/TypeStrong/ts-node/Continuous%20Integration)](https://github.com/TypeStrong/ts-node/actions?query=workflow%3A%22Continuous+Integration%22)
+[![Test coverage](https://codecov.io/gh/TypeStrong/ts-node/branch/main/graph/badge.svg)](https://codecov.io/gh/TypeStrong/ts-node)
 
 > TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.7`**.
 
-> The latest documentation can always be found on our website: <https://typestrong.org/ts-node>
+The latest documentation can also be found on our website: <https://typestrong.org/ts-node>
 
-### *Experimental ESM support*
+*Experimental ESM support*
 
 Native ESM support is currently experimental. For usage, limitations, and to provide feedback, see [#1007](https://github.com/TypeStrong/ts-node/issues/1007).
 
 # Table of Contents
 
 *   [General](#general)
-
     *   [Getting Started](#getting-started)
-
         *   [Installation](#installation)
-
         *   [Usage](#usage)
-
             *   [Shell](#shell)
-
             *   [Shebang](#shebang)
-
             *   [Programmatic](#programmatic)
-
                 *   [Developers](#developers)
-
         *   [Help! My Types Are Missing!](#help-my-types-are-missing)
-
     *   [How It Works](#how-it-works)
-
         *   [Skipping `node_modules`](#skipping-node_modules)
-
     *   [Usage](#usage-1)
-
     *   [Configuration](#configuration)
-
         *   [Options via tsconfig.json (recommended)](#options-via-tsconfigjson-recommended)
-
             *   [Finding `tsconfig.json`](#finding-tsconfigjson)
-
         *   [CLI Options](#cli-options)
-
         *   [CLI and Programmatic Options](#cli-and-programmatic-options)
-
         *   [Programmatic-only Options](#programmatic-only-options)
-
         *   [`node` flags](#node-flags)
-
     *   [Imports: CommonJS vs native modules](#imports-commonjs-vs-native-modules)
-
         *   [CommonJS (recommended)](#commonjs-recommended)
         *   [Native ECMAScript modules](#native-ecmascript-modules)
-
     *   [Shebang](#shebang-1)
-
     *   [Troubleshooting Errors](#troubleshooting-errors)
-
         *   [`TSError`](#tserror)
-
         *   [`SyntaxError`](#syntaxerror)
-
             *   [Unsupported JavaScript syntax](#unsupported-javascript-syntax)
-
 *   [Advanced](#advanced)
-
 *   [Recipes](#recipes)
-
     *   [Watching and Restarting](#watching-and-restarting)
-
     *   [Mocha](#mocha)
-
         *   [Mocha 7 and newer](#mocha-7-and-newer)
         *   [Mocha <=6](#mocha-6)
-
     *   [Gulp](#gulp)
-
     *   [Visual Studio Code](#visual-studio-code)
-
     *   [Ava](#ava)
-
         *   [If you are downleveling to CommonJS (recommended)](#if-you-are-downleveling-to-commonjs-recommended)
         *   [If you are using node's native ESM support](#if-you-are-using-nodes-native-esm-support)
-
     *   [IntelliJ and Webstorm](#intellij-and-webstorm)
-
     *   [Other](#other)
-
 *   [License](#license)
 
 # General

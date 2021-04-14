@@ -68,7 +68,7 @@ async function main() {
         ast.children.push(...children);
       }
     })
-    .use(remarkToc)
+    .use(remarkToc, {tight: true})
     .use(remarkRecommended)
     .process('');
 
