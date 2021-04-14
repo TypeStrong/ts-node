@@ -133,7 +133,6 @@ import UntypedJsLib from "untyped_js_lib"
 
 **Tip:** If you _must_ use `files`, `include`, or `exclude`, enable `--files` flags or set `TS_NODE_FILES=true`.
 
-
 [npm-image]: https://img.shields.io/npm/v/ts-node.svg?style=flat
 [npm-url]: https://npmjs.org/package/ts-node
 [downloads-image]: https://img.shields.io/npm/dm/ts-node.svg?style=flat

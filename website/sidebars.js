@@ -1,6 +1,6 @@
 module.exports = {
   primarySidebar: {
-    Docs: [
+    General: [
       'getting-started',
       'how-it-works',
       'usage',
@@ -9,6 +9,7 @@ module.exports = {
       'shebang',
       'errors',
     ],
+    Advanced: [],
     Recipes: [
       'recipes/watching-and-restarting',
       'recipes/mocha',
