@@ -5,7 +5,7 @@ title: Getting Started
 slug: /
 ---
 
-*This website is still under construction.  Until it is ready, official documentation lives in our [README](https://github.com/TypeStrong/ts-node)*
+*This website is still under construction.  It describes the latest, unreleased changes from our `main` branch.  Until it is ready, official documentation lives in our [README](https://github.com/TypeStrong/ts-node)*
 
 ## Installation
 
