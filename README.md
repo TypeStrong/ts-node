@@ -139,7 +139,7 @@ For global definitions, you can use the `typeRoots` compiler option.  This requi
 
 Example `tsconfig.json`:
 
-```json
+```jsonc
 {
   "compilerOptions": {
     "typeRoots" : ["./node_modules/@types", "./typings"]
@@ -167,7 +167,7 @@ declare module '<module_name>' {
 
 For module definitions, you can use [`paths`](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping):
 
-```json
+```jsonc
 {
   "compilerOptions": {
     "baseUrl": ".",
@@ -252,7 +252,7 @@ ts-node --compiler ntypescript --project src/tsconfig.json hello-world.ts
 
 `ts-node` loads `tsconfig.json` automatically. Use this recommended configuration as a starting point.
 
-```json title="tsconfig.json"
+```jsonc title="tsconfig.json"
 {
   "ts-node": {
     // Most ts-node options can be specified here using their programmatic, camel-case names.
@@ -348,7 +348,7 @@ TypeScript should almost always be written using modern `import` and `export` sy
 
 We recommend downleveling to CommonJS.  To do this, you must set `"module": "CommonJS"` in your `tsconfig.json` or compiler options, and remove or set `"type": "commonjs"` in your `package.json`.
 
-```json title="tsconfig.json"
+```jsonc title="tsconfig.json"
 {
   "compilerOptions": {
     "module": "CommonJS"
@@ -356,7 +356,7 @@ We recommend downleveling to CommonJS.  To do this, you must set `"module": "Com
 }
 ```
 
-```json title="package.json"
+```jsonc title="package.json"
 {
   // This can be omitted; commonjs is the default
   "type": "commonjs"
@@ -426,7 +426,7 @@ mocha --require ts-node/register --extensions ts,tsx --watch --watch-files src '
 
 Or specify options via your mocha config file.
 
-```json title=".mocharc.json"
+```jsonc title=".mocharc.json"
 {
   // Specify "require" for CommonJS
   "require": "ts-node/register",
@@ -467,7 +467,7 @@ See also: https://gulpjs.com/docs/en/getting-started/javascript-and-gulpfiles#tr
 
 Create a new node.js configuration, add `-r ts-node/register` to node args and move the `program` to the `args` list (so VS Code doesn't look for `outFiles`).
 
-```json
+```jsonc
 {
     "type": "node",
     "request": "launch",
@@ -492,7 +492,7 @@ Assuming you are configuring Ava via your `package.json`, add one of the followi
 
 Use this configuration if your `package.json` does not have `"type": "module"`.
 
-```json title"package.json"
+```jsonc title"package.json"
 {
   "ava": {
     "extensions": [
@@ -509,7 +509,7 @@ Use this configuration if your `package.json` does not have `"type": "module"`.
 
 This configuration is necessary if your `package.json` has `"type": "module"`.
 
-```json title"package.json"
+```jsonc title"package.json"
 {
   "ava": {
     "extensions": {

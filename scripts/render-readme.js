@@ -66,6 +66,11 @@ async function main() {
     .use(function () {
       return function(ast) {
         ast.children.push(...children);
+        for(const child of ast.children) {
+          if(child.type === 'code' && child.lang === 'json') {
+            child.lang = 'jsonc';
+          }
+        }
       }
     })
     .use(remarkToc, {tight: true})
