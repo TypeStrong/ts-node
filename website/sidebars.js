@@ -10,6 +10,7 @@ module.exports = {
       'errors',
     ],
     Recipes: [
+      'recipes/watching-and-restarting',
       'recipes/mocha',
       'recipes/gulp',
       'recipes/visual-studio-code',

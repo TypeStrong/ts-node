@@ -6,7 +6,7 @@ TypeScript should almost always be written using modern `import` and `export` sy
 
 ### CommonJS (recommended)
 
-We recommend downleveling to CommonJS.  To do this, you must set `"module": "CommonJS"` in your `tsconfig.json` or compiler options, and make sure your package.json does *not* have `"type": "module"`.
+We recommend downleveling to CommonJS.  To do this, you must set `"module": "CommonJS"` in your `tsconfig.json` or compiler options, and remove or set `"type": "commonjs"` in your `package.json`.
 
 ```json title="tsconfig.json"
 {
