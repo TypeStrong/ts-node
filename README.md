@@ -519,7 +519,7 @@ Create a new node.js configuration, add `-r ts-node/register` to node args and m
 }
 ```
 
-**Note:** If you are using the `--project <tsconfig.json>` command line argument as per the [Configuration Options](configuration), and want to apply this same behavior when launching in VS Code, add an "env" key into the launch configuration: `"env": { "TS_NODE_PROJECT": "<tsconfig.json>" }`.
+**Note:** If you are using the `--project <tsconfig.json>` command line argument as per the [Configuration Options](../configuration), and want to apply this same behavior when launching in VS Code, add an "env" key into the launch configuration: `"env": { "TS_NODE_PROJECT": "<tsconfig.json>" }`.
 
 ## Ava
 
