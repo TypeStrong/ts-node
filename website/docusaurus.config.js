@@ -28,6 +28,11 @@ module.exports = {
           position: 'right',
         },
         {
+          href: 'https://github.com/TypeStrong/ts-node/releases',
+          label: 'Release Notes',
+          position: 'right',
+        },
+        {
           href: 'https://github.com/TypeStrong/ts-node',
           label: 'GitHub',
           position: 'right',
