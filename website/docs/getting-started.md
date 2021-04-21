@@ -41,11 +41,11 @@ ts-node -p -e '"Hello, world!"'
 # Pipe scripts to execute with TypeScript.
 echo 'console.log("Hello, world!")' | ts-node
 
-# Equivalent to ts-node --script-mode
-ts-node-script scripts.ts
-
 # Equivalent to ts-node --transpile-only
-ts-node-transpile-only scripts.ts
+ts-node-transpile-only script.ts
+
+# Equivalent to ts-node --cwd-mode
+ts-node-cwd script.ts
 ```
 
 ![TypeScript REPL](/img/screenshot.png)

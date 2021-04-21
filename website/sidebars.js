@@ -9,7 +9,10 @@ module.exports = {
       'shebang',
       'errors',
     ],
-    Advanced: [],
+    Advanced: [
+      'paths',
+      'types'
+    ],
     Recipes: [
       'recipes/watching-and-restarting',
       'recipes/mocha',
