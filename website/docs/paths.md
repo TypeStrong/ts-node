@@ -1,5 +1,6 @@
 ---
-title: "paths" and "baseUrl"
+title: |
+  "paths" and "baseUrl"
 ---
 
 You can use `ts-node` together with [tsconfig-paths](https://www.npmjs.com/package/tsconfig-paths) to load modules according to the `paths` section in `tsconfig.json`.
