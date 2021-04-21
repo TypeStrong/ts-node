@@ -72,11 +72,15 @@
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-interface"><a href="interfaces/createoptions.html" class="tsd-kind-icon">Create<wbr>Options</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/createreploptions.html" class="tsd-kind-icon">Create<wbr>Repl<wbr>Options</a></li>
+								<li class="tsd-kind-interface"><a href="interfaces/createtranspileroptions.html" class="tsd-kind-icon">Create<wbr>Transpiler<wbr>Options</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/registeroptions.html" class="tsd-kind-icon">Register<wbr>Options</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/replservice.html" class="tsd-kind-icon">Repl<wbr>Service</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/service.html" class="tsd-kind-icon">Service</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/tscommon.html" class="tsd-kind-icon">TSCommon</a></li>
-								<li class="tsd-kind-interface"><a href="interfaces/tscompilerfactory.html" class="tsd-kind-icon">TSCompiler<wbr>Factory</a></li>
+								<li class="tsd-kind-interface"><a href="interfaces/transpileoptions.html" class="tsd-kind-icon">Transpile<wbr>Options</a></li>
+								<li class="tsd-kind-interface"><a href="interfaces/transpileoutput.html" class="tsd-kind-icon">Transpile<wbr>Output</a></li>
+								<li class="tsd-kind-interface"><a href="interfaces/transpiler.html" class="tsd-kind-icon">Transpiler</a></li>
+								<li class="tsd-kind-interface"><a href="interfaces/transpilermodule.html" class="tsd-kind-icon">Transpiler<wbr>Module</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/tsconfigoptions.html" class="tsd-kind-icon">Ts<wbr>Config<wbr>Options</a></li>
 								<li class="tsd-kind-interface"><a href="interfaces/typeinfo.html" class="tsd-kind-icon">Type<wbr>Info</a></li>
 							</ul>
@@ -85,6 +89,7 @@
 							<h3>Type aliases</h3>
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-type-alias"><a href="index.html#register" class="tsd-kind-icon">Register</a></li>
+								<li class="tsd-kind-type-alias"><a href="index.html#transpilerfactory" class="tsd-kind-icon">Transpiler<wbr>Factory</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section ">
@@ -113,7 +118,7 @@
 					<div class="tsd-signature tsd-kind-icon">Register<span class="tsd-signature-symbol">:</span> <a href="interfaces/service.html" class="tsd-signature-type" data-tsd-kind="Interface">Service</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/38c2dca/src/index.ts#L372">src/index.ts:372</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8a41458/src/index.ts#L370">src/index.ts:370</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -130,6 +135,42 @@
 						</dl>
 					</div>
 				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias">
+					<a name="transpilerfactory" class="tsd-anchor"></a>
+					<h3>Transpiler<wbr>Factory</h3>
+					<div class="tsd-signature tsd-kind-icon">Transpiler<wbr>Factory<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>options<span class="tsd-signature-symbol">: </span><a href="interfaces/createtranspileroptions.html" class="tsd-signature-type" data-tsd-kind="Interface">CreateTranspilerOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><a href="interfaces/transpiler.html" class="tsd-signature-type" data-tsd-kind="Interface">Transpiler</a></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8a41458/src/transpilers/types.ts#L14">src/transpilers/types.ts:14</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Called by ts-node to create a custom transpiler.</p>
+						</div>
+					</div>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter-signature">
+								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-type-alias">
+									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>options<span class="tsd-signature-symbol">: </span><a href="interfaces/createtranspileroptions.html" class="tsd-signature-type" data-tsd-kind="Interface">CreateTranspilerOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="interfaces/transpiler.html" class="tsd-signature-type" data-tsd-kind="Interface">Transpiler</a></li>
+								</ul>
+								<ul class="tsd-descriptions">
+									<li class="tsd-description">
+										<h4 class="tsd-parameters-title">Parameters</h4>
+										<ul class="tsd-parameters">
+											<li>
+												<h5>options: <a href="interfaces/createtranspileroptions.html" class="tsd-signature-type" data-tsd-kind="Interface">CreateTranspilerOptions</a></h5>
+											</li>
+										</ul>
+										<h4 class="tsd-returns-title">Returns <a href="interfaces/transpiler.html" class="tsd-signature-type" data-tsd-kind="Interface">Transpiler</a></h4>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+				</section>
 			</section>
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Variables</h2>
@@ -139,7 +180,7 @@
 					<div class="tsd-signature tsd-kind-icon">REGISTER_<wbr>INSTANCE<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">typeof </span><a href="index.html#register_instance" class="tsd-signature-type" data-tsd-kind="Variable">REGISTER_INSTANCE</a><span class="tsd-signature-symbol"> = ...</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/38c2dca/src/index.ts#L42">src/index.ts:42</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8a41458/src/index.ts#L43">src/index.ts:43</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -154,7 +195,7 @@
 					<div class="tsd-signature tsd-kind-icon">VERSION<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol"> = ...</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/38c2dca/src/index.ts#L120">src/index.ts:120</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8a41458/src/index.ts#L118">src/index.ts:118</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -176,7 +217,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/38c2dca/src/index.ts#L430">src/index.ts:430</a></li>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8a41458/src/index.ts#L428">src/index.ts:428</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -204,7 +245,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/38c2dca/src/repl.ts#L64">src/repl.ts:64</a></li>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8a41458/src/repl.ts#L64">src/repl.ts:64</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -238,7 +279,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/38c2dca/src/index.ts#L404">src/index.ts:404</a></li>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8a41458/src/index.ts#L402">src/index.ts:402</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -278,6 +319,9 @@
 						<a href="interfaces/createreploptions.html" class="tsd-kind-icon">Create<wbr>Repl<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-interface">
+						<a href="interfaces/createtranspileroptions.html" class="tsd-kind-icon">Create<wbr>Transpiler<wbr>Options</a>
+					</li>
+					<li class=" tsd-kind-interface">
 						<a href="interfaces/registeroptions.html" class="tsd-kind-icon">Register<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-interface">
@@ -290,7 +334,16 @@
 						<a href="interfaces/tscommon.html" class="tsd-kind-icon">TSCommon</a>
 					</li>
 					<li class=" tsd-kind-interface">
-						<a href="interfaces/tscompilerfactory.html" class="tsd-kind-icon">TSCompiler<wbr>Factory</a>
+						<a href="interfaces/transpileoptions.html" class="tsd-kind-icon">Transpile<wbr>Options</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/transpileoutput.html" class="tsd-kind-icon">Transpile<wbr>Output</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/transpiler.html" class="tsd-kind-icon">Transpiler</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="interfaces/transpilermodule.html" class="tsd-kind-icon">Transpiler<wbr>Module</a>
 					</li>
 					<li class=" tsd-kind-interface">
 						<a href="interfaces/tsconfigoptions.html" class="tsd-kind-icon">Ts<wbr>Config<wbr>Options</a>
@@ -300,6 +353,9 @@
 					</li>
 					<li class=" tsd-kind-type-alias">
 						<a href="index.html#register" class="tsd-kind-icon">Register</a>
+					</li>
+					<li class=" tsd-kind-type-alias">
+						<a href="index.html#transpilerfactory" class="tsd-kind-icon">Transpiler<wbr>Factory</a>
 					</li>
 					<li class=" tsd-kind-variable">
 						<a href="index.html#register_instance" class="tsd-kind-icon">REGISTER_<wbr>INSTANCE</a>
