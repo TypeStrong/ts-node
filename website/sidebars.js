@@ -1,6 +1,9 @@
 module.exports = {
-  primarySidebar: {
-    General: [
+  primarySidebar: [{
+    type: 'category',
+    label: 'General',
+    collapsed: false,
+    items: [
       'getting-started',
       'how-it-works',
       'usage',
@@ -8,12 +11,21 @@ module.exports = {
       'imports',
       'shebang',
       'errors',
-    ],
-    Advanced: [
+    ]
+  }, {
+    type: 'category',
+    label: 'Advanced',
+    collapsed: false,
+    items: [
       'paths',
-      'types'
+      'types',
+      'transpilers'
     ],
-    Recipes: [
+  }, {
+    type: 'category',
+    label: 'Recipes',
+    collapsed: false,
+    items: [
       'recipes/watching-and-restarting',
       'recipes/mocha',
       'recipes/gulp',
@@ -22,5 +34,5 @@ module.exports = {
       'recipes/intellij',
       'recipes/other'
     ]
-  },
+  }],
 };

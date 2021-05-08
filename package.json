@@ -162,11 +162,6 @@
     "diff": "^4.0.1",
     "js-yaml": "^4.0.0",
     "make-error": "^1.1.1",
-    "remark": "^13.0.0",
-    "remark-behead": "^2.3.3",
-    "remark-frontmatter": "^3.0.0",
-    "remark-preset-lint-recommended": "^5.0.0",
-    "remark-toc": "^7.2.0",
     "source-map-support": "^0.5.17",
     "yn": "3.1.1"
   },

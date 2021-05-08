@@ -5,8 +5,6 @@ title: Getting Started
 slug: /
 ---
 
-*This website is still under construction.  It describes the latest, unreleased changes from our `main` branch.  Until it is ready, official documentation lives in our [README](https://github.com/TypeStrong/ts-node)*
-
 ## Installation
 
 ```sh
@@ -53,19 +51,19 @@ ts-node-cwd script.ts
 ### Shebang
 
 ```typescript
-#!/usr/bin/env ts-node-script
+#!/usr/bin/env ts-node
 
 console.log("Hello, world!")
 ```
 
-`ts-node-script` is recommended because it enables `--script-mode`, discovering `tsconfig.json` relative to the script's location instead of `process.cwd()`.  This makes scripts more portable.
-
 Passing CLI arguments via shebang is allowed on Mac but not Linux.  For example, the following will fail on Linux:
 
 ```
-#!/usr/bin/env ts-node --script-mode --transpile-only --files
+#!/usr/bin/env ts-node --files
 // This shebang is not portable.  It only works on Mac
 ```
+
+Instead, specify all `ts-node` options in your `tsconfig.json`.
 
 ### Programmatic
 
@@ -75,69 +73,4 @@ You can require `ts-node` and register the loader for future requires by using `
 
 #### Developers
 
-**TS Node** exports a `create()` function that can be used to initialize a TypeScript compiler that isn't registered to `require.extensions`, and it uses the same code as `register`.
-
-## Help! My Types Are Missing!
-
-**TypeScript Node** does _not_ use `files`, `include` or `exclude`, by default. This is because a large majority projects do not use all of the files in a project directory (e.g. `Gulpfile.ts`, runtime vs tests) and parsing every file for types slows startup time. Instead, `ts-node` starts with the script file (e.g. `ts-node index.ts`) and TypeScript resolves dependencies based on imports and references.
-
-For global definitions, you can use the `typeRoots` compiler option.  This requires that your type definitions be structured as type packages (not loose TypeScript definition files). More details on how this works can be found in the [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types).
-
-Example `tsconfig.json`:
-
-```json
-{
-  "compilerOptions": {
-    "typeRoots" : ["./node_modules/@types", "./typings"]
-  }
-}
-```
-
-Example project structure:
-
-```text
-<project_root>/
--- tsconfig.json
--- typings/
-  -- <module_name>/
-    -- index.d.ts
-```
-
-Example module declaration file:
-
-```typescript
-declare module '<module_name>' {
-    // module definitions go here
-}
-```
-
-For module definitions, you can use [`paths`](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping):
-
-```json
-{
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "custom-module-type": ["types/custom-module-type"]
-    }
-  }
-}
-```
-
-An alternative approach for definitions of third-party libraries are [triple-slash directives](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html). This may be helpful if you prefer not to change your TypeScript `compilerOptions` or structure your custom type definitions when using `typeRoots`. Below is an example of the triple-slash directive as a relative path within your project:
-
-```typescript
-/// <reference types="./types/untyped_js_lib" />
-import UntypedJsLib from "untyped_js_lib"
-```
-
-**Tip:** If you _must_ use `files`, `include`, or `exclude`, enable `--files` flags or set `TS_NODE_FILES=true`.
-
-[npm-image]: https://img.shields.io/npm/v/ts-node.svg?style=flat
-[npm-url]: https://npmjs.org/package/ts-node
-[downloads-image]: https://img.shields.io/npm/dm/ts-node.svg?style=flat
-[downloads-url]: https://npmjs.org/package/ts-node
-[github-actions-image]: https://img.shields.io/github/workflow/status/TypeStrong/ts-node/Continuous%20Integration
-[github-actions-url]: https://github.com/TypeStrong/ts-node/actions?query=workflow%3A%22Continuous+Integration%22
-[codecov-image]: https://codecov.io/gh/TypeStrong/ts-node/branch/main/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/TypeStrong/ts-node
+`ts-node` exports a `create()` function that can be used to initialize a TypeScript compiler that isn't registered to `require.extensions`, and it uses the same code as `register`.
