@@ -33,6 +33,7 @@ module.exports = {
       'recipes/gulp',
       'recipes/intellij',
       'recipes/mocha',
+      'recipes/tape',
       'recipes/visual-studio-code',
       'recipes/other'
     ]

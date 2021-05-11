@@ -4,7 +4,7 @@ title: Usage
 
 ## Shell
 
-```sh
+```shell
 # Execute a script as `node` + `tsc`.
 ts-node script.ts
 

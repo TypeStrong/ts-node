@@ -4,7 +4,7 @@ title: Mocha
 
 ## Mocha 7 and newer
 
-```sh
+```shell
 mocha --require ts-node/register --extensions ts,tsx --watch --watch-files src 'tests/**/*.{ts,tsx}' [...args]
 ```
 
@@ -30,7 +30,7 @@ See also: https://mochajs.org/#configuring-mocha-nodejs
 
 ## Mocha <=6
 
-```sh
+```shell
 mocha --require ts-node/register --watch-extensions ts,tsx "test/**/*.{ts,tsx}" [...args]
 ```
 
