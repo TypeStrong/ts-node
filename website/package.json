@@ -10,7 +10,7 @@
     "deploy": "docusaurus deploy",
     "serve": "docusaurus serve",
     "clear": "docusaurus clear",
-    "build-readme": "./scripts/render-readme.mjs"
+    "build-readme": "./scripts/build-readme.mjs"
   },
   "dependencies": {
     "@docusaurus/core": "2.0.0-alpha.75",

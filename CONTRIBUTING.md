@@ -25,14 +25,13 @@ We publish using `np`: https://npm.im/np
 
 Documentation is written in markdown in `website/docs` and rendered into a website by Docusaurus.
 
-TODO explain how to merge into a README?  If/when this is implemented?
-
 To edit documentation, modify the markdown files in `./website/docs` and the sidebar declaration in `./website/sidebars.js`
 
-TODO explain branching strategy when it is finalized.
-* New features are documented in `main`?
-* docs fixes related to the latest stable release are documented in `docs` branch?
-* Merge `docs` into `main`, then `main` into `docs`, before doing a release?
+Docs for the latest stable release live in a `docs` branch.  The "Edit this page" links on the website link to the `docs`
+branch so that the website can be improved in parallel with new feature work.
+
+Docs changes for unreleased features are merged to `main` in the same PR which implements the feature, adds tests, etc.
+When we release a new version, we merge `main` into `docs` and `docs` into `main`, unifying the two.
 
 ```shell
 cd ./website
@@ -40,3 +39,5 @@ yarn
 yarn start
 # Will host live website locally
 ```
+
+This site was used to generate the favicon from a high-res PNG export of the SVG. https://realfavicongenerator.net/

@@ -50,49 +50,54 @@ module.exports = {
           position: 'right',
         },
         {
+          href: 'https://discord.gg/typescript',
+          label: 'Chat',
+          position: 'right',
+        },
+        {
           href: 'https://github.com/TypeStrong/ts-node',
           label: 'GitHub',
           position: 'right',
         },
       ],
     },
-    footer: {
-      style: 'dark',
-      links: [
-        {
-          title: 'Docs',
-          items: [
-            {
-              label: 'Docs',
-              to: 'docs/',
-            }
-          ],
-        },
-        {
-          title: 'Community',
-          items: [
-            {
-              label: 'Discord',
-              href: 'https://discord.gg/typescript'
-            },
-            {
-              label: 'Github Discussions',
-              href: 'https://github.com/TypeStrong/ts-node/discussions'
-            },
-          ],
-        },
-        {
-          title: 'More',
-          items: [
-            {
-              label: 'GitHub',
-              href: 'https://github.com/TypeStrong/ts-node',
-            },
-          ],
-        },
-      ],
-      // copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
-    },
+    // footer: {
+    //   style: 'dark',
+    //   links: [
+    //     // {
+    //     //   title: 'Docs',
+    //     //   items: [
+    //     //     {
+    //     //       label: 'Docs',
+    //     //       to: 'docs/',
+    //     //     }
+    //     //   ],
+    //     // },
+    //     // {
+    //     //   title: 'Community',
+    //     //   items: [
+    //     //     {
+    //     //       label: 'Discord',
+    //     //       href: 'https://discord.gg/typescript'
+    //     //     },
+    //     //     {
+    //     //       label: 'Github Discussions',
+    //     //       href: 'https://github.com/TypeStrong/ts-node/discussions'
+    //     //     },
+    //     //   ],
+    //     // },
+    //     // {
+    //     //   title: 'More',
+    //     //   items: [
+    //     //     {
+    //     //       label: 'GitHub',
+    //     //       href: 'https://github.com/TypeStrong/ts-node',
+    //     //     },
+    //     //   ],
+    //     // },
+    //   ],
+    //   // copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+    // },
     prism: {
       // for syntax highlighting
       // additionalLanguages: ['powershell'],

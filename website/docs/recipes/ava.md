@@ -1,10 +1,10 @@
 ---
-title: Ava
+title: AVA
 ---
 
-Assuming you are configuring Ava via your `package.json`, add one of the following configurations.
+Assuming you are configuring AVA via your `package.json`, add one of the following configurations.
 
-## If you are downleveling to CommonJS (recommended)
+## CommonJS
 
 Use this configuration if your `package.json` does not have `"type": "module"`.
 
@@ -21,7 +21,7 @@ Use this configuration if your `package.json` does not have `"type": "module"`.
 }
 ```
 
-## If you are using node's native ESM support
+## Native ECMAScript modules
 
 This configuration is necessary if your `package.json` has `"type": "module"`.
 

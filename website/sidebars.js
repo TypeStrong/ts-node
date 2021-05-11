@@ -4,21 +4,23 @@ module.exports = {
     label: 'General',
     collapsed: false,
     items: [
-      'getting-started',
-      'how-it-works',
+      'overview',
+      'installation',
       'usage',
       'configuration',
       'imports',
-      'shebang',
-      'errors',
+      'troubleshooting',
+      'fast',
     ]
   }, {
     type: 'category',
     label: 'Advanced',
     collapsed: false,
     items: [
+      'how-it-works',
       'paths',
       'types',
+      'compilers',
       'transpilers'
     ],
   }, {
@@ -27,11 +29,11 @@ module.exports = {
     collapsed: false,
     items: [
       'recipes/watching-and-restarting',
-      'recipes/mocha',
-      'recipes/gulp',
-      'recipes/visual-studio-code',
       'recipes/ava',
+      'recipes/gulp',
       'recipes/intellij',
+      'recipes/mocha',
+      'recipes/visual-studio-code',
       'recipes/other'
     ]
   }],

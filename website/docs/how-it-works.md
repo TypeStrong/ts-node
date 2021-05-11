@@ -4,18 +4,11 @@ title: How It Works
 
 `ts-node` works by registering hooks for `.ts`, `.tsx`, `.js`, and/or `.jsx` extensions.
 
-Vanilla `node` loads `.js` by reading code from disk and executing it.  Our hooks transform code via the TypeScript compiler and pass the result to `node` for execution.  This transformation will respect your `tsconfig.json` as if you had compiled via `tsc`.
+Vanilla `node` loads `.js` by reading code from disk and executing it.  Our hook runs in the middle, transforming code from TypeScript to JavaScript and passing the result to `node` for execution.  This transformation will respect your `tsconfig.json` as if you had compiled via `tsc`.
 
-`.js` and `.jsx` are only registered when [`allowJs`](https://www.typescriptlang.org/docs/handbook/compiler-options.html#compiler-options) is enabled.
+`.js` and `.jsx` are only transformed when [`allowJs`](https://www.typescriptlang.org/docs/handbook/compiler-options.html#compiler-options) is enabled.
 
-`.tsx` and `.jsx` are only registered when [`jsx`](https://www.typescriptlang.org/docs/handbook/jsx.html) is enabled.
-
-| Extension | Requirements for transformation |
-|-----------|--------------|
-| `.ts`     | path not ignored (by default, `node_modules` are ignored) |
-| `.tsx`    | path not ignored, [`"jsx"`](https://www.typescriptlang.org/docs/handbook/jsx.html) enabled |
-| `.js`     | path not ignored, [`"allowJs"`](https://www.typescriptlang.org/docs/handbook/compiler-options.html#compiler-options) enabled |
-| `.jsx`    | path not ignored, [`"allowJs"`](https://www.typescriptlang.org/docs/handbook/compiler-options.html#compiler-options) and [`"jsx"`](https://www.typescriptlang.org/docs/handbook/jsx.html) enabled |
+`.tsx` and `.jsx` are only transformed when [`jsx`](https://www.typescriptlang.org/docs/handbook/jsx.html) is enabled.
 
 > **Warning:** if a file is ignored or its file extension is not registered, node will either fail to resolve the file or will attempt to execute it as JavaScript without any transformation.  This may cause syntax errors or other failures, because node does not understand TypeScript type syntax nor bleeding-edge ECMAScript features.
 

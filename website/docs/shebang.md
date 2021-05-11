@@ -1,5 +1,0 @@
----
-title: Shebang
----
-
-TODO

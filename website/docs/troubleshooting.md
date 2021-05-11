@@ -1,18 +1,20 @@
 ---
-title: Troubleshooting Errors
+title: Troubleshooting
 ---
+
+## Understanding Errors
 
 It is important to differentiate between errors from `ts-node`, errors from the TypeScript compiler, and errors from `node`.  It is also important to understand when errors are caused by a type error in your code, a bug in your code, or a flaw in your configuration.
 
-## `TSError`
+### `TSError`
 
 Type errors from the compiler are thrown as a `TSError`.  These are the same as errors you get from `tsc`.
 
-## `SyntaxError`
+### `SyntaxError`
 
 Any error that is not a `TSError` is from node.js (e.g. `SyntaxError`), and cannot be fixed by TypeScript or `ts-node`. These are bugs in your code or configuration.
 
-### Unsupported JavaScript syntax
+#### Unsupported JavaScript syntax
 
 Your version of `node` may not support all JavaScript syntax supported by TypeScript.  The compiler must transform this syntax via "downleveling," which is controlled by
 the [tsconfig `"target"` option](https://www.typescriptlang.org/tsconfig#target).  Otherwise your code will compile fine, but node will throw a `SyntaxError`.

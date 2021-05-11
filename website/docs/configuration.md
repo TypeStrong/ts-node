@@ -13,15 +13,15 @@ $ ts-node --project tsconfig-dev.json say-hello.ts Ronald
 Hello, Ronald!
 ```
 
-## `ts-node` options via tsconfig.json (recommended)
+## Via tsconfig.json (recommended)
 
-`ts-node` automatically finds and loads `tsconfig.json`.  Use `--skip-project` to skip loading the `tsconfig.json`.  Use `--project` to explicitly specify the path to a `tsconfig.json`.
+`ts-node` automatically finds and loads `tsconfig.json`.  Most `ts-node` options can be specified in a `"ts-node"` object using their programmatic, camelCase names. We recommend this because it works even when you cannot pass CLI flags, such as `node --require ts-node/register` and when using shebangs.
+
+Use `--skip-project` to skip loading the `tsconfig.json`.  Use `--project` to explicitly specify the path to a `tsconfig.json`.
 
 When searching, it is resolved using [the same search behavior as `tsc`](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html). By default, this search is performed relative to the entrypoint script. In `--cwd-mode` or if no entrypoint is specified -- for example when using the REPL -- the search is performed relative to `--cwd` / `process.cwd()`.
 
-Most `ts-node` options can be specified by a `"ts-node"` object in `tsconfig.json` using their programmatic, camelCase names.  We recommend this because it works even when you cannot pass CLI flags, such as `node --require ts-node/register` and when using shebangs.
-
-For example, you can use this configuration as a starting point:
+You can use this sample configuration as a starting point:
 
 ```json title="tsconfig.json"
 {
@@ -46,6 +46,20 @@ For example, you can use this configuration as a starting point:
 ```
 
 Our bundled [JSON schema](https://unpkg.com/browse/ts-node@latest/tsconfig.schema.json) lists all compatible options.
+
+### @tsconfig/bases
+
+[tsconfig/bases](https://github.com/tsconfig/bases) maintains recommended configurations for several node versions.
+As a convenience, these are bundled with `ts-node`.
+
+```json title="tsconfig.json"
+{
+  "extends": "ts-node/node16/tsconfig.json",
+
+  // Or install directly with `npm i -D @tsconfig/node16`
+  "extends": "@tsconfig/node16/tsconfig.json",
+}
+```
 
 ## Options
 

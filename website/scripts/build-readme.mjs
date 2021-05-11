@@ -84,17 +84,20 @@ async function main() {
     })
     .use(codeLanguageJsonToJsonc)
     .use(rewritePageLinksToAnchorLinks)
+    .use(rewriteImgTargets)
     .use(remarkToc, {tight: true})
     .process(vfile({
       path: readmePath,
       contents: ''
     }));
   console.error(vfileReporter(renderedReadme));
+  if(renderedReadme.messages.length) throw new Error('Aborting on diagnostics.');
   const lintResults = await remark()
     .use(remarkValidateLinks)
     .use(remarkRecommended)
     .process(renderedReadme);
   console.error(vfileReporter(lintResults));
+  if(lintResults.messages.length) throw new Error('Aborting on diagnostics.');
 
   fs.writeFileSync(readmePath, renderedReadme.contents);
 }
@@ -119,9 +122,16 @@ function rewritePageLinksToAnchorLinks() {
   return (ast) => {
     visit(ast, 'link', node => {
       if(node.url?.match?.(/^https?\:\/\//)) return;
-      // TODO convert links to a header within a page
       // TODO take page title into account
-      node.url = node.url.replace(/^[\.\/]*([^#]+)$/, '#$1');
+      node.url = node.url.replace(/^[\.\/]*(?:([^#]+)|.*#(.*))$/, '#$1$2');
+    });
+  }
+}
+
+function rewriteImgTargets() {
+  return (ast) => {
+    visit(ast, 'image', node => {
+      node.url = node.url.replace(/^\//, 'website/static/');
     });
   }
 }
@@ -138,4 +148,9 @@ function headerNode(depth, value) {
   };
 }
 
-main();
+try {
+  await main();
+} catch(e) {
+  console.error(e.message);
+  process.exitCode = 1;
+}
