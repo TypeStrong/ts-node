@@ -17,10 +17,10 @@ jobs:
       # checkout code
       - uses: actions/checkout@v2
       # install node
-      - name: Use Node.js 14
+      - name: Use Node.js 16
         uses: actions/setup-node@v1
         with:
-          node-version: 14
+          node-version: 16
       # lint, build, test
       - run: npm install
       - run: npm run lint
@@ -40,66 +40,60 @@ jobs:
       matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9]
         include:
-          # Node 10
-          - flavor: 1
-            node: 10
-            nodeFlag: 10
-            typescript: latest
-            typescriptFlag: latest
           # Node 12.15
           # TODO Add comments about why we test 12.15; I think git blame says it's because of an ESM behavioral change that happened at 12.16
-          - flavor: 2
+          - flavor: 1
             node: 12.15
             nodeFlag: 12_15
             typescript: latest
             typescriptFlag: latest
           # Node 12
-          - flavor: 3
+          - flavor: 2
             node: 12
             nodeFlag: 12
             typescript: latest
             typescriptFlag: latest
           # Node 14.13.0
           # To test ESM builtin module resolution immediately before a node behavioral change: https://github.com/TypeStrong/ts-node/issues/1130
-          - flavor: 4
+          - flavor: 3
             node: 14.13.0
             nodeFlag: 14_13_0
             typescript: latest
             typescriptFlag: latest
           # Node 14
-          - flavor: 5
+          - flavor: 4
             node: 14
             nodeFlag: 14
             typescript: latest
             typescriptFlag: latest
-          - flavor: 6
+          - flavor: 5
             node: 14
             nodeFlag: 14
             typescript: 2.7
             typescriptFlag: 2_7
-          - flavor: 7
+          - flavor: 6
             node: 14
             nodeFlag: 14
             typescript: next
             typescriptFlag: next
           # Node 15
-          - flavor: 8
-            node: 15
-            nodeFlag: 15
+          - flavor: 7
+            node: 16
+            nodeFlag: 16
             typescript: latest
             typescriptFlag: latest
             downgradeNpm: true
-          - flavor: 9
-            node: 15
-            nodeFlag: 15
+          - flavor: 8
+            node: 16
+            nodeFlag: 16
             typescript: 2.7
             typescriptFlag: 2_7
             downgradeNpm: true
-          - flavor: 10
-            node: 15
-            nodeFlag: 15
+          - flavor: 9
+            node: 16
+            nodeFlag: 16
             typescript: next
             typescriptFlag: next
             downgradeNpm: true
