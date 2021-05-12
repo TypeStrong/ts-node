@@ -13,6 +13,7 @@ tools and libraries.
 
 * Automatic sourcemaps in stack traces
 * Automatic `tsconfig.json` parsing
+* Automatic defaults to match your node version
 * Typechecking (optional)
 * REPL
 * Write standalone scripts

@@ -124,6 +124,7 @@ function rewritePageLinksToAnchorLinks() {
       if(node.url?.match?.(/^https?\:\/\//)) return;
       // TODO take page title into account
       node.url = node.url.replace(/^[\.\/]*(?:([^#]+)|.*#(.*))$/, '#$1$2');
+      node.url = node.url.replace(/\.md$/, '');
     });
   }
 }

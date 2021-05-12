@@ -10,7 +10,7 @@ module.exports = {
       'configuration',
       'imports',
       'troubleshooting',
-      'fast',
+      'performance',
     ]
   }, {
     type: 'category',
