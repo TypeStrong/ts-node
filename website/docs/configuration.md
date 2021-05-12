@@ -49,7 +49,7 @@ Our bundled [JSON schema](https://unpkg.com/browse/ts-node@latest/tsconfig.schem
 
 ### @tsconfig/bases
 
-[tsconfig/bases](https://github.com/tsconfig/bases) maintains recommended configurations for several node versions.
+[@tsconfig/bases](https://github.com/tsconfig/bases) maintains recommended configurations for several node versions.
 As a convenience, these are bundled with `ts-node`.
 
 ```json title="tsconfig.json"
@@ -60,6 +60,16 @@ As a convenience, these are bundled with `ts-node`.
   "extends": "@tsconfig/node16/tsconfig.json",
 }
 ```
+
+### Default config
+
+If no `tsconfig.json` is loaded from disk, `ts-node` will use the newest recommended defaults from
+[@tsconfig/bases](https://github.com/tsconfig/bases/) compatible with your `node` and `typescript` versions.
+With the latest `node` and `typescript`, this is [`@tsconfig/node16`](https://github.com/tsconfig/bases/blob/master/bases/node16.json).
+
+Older versions of `typescript` are incompatible with `@tsconfig/node16`.  In those cases we will use an older default configuration.
+
+When in doubt, `ts-node --show-config` will log the configuration being used, and `ts-node -vv` will log `node` and `typescript` versions.
 
 ## Options
 
