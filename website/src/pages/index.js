@@ -32,13 +32,22 @@ function Home() {
           <p className="hero__subtitle">{siteConfig.tagline}</p>
           <div className={styles.buttons}>
             <Link
+              style={{margin: '0 20px'}}
               className={clsx(
-                'button button--outline button--secondary button--lg',
+                'button button--secondary button--lg',
                 styles.getStarted,
               )}
               to={useBaseUrl('docs/')}>
               Get Started
             </Link>
+            <iframe
+              src={"https://ghbtns.com/github-btn.html?user=TypeStrong&repo=ts-node&type=star&count=true&size=large"}
+              frameBorder="0"
+              scrolling="0"
+              width="160px"
+              height="30px"
+              style={{ marginTop: '8px' }}
+            />
           </div>
         </div>
       </header>

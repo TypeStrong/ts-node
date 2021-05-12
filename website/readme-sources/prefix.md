@@ -25,7 +25,7 @@ You can build the readme with this command:
 
 The latest documentation can also be found on our website: [https://typestrong.org/ts-node](https://typestrong.org/ts-node)
 
-*Experimental ESM support*
+### *Experimental ESM support*
 
 Native ESM support is currently experimental. For usage, limitations, and to provide feedback, see [#1007](https://github.com/TypeStrong/ts-node/issues/1007).
 
