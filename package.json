@@ -27,7 +27,7 @@
     "./node10/tsconfig.json": "./node10/tsconfig.json",
     "./node12/tsconfig.json": "./node12/tsconfig.json",
     "./node14/tsconfig.json": "./node14/tsconfig.json",
-    "./node16/tsconfig.json": "./node14/tsconfig.json"
+    "./node16/tsconfig.json": "./node16/tsconfig.json"
   },
   "types": "dist/index.d.ts",
   "bin": {
