@@ -26,7 +26,8 @@
     "./transpilers/swc-experimental": "./transpilers/swc-experimental.js",
     "./node10/tsconfig.json": "./node10/tsconfig.json",
     "./node12/tsconfig.json": "./node12/tsconfig.json",
-    "./node14/tsconfig.json": "./node14/tsconfig.json"
+    "./node14/tsconfig.json": "./node14/tsconfig.json",
+    "./node16/tsconfig.json": "./node16/tsconfig.json"
   },
   "types": "dist/index.d.ts",
   "bin": {
@@ -49,7 +50,8 @@
     "/tsconfig.schemastore-schema.json",
     "/node10/",
     "/node12/",
-    "/node14/"
+    "/node14/",
+    "/node16/"
   ],
   "scripts": {
     "lint": "prettier --check .",
@@ -69,7 +71,7 @@
     "prepare": "npm run clean && npm run build-nopack"
   },
   "engines": {
-    "node": ">=10.0.0"
+    "node": ">=12.0.0"
   },
   "repository": {
     "type": "git",
@@ -156,6 +158,7 @@
     "@tsconfig/node10": "^1.0.7",
     "@tsconfig/node12": "^1.0.7",
     "@tsconfig/node14": "^1.0.0",
+    "@tsconfig/node16": "^1.0.1",
     "@types/js-yaml": "^4.0.0",
     "arg": "^4.1.0",
     "create-require": "^1.1.0",

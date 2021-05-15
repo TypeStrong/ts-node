@@ -133,6 +133,7 @@ test.suite('ts-node', (test) => {
     testsDirRequire.resolve('ts-node/node10/tsconfig.json');
     testsDirRequire.resolve('ts-node/node12/tsconfig.json');
     testsDirRequire.resolve('ts-node/node14/tsconfig.json');
+    testsDirRequire.resolve('ts-node/node16/tsconfig.json');
   });
 
   test.suite('cli', (test) => {
@@ -683,7 +684,8 @@ test.suite('ts-node', (test) => {
           semver.gte(ts.version, '3.5.0') &&
           semver.gte(process.versions.node, '14.0.0')
         ) {
-          test('implicitly uses @tsconfig/node14 compilerOptions when both TS and node versions support it', async (t) => {
+          test('implicitly uses @tsconfig/node14 or @tsconfig/node16 compilerOptions when both TS and node versions support it', async (t) => {
+            // node14 and node16 configs are identical, hence the "or"
             const {
               context: { tempDir },
             } = t;
@@ -708,7 +710,7 @@ test.suite('ts-node', (test) => {
             expect(stdout2).to.equal('10n\n');
           });
         } else {
-          test('implicitly uses @tsconfig/* lower than node14 (node10 or node12) when either TS or node versions do not support @tsconfig/node14', async ({
+          test('implicitly uses @tsconfig/* lower than node14 (node12) when either TS or node versions do not support @tsconfig/node14', async ({
             context: { tempDir },
           }) => {
             const { err, stdout, stderr } = await exec(`${BIN_PATH} -pe 10n`, {
@@ -778,6 +780,7 @@ test.suite('ts-node', (test) => {
           test(`ts-node/node10/tsconfig.json`, macro, 'node10');
           test(`ts-node/node12/tsconfig.json`, macro, 'node12');
           test(`ts-node/node14/tsconfig.json`, macro, 'node14');
+          test(`ts-node/node16/tsconfig.json`, macro, 'node16');
         }
       );
     }
