@@ -130,6 +130,7 @@ test.suite('ts-node', (test) => {
 
     testsDirRequire.resolve('ts-node/transpilers/swc-experimental');
 
+    testsDirRequire.resolve('ts-node/node10/tsconfig.json');
     testsDirRequire.resolve('ts-node/node12/tsconfig.json');
     testsDirRequire.resolve('ts-node/node14/tsconfig.json');
     testsDirRequire.resolve('ts-node/node16/tsconfig.json');
@@ -776,6 +777,7 @@ test.suite('ts-node', (test) => {
               },
             });
           });
+          test(`ts-node/node10/tsconfig.json`, macro, 'node10');
           test(`ts-node/node12/tsconfig.json`, macro, 'node12');
           test(`ts-node/node14/tsconfig.json`, macro, 'node14');
           test(`ts-node/node16/tsconfig.json`, macro, 'node16');

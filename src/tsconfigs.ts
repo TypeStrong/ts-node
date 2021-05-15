@@ -16,7 +16,11 @@ export function getDefaultTsconfigJsonForNodeVersion(ts: TSCommon): any {
     const config = require('@tsconfig/node14/tsconfig.json');
     if (configCompatible(config)) return config;
   }
-  return require('@tsconfig/node12/tsconfig.json');
+  if (nodeMajor >= 12) {
+    const config = require('@tsconfig/node12/tsconfig.json');
+    if (configCompatible(config)) return config;
+  }
+  return require('@tsconfig/node10/tsconfig.json');
 
   // Verify that tsconfig target and lib options are compatible with TypeScript compiler
   function configCompatible(config: {
