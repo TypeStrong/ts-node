@@ -38,20 +38,19 @@ async function main() {
     headerLevel: 1
   });
 
-  for(const [, sidebar] of Object.entries(sidebars)) {
-    for(const category of sidebar) {
-      const generateReadmeHeader = generateReadmeHeadersForCategories[category.label];
-      if(generateReadmeHeader) {
-        readmeNodes.push(headerNode(1, category.label));
-      } else if(generateReadmeHeader == null) {
-         throw new Error(`Update ${ import.meta.url } to include all sidebar categories`);
-      }
-      for(const page of category.items) {
-        await appendMarkdownFileToReadmeAst({
-          path: `docs/${ page }.md`,
-          headerLevel: 1 + !!generateReadmeHeader
-        });
-      }
+  const sidebar = sidebars.primarySidebar;
+  for(const category of sidebar) {
+    const generateReadmeHeader = generateReadmeHeadersForCategories[category.label];
+    if(generateReadmeHeader) {
+      readmeNodes.push(headerNode(1, category.label));
+    } else if(generateReadmeHeader == null) {
+        throw new Error(`Update ${ import.meta.url } to include all sidebar categories`);
+    }
+    for(const page of category.items) {
+      await appendMarkdownFileToReadmeAst({
+        path: `docs/${ page }.md`,
+        headerLevel: 1 + !!generateReadmeHeader
+      });
     }
   }
 

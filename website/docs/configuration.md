@@ -4,6 +4,8 @@ title: Configuration
 
 `ts-node` supports a variety of options which can be specified via `tsconfig.json`, as CLI flags, as environment variables, or programmatically.
 
+For a complete list, see [Options](./options.md).
+
 ## CLI flags
 
 `ts-node` CLI flags must come *before* the entrypoint script. For example:
@@ -25,8 +27,8 @@ You can use this sample configuration as a starting point:
 
 ```json title="tsconfig.json"
 {
-  // This is an alias to @tsconfig/node10: https://github.com/tsconfig/bases
-  "extends": "ts-node/node10/tsconfig.json",
+  // This is an alias to @tsconfig/node12: https://github.com/tsconfig/bases
+  "extends": "ts-node/node12/tsconfig.json",
 
   // Most ts-node options can be specified here using their programmatic names.
   "ts-node": {
@@ -41,6 +43,9 @@ You can use this sample configuration as a starting point:
       // but *only* in ts-node.  Useful if you want ts-node and tsc to use
       // different options with a single tsconfig.json.
     }
+  },
+  "compilerOptions": {
+    // typescript options here
   }
 }
 ```
@@ -70,45 +75,6 @@ With the latest `node` and `typescript`, this is [`@tsconfig/node16`](https://gi
 Older versions of `typescript` are incompatible with `@tsconfig/node16`.  In those cases we will use an older default configuration.
 
 When in doubt, `ts-node --show-config` will log the configuration being used, and `ts-node -vv` will log `node` and `typescript` versions.
-
-## Options
-
-`ts-node` supports `--print` (`-p`), `--eval` (`-e`), `--require` (`-r`) and `--interactive` (`-i`) similar to the [node.js CLI options](https://nodejs.org/api/cli.html).
-
-_API options with an * cannot be specified via `tsconfig.json`_
-
-| CLI | Environment Variable | API & tsconfig.json | Description |
-|-----|----------------------|---------------------|-------------|
-| `-h, --help` |  |  | Prints the help text |
-| `-v, --version` |  |  | Prints the version. `-vv` prints node and typescript compiler versions, too. |
-| `-c, --cwd-mode` |  |  | Resolve config relative to the current directory instead of the directory of the entrypoint script. |
-| `--script-mode` |  |  | Resolve config relative to the directory of the entrypoint script. This is the default behavior. |
-| `-T, --transpile-only` | `TS_NODE_TRANSPILE_ONLY` | `transpileOnly` | Use TypeScript's faster `transpileModule` (default: `false`) |
-| `--type-check` | `TS_NODE_TYPE_CHECK` |  | Opposite of `--transpile-only`. (default: `true`) |
-| `-H, --compiler-host` | `TS_NODE_COMPILER_HOST` | `compilerHost` | Use TypeScript's compiler host API (default: `false`) |
-| `-I, --ignore [pattern]` | `TS_NODE_IGNORE` | `ignore` | Override the path patterns to skip compilation (default: `/node_modules/`) |
-| `-P, --project [path]` | `TS_NODE_PROJECT` | `project` | Path to TypeScript JSON project file |
-| `-C, --compiler [name]` | `TS_NODE_COMPILER` | `compiler` | Specify a custom TypeScript compiler (default: `typescript`) |
-| `-D, --ignore-diagnostics [code]` | `TS_NODE_IGNORE_DIAGNOSTICS` | `ignoreDiagnostics` | Ignore TypeScript warnings by diagnostic code |
-| `-O, --compiler-options [opts]` | `TS_NODE_COMPILER_OPTIONS` | `compilerOptions` | JSON object to merge with compiler options |
-| `--cwd` | `TS_NODE_CWD` |  | Behave as if invoked in this working directory. (default: `process.cwd()`) |
-| `--files` | `TS_NODE_FILES` | `files` | Load `files`, `include` and `exclude` from `tsconfig.json` on startup (default: `false`) |
-| `--pretty` | `TS_NODE_PRETTY` | `pretty` | Use pretty diagnostic formatter (default: `false`) |
-| `--skip-project` | `TS_NODE_SKIP_PROJECT` | `skipProject` | Skip project config resolution and loading (default: `false`) |
-| `--skip-ignore` | `TS_NODE_SKIP_IGNORE` | `skipIgnore` | Skip ignore checks (default: `false`) |
-| `--emit` | `TS_NODE_EMIT` | `emit` | Emit output files into `.ts-node` directory (default: `false`) |
-| `--prefer-ts-exts` | `TS_NODE_PREFER_TS_EXTS` | `preferTsExts` | Re-order file extensions so that TypeScript imports are preferred (default: `false`) |
-| `--log-error` | `TS_NODE_LOG_ERROR` | `logError` | Logs TypeScript errors to stderr instead of throwing exceptions (default: `false`) |
-| `--show-config` |  |  | Print resolved `tsconfig.json`, including `ts-node` options, and exit. |
-| `--transpiler [name]` |  | `transpiler` | Specify a third-party, non-typechecking transpiler |
-|  | `TS_NODE_DEBUG` |  | Enable debug logging. |
-|  | `TS_NODE_HISTORY` |  | Path to history file for REPL. (default; `~/.ts_node_repl_history`) |
-| `--scope` | `TS_NODE_SCOPE` | `scope` | Scope compiler to files within `scopeDir`.  Files outside this directory will be ignored.  (default: `false`) |
-|  |  | `scopeDir` | Sets directory for `scope`.  Defaults to tsconfig `rootDir`, directory containing `tsconfig.json`, or `cwd` |
-|  |  | `projectSearchDir` | Search for config file in this or parent directories. |
-|  |  | `transformers`* | An object with transformers or a factory function that accepts a program and returns a transformers object to pass to TypeScript. Factory function cannot be used with `transpileOnly` flag |
-|  |  | `readFile`* | Custom TypeScript-compatible file reading function |
-|  |  | `fileExists`* | Custom TypeScript-compatible file existence function |
 
 ## `node` flags
 

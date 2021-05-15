@@ -8,6 +8,7 @@ module.exports = {
       'installation',
       'usage',
       'configuration',
+      'options',
       'imports',
       'troubleshooting',
       'performance',
@@ -36,6 +37,14 @@ module.exports = {
       'recipes/tape',
       'recipes/visual-studio-code',
       'recipes/other'
+    ]
+  }],
+  hiddenSidebar: [{
+    type: 'category',
+    label: 'Hidden pages',
+    collapsed: false,
+    items: [
+      'options-table',
     ]
   }],
 };

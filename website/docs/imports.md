@@ -15,7 +15,7 @@ Here is a brief comparison of the two.
 
 ## CommonJS
 
-Transforming to CommonJS is typically simpler and more widely supported.  You must remove or set [`"type": "commonjs"`](https://nodejs.org/api/packages.html#packages_type) in `package.json` and [`"module": "CommonJS"`](https://www.typescriptlang.org/tsconfig/#module) in `tsconfig.json`.
+Transforming to CommonJS is typically simpler and more widely supported because it is older.  You must remove or set [`"type": "commonjs"`](https://nodejs.org/api/packages.html#packages_type) in `package.json` and [`"module": "CommonJS"`](https://www.typescriptlang.org/tsconfig/#module) in `tsconfig.json`.
 
 ```json title="package.json"
 {

@@ -41,3 +41,12 @@ yarn start
 ```
 
 This site was used to generate the favicon from a high-res PNG export of the SVG. https://realfavicongenerator.net/
+
+## Release checklist
+
+1. Merge `docs` into `main`
+2. Rebuild the README (see instructions above, necessary because npmjs.com renders the readme)
+3. Publish with `np`
+4. Add changelog to the Github Release; match formatting from previous releases
+5. Merge `main` into `docs` (this automatically rebuilds the website)
+6. If tsconfig schema has changed, send a pull request to schemastore.  [Example](https://github.com/SchemaStore/schemastore/pull/1208)
