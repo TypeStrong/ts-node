@@ -15,7 +15,7 @@ but it will likely be deleted in the future.
 
 <!--_Options with an * are only available in the API, not `tsconfig.json`_-->
 
-The API includes [additional options](../api/interfaces/registeroptions.html) not shown below.
+The API includes [additional options](https://typestrong.org/ts-node/api/interfaces/registeroptions.html) not shown below.
 
 _Environment variables, where available, are in `ALL_CAPS`_
 
