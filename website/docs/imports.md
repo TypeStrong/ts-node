@@ -1,14 +1,30 @@
 ---
-title: "Imports: CommonJS vs native modules"
+title: "CommonJS vs native ECMAScript modules"
 ---
 
-TypeScript should almost always be written using `import` and `export` syntax.  You can either compile it to CommonJS or use node's native ESM support.  You do not need to use node's native modules to use `import` syntax.
+TypeScript is almost always written using modern `import` syntax, but you can choose to either transform to CommonJS or use node's native ESM support.  Configuration is different for each.
 
-### CommonJS (recommended)
+Here is a brief comparison of the two.
 
-We recommend compiling to CommonJS.  To do this, you must set `"module": "CommonJS"` in your `tsconfig.json` or compiler options, and make sure your package.json does *not* have `"type": "module"`.
+| CommonJS | Native ECMAScript modules |
+|---|---|
+| Write native `import` syntax | Write native `import` syntax |
+| Transforms `import` into `require()` | Does not transform `import` |
+| Node executes scripts using the classic [CommonJS loader](https://nodejs.org/dist/latest-v16.x/docs/api/modules.html) | Node executes scripts using the new [ESM loader](https://nodejs.org/dist/latest-v16.x/docs/api/esm.html) |
+| Use any of:<br/>`ts-node` CLI<br/>`node -r ts-node/register`<br/>`NODE_OPTIONS="ts-node/register" node`<br/>`require('ts-node').register({/* options */})` | Must use the ESM loader via:<br/>`node --loader ts-node/esm`<br/>`NODE_OPTIONS="--loader ts-node/esm" node` |
 
+## CommonJS
+
+Transforming to CommonJS is typically simpler and more widely supported because it is older.  You must remove or set [`"type": "commonjs"`](https://nodejs.org/api/packages.html#packages_type) in `package.json` and [`"module": "CommonJS"`](https://www.typescriptlang.org/tsconfig/#module) in `tsconfig.json`.
+
+```json title="package.json"
+{
+  // This can be omitted; commonjs is the default
+  "type": "commonjs"
+}
 ```
+
+```json title="tsconfig.json"
 {
   "compilerOptions": {
     "module": "CommonJS"
@@ -16,8 +32,40 @@ We recommend compiling to CommonJS.  To do this, you must set `"module": "Common
 }
 ```
 
-### Native ECMAScript modules
+If you must keep `"module": "ESNext"` for `tsc`, webpack, or another build tool, you can set an override for `ts-node`.
 
-Node's native ESM loader hooks are currently experimental and so is `ts-node`'s ESM loader hook.  This means breaking changes may happen in minor and patch releases, and it is not recommended for production.
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "module": "ESNext"
+  },
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS"
+    }
+  }
+}
+```
 
-For usage, limitations, and to provide feedback, see [#1007](https://github.com/TypeStrong/ts-node/issues/1007).
+## Native ECMAScript modules
+
+[Node's ESM loader hooks](https://nodejs.org/api/esm.html#esm_experimental_loaders) are [**experimental**](https://nodejs.org/api/documentation.html#documentation_stability_index) and subject to change. `ts-node`'s ESM support is also experimental. They may have
+breaking changes in minor and patch releases and are not recommended for production.
+
+For complete usage, limitations, and to provide feedback, see [#1007](https://github.com/TypeStrong/ts-node/issues/1007).
+
+You must set [`"type": "module"`](https://nodejs.org/api/packages.html#packages_type) in `package.json` and [`"module": "ESNext"`](https://www.typescriptlang.org/tsconfig/#module) in `tsconfig.json`.
+
+```json title="package.json"
+{
+  "type": "module"
+}
+```
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "module": "ESNext" // or ES2015, ES2020
+  }
+}
+```

@@ -14,6 +14,14 @@ import type { TSCommon, TSInternal } from './ts-compiler-types';
 
 export { TSCommon };
 export { createRepl, CreateReplOptions, ReplService } from './repl';
+export type {
+  TranspilerModule,
+  TranspilerFactory,
+  CreateTranspilerOptions,
+  TranspileOutput,
+  TranspileOptions,
+  Transpiler,
+} from './transpilers/types';
 
 /**
  * Does this version of node obey the package.json "type" field
@@ -109,10 +117,6 @@ const debugFn = shouldDebug
       };
     }
   : <T, U>(_: string, fn: (arg: T) => U) => fn;
-
-export interface TSCompilerFactory {
-  createTypescriptCompiler(options?: any): TSCommon;
-}
 
 /**
  * Export the current version.
