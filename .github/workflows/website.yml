@@ -18,7 +18,7 @@ jobs:
           node-version: 14
       # Render typedoc
       # Using custom branch to workaround: https://github.com/TypeStrong/typedoc/issues/1585
-      - run: npm install && git clone --depth 1 https://github.com/cspotcode/typedoc --branch patch-2 && pushd typedoc && npm install && npm run build ; popd && ./typedoc/bin/typedoc
+      - run: npm install && git clone --depth 1 https://github.com/cspotcode/typedoc --branch patch-2 && pushd typedoc && npm install && npm run build || true && popd && ./typedoc/bin/typedoc
       # Render docusaurus and deploy website
       - run: |
           set -euo pipefail
