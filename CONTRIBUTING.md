@@ -19,8 +19,6 @@ compiled code in `dist`.
 
 `dist-raw` is for larger chunks of code which are not compiled nor linted because they have been copy-pasted from `node`'s source code.
 
-We publish using `np`: https://npm.im/np
-
 ## Documentation
 
 Documentation is written in markdown in `website/docs` and rendered into a website by Docusaurus.
@@ -43,6 +41,8 @@ yarn start
 This site was used to generate the favicon from a high-res PNG export of the SVG. https://realfavicongenerator.net/
 
 ## Release checklist
+
+We publish using `np`: https://npm.im/np
 
 1. Merge `docs` into `main`
 2. Rebuild the README (see instructions above, necessary because npmjs.com renders the readme)
