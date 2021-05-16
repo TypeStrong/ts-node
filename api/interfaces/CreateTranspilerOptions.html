@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>TranspileOutput | ts-node</title>
+	<title>CreateTranspilerOptions | ts-node</title>
 	<meta name="description" content="Documentation for ts-node">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -55,10 +55,10 @@
 					<a href="../index.html">ts-node</a>
 				</li>
 				<li>
-					<a href="transpileoutput.html">TranspileOutput</a>
+					<a href="CreateTranspilerOptions.html">CreateTranspilerOptions</a>
 				</li>
 			</ul>
-			<h1>Interface TranspileOutput</h1>
+			<h1>Interface CreateTranspilerOptions</h1>
 		</div>
 	</div>
 </header>
@@ -69,7 +69,7 @@
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
 					<li>
-						<span class="target">TranspileOutput</span>
+						<span class="target">CreateTranspilerOptions</span>
 					</li>
 				</ul>
 			</section>
@@ -80,9 +80,7 @@
 						<section class="tsd-index-section ">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="transpileoutput.html#diagnostics" class="tsd-kind-icon">diagnostics</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="transpileoutput.html#outputtext" class="tsd-kind-icon">output<wbr>Text</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="transpileoutput.html#sourcemaptext" class="tsd-kind-icon">source<wbr>Map<wbr>Text</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="CreateTranspilerOptions.html#service" class="tsd-kind-icon">service</a></li>
 							</ul>
 						</section>
 					</div>
@@ -91,32 +89,12 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Properties</h2>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="diagnostics" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> diagnostics</h3>
-					<div class="tsd-signature tsd-kind-icon">diagnostics<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Diagnostic</span><span class="tsd-signature-symbol">[]</span></div>
+					<a name="service" class="tsd-anchor"></a>
+					<h3>service</h3>
+					<div class="tsd-signature tsd-kind-icon">service<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Pick</span><span class="tsd-signature-symbol">&lt;</span><a href="Service.html" class="tsd-signature-type" data-tsd-kind="Interface">Service</a><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">&quot;config&quot;</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">&quot;options&quot;</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/f91aae5/src/transpilers/types.ts#L32">src/transpilers/types.ts:32</a></li>
-						</ul>
-					</aside>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="outputtext" class="tsd-anchor"></a>
-					<h3>output<wbr>Text</h3>
-					<div class="tsd-signature tsd-kind-icon">output<wbr>Text<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/f91aae5/src/transpilers/types.ts#L31">src/transpilers/types.ts:31</a></li>
-						</ul>
-					</aside>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="sourcemaptext" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> source<wbr>Map<wbr>Text</h3>
-					<div class="tsd-signature tsd-kind-icon">source<wbr>Map<wbr>Text<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/f91aae5/src/transpilers/types.ts#L33">src/transpilers/types.ts:33</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/50e2ce0/src/transpilers/types.ts#L19">src/transpilers/types.ts:19</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -133,79 +111,73 @@
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
 					<li class=" tsd-kind-class">
-						<a href="../classes/tserror.html" class="tsd-kind-icon">TSError</a>
+						<a href="../classes/TSError.html" class="tsd-kind-icon">TSError</a>
 					</li>
 					<li class=" tsd-kind-interface">
-						<a href="createoptions.html" class="tsd-kind-icon">Create<wbr>Options</a>
+						<a href="CreateOptions.html" class="tsd-kind-icon">Create<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-interface">
-						<a href="createreploptions.html" class="tsd-kind-icon">Create<wbr>Repl<wbr>Options</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="createtranspileroptions.html" class="tsd-kind-icon">Create<wbr>Transpiler<wbr>Options</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="registeroptions.html" class="tsd-kind-icon">Register<wbr>Options</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="replservice.html" class="tsd-kind-icon">Repl<wbr>Service</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="service.html" class="tsd-kind-icon">Service</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="tscommon.html" class="tsd-kind-icon">TSCommon</a>
-					</li>
-					<li class=" tsd-kind-interface">
-						<a href="transpileoptions.html" class="tsd-kind-icon">Transpile<wbr>Options</a>
+						<a href="CreateReplOptions.html" class="tsd-kind-icon">Create<wbr>Repl<wbr>Options</a>
 					</li>
 				</ul>
 				<ul class="current">
 					<li class="current tsd-kind-interface">
-						<a href="transpileoutput.html" class="tsd-kind-icon">Transpile<wbr>Output</a>
+						<a href="CreateTranspilerOptions.html" class="tsd-kind-icon">Create<wbr>Transpiler<wbr>Options</a>
 						<ul>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="transpileoutput.html#diagnostics" class="tsd-kind-icon">diagnostics</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="transpileoutput.html#outputtext" class="tsd-kind-icon">output<wbr>Text</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="transpileoutput.html#sourcemaptext" class="tsd-kind-icon">source<wbr>Map<wbr>Text</a>
+								<a href="CreateTranspilerOptions.html#service" class="tsd-kind-icon">service</a>
 							</li>
 						</ul>
 					</li>
 				</ul>
 				<ul class="after-current">
 					<li class=" tsd-kind-interface">
-						<a href="transpiler.html" class="tsd-kind-icon">Transpiler</a>
+						<a href="RegisterOptions.html" class="tsd-kind-icon">Register<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-interface">
-						<a href="transpilermodule.html" class="tsd-kind-icon">Transpiler<wbr>Module</a>
+						<a href="ReplService.html" class="tsd-kind-icon">Repl<wbr>Service</a>
 					</li>
 					<li class=" tsd-kind-interface">
-						<a href="tsconfigoptions.html" class="tsd-kind-icon">Ts<wbr>Config<wbr>Options</a>
+						<a href="Service.html" class="tsd-kind-icon">Service</a>
 					</li>
 					<li class=" tsd-kind-interface">
-						<a href="typeinfo.html" class="tsd-kind-icon">Type<wbr>Info</a>
+						<a href="TSCommon.html" class="tsd-kind-icon">TSCommon</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="TranspileOptions.html" class="tsd-kind-icon">Transpile<wbr>Options</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="TranspileOutput.html" class="tsd-kind-icon">Transpile<wbr>Output</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="Transpiler.html" class="tsd-kind-icon">Transpiler</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="TranspilerModule.html" class="tsd-kind-icon">Transpiler<wbr>Module</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="TsConfigOptions.html" class="tsd-kind-icon">Ts<wbr>Config<wbr>Options</a>
+					</li>
+					<li class=" tsd-kind-interface">
+						<a href="TypeInfo.html" class="tsd-kind-icon">Type<wbr>Info</a>
 					</li>
 					<li class=" tsd-kind-type-alias">
-						<a href="../index.html#register" class="tsd-kind-icon">Register</a>
+						<a href="../index.html#Register" class="tsd-kind-icon">Register</a>
 					</li>
 					<li class=" tsd-kind-type-alias">
-						<a href="../index.html#transpilerfactory" class="tsd-kind-icon">Transpiler<wbr>Factory</a>
+						<a href="../index.html#TranspilerFactory" class="tsd-kind-icon">Transpiler<wbr>Factory</a>
 					</li>
 					<li class=" tsd-kind-variable">
-						<a href="../index.html#register_instance" class="tsd-kind-icon">REGISTER_<wbr>INSTANCE</a>
+						<a href="../index.html#REGISTER_INSTANCE" class="tsd-kind-icon">REGISTER_<wbr>INSTANCE</a>
 					</li>
 					<li class=" tsd-kind-variable">
-						<a href="../index.html#version" class="tsd-kind-icon">VERSION</a>
+						<a href="../index.html#VERSION" class="tsd-kind-icon">VERSION</a>
 					</li>
 					<li class=" tsd-kind-function">
 						<a href="../index.html#create" class="tsd-kind-icon">create</a>
 					</li>
 					<li class=" tsd-kind-function">
-						<a href="../index.html#createrepl" class="tsd-kind-icon">create<wbr>Repl</a>
+						<a href="../index.html#createRepl" class="tsd-kind-icon">create<wbr>Repl</a>
 					</li>
 					<li class=" tsd-kind-function">
 						<a href="../index.html#register" class="tsd-kind-icon">register</a>
