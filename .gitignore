@@ -11,3 +11,4 @@ tsconfig.schemastore-schema.json
 /.vscode/
 /website/static/api
 /tsconfig.tsbuildinfo
+/temp
