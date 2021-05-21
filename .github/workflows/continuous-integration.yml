@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 16
       - run: |
-          npm config set cache "$( node -p process.cwd() )/temp/npm-cache"
+          npm config set cache "$( node -p "process.cwd()" )/temp/npm-cache"
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
@@ -120,7 +120,7 @@ jobs:
       - if: ${{ matrix.downgradeNpm }}
         run: npm install -g npm@6
       - run: |
-          npm config set cache "$( node -p process.cwd() )/temp/npm-cache"
+          npm config set cache "$( node -p "process.cwd()" )/temp/npm-cache"
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
