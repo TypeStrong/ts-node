@@ -27,8 +27,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: temp/npm-cache
-          key: npm-cache-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-cache-
+          key: npm-cache-${{ matrix.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-cache-${{ matrix.os }}-
       # lint, build, test
       - run: npm ci
       - run: npm run lint
@@ -123,8 +123,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: temp/npm-cache
-          key: npm-cache-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-cache-
+          key: npm-cache-${{ matrix.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-cache-${{matrix-os }}-
       - run: npm ci --ignore-scripts
       - name: Upload npm logs
         if: ${{ failure() }}
