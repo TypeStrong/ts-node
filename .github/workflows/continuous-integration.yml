@@ -129,11 +129,11 @@ jobs:
           restore-keys: npm-cache-
       - run: npm ci --ignore-scripts
       - name: Upload npm logs
-        if: ${{ failure() && matrix.os == 'windows' }}
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
           name: npm-logs
-          path: C:\npm\cache\_logs
+          path: temp/npm-cache/_logs
       - run: npm run build-tsc
       - name: Download package artifact
         uses: actions/download-artifact@v1
