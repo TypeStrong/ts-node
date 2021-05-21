@@ -124,7 +124,7 @@ jobs:
         with:
           path: temp/npm-cache
           key: npm-cache-${{ matrix.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-cache-${{matrix-os }}-
+          restore-keys: npm-cache-${{matrix.os }}-
       - run: npm ci --ignore-scripts
       - name: Upload npm logs
         if: ${{ failure() }}
