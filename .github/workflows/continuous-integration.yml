@@ -21,11 +21,9 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 16
-      - &npm-set-cache-location
-        run: |
+      - run: |
           npm config set cache "$( node -p "process.cwd()" )/temp/npm-cache"
-      - &npm-cache-dependencies
-        name: Cache dependencies
+      - name: Cache dependencies
         uses: actions/cache@v2
         with:
           path: temp/npm-cache
@@ -119,8 +117,14 @@ jobs:
         # Downgrade from npm 7 to 6 because 7 still seems buggy to me
       - if: ${{ matrix.downgradeNpm }}
         run: npm install -g npm@6
-      - *npm-set-cache-location
-      - *npm-cache-dependencies
+      - run: |
+          npm config set cache "$( node -p "process.cwd()" )/temp/npm-cache"
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: temp/npm-cache
+          key: npm-cache-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-cache-
       - run: npm ci --ignore-scripts
       - name: Upload npm logs
         if: ${{ failure() }}
