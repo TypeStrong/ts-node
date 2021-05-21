@@ -24,7 +24,7 @@ jobs:
       # lint, build, test
       - run: npm install
       - run: npm run lint
-      - run: npm run build
+      - run: npm run build-pack
       - name: Upload package artifact
         uses: actions/upload-artifact@v1
         with:
@@ -110,13 +110,14 @@ jobs:
         # Downgrade from npm 7 to 6 because 7 still seems buggy to me
       - if: ${{ matrix.downgradeNpm }}
         run: npm install -g npm@6
-      - run: npm install
+      - run: npm install --ignore-scripts
       - name: Upload npm logs
-        if: ${{ matrix.os == 'windows' }}
+        if: ${{ failure() && matrix.os == 'windows' }}
         uses: actions/upload-artifact@v1
         with:
           name: npm-logs
           path: C:\npm\cache\_logs
+      - run: npm run build-tsc
       - name: Download package artifact
         uses: actions/download-artifact@v1
         with:
