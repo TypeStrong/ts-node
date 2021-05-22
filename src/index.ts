@@ -1325,23 +1325,38 @@ function updateOutput(
   const baseName = /*foo.tsx*/ basename(fileName);
   const extName = /*.tsx*/ extname(fileName);
   const extension = /*.js*/ getExtension(fileName);
-  const sourcemapFilename = baseName.slice(-extName.length) + extension + '.map';
-  const sourceMapLengthWithoutPercentEncoding = prefixLength + sourcemapFilename.length;
+  const sourcemapFilename =
+    baseName.slice(-extName.length) + extension + '.map';
+  const sourceMapLengthWithoutPercentEncoding =
+    prefixLength + sourcemapFilename.length;
   /*
    * Only rewrite if existing directive exists at the location we expect, to support:
    *   a) compilers that do not append a sourcemap directive
    *   b) situations where we did the math wrong
    *     Not ideal, but appending our sourcemap *after* a pre-existing sourcemap still overrides, so the end-user is happy.
    */
-  if(outputText.substr(-sourceMapLengthWithoutPercentEncoding, prefixLength) == '//# sourceMappingURL=') {
-    return outputText.slice(0, -sourceMapLengthWithoutPercentEncoding) + sourceMapContent;
+  if (
+    outputText.substr(-sourceMapLengthWithoutPercentEncoding, prefixLength) ==
+    '//# sourceMappingURL='
+  ) {
+    return (
+      outputText.slice(0, -sourceMapLengthWithoutPercentEncoding) +
+      sourceMapContent
+    );
   }
-  const sourceMapLengthWithPercentEncoding = prefixLength + urlFormat(sourcemapFilename).length;
-  if(outputText.substr(-sourceMapLengthWithPercentEncoding, prefixLength) === '//# sourceMappingURL=') {
-    return outputText.slice(0, -sourceMapLengthWithPercentEncoding) + sourceMapContent;
+  const sourceMapLengthWithPercentEncoding =
+    prefixLength + urlFormat(sourcemapFilename).length;
+  if (
+    outputText.substr(-sourceMapLengthWithPercentEncoding, prefixLength) ===
+    '//# sourceMappingURL='
+  ) {
+    return (
+      outputText.slice(0, -sourceMapLengthWithPercentEncoding) +
+      sourceMapContent
+    );
   }
 
-  return `${ outputText }\n${ sourceMapContent }`;
+  return `${outputText}\n${sourceMapContent}`;
 }
 
 /**
