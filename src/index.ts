@@ -1336,8 +1336,8 @@ function updateOutput(
    *     Not ideal, but appending our sourcemap *after* a pre-existing sourcemap still overrides, so the end-user is happy.
    */
   if (
-    outputText.substr(-sourceMapLengthWithoutPercentEncoding, prefixLength) ==
-    '//# sourceMappingURL='
+    outputText.substr(-sourceMapLengthWithoutPercentEncoding, prefixLength) ===
+    prefix
   ) {
     return (
       outputText.slice(0, -sourceMapLengthWithoutPercentEncoding) +
@@ -1348,7 +1348,7 @@ function updateOutput(
     prefixLength + urlFormat(sourcemapFilename).length;
   if (
     outputText.substr(-sourceMapLengthWithPercentEncoding, prefixLength) ===
-    '//# sourceMappingURL='
+    prefix
   ) {
     return (
       outputText.slice(0, -sourceMapLengthWithPercentEncoding) +
