@@ -140,6 +140,12 @@ jobs:
           path: tests/
       - run: npm install typescript@${{ matrix.typescript }} --force
       - run: npm run test-cov
+      - name: Upload npm logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: npm-logs-${{ matrix.os }}-node-${{ matrix.nodeFlag }}-typescript-${{ matrix.typescriptFlag }}
+          path: temp/npm-cache/_logs
       - run: npm run coverage-report
         if: ${{ always() }}
       - name: Codecov
