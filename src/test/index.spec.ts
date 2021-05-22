@@ -276,7 +276,7 @@ test.suite('ts-node', (test) => {
     });
 
     test('should work with source maps', async () => {
-      const { err } = await exec(`${cmd} 'throw error'`);
+      const { err } = await exec(`${cmd} "throw error"`);
       if (err === null) {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
@@ -292,7 +292,7 @@ test.suite('ts-node', (test) => {
     });
 
     test('should work with source maps in --transpile-only mode', async () => {
-      const { err } = await exec(`${cmd} --transpile-only 'throw error'`);
+      const { err } = await exec(`${cmd} --transpile-only "throw error"`);
       if (err === null) {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
@@ -444,7 +444,7 @@ test.suite('ts-node', (test) => {
     });
 
     test('should use source maps with react tsx', async () => {
-      const { err, stdout } = await exec(`${cmd} 'throw error react tsx.tsx'`);
+      const { err, stdout } = await exec(`${cmd} "throw error react tsx.tsx"`);
       expect(err).not.to.equal(null);
       expect(err!.message).to.contain(
         [
@@ -1206,7 +1206,7 @@ test.suite('ts-node', (test) => {
         expect(stdout).to.equal('foo bar baz biff libfoo\n');
       });
       test('should use source maps', async () => {
-        const { err, stdout } = await exec(`${cmd} 'throw error.ts'`, {
+        const { err, stdout } = await exec(`${cmd} "throw error.ts"`, {
           cwd: join(TEST_DIR, './esm'),
         });
         expect(err).not.to.equal(null);
