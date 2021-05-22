@@ -1210,7 +1210,7 @@ test.suite('ts-node', (test) => {
         expect(err).not.to.equal(null);
         expect(err!.message).to.contain(
           [
-            `${pathToFileURL(join(TEST_DIR, './esm/throw error.ts'))}:100`,
+            `${pathToFileURL(join(TEST_DIR, './esm/throw error.ts')).toString().replace(/%20/g, ' ')}:100`,
             "  bar() { throw new Error('this is a demo'); }",
             '                ^',
             'Error: this is a demo',
