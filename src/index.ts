@@ -1,7 +1,7 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path';
 import { Module } from 'module';
 import * as util from 'util';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, format as urlFormat } from 'url';
 
 import sourceMapSupport = require('source-map-support');
 import { BaseError } from 'make-error';
@@ -1318,20 +1318,30 @@ function updateOutput(
     'utf8'
   ).toString('base64');
   const sourceMapContent = `//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64Map}`;
-  // Expected form: `//# sourceMappingURL=foo.js.map` for input file foo.tsx
-  const sourceMapLength =
-    /*//# sourceMappingURL=*/ 21 +
-    /*foo.tsx*/ basename(fileName).length -
-    /*.tsx*/ extname(fileName).length +
-    /*.js*/ getExtension(fileName).length +
-    /*.map*/ 4;
-  // Only rewrite if existing directive exists, to support compilers that do not append a sourcemap directive
-  return (
-    (outputText.slice(-sourceMapLength, -sourceMapLength + 21) ===
-    '//# sourceMappingURL='
-      ? outputText.slice(0, -sourceMapLength)
-      : outputText) + sourceMapContent
-  );
+  // Expected form: `//# sourceMappingURL=foo bar.js.map` or `//# sourceMappingURL=foo%20bar.js.map` for input file "foo bar.tsx"
+  // Percent-encoding behavior added in TS 4.1.1: https://github.com/microsoft/TypeScript/issues/40951
+  const prefix = '//# sourceMappingURL=';
+  const prefixLength = prefix.length;
+  const baseName = /*foo.tsx*/ basename(fileName);
+  const extName = /*.tsx*/ extname(fileName);
+  const extension = /*.js*/ getExtension(fileName);
+  const sourcemapFilename = baseName.slice(-extName.length) + extension + '.map';
+  const sourceMapLengthWithoutPercentEncoding = prefixLength + sourcemapFilename.length;
+  /*
+   * Only rewrite if existing directive exists at the location we expect, to support:
+   *   a) compilers that do not append a sourcemap directive
+   *   b) situations where we did the math wrong
+   *     Not ideal, but appending our sourcemap *after* a pre-existing sourcemap still overrides, so the end-user is happy.
+   */
+  if(outputText.substr(-sourceMapLengthWithoutPercentEncoding, prefixLength) == '//# sourceMappingURL=') {
+    return outputText.slice(0, -sourceMapLengthWithoutPercentEncoding) + sourceMapContent;
+  }
+  const sourceMapLengthWithPercentEncoding = prefixLength + urlFormat(sourcemapFilename).length;
+  if(outputText.substr(-sourceMapLengthWithPercentEncoding, prefixLength) === '//# sourceMappingURL=') {
+    return outputText.slice(0, -sourceMapLengthWithPercentEncoding) + sourceMapContent;
+  }
+
+  return `${ outputText }\n${ sourceMapContent }`;
 }
 
 /**
