@@ -457,7 +457,9 @@ test.suite('ts-node', (test) => {
     });
 
     test('should use source maps with react tsx in --transpile-only mode', async () => {
-      const { err, stdout } = await exec(`${cmd} --transpile-only 'throw error react tsx.tsx'`);
+      const { err, stdout } = await exec(
+        `${cmd} --transpile-only 'throw error react tsx.tsx'`
+      );
       expect(err).not.to.equal(null);
       expect(err!.message).to.contain(
         [
@@ -1210,7 +1212,9 @@ test.suite('ts-node', (test) => {
         expect(err).not.to.equal(null);
         expect(err!.message).to.contain(
           [
-            `${pathToFileURL(join(TEST_DIR, './esm/throw error.ts')).toString().replace(/%20/g, ' ')}:100`,
+            `${pathToFileURL(join(TEST_DIR, './esm/throw error.ts'))
+              .toString()
+              .replace(/%20/g, ' ')}:100`,
             "  bar() { throw new Error('this is a demo'); }",
             '                ^',
             'Error: this is a demo',
