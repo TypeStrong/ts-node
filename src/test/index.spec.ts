@@ -458,7 +458,7 @@ test.suite('ts-node', (test) => {
 
     test('should use source maps with react tsx in --transpile-only mode', async () => {
       const { err, stdout } = await exec(
-        `${cmd} --transpile-only 'throw error react tsx.tsx'`
+        `${cmd} --transpile-only "throw error react tsx.tsx"`
       );
       expect(err).not.to.equal(null);
       expect(err!.message).to.contain(
