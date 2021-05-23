@@ -29,7 +29,7 @@ Docs for the latest stable release live in a `docs` branch.  The "Edit this page
 branch so that the website can be improved in parallel with new feature work.
 
 Docs changes for unreleased features are merged to `main` in the same PR which implements the feature, adds tests, etc.
-When we release a new version, we merge `main` into `docs` and `docs` into `main`, unifying the two.
+When we release a new version, we merge `main` with `docs`, unifying the two.
 
 ```shell
 cd ./website
@@ -44,11 +44,14 @@ This site was used to generate the favicon from a high-res PNG export of the SVG
 
 We publish using `np`: https://npm.im/np
 
-1. Merge `docs` into `main`
+1. Merge `docs` into `main` using a pull request, ensuring a consistent squash-merge
 2. Rebuild the README (see instructions above, necessary because npmjs.com renders the readme)
 3. Publish with `np`
 4. Add changelog to the Github Release; match formatting from previous releases
-5. Merge `main` into `docs` (this automatically rebuilds the website)
+5. Move `docs` branch to head of `main`
+  - this rebuilds the website
+  - `git push --force origin main:docs`
+  - avoids merge messiness due to earlier squash-merge from `docs` to `main`
 6. If tsconfig schema has changed, send a pull request to schemastore.  [Example](https://github.com/SchemaStore/schemastore/pull/1208)
 
 ## APIExtractor
