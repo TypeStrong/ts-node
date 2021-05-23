@@ -29,7 +29,7 @@ Docs for the latest stable release live in a `docs` branch.  The "Edit this page
 branch so that the website can be improved in parallel with new feature work.
 
 Docs changes for unreleased features are merged to `main` in the same PR which implements the feature, adds tests, etc.
-When we release a new version, we merge `main` into `docs` and `docs` into `main`, unifying the two.
+When we release a new version, we merge `main` with `docs`, unifying the two.
 
 ```shell
 cd ./website
