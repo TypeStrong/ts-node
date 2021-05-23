@@ -1195,9 +1195,12 @@ test.suite('ts-node', (test) => {
   });
 
   test.suite('esm', (test) => {
-    const cmd = `node --loader ts-node/esm`;
+    const experimentalModulesFlag = semver.gte(process.version, '12.17.0')
+      ? ''
+      : '--experimental-modules';
+    const cmd = `node ${experimentalModulesFlag} --loader ts-node/esm`;
 
-    if (semver.gte(process.version, '13.0.0')) {
+    if (semver.gte(process.version, '12.16.0')) {
       test('should compile and execute as ESM', async () => {
         const { err, stdout } = await exec(`${cmd} index.ts`, {
           cwd: join(TEST_DIR, './esm'),
@@ -1250,7 +1253,7 @@ test.suite('ts-node', (test) => {
             cwd: join(TEST_DIR, './esm-node-resolver'),
             env: {
               ...process.env,
-              NODE_OPTIONS: '--experimental-specifier-resolution=node',
+              NODE_OPTIONS: `${experimentalModulesFlag} --experimental-specifier-resolution=node`,
             },
           });
           expect(err).to.equal(null);
