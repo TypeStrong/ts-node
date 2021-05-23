@@ -1326,7 +1326,7 @@ function updateOutput(
   const extName = /*.tsx*/ extname(fileName);
   const extension = /*.js*/ getExtension(fileName);
   const sourcemapFilename =
-    baseName.slice(-extName.length) + extension + '.map';
+    baseName.slice(0, -extName.length) + extension + '.map';
   const sourceMapLengthWithoutPercentEncoding =
     prefixLength + sourcemapFilename.length;
   /*
