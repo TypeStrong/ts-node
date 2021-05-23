@@ -1197,125 +1197,123 @@ test.suite('ts-node', (test) => {
   test.suite('esm', (test) => {
     const cmd = `node --loader ts-node/esm`;
 
-    if (semver.gte(process.version, '13.0.0')) {
-      test('should compile and execute as ESM', async () => {
+    test('should compile and execute as ESM', async () => {
+      const { err, stdout } = await exec(`${cmd} index.ts`, {
+        cwd: join(TEST_DIR, './esm'),
+      });
+      expect(err).to.equal(null);
+      expect(stdout).to.equal('foo bar baz biff libfoo\n');
+    });
+    test('should use source maps', async () => {
+      const { err, stdout } = await exec(`${cmd} "throw error.ts"`, {
+        cwd: join(TEST_DIR, './esm'),
+      });
+      expect(err).not.to.equal(null);
+      expect(err!.message).to.contain(
+        [
+          `${pathToFileURL(join(TEST_DIR, './esm/throw error.ts'))
+            .toString()
+            .replace(/%20/g, ' ')}:100`,
+          "  bar() { throw new Error('this is a demo'); }",
+          '                ^',
+          'Error: this is a demo',
+        ].join('\n')
+      );
+    });
+
+    test.suite('supports experimental-specifier-resolution=node', (test) => {
+      test('via --experimental-specifier-resolution', async () => {
+        const {
+          err,
+          stdout,
+        } = await exec(
+          `${cmd} --experimental-specifier-resolution=node index.ts`,
+          { cwd: join(TEST_DIR, './esm-node-resolver') }
+        );
+        expect(err).to.equal(null);
+        expect(stdout).to.equal('foo bar baz biff libfoo\n');
+      });
+      test('via --es-module-specifier-resolution alias', async () => {
+        const {
+          err,
+          stdout,
+        } = await exec(
+          `${cmd} --experimental-modules --es-module-specifier-resolution=node index.ts`,
+          { cwd: join(TEST_DIR, './esm-node-resolver') }
+        );
+        expect(err).to.equal(null);
+        expect(stdout).to.equal('foo bar baz biff libfoo\n');
+      });
+      test('via NODE_OPTIONS', async () => {
         const { err, stdout } = await exec(`${cmd} index.ts`, {
-          cwd: join(TEST_DIR, './esm'),
+          cwd: join(TEST_DIR, './esm-node-resolver'),
+          env: {
+            ...process.env,
+            NODE_OPTIONS: '--experimental-specifier-resolution=node',
+          },
         });
         expect(err).to.equal(null);
         expect(stdout).to.equal('foo bar baz biff libfoo\n');
       });
-      test('should use source maps', async () => {
-        const { err, stdout } = await exec(`${cmd} "throw error.ts"`, {
-          cwd: join(TEST_DIR, './esm'),
-        });
-        expect(err).not.to.equal(null);
-        expect(err!.message).to.contain(
-          [
-            `${pathToFileURL(join(TEST_DIR, './esm/throw error.ts'))
-              .toString()
-              .replace(/%20/g, ' ')}:100`,
-            "  bar() { throw new Error('this is a demo'); }",
-            '                ^',
-            'Error: this is a demo',
-          ].join('\n')
-        );
-      });
+    });
 
-      test.suite('supports experimental-specifier-resolution=node', (test) => {
-        test('via --experimental-specifier-resolution', async () => {
-          const {
-            err,
-            stdout,
-          } = await exec(
-            `${cmd} --experimental-specifier-resolution=node index.ts`,
-            { cwd: join(TEST_DIR, './esm-node-resolver') }
-          );
-          expect(err).to.equal(null);
-          expect(stdout).to.equal('foo bar baz biff libfoo\n');
-        });
-        test('via --es-module-specifier-resolution alias', async () => {
-          const {
-            err,
-            stdout,
-          } = await exec(
-            `${cmd} --experimental-modules --es-module-specifier-resolution=node index.ts`,
-            { cwd: join(TEST_DIR, './esm-node-resolver') }
-          );
-          expect(err).to.equal(null);
-          expect(stdout).to.equal('foo bar baz biff libfoo\n');
-        });
-        test('via NODE_OPTIONS', async () => {
-          const { err, stdout } = await exec(`${cmd} index.ts`, {
-            cwd: join(TEST_DIR, './esm-node-resolver'),
-            env: {
-              ...process.env,
-              NODE_OPTIONS: '--experimental-specifier-resolution=node',
-            },
-          });
-          expect(err).to.equal(null);
-          expect(stdout).to.equal('foo bar baz biff libfoo\n');
-        });
+    test('throws ERR_REQUIRE_ESM when attempting to require() an ESM script when ESM loader is enabled', async () => {
+      const { err, stderr } = await exec(`${cmd} ./index.js`, {
+        cwd: join(TEST_DIR, './esm-err-require-esm'),
       });
+      expect(err).to.not.equal(null);
+      expect(stderr).to.contain(
+        'Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:'
+      );
+    });
 
-      test('throws ERR_REQUIRE_ESM when attempting to require() an ESM script when ESM loader is enabled', async () => {
-        const { err, stderr } = await exec(`${cmd} ./index.js`, {
-          cwd: join(TEST_DIR, './esm-err-require-esm'),
-        });
-        expect(err).to.not.equal(null);
-        expect(stderr).to.contain(
-          'Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:'
-        );
+    test('defers to fallback loaders when URL should not be handled by ts-node', async () => {
+      const { err, stdout, stderr } = await exec(`${cmd} index.mjs`, {
+        cwd: join(TEST_DIR, './esm-import-http-url'),
       });
+      expect(err).to.not.equal(null);
+      // expect error from node's default resolver
+      expect(stderr).to.match(
+        /Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,1}\n *at defaultResolve/
+      );
+    });
 
-      test('defers to fallback loaders when URL should not be handled by ts-node', async () => {
-        const { err, stdout, stderr } = await exec(`${cmd} index.mjs`, {
-          cwd: join(TEST_DIR, './esm-import-http-url'),
-        });
-        expect(err).to.not.equal(null);
-        // expect error from node's default resolver
-        expect(stderr).to.match(
-          /Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,1}\n *at defaultResolve/
-        );
+    test('should bypass import cache when changing search params', async () => {
+      const { err, stdout } = await exec(`${cmd} index.ts`, {
+        cwd: join(TEST_DIR, './esm-import-cache'),
       });
+      expect(err).to.equal(null);
+      expect(stdout).to.equal('log1\nlog2\nlog2\n');
+    });
 
-      test('should bypass import cache when changing search params', async () => {
-        const { err, stdout } = await exec(`${cmd} index.ts`, {
-          cwd: join(TEST_DIR, './esm-import-cache'),
-        });
-        expect(err).to.equal(null);
-        expect(stdout).to.equal('log1\nlog2\nlog2\n');
+    test('should support transpile only mode via dedicated loader entrypoint', async () => {
+      const { err, stdout } = await exec(`${cmd}/transpile-only index.ts`, {
+        cwd: join(TEST_DIR, './esm-transpile-only'),
       });
+      expect(err).to.equal(null);
+      expect(stdout).to.equal('');
+    });
+    test('should throw type errors without transpile-only enabled', async () => {
+      const { err, stdout } = await exec(`${cmd} index.ts`, {
+        cwd: join(TEST_DIR, './esm-transpile-only'),
+      });
+      if (err === null) {
+        throw new Error('Command was expected to fail, but it succeeded.');
+      }
 
-      test('should support transpile only mode via dedicated loader entrypoint', async () => {
-        const { err, stdout } = await exec(`${cmd}/transpile-only index.ts`, {
-          cwd: join(TEST_DIR, './esm-transpile-only'),
-        });
-        expect(err).to.equal(null);
-        expect(stdout).to.equal('');
-      });
-      test('should throw type errors without transpile-only enabled', async () => {
-        const { err, stdout } = await exec(`${cmd} index.ts`, {
-          cwd: join(TEST_DIR, './esm-transpile-only'),
-        });
-        if (err === null) {
-          throw new Error('Command was expected to fail, but it succeeded.');
-        }
-
-        expect(err.message).to.contain('Unable to compile TypeScript');
-        expect(err.message).to.match(
-          new RegExp(
-            "TS2345: Argument of type '(?:number|1101)' is not assignable to parameter of type 'string'\\."
-          )
-        );
-        expect(err.message).to.match(
-          new RegExp(
-            "TS2322: Type '(?:\"hello world\"|string)' is not assignable to type 'number'\\."
-          )
-        );
-        expect(stdout).to.equal('');
-      });
-    }
+      expect(err.message).to.contain('Unable to compile TypeScript');
+      expect(err.message).to.match(
+        new RegExp(
+          "TS2345: Argument of type '(?:number|1101)' is not assignable to parameter of type 'string'\\."
+        )
+      );
+      expect(err.message).to.match(
+        new RegExp(
+          "TS2322: Type '(?:\"hello world\"|string)' is not assignable to type 'number'\\."
+        )
+      );
+      expect(stdout).to.equal('');
+    });
 
     if (semver.gte(process.version, '12.0.0')) {
       test('throws ERR_REQUIRE_ESM when attempting to require() an ESM script when ESM loader is *not* enabled and node version is >= 12', async () => {
