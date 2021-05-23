@@ -325,7 +325,7 @@ node --trace-deprecation --abort-on-uncaught-exception -r ts-node/register ./ind
 
 ## API
 
-The API includes [additional options](https://typestrong.org/ts-node/api/interfaces/registeroptions.html) not shown here.
+The API includes [additional options](https://typestrong.org/ts-node/api/interfaces/RegisterOptions.html) not shown here.
 
 # CommonJS vs native ECMAScript modules
 
@@ -666,10 +666,10 @@ Then add the following to your `tsconfig.json`.
 
 ### Writing your own integration
 
-To write your own transpiler integration, check our [API docs](https://typestrong.org/ts-node/api/interfaces/transpilermodule.html).
+To write your own transpiler integration, check our [API docs](https://typestrong.org/ts-node/api/interfaces/TranspilerModule.html).
 
 Integrations are `require()`d, so they can be published to npm.  The module must export a `create` function matching the
-[`TranspilerModule`](https://typestrong.org/ts-node/api/interfaces/transpilermodule.html) interface.
+[`TranspilerModule`](https://typestrong.org/ts-node/api/interfaces/TranspilerModule.html) interface.
 
 # Recipes
 
