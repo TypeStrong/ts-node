@@ -1,7 +1,7 @@
 import { relative, basename, extname, resolve, dirname, join } from 'path';
 import { Module } from 'module';
 import * as util from 'util';
-import { fileURLToPath, format as urlFormat } from 'url';
+import { fileURLToPath } from 'url';
 
 import sourceMapSupport = require('source-map-support');
 import { BaseError } from 'make-error';
