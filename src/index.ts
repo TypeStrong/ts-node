@@ -1344,8 +1344,9 @@ function updateOutput(
       sourceMapContent
     );
   }
+  // If anyone asks why we're not using URL, the URL equivalent is: `u = new URL('http://d'); u.pathname = "/" + sourcemapFilename; return u.pathname.slice(1);
   const sourceMapLengthWithPercentEncoding =
-    prefixLength + urlFormat(sourcemapFilename).length;
+    prefixLength + encodeURI(sourcemapFilename).length;
   if (
     outputText.substr(-sourceMapLengthWithPercentEncoding, prefixLength) ===
     prefix
