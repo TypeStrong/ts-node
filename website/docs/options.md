@@ -53,4 +53,4 @@ _Environment variables, where available, are in `ALL_CAPS`_
 
 ## API
 
-The API includes [additional options](https://typestrong.org/ts-node/api/interfaces/registeroptions.html) not shown here.
+The API includes [additional options](https://typestrong.org/ts-node/api/interfaces/RegisterOptions.html) not shown here.
