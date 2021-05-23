@@ -469,7 +469,6 @@ test.suite('ts-node', (test) => {
           }
         );
         function assertLoggedJsonIsCorrect(stdout: string) {
-          console.dir(stdout);
           expect(JSON.parse(stdout.replace(/> /, ''))).to.deep.equal({
             moduleKeys: [
               'id',
