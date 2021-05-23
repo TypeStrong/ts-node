@@ -1195,7 +1195,9 @@ test.suite('ts-node', (test) => {
   });
 
   test.suite('esm', (test) => {
-    const cmd = `node --loader ts-node/esm${ semver.gte(process.version, '12.17.0') ? '' : ' --experimental-modules' }`;
+    const cmd = `node --loader ts-node/esm${
+      semver.gte(process.version, '12.17.0') ? '' : ' --experimental-modules'
+    }`;
 
     if (semver.gte(process.version, '12.16.0')) {
       test('should compile and execute as ESM', async () => {
