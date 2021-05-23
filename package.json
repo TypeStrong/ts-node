@@ -161,11 +161,9 @@
     "@tsconfig/node12": "^1.0.7",
     "@tsconfig/node14": "^1.0.0",
     "@tsconfig/node16": "^1.0.1",
-    "@types/js-yaml": "^4.0.0",
     "arg": "^4.1.0",
     "create-require": "^1.1.0",
     "diff": "^4.0.1",
-    "js-yaml": "^4.0.0",
     "make-error": "^1.1.1",
     "source-map-support": "^0.5.17",
     "yn": "3.1.1"
