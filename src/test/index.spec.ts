@@ -400,8 +400,7 @@ test.suite('ts-node', (test) => {
       );
     });
 
-    // Serial because it's timing-sensitive
-    test.serial('REPL can be created via API', async () => {
+    function createReplViaApi() {
       const stdin = new PassThrough();
       const stdout = new PassThrough();
       const stderr = new PassThrough();
@@ -415,6 +414,12 @@ test.suite('ts-node', (test) => {
         project: `${TEST_DIR}/tsconfig.json`,
       });
       replService.setService(service);
+      return { stdin, stdout, stderr, replService, service };
+    }
+
+    // Serial because it's timing-sensitive
+    test.serial('REPL can be created via API', async () => {
+      const { stdin, stdout, stderr, replService } = createReplViaApi();
       replService.start();
       stdin.write('\nconst a = 123\n.type a\n');
       stdin.end();
@@ -426,6 +431,95 @@ test.suite('ts-node', (test) => {
         "> 'use strict'\n" + '> undefined\n' + '> const a: 123\n' + '> '
       );
     });
+
+    test.suite(
+      '-e, --interactive, and stdin always support CommonJS globals: module, exports, __filename, __dirname',
+      (test) => {
+        const jsonStringifyCode = `JSON.stringify({moduleKeys: Object.keys(module), exportsKeys: Object.keys(exports), typeOfFilename: typeof __filename, typeOfDirname: typeof __dirname})`;
+        const consoleLogCode = `console.log(${jsonStringifyCode});\n`;
+        const setGlobalCode = `(global as any).testJson = ${jsonStringifyCode};\n`;
+        const cliTest = test.macro(
+          (flags: string, stdin: string) => async (t) => {
+            const execPromise = exec(`${cmd} ${flags}`);
+            execPromise.child.stdin!.end(stdin);
+            const { err, stdout } = await execPromise;
+            expect(err).to.equal(null);
+            assertLoggedJsonIsCorrect(stdout);
+          }
+        );
+        const programmaticTest = test.macro(
+          (
+            evalCodeBefore: string | null,
+            stdinCode: string,
+            jsonGetter?: () => Promise<string>
+          ) => async (t) => {
+            (global as any).testJson = undefined;
+            const { stdin, stderr, stdout, replService } = createReplViaApi();
+            if (typeof evalCodeBefore === 'string') {
+              replService.evalCode(evalCodeBefore);
+            }
+            replService.start();
+            stdin.write(stdinCode);
+            stdin.end();
+            await promisify(setTimeout)(1e3);
+            stdout.end();
+            stderr.end();
+            expect(await getStream(stderr)).to.equal('');
+            assertLoggedJsonIsCorrect((global as any).testJson);
+          }
+        );
+        function assertLoggedJsonIsCorrect(stdout: string) {
+          console.dir(stdout);
+          expect(JSON.parse(stdout.replace(/> /, ''))).to.deep.equal({
+            moduleKeys: [
+              'id',
+              'path',
+              'exports',
+              'filename',
+              'loaded',
+              'children',
+              'paths',
+            ],
+            exportsKeys: [],
+            typeOfFilename: 'string',
+            typeOfDirname: 'string',
+          });
+        }
+
+        test(
+          '"-i -e", passing command to -e',
+          cliTest,
+          `-i -e "${consoleLogCode}"`,
+          ``
+        );
+        test(
+          '"-i -e" , piping command to stdin',
+          cliTest,
+          `-i -e "process.env"`,
+          consoleLogCode
+        );
+        test(
+          '"-e", passing command to -e',
+          cliTest,
+          `-e "${consoleLogCode}"`,
+          ``
+        );
+        test('no flags, piping code to stdin', cliTest, ``, consoleLogCode);
+        // Serial because it's timing-sensitive
+        test.serial(
+          'programmatically, eval-ing before starting REPL',
+          programmaticTest,
+          setGlobalCode,
+          ''
+        );
+        test.serial(
+          'programmatically, passing code to stdin after starting REPL',
+          programmaticTest,
+          null,
+          setGlobalCode
+        );
+      }
+    );
 
     test('should support require flags', async () => {
       const { err, stdout } = await exec(
