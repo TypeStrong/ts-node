@@ -55,6 +55,8 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   const nonTsxOptions = createSwcOptions(false);
   const tsxOptions = createSwcOptions(true);
   function createSwcOptions(isTsx: boolean): swcTypes.Options {
+    const swcTarget = targetMapping.get(target!) ?? 'es3';
+    const keepClassNames = target! >= /* ts.ScriptTarget.ES2016 */ 3;
     return {
       sourceMaps: sourceMap,
       // isModule: true,
@@ -71,7 +73,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
           decorators: experimentalDecorators,
           dynamicImport: true,
         },
-        target: targetMapping.get(target!) ?? 'es3',
+        target: swcTarget,
         transform: {
           decoratorMetadata: emitDecoratorMetadata,
           legacyDecorator: true,
@@ -81,9 +83,10 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
             useBuiltins: false,
             pragma: jsxFactory!,
             pragmaFrag: jsxFragmentFactory!,
-          },
+          } as swcTypes.ReactConfig,
         },
-      },
+        keepClassNames,
+      } as swcTypes.JscConfig,
     };
   }
 
