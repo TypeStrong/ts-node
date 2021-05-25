@@ -354,7 +354,6 @@ test.suite('ts-node', (test) => {
       );
       expect(err).to.equal(null);
       expect(stdout).to.contain('Hello World!');
-      console.log(stdout);
     });
 
     test('should pipe into `ts-node` and evaluate', async () => {
