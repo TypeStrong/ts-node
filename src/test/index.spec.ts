@@ -345,7 +345,7 @@ test.suite('ts-node', (test) => {
         `${cmdNoProject} --transpiler ts-node/transpilers/swc-experimental transpile-only-swc`
       );
       expect(err).to.equal(null);
-      expect(stdout).to.contain('Hello World');
+      expect(stdout).to.contain('Hello World!');
     });
 
     test('should support third-party transpilers via tsconfig', async () => {
@@ -353,7 +353,8 @@ test.suite('ts-node', (test) => {
         `${cmdNoProject} transpile-only-swc-via-tsconfig`
       );
       expect(err).to.equal(null);
-      expect(stdout).to.contain('Hello World');
+      expect(stdout).to.contain('Hello World!');
+      console.log(stdout);
     });
 
     test('should pipe into `ts-node` and evaluate', async () => {

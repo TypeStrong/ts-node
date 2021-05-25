@@ -4,6 +4,7 @@
     "transpiler": "ts-node/transpilers/swc-experimental"
   },
   "compilerOptions": {
+    "target": "ES2020",
     "module": "ESNext",
     "allowJs": true,
     "jsx": "react",
