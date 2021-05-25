@@ -6,6 +6,8 @@
   "compilerOptions": {
     "module": "ESNext",
     "allowJs": true,
-    "jsx": "react"
+    "jsx": "react",
+    "experimentalDecorators": true,
   }
 }
+  
