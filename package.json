@@ -112,8 +112,8 @@
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.15.2",
-    "@swc/core": ">=1.2.45",
-    "@swc/wasm": ">=1.2.45",
+    "@swc/core": ">=1.2.50",
+    "@swc/wasm": ">=1.2.50",
     "@types/chai": "^4.0.4",
     "@types/diff": "^4.0.2",
     "@types/lodash": "^4.14.151",
@@ -143,8 +143,8 @@
     "util.promisify": "^1.0.1"
   },
   "peerDependencies": {
-    "@swc/core": ">=1.2.45",
-    "@swc/wasm": ">=1.2.45",
+    "@swc/core": ">=1.2.50",
+    "@swc/wasm": ">=1.2.50",
     "@types/node": "*",
     "typescript": ">=2.7"
   },
