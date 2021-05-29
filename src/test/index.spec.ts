@@ -1,13 +1,14 @@
 import { test, TestInterface } from './testlib';
 import { expect } from 'chai';
+import * as exp from 'expect';
 import {
   ChildProcess,
   exec as childProcessExec,
   ExecException,
   ExecOptions,
 } from 'child_process';
-import { join, resolve, sep as pathSep } from 'path';
-import { tmpdir } from 'os';
+import { dirname, join, resolve, sep as pathSep } from 'path';
+import { homedir, tmpdir } from 'os';
 import semver = require('semver');
 import ts = require('typescript');
 import proxyquire = require('proxyquire');
@@ -433,27 +434,38 @@ test.suite('ts-node', (test) => {
     });
 
     test.suite(
-      '-e, --interactive, and stdin always support CommonJS globals: module, exports, __filename, __dirname',
+      '[eval], <repl>, and [stdin] execute with correct globals',
       (test) => {
-        const jsonStringifyCode = `JSON.stringify({moduleKeys: Object.keys(module), exportsKeys: Object.keys(exports), typeOfFilename: typeof __filename, typeOfDirname: typeof __dirname})`;
-        const consoleLogCode = `console.log(${jsonStringifyCode});\n`;
-        const setGlobalCode = `(global as any).testJson = ${jsonStringifyCode};\n`;
         const cliTest = test.macro(
-          (flags: string, stdin: string) => async (t) => {
+          (
+            {
+              flags,
+              stdin,
+            }: {
+              flags: string;
+              stdin: string;
+            },
+            assertions: (stdout: string) => void
+          ) => async (t) => {
             const execPromise = exec(`${cmd} ${flags}`);
+            // Uncomment to run against vanilla node, useful to verify that these test cases match vanilla node
+            // const execPromise = exec(`node ${flags}`);
             execPromise.child.stdin!.end(stdin);
             const { err, stdout } = await execPromise;
             expect(err).to.equal(null);
-            assertLoggedJsonIsCorrect(stdout);
+            await assertions(stdout);
           }
         );
         const programmaticTest = test.macro(
           (
             evalCodeBefore: string | null,
             stdinCode: string,
-            jsonGetter?: () => Promise<string>
+            assertions: (stdout: string) => void
           ) => async (t) => {
-            (global as any).testJson = undefined;
+            (global as any).testReport = undefined;
+            (global as any).replReport = undefined;
+            (global as any).stdinReport = undefined;
+            (global as any).evalReport = undefined;
             const { stdin, stderr, stdout, replService } = createReplViaApi();
             if (typeof evalCodeBefore === 'string') {
               replService.evalCode(evalCodeBefore);
@@ -465,57 +477,356 @@ test.suite('ts-node', (test) => {
             stdout.end();
             stderr.end();
             expect(await getStream(stderr)).to.equal('');
-            assertLoggedJsonIsCorrect((global as any).testJson);
+            await assertions(await getStream(stdout));
           }
         );
-        function assertLoggedJsonIsCorrect(stdout: string) {
-          expect(JSON.parse(stdout.replace(/> /, ''))).to.deep.equal({
-            moduleKeys: [
-              'id',
-              'path',
-              'exports',
-              'filename',
-              'loaded',
-              'children',
-              'paths',
-            ],
-            exportsKeys: [],
-            typeOfFilename: 'string',
-            typeOfDirname: 'string',
-          });
+
+        const declareGlobals = `declare var replReport: any, stdinReport: any, evalReport: any, restReport: any, global: any, __filename: any, __dirname: any, module: any, exports: any, fs: any;`;
+        function setReportGlobal(type: 'repl' | 'stdin' | 'eval') {
+          return `
+            ${declareGlobals}
+            global.${type}Report = {
+              __filename: typeof __filename !== 'undefined' && __filename,
+              __dirname: typeof __dirname !== 'undefined' && __dirname,
+              moduleId: module.id,
+              modulePath: module.path,
+              moduleFilename: module.filename,
+              modulePaths: module.paths,
+              exportsTest: typeof exports !== 'undefined' ? module.exports === exports : null,
+              stackTest: new Error().stack!.split('\\n')[1],
+              moduleAccessorsTest: typeof fs === 'undefined' ? null : fs === require('fs'),
+              argv: process.argv
+            };
+          `.replace(/\n/g, '');
+        }
+        const reportsObject = `
+          {
+            stdinReport: typeof stdinReport !== 'undefined' && stdinReport,
+            evalReport: typeof evalReport !== 'undefined' && evalReport,
+            replReport: typeof replReport !== 'undefined' && replReport
+          }
+        `;
+        const printReports = `
+          ${declareGlobals}
+          console.log(JSON.stringify(${reportsObject}));
+        `.replace(/\n/g, '');
+        const saveReportsAsGlobal = `
+          ${declareGlobals}
+          global.testReport = ${reportsObject};
+        `.replace(/\n/g, '');
+
+        function parseStdoutStripReplPrompt(stdout: string) {
+          // Strip node's welcome header; TODO Remove this
+          stdout = stdout.replace(/^Welcome to.*\nType "\.help" .*\n/, '');
+          expect(stdout.slice(0, 2)).to.equal('> ');
+          expect(stdout.slice(-12)).to.equal('undefined\n> ');
+          return parseStdout(stdout.slice(2, -12));
+        }
+        function parseStdout(stdout: string) {
+          return JSON.parse(stdout);
+        }
+
+        /** Every possible ./node_modules directory ascending upwards starting with ./tests/node_modules */
+        const modulePaths: string[] = [];
+        for (
+          let path = TEST_DIR;
+          dirname(path) !== path;
+          path = dirname(path)
+        ) {
+          modulePaths.push(join(path, 'node_modules'));
         }
 
         test(
-          '"-i -e", passing command to -e',
+          'stdin',
           cliTest,
-          `-i -e "${consoleLogCode}"`,
-          ``
+          {
+            stdin: `${setReportGlobal('stdin')};${printReports}`,
+            flags: '',
+          },
+          (stdout) => {
+            const report = parseStdout(stdout);
+            exp(report).toMatchObject({
+              stdinReport: {
+                __filename: '[stdin]',
+                __dirname: '.',
+                moduleId: '[stdin]',
+                modulePath: '.',
+                moduleFilename: join(TEST_DIR, `[stdin]`),
+                modulePaths,
+                exportsTest: true,
+                stackTest: '    at [stdin]:1:429',
+                moduleAccessorsTest: null,
+                argv: [exp.stringMatching(/\bnode$/)],
+              },
+              evalReport: false,
+              replReport: false,
+            });
+          }
         );
         test(
-          '"-i -e" , piping command to stdin',
+          'repl',
           cliTest,
-          `-i -e "process.env"`,
-          consoleLogCode
+          {
+            stdin: `${setReportGlobal('repl')};${printReports}`,
+            flags: '-i',
+          },
+          (stdout) => {
+            const report = parseStdoutStripReplPrompt(stdout);
+            exp(report).toMatchObject({
+              stdinReport: false,
+              evalReport: false,
+              replReport: {
+                __filename: false,
+                __dirname: false,
+                moduleId: '<repl>',
+                modulePath: '.',
+                moduleFilename: null,
+                modulePaths: [
+                  join(TEST_DIR, `repl/node_modules`),
+                  ...modulePaths,
+                  join(homedir(), `.node_modules`),
+                  join(homedir(), `.node_libraries`),
+                  // additional entry goes to node's install path
+                  exp.any(String)
+                ],
+                exportsTest: null,
+                stackTest: '    at REPL1:1:428',
+                moduleAccessorsTest: true,
+                argv: [exp.stringMatching(/\bnode$/)],
+              },
+            });
+          }
+        );
+
+        // Should ignore -i and run the entrypoint
+        test(
+          '-i w/entrypoint ignores -i',
+          cliTest,
+          {
+            stdin: `${setReportGlobal('repl')};${printReports}`,
+            flags: '-i ./repl/script.js',
+          },
+          (stdout) => {
+            const report = parseStdout(stdout);
+            exp(report).toMatchObject({
+              stdinReport: false,
+              evalReport: false,
+              replReport: false,
+            });
+          }
+        );
+
+        // Should not execute stdin
+        // Should not interpret positional arg as an entrypoint script
+        test(
+          '-e',
+          cliTest,
+          {
+            stdin: `throw new Error()`,
+            flags: `-e "${setReportGlobal('eval')};${printReports}"`,
+          },
+          (stdout) => {
+            const report = parseStdout(stdout);
+            exp(report).toMatchObject({
+              stdinReport: false,
+              evalReport: {
+                __filename: '[eval]',
+                __dirname: '.',
+                moduleId: '[eval]',
+                modulePath: '.',
+                moduleFilename: join(TEST_DIR, `[eval]`),
+                modulePaths: [
+                  join(TEST_DIR, `node_modules`),
+                  '/d/Personal-dev/@TypeStrong/ts-node/node_modules',
+                  '/d/Personal-dev/@TypeStrong/node_modules',
+                  '/d/Personal-dev/node_modules',
+                  '/d/node_modules',
+                  '/node_modules',
+                ],
+                exportsTest: true,
+                stackTest: '    at [eval]:1:428',
+                moduleAccessorsTest: true,
+                argv: [exp.stringMatching(/\bnode$/)],
+              },
+              replReport: false,
+            });
+          }
         );
         test(
-          '"-e", passing command to -e',
+          '-e w/entrypoint arg does not execute entrypoint',
           cliTest,
-          `-e "${consoleLogCode}"`,
-          ``
+          {
+            stdin: `throw new Error()`,
+            flags: `-e "${setReportGlobal(
+              'eval'
+            )};${printReports}" ./repl/script.js`,
+          },
+          (stdout) => {
+            const report = parseStdout(stdout);
+            exp(report).toMatchObject({
+              stdinReport: false,
+              evalReport: {
+                __filename: '[eval]',
+                __dirname: '.',
+                moduleId: '[eval]',
+                modulePath: '.',
+                moduleFilename: join(TEST_DIR, `[eval]`),
+                modulePaths: [
+                  join(TEST_DIR, `node_modules`),
+                  '/d/Personal-dev/@TypeStrong/ts-node/node_modules',
+                  '/d/Personal-dev/@TypeStrong/node_modules',
+                  '/d/Personal-dev/node_modules',
+                  '/d/node_modules',
+                  '/node_modules',
+                ],
+                exportsTest: true,
+                stackTest: '    at [eval]:1:428',
+                moduleAccessorsTest: true,
+                argv: [exp.stringMatching(/\bnode$/), './repl/script.js'],
+              },
+              replReport: false,
+            });
+          }
         );
-        test('no flags, piping code to stdin', cliTest, ``, consoleLogCode);
+        test(
+          '-e w/non-path arg',
+          cliTest,
+          {
+            stdin: `throw new Error()`,
+            flags: `-e "${setReportGlobal(
+              'eval'
+            )};${printReports}" ./does-not-exist.js`,
+          },
+          (stdout) => {
+            const report = parseStdout(stdout);
+            exp(report).toMatchObject({
+              stdinReport: false,
+              evalReport: {
+                __filename: '[eval]',
+                __dirname: '.',
+                moduleId: '[eval]',
+                modulePath: '.',
+                moduleFilename: join(TEST_DIR, `[eval]`),
+                modulePaths: [
+                  join(TEST_DIR, `node_modules`),
+                  '/d/Personal-dev/@TypeStrong/ts-node/node_modules',
+                  '/d/Personal-dev/@TypeStrong/node_modules',
+                  '/d/Personal-dev/node_modules',
+                  '/d/node_modules',
+                  '/node_modules',
+                ],
+                exportsTest: true,
+                stackTest: '    at [eval]:1:428',
+                moduleAccessorsTest: true,
+                argv: [exp.stringMatching(/\bnode$/), './does-not-exist.js'],
+              },
+              replReport: false,
+            });
+          }
+        );
+        test(
+          '-e -i',
+          cliTest,
+          {
+            stdin: `${setReportGlobal('repl')};${printReports}`,
+            flags: `-e "${setReportGlobal('eval')}" -i`,
+          },
+          (stdout) => {
+            const report = parseStdoutStripReplPrompt(stdout);
+            exp(report).toMatchObject({
+              stdinReport: false,
+              evalReport: {
+                __filename: '[eval]',
+                __dirname: '.',
+                moduleId: '[eval]',
+                modulePath: '.',
+                moduleFilename: join(TEST_DIR, `[eval]`),
+                modulePaths: [
+                  join(TEST_DIR, `node_modules`),
+                  '/d/Personal-dev/@TypeStrong/ts-node/node_modules',
+                  '/d/Personal-dev/@TypeStrong/node_modules',
+                  '/d/Personal-dev/node_modules',
+                  '/d/node_modules',
+                  '/node_modules',
+                ],
+                exportsTest: true,
+                stackTest: '    at [eval]:1:428',
+                moduleAccessorsTest: true,
+                argv: [exp.stringMatching(/\bnode$/)],
+              },
+              replReport: {
+                __filename: '[eval]',
+                __dirname: '.',
+                moduleId: '<repl>',
+                modulePath: '.',
+                moduleFilename: null,
+                modulePaths: [
+                  join(TEST_DIR, `repl/node_modules`),
+                  ...modulePaths,
+                  join(homedir(), `.node_modules`),
+                  join(homedir(), `.node_libraries`),
+                  // additional entry goes to node's install path
+                  exp.any(String)
+                ],
+                exportsTest: false,
+                stackTest: '    at REPL1:1:428',
+                moduleAccessorsTest: true,
+                argv: [exp.stringMatching(/\bnode$/)],
+              },
+            });
+          }
+        );
+
+        test(
+          '-e -i w/entrypoint ignores -e and -i, runs entrypoint',
+          cliTest,
+          {
+            stdin: `throw new Error()`,
+            flags: '-e "throw new Error()" -i ./repl/script.js',
+          },
+          (stdout) => {
+            const report = parseStdout(stdout);
+            exp(report).toMatchObject({
+              stdinReport: false,
+              evalReport: false,
+              replReport: false,
+            });
+          }
+        );
+
+        // test(
+        //   '"-i -e", passing command to -e',
+        //   cliTest,
+        //   `-i -e "${consoleLogCode}"`,
+        //   ``
+        // );
+        // test(
+        //   '"-i -e" , piping command to stdin',
+        //   cliTest,
+        //   `-i -e "process.env"`,
+        //   consoleLogCode
+        // );
+        // test(
+        //   '"-e", passing command to -e',
+        //   cliTest,
+        //   `-e "${consoleLogCode}"`,
+        //   ``
+        // );
+        // test('no flags, piping code to stdin', cliTest, ``, consoleLogCode);
         // Serial because it's timing-sensitive
         test.serial(
           'programmatically, eval-ing before starting REPL',
           programmaticTest,
-          setGlobalCode,
-          ''
+          `${setReportGlobal('eval')};${saveReportsAsGlobal}`,
+          '',
+          (stdout) => {}
         );
         test.serial(
           'programmatically, passing code to stdin after starting REPL',
           programmaticTest,
           null,
-          setGlobalCode
+          `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
+          (stdout) => {}
         );
       }
     );
