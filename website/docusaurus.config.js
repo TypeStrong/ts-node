@@ -10,14 +10,14 @@ module.exports = {
   projectName: 'ts-node', // Usually your repo name.
   themeConfig: {
     image: 'img/opengraph.png',
-    announcementBar: {
-      id: 'website_wip', // Any value that will identify this message.
-      content:
-        '<em>This website is still under construction.  It describes the latest, unreleased changes from our <code>main</code> branch.  Until it is ready, official documentation lives in our <a href="https://github.com/TypeStrong/ts-node#readme">README</a></em>',
-      //backgroundColor: '#fafbfc', // Defaults to `#fff`.
-      //textColor: '#091E42', // Defaults to `#000`.
-      //isCloseable: false, // Defaults to `true`.
-    },
+    // announcementBar: {
+    //   id: 'website_wip', // Any value that will identify this message.
+    //   content:
+    //     '<em>This website is still under construction.  It describes the latest, unreleased changes from our <code>main</code> branch.  Until it is ready, official documentation lives in our <a href="https://github.com/TypeStrong/ts-node#readme">README</a></em>',
+    //   //backgroundColor: '#fafbfc', // Defaults to `#fff`.
+    //   //textColor: '#091E42', // Defaults to `#000`.
+    //   //isCloseable: false, // Defaults to `true`.
+    // },
     colorMode: {
       respectPrefersColorScheme: true
     },

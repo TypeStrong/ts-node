@@ -15,6 +15,8 @@ export interface CreateOptions {
     compiler?: string;
     compilerHost?: boolean;
     compilerOptions?: object;
+    cwd?: string;
+    // @deprecated
     dir?: string;
     emit?: boolean;
     // (undocumented)
@@ -25,19 +27,23 @@ export interface CreateOptions {
     logError?: boolean;
     pretty?: boolean;
     project?: string;
+    projectSearchDir?: string;
     // (undocumented)
     readFile?: (path: string) => string | undefined;
     require?: Array<string>;
     scope?: boolean;
+    // (undocumented)
+    scopeDir?: string;
     skipIgnore?: boolean;
     skipProject?: boolean;
     // (undocumented)
     transformers?: _ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers);
     transpileOnly?: boolean;
+    transpiler?: string | [string, object];
     typeCheck?: boolean;
 }
 
-// @public (undocumented)
+// @public
 export function createRepl(options?: CreateReplOptions): ReplService;
 
 // @public (undocumented)
@@ -56,14 +62,11 @@ export interface CreateReplOptions {
     stdout?: NodeJS.WritableStream;
 }
 
-// @public
-export const DEFAULTS: RegisterOptions;
-
-// @public
-export function normalizeSlashes(value: string): string;
-
-// @public
-export function parse(value: string | undefined): object | undefined;
+// @public (undocumented)
+export interface CreateTranspilerOptions {
+    // (undocumented)
+    service: Pick<Service, 'config' | 'options'>;
+}
 
 // @public @deprecated
 export type Register = Service;
@@ -112,13 +115,53 @@ export interface Service {
     ts: TSCommon;
 }
 
+// @public (undocumented)
+export interface TranspileOptions {
+    // (undocumented)
+    fileName: string;
+}
+
+// @public (undocumented)
+export interface TranspileOutput {
+    // (undocumented)
+    diagnostics?: _ts.Diagnostic[];
+    // (undocumented)
+    outputText: string;
+    // (undocumented)
+    sourceMapText?: string;
+}
+
+// @public (undocumented)
+export interface Transpiler {
+    // (undocumented)
+    transpile(input: string, options: TranspileOptions): TranspileOutput;
+}
+
 // @public
-export function split(value: string | undefined): string[] | undefined;
+export type TranspilerFactory = (options: CreateTranspilerOptions) => Transpiler;
+
+// @public
+export interface TranspilerModule {
+    // (undocumented)
+    create: TranspilerFactory;
+}
 
 // @public
 export interface TSCommon {
     // (undocumented)
+    createDocumentRegistry: typeof _ts.createDocumentRegistry;
+    // (undocumented)
+    createEmitAndSemanticDiagnosticsBuilderProgram: typeof _ts.createEmitAndSemanticDiagnosticsBuilderProgram;
+    // (undocumented)
+    createIncrementalCompilerHost: typeof _ts.createIncrementalCompilerHost;
+    // (undocumented)
+    createIncrementalProgram: typeof _ts.createIncrementalProgram;
+    // (undocumented)
     createLanguageService: typeof _ts.createLanguageService;
+    // (undocumented)
+    createModuleResolutionCache: typeof _ts.createModuleResolutionCache;
+    // (undocumented)
+    createSourceFile: typeof _ts.createSourceFile;
     // (undocumented)
     displayPartsToString: typeof _ts.displayPartsToString;
     // (undocumented)
@@ -130,15 +173,25 @@ export interface TSCommon {
     // (undocumented)
     formatDiagnosticsWithColorAndContext: typeof _ts.formatDiagnosticsWithColorAndContext;
     // (undocumented)
+    getDefaultLibFileName: typeof _ts.getDefaultLibFileName;
+    // (undocumented)
     getDefaultLibFilePath: typeof _ts.getDefaultLibFilePath;
     // (undocumented)
     getPreEmitDiagnostics: typeof _ts.getPreEmitDiagnostics;
+    // (undocumented)
+    JsxEmit: typeof _ts.JsxEmit;
     // (undocumented)
     ModuleKind: typeof _ts.ModuleKind;
     // (undocumented)
     parseJsonConfigFileContent: typeof _ts.parseJsonConfigFileContent;
     // (undocumented)
     readConfigFile: typeof _ts.readConfigFile;
+    // (undocumented)
+    resolveModuleName: typeof _ts.resolveModuleName;
+    // (undocumented)
+    resolveModuleNameFromCache: typeof _ts.resolveModuleNameFromCache;
+    // (undocumented)
+    resolveTypeReferenceDirective: typeof _ts.resolveTypeReferenceDirective;
     // (undocumented)
     ScriptSnapshot: typeof _ts.ScriptSnapshot;
     // (undocumented)
@@ -152,7 +205,7 @@ export interface TSCommon {
 }
 
 // @public
-export interface TsConfigOptions extends Omit<RegisterOptions, 'transformers' | 'readFile' | 'fileExists' | 'skipProject' | 'project' | 'dir'> {
+export interface TsConfigOptions extends Omit<RegisterOptions, 'transformers' | 'readFile' | 'fileExists' | 'skipProject' | 'project' | 'dir' | 'cwd' | 'projectSearchDir' | 'scope' | 'scopeDir' | 'experimentalEsmLoader'> {
 }
 
 // @public
