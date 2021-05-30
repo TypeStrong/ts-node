@@ -1,12 +1,13 @@
 import { diffLines } from 'diff';
 import { homedir } from 'os';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import { Recoverable, start } from 'repl';
 import { Script } from 'vm';
 import { Service, CreateOptions, TSError, env } from './index';
 import { readFileSync, statSync } from 'fs';
 import { Console } from 'console';
 import type * as tty from 'tty';
+import Module = require('module');
 
 /**
  * Eval filename for REPL/debug.
@@ -367,4 +368,28 @@ const RECOVERY_CODES: Set<number> = new Set([
  */
 function isRecoverable(error: TSError) {
   return error.diagnosticCodes.every((code) => RECOVERY_CODES.has(code));
+}
+
+/**
+ * @internal
+ */
+export function setContext(
+  context: any,
+  module: Module,
+  filenameAndDirname: 'eval' | 'stdin' | null
+) {
+  // TODO set based on enum
+  context.__filename = module.filename;
+  context.__dirname = dirname(module.filename);
+  context.exports = module.exports;
+  context.module = module;
+  context.require = module.require.bind(module);
+}
+
+export function createNodeModuleForContext(state: EvalState, cwd: string) {
+  // Create a local module instance based on `cwd`.
+  const module = new Module(state.path);
+  module.filename = state.path;
+  module.paths = (Module as any)._nodeModulePaths(cwd);
+  return module;
 }

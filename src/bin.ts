@@ -5,7 +5,13 @@ import { inspect } from 'util';
 import Module = require('module');
 import arg = require('arg');
 import { parse, createRequire } from './util';
-import { EVAL_FILENAME, EvalState, createRepl, ReplService } from './repl';
+import {
+  EVAL_FILENAME,
+  EvalState,
+  createRepl,
+  ReplService,
+  setContext,
+} from './repl';
 import { VERSION, TSError, register } from './index';
 import type { TSInternal } from './ts-compiler-types';
 
@@ -351,11 +357,7 @@ function evalAndExit(
   isPrinted: boolean
 ) {
   let result: any;
-  (global as any).__filename = module.filename;
-  (global as any).__dirname = dirname(module.filename);
-  (global as any).exports = module.exports;
-  (global as any).module = module;
-  (global as any).require = module.require.bind(module);
+  setContext(global, module, 'eval');
 
   try {
     result = replService.evalCode(code);
