@@ -1,8 +1,10 @@
 import { resolve, dirname } from 'path';
 import type * as _ts from 'typescript';
 import { CreateOptions, DEFAULTS, TSCommon, TsConfigOptions } from './index';
+import type { TSInternal } from './ts-compiler-types';
+import { createTsInternals } from './ts-internals';
 import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs';
-import { createRequire } from './util';
+import { createRequire, trace } from './util';
 
 /**
  * TypeScript compiler option values required by `ts-node` which cannot be overridden.
@@ -69,6 +71,8 @@ export function readConfig(
    */
   tsNodeOptionsFromTsconfig: TsConfigOptions;
 } {
+  // Ordered [a, b, c] where config a extends b extends c
+  const configChain: Array<{ config: any; basePath: string }> = [];
   let config: any = { compilerOptions: {} };
   let basePath = cwd;
   let configFilePath: string | undefined = undefined;
@@ -88,27 +92,64 @@ export function readConfig(
       : ts.findConfigFile(projectSearchDir, fileExists);
 
     if (configFilePath) {
-      const result = ts.readConfigFile(configFilePath, readFile);
+      let pathToNextConfigInChain = configFilePath;
+      const tsInternals = createTsInternals(ts);
+      const errors: Array<_ts.Diagnostic> = [];
 
-      // Return diagnostics.
-      if (result.error) {
-        return {
-          configFilePath,
-          config: { errors: [result.error], fileNames: [], options: {} },
-          tsNodeOptionsFromTsconfig: {},
-        };
+      // Follow chain of "extends"
+      while (true) {
+        const result = ts.readConfigFile(pathToNextConfigInChain, readFile);
+
+        // Return diagnostics.
+        if (result.error) {
+          return {
+            configFilePath,
+            config: { errors: [result.error], fileNames: [], options: {} },
+            tsNodeOptionsFromTsconfig: {},
+          };
+        }
+
+        const c = result.config;
+        const bp = dirname(pathToNextConfigInChain);
+        configChain.push({ config: c, basePath: bp });
+
+        if (c.extends == null) break;
+        const resolvedExtendedConfigPath = tsInternals.getExtendsConfigPath(
+          c.extends,
+          {
+            fileExists,
+            readDirectory: ts.sys.readDirectory,
+            readFile,
+            useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
+            trace,
+          },
+          bp,
+          errors,
+          ((ts as unknown) as TSInternal).createCompilerDiagnostic
+        );
+        if (errors.length) {
+          return {
+            configFilePath,
+            config: { errors, fileNames: [], options: {} },
+            tsNodeOptionsFromTsconfig: {},
+          };
+        }
+        if (resolvedExtendedConfigPath == null) break;
+        pathToNextConfigInChain = resolvedExtendedConfigPath;
       }
 
-      config = result.config;
-      basePath = dirname(configFilePath);
+      ({ config, basePath } = configChain[0]);
     }
   }
 
-  // Fix ts-node options that come from tsconfig.json
-  const tsNodeOptionsFromTsconfig: TsConfigOptions = Object.assign(
-    {},
-    filterRecognizedTsConfigTsNodeOptions(config['ts-node'])
-  );
+  // Merge and fix ts-node options that come from tsconfig.json(s)
+  const tsNodeOptionsFromTsconfig: TsConfigOptions = {};
+  for (let i = configChain.length - 1; i >= 0; i--) {
+    Object.assign(
+      tsNodeOptionsFromTsconfig,
+      filterRecognizedTsConfigTsNodeOptions(configChain[i].config['ts-node'])
+    );
+  }
 
   // Remove resolution of "files".
   const files =

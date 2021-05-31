@@ -54,10 +54,45 @@ export function parse(value: string | undefined): object | undefined {
   return typeof value === 'string' ? JSON.parse(value) : undefined;
 }
 
+const directorySeparator = '/';
+const backslashRegExp = /\\/g;
 /**
  * Replace backslashes with forward slashes.
  * @internal
  */
 export function normalizeSlashes(value: string): string {
-  return value.replace(/\\/g, '/');
+  return value.replace(backslashRegExp, directorySeparator);
+}
+
+/**
+ * Cached fs operation wrapper.
+ */
+export function cachedLookup<T, R>(fn: (arg: T) => R): (arg: T) => R {
+  const cache = new Map<T, R>();
+
+  return (arg: T): R => {
+    if (!cache.has(arg)) {
+      const v = fn(arg);
+      cache.set(arg, v);
+      return v;
+    }
+    return cache.get(arg)!;
+  };
+}
+
+/**
+ * We do not support ts's `trace` option yet.  In the meantime, rather than omit
+ * `trace` options in hosts, I am using this placeholder.
+ */
+export function trace(s: string): void {}
+
+export function once<T>(fn: () => T): () => T {
+  let ran = false;
+  let v: T;
+  return function () {
+    if (ran) return v;
+    v = fn();
+    ran = true;
+    return v;
+  };
 }
