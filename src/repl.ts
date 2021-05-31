@@ -370,26 +370,26 @@ function isRecoverable(error: TSError) {
   return error.diagnosticCodes.every((code) => RECOVERY_CODES.has(code));
 }
 
-/**
- * @internal
- */
+/** @internal */
 export function setContext(
   context: any,
   module: Module,
   filenameAndDirname: 'eval' | 'stdin' | null
 ) {
-  // TODO set based on enum
-  context.__filename = module.filename;
-  context.__dirname = dirname(module.filename);
-  context.exports = module.exports;
+  if(filenameAndDirname) {
+    context.__dirname = '.';
+    context.__filename = `[${filenameAndDirname}]`;
+  }
   context.module = module;
+  context.exports = module.exports;
   context.require = module.require.bind(module);
 }
 
-export function createNodeModuleForContext(state: EvalState, cwd: string) {
+/** @internal */
+export function createNodeModuleForContext(type: 'eval' | 'stdin', cwd: string) {
   // Create a local module instance based on `cwd`.
-  const module = new Module(state.path);
-  module.filename = state.path;
+  const module = new Module(`[${ type }]`);
+  module.filename = join(cwd, module.id) + '.ts';
   module.paths = (Module as any)._nodeModulePaths(cwd);
   return module;
 }

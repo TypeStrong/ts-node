@@ -158,9 +158,17 @@ export function main(
     process.exit(0);
   }
 
+  // Figure out which we are executing: piped stdin, --eval, REPL, and/or entrypoint
+  // This is complicated because node's behavior is complicated
+  // `node -e code -i ./script.js` ignores -e
+  const executeEval = code != null && !(interactive && args._.length);
+  const executeEntrypoint = !executeEval && args._.length;
+  const executeRepl = !executeEntrypoint && (interactive || (process.stdin.isTTY && !executeEval));
+  const executeStdin = !executeEval && !executeRepl && !executeEntrypoint;
+
   const cwd = cwdArg || process.cwd();
   /** Unresolved.  May point to a symlink, not realpath.  May be missing file extension */
-  const scriptPath = args._.length ? resolve(cwd, args._[0]) : undefined;
+  const scriptPath = executeEntrypoint ? resolve(cwd, args._[0]) : undefined;
   const state = new EvalState(scriptPath || join(cwd, EVAL_FILENAME));
   const replService = createRepl({ state });
   const { evalAwarePartialHost } = replService;
@@ -245,23 +253,22 @@ export function main(
     .concat(args._.slice(1));
 
   // Execute the main contents (either eval, script or piped).
-  if (code !== undefined && !interactive) {
-    evalAndExit(replService, module, code, print);
+  if (executeEntrypoint) {
+    Module.runMain();
   } else {
-    if (args._.length) {
-      Module.runMain();
-    } else {
-      // Piping of execution _only_ occurs when no other script is specified.
-      // --interactive flag forces REPL
-      if (interactive || process.stdin.isTTY) {
-        replService.start(code);
-      } else {
-        let buffer = code || '';
-        process.stdin.on('data', (chunk: Buffer) => (buffer += chunk));
-        process.stdin.on('end', () =>
-          evalAndExit(replService, module, buffer, print)
-        );
-      }
+    if (executeEval) {
+      evalAndExit(replService, module, code!, print);
+    }
+    if (executeRepl) {
+      replService.start(code);
+    }
+    if (executeStdin) {
+      let buffer = code || '';
+      process.stdin.on('data', (chunk: Buffer) => (buffer += chunk));
+      process.stdin.on('end', () =>
+        evalAndExit(replService, module, buffer, print)
+      );
+    }
     }
   }
 }
