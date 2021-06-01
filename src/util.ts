@@ -85,14 +85,3 @@ export function cachedLookup<T, R>(fn: (arg: T) => R): (arg: T) => R {
  * `trace` options in hosts, I am using this placeholder.
  */
 export function trace(s: string): void {}
-
-export function once<T>(fn: () => T): () => T {
-  let ran = false;
-  let v: T;
-  return function () {
-    if (ran) return v;
-    v = fn();
-    ran = true;
-    return v;
-  };
-}
