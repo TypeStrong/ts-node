@@ -14,6 +14,9 @@ import Module = require('module');
  * @internal
  */
 export const EVAL_FILENAME = `[eval].ts`;
+export const EVAL_NAME = `[eval]`;
+export const STDIN_FILENAME = `[stdin].ts`;
+export const STDIN_NAME = `[stdin]`;
 
 export interface ReplService {
   readonly state: EvalState;
@@ -50,6 +53,8 @@ export interface CreateReplOptions {
   stdin?: NodeJS.ReadableStream;
   stdout?: NodeJS.WritableStream;
   stderr?: NodeJS.WritableStream;
+  /** @internal */
+  composeWithEvalAwarePartialHost?: EvalAwarePartialHost;
 }
 
 /**
@@ -66,7 +71,10 @@ export function createRepl(options: CreateReplOptions = {}) {
   let service = options.service;
   const state =
     options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME));
-  const evalAwarePartialHost = createEvalAwarePartialHost(state);
+  const evalAwarePartialHost = createEvalAwarePartialHost(
+    state,
+    options.composeWithEvalAwarePartialHost
+  );
   const stdin = options.stdin ?? process.stdin;
   const stdout = options.stdout ?? process.stdout;
   const stderr = options.stderr ?? process.stderr;
@@ -164,10 +172,13 @@ export type EvalAwarePartialHost = Pick<
 >;
 
 export function createEvalAwarePartialHost(
-  state: EvalState
+  state: EvalState,
+  composeWith?: EvalAwarePartialHost
 ): EvalAwarePartialHost {
   function readFile(path: string) {
     if (path === state.path) return state.input;
+
+    if (composeWith?.readFile) return composeWith.readFile(path);
 
     try {
       return readFileSync(path, 'utf8');
@@ -177,6 +188,8 @@ export function createEvalAwarePartialHost(
   }
   function fileExists(path: string) {
     if (path === state.path) return true;
+
+    if (composeWith?.fileExists) return composeWith.fileExists(path);
 
     try {
       const stats = statSync(path);
@@ -222,7 +235,7 @@ function _eval(service: Service, state: EvalState, input: string) {
  * Execute some code.
  */
 function exec(code: string, filename: string) {
-  const script = new Script(code, { filename: filename });
+  const script = new Script(code, { filename });
 
   return script.runInThisContext();
 }
@@ -376,7 +389,7 @@ export function setContext(
   module: Module,
   filenameAndDirname: 'eval' | 'stdin' | null
 ) {
-  if(filenameAndDirname) {
+  if (filenameAndDirname) {
     context.__dirname = '.';
     context.__filename = `[${filenameAndDirname}]`;
   }
@@ -386,9 +399,12 @@ export function setContext(
 }
 
 /** @internal */
-export function createNodeModuleForContext(type: 'eval' | 'stdin', cwd: string) {
+export function createNodeModuleForContext(
+  type: 'eval' | 'stdin',
+  cwd: string
+) {
   // Create a local module instance based on `cwd`.
-  const module = new Module(`[${ type }]`);
+  const module = new Module(`[${type}]`);
   module.filename = join(cwd, module.id) + '.ts';
   module.paths = (Module as any)._nodeModulePaths(cwd);
   return module;

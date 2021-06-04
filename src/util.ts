@@ -61,3 +61,11 @@ export function parse(value: string | undefined): object | undefined {
 export function normalizeSlashes(value: string): string {
   return value.replace(/\\/g, '/');
 }
+
+/**
+ * Safe `hasOwnProperty`
+ * @internal
+ */
+export function hasOwnProperty(object: any, property: string): boolean {
+  return Object.prototype.hasOwnProperty.call(object, property);
+}
