@@ -1,4 +1,4 @@
-import {readFileSync, writeFileSync} from 'fs';
+import {existsSync, readFileSync, writeFileSync} from 'fs';
 import type * as ts from 'typescript';
 import type * as swcWasm from '@swc/wasm';
 import type * as swcTypes from '@swc/core';
@@ -114,7 +114,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
     return result;
   };
 
-  const cacheApi = createCache(readFileSync('./swc-cache.json', 'utf16le'));
+  const cacheApi = createCache(existsSync('./swc-cache.json') ? readFileSync('./swc-cache.json', 'utf16le') : undefined);
   const baseCache = cacheApi.getOrCreateSubcacheOfRoot('TODO build a hash of versions and config');
   cacheApi.registerCallbackOnProcessExitAndDirty(() => {
     writeFileSync('./swc-cache.json', cacheApi.getCacheAsString(), 'utf16le');

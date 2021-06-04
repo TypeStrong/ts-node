@@ -7,8 +7,14 @@ import {hasOwnProperty} from './util';
  * - file hash
  */
 
-export function createCache<T>(cacheString: string) {
-  const cache = JSON.parse(cacheString);
+export function createCache<T>(cacheString?: string) {
+  let _cache = {};
+  if(cacheString) {
+    try {
+      _cache = JSON.parse(cacheString);
+    } catch(e) {}
+  }
+  const cache = _cache;
   let dirty = false;
   function getSubcacheOf(subcache: any, key: string) {
     return hasOwnProperty(subcache, key) ? subcache[key] : undefined;
