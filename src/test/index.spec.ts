@@ -528,12 +528,9 @@ test.suite('ts-node', (test) => {
 
         /** Every possible ./node_modules directory ascending upwards starting with ./tests/node_modules */
         const modulePaths: string[] = [];
-        for (
-          let path = TEST_DIR;
-          dirname(path) !== path;
-          path = dirname(path)
-        ) {
+        for (let path = TEST_DIR; ; path = dirname(path)) {
           modulePaths.push(join(path, 'node_modules'));
+          if (dirname(path) === path) break;
         }
 
         test(
@@ -551,10 +548,12 @@ test.suite('ts-node', (test) => {
                 __dirname: '.',
                 moduleId: '[stdin]',
                 modulePath: '.',
-                moduleFilename: join(TEST_DIR, `[stdin]`),
+                // Note: vanilla node does does not have file extension
+                moduleFilename: join(TEST_DIR, `[stdin].ts`),
                 modulePaths,
                 exportsTest: true,
-                stackTest: '    at [stdin]:1:429',
+                // Note: vanilla node uses different name. See #1360
+                stackTest: `    at ${join(TEST_DIR, `[stdin].ts`)}:1:429`,
                 moduleAccessorsTest: null,
                 argv: [exp.stringMatching(/\bnode$/)],
               },
@@ -587,10 +586,12 @@ test.suite('ts-node', (test) => {
                   join(homedir(), `.node_modules`),
                   join(homedir(), `.node_libraries`),
                   // additional entry goes to node's install path
-                  exp.any(String)
+                  exp.any(String),
                 ],
-                exportsTest: null,
-                stackTest: '    at REPL1:1:428',
+                // Note: vanilla node REPL does not set exports
+                exportsTest: true,
+                // Note: vanilla node uses different name. See #1360
+                stackTest: `    at ${join(TEST_DIR, '<repl>.ts')}:1:428`,
                 moduleAccessorsTest: true,
                 argv: [exp.stringMatching(/\bnode$/)],
               },
@@ -634,7 +635,8 @@ test.suite('ts-node', (test) => {
                 __dirname: '.',
                 moduleId: '[eval]',
                 modulePath: '.',
-                moduleFilename: join(TEST_DIR, `[eval]`),
+                // Note: vanilla node does does not have file extension
+                moduleFilename: join(TEST_DIR, `[eval].ts`),
                 modulePaths: [
                   join(TEST_DIR, `node_modules`),
                   '/d/Personal-dev/@TypeStrong/ts-node/node_modules',
@@ -644,7 +646,8 @@ test.suite('ts-node', (test) => {
                   '/node_modules',
                 ],
                 exportsTest: true,
-                stackTest: '    at [eval]:1:428',
+                // Note: vanilla node uses different name. See #1360
+                stackTest: `    at ${join(TEST_DIR, `[eval].ts`)}:1:428`,
                 moduleAccessorsTest: true,
                 argv: [exp.stringMatching(/\bnode$/)],
               },
@@ -670,7 +673,8 @@ test.suite('ts-node', (test) => {
                 __dirname: '.',
                 moduleId: '[eval]',
                 modulePath: '.',
-                moduleFilename: join(TEST_DIR, `[eval]`),
+                // Note: vanilla node does does not have file extension
+                moduleFilename: join(TEST_DIR, `[eval].ts`),
                 modulePaths: [
                   join(TEST_DIR, `node_modules`),
                   '/d/Personal-dev/@TypeStrong/ts-node/node_modules',
@@ -680,7 +684,8 @@ test.suite('ts-node', (test) => {
                   '/node_modules',
                 ],
                 exportsTest: true,
-                stackTest: '    at [eval]:1:428',
+                // Note: vanilla node uses different name. See #1360
+                stackTest: `    at ${join(TEST_DIR, `[eval].ts`)}:1:428`,
                 moduleAccessorsTest: true,
                 argv: [exp.stringMatching(/\bnode$/), './repl/script.js'],
               },
@@ -706,7 +711,8 @@ test.suite('ts-node', (test) => {
                 __dirname: '.',
                 moduleId: '[eval]',
                 modulePath: '.',
-                moduleFilename: join(TEST_DIR, `[eval]`),
+                // Note: vanilla node does does not have file extension
+                moduleFilename: join(TEST_DIR, `[eval].ts`),
                 modulePaths: [
                   join(TEST_DIR, `node_modules`),
                   '/d/Personal-dev/@TypeStrong/ts-node/node_modules',
@@ -716,7 +722,8 @@ test.suite('ts-node', (test) => {
                   '/node_modules',
                 ],
                 exportsTest: true,
-                stackTest: '    at [eval]:1:428',
+                // Note: vanilla node uses different name. See #1360
+                stackTest: `    at ${join(TEST_DIR, `[eval].ts`)}:1:428`,
                 moduleAccessorsTest: true,
                 argv: [exp.stringMatching(/\bnode$/), './does-not-exist.js'],
               },
@@ -740,7 +747,8 @@ test.suite('ts-node', (test) => {
                 __dirname: '.',
                 moduleId: '[eval]',
                 modulePath: '.',
-                moduleFilename: join(TEST_DIR, `[eval]`),
+                // Note: vanilla node does does not have file extension
+                moduleFilename: join(TEST_DIR, `[eval].ts`),
                 modulePaths: [
                   join(TEST_DIR, `node_modules`),
                   '/d/Personal-dev/@TypeStrong/ts-node/node_modules',
@@ -750,7 +758,8 @@ test.suite('ts-node', (test) => {
                   '/node_modules',
                 ],
                 exportsTest: true,
-                stackTest: '    at [eval]:1:428',
+                // Note: vanilla node uses different name. See #1360
+                stackTest: `    at ${join(TEST_DIR, `[eval].ts`)}:1:428`,
                 moduleAccessorsTest: true,
                 argv: [exp.stringMatching(/\bnode$/)],
               },
@@ -766,10 +775,12 @@ test.suite('ts-node', (test) => {
                   join(homedir(), `.node_modules`),
                   join(homedir(), `.node_libraries`),
                   // additional entry goes to node's install path
-                  exp.any(String)
+                  exp.any(String),
                 ],
-                exportsTest: false,
-                stackTest: '    at REPL1:1:428',
+                // Note: vanilla node REPL does not set exports, so this would be false
+                exportsTest: true,
+                // Note: vanilla node uses different name. See #1360
+                stackTest: `    at ${join(TEST_DIR, '<repl>.ts>')}:1:428`,
                 moduleAccessorsTest: true,
                 argv: [exp.stringMatching(/\bnode$/)],
               },
@@ -794,25 +805,8 @@ test.suite('ts-node', (test) => {
           }
         );
 
-        // test(
-        //   '"-i -e", passing command to -e',
-        //   cliTest,
-        //   `-i -e "${consoleLogCode}"`,
-        //   ``
-        // );
-        // test(
-        //   '"-i -e" , piping command to stdin',
-        //   cliTest,
-        //   `-i -e "process.env"`,
-        //   consoleLogCode
-        // );
-        // test(
-        //   '"-e", passing command to -e',
-        //   cliTest,
-        //   `-e "${consoleLogCode}"`,
-        //   ``
-        // );
-        // test('no flags, piping code to stdin', cliTest, ``, consoleLogCode);
+        // TODO add test case when -e throws error; REPL should not run
+
         // Serial because it's timing-sensitive
         test.serial(
           'programmatically, eval-ing before starting REPL',
