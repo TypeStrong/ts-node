@@ -172,7 +172,10 @@ export function readConfig(
     );
   }
   if (tsNodeOptionsFromTsconfig.scopeDir) {
-    tsNodeOptionsFromTsconfig.scopeDir = resolve(configFilePath!, tsNodeOptionsFromTsconfig.scopeDir);
+    tsNodeOptionsFromTsconfig.scopeDir = resolve(
+      basePath,
+      tsNodeOptionsFromTsconfig.scopeDir
+    );
   }
 
   return { configFilePath, config: fixedConfig, tsNodeOptionsFromTsconfig };
@@ -184,8 +187,8 @@ export function readConfig(
  */
 function filterRecognizedTsConfigTsNodeOptions(
   jsonObject: any
-): {recognized: TsConfigOptions, unrecognized: any} {
-  if (jsonObject == null) return {recognized: jsonObject, unrecognized: {}};
+): { recognized: TsConfigOptions; unrecognized: any } {
+  if (jsonObject == null) return { recognized: jsonObject, unrecognized: {} };
   const {
     compiler,
     compilerHost,
@@ -223,10 +226,10 @@ function filterRecognizedTsConfigTsNodeOptions(
     typeCheck,
     transpiler,
     scope,
-    scopeDir
+    scopeDir,
   };
   // Use the typechecker to make sure this implementation has the correct set of properties
   const catchExtraneousProps: keyof TsConfigOptions = (null as any) as keyof typeof filteredTsConfigOptions;
   const catchMissingProps: keyof typeof filteredTsConfigOptions = (null as any) as keyof TsConfigOptions;
-  return {recognized: filteredTsConfigOptions, unrecognized};
+  return { recognized: filteredTsConfigOptions, unrecognized };
 }

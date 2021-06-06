@@ -111,7 +111,7 @@ export function main(
     '--log-error': logError,
     '--emit': emit,
     '--scope': scope = undefined,
-    '--scope-dir': scopeDir = undefined
+    '--scope-dir': scopeDir = undefined,
   } = args;
 
   if (help) {
@@ -191,7 +191,7 @@ export function main(
     fileExists:
       code !== undefined ? evalAwarePartialHost.fileExists : undefined,
     scope,
-    scopeDir
+    scopeDir,
   });
 
   // Bind REPL service to ts-node compiler service (chicken-and-egg problem)
