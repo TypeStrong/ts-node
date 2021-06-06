@@ -580,7 +580,7 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, `[stdin].ts`)}:1:`
                 ),
                 moduleAccessorsTest: null,
-                argv: [exp.stringMatching(/\bnode$/)],
+                argv: [exp.stringMatching(/\bnode(\.exe)?$/)],
               },
               evalReport: false,
               replReport: false,
@@ -620,7 +620,7 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
                 ),
                 moduleAccessorsTest: true,
-                argv: [exp.stringMatching(/\bnode$/)],
+                argv: [exp.stringMatching(/\bnode(\.exe)?$/)],
               },
             });
           }
@@ -671,7 +671,7 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
                 ),
                 moduleAccessorsTest: true,
-                argv: [exp.stringMatching(/\bnode$/)],
+                argv: [exp.stringMatching(/\bnode(\.exe)?$/)],
               },
               replReport: false,
             });
@@ -704,7 +704,10 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
                 ),
                 moduleAccessorsTest: true,
-                argv: [exp.stringMatching(/\bnode$/), './repl/script.js'],
+                argv: [
+                  exp.stringMatching(/\bnode(\.exe)?$/),
+                  './repl/script.js',
+                ],
               },
               replReport: false,
             });
@@ -737,7 +740,10 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
                 ),
                 moduleAccessorsTest: true,
-                argv: [exp.stringMatching(/\bnode$/), './does-not-exist.js'],
+                argv: [
+                  exp.stringMatching(/\bnode(\.exe)?$/),
+                  './does-not-exist.js',
+                ],
               },
               replReport: false,
             });
@@ -768,7 +774,7 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
                 ),
                 moduleAccessorsTest: true,
-                argv: [exp.stringMatching(/\bnode$/)],
+                argv: [exp.stringMatching(/\bnode(\.exe)?$/)],
               },
               replReport: {
                 __filename: '[eval]',
@@ -791,7 +797,7 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
                 ),
                 moduleAccessorsTest: true,
-                argv: [exp.stringMatching(/\bnode$/)],
+                argv: [exp.stringMatching(/\bnode(\.exe)?$/)],
               },
             });
           }
