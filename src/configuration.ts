@@ -72,7 +72,7 @@ export function readConfig(
   tsNodeOptionsFromTsconfig: TsConfigOptions;
 } {
   // Ordered [a, b, c] where config a extends b extends c
-  const configChain: Array<{ config: any; basePath: string }> = [];
+  const configChain: Array<{ config: any; basePath: string, configPath: string }> = [];
   let config: any = { compilerOptions: {} };
   let basePath = cwd;
   let configFilePath: string | undefined = undefined;
@@ -111,7 +111,7 @@ export function readConfig(
 
         const c = result.config;
         const bp = dirname(pathToNextConfigInChain);
-        configChain.push({ config: c, basePath: bp });
+        configChain.push({ config: c, basePath: bp, configPath: pathToNextConfigInChain });
 
         if (c.extends == null) break;
         const resolvedExtendedConfigPath = tsInternals.getExtendsConfigPath(
@@ -145,9 +145,29 @@ export function readConfig(
   // Merge and fix ts-node options that come from tsconfig.json(s)
   const tsNodeOptionsFromTsconfig: TsConfigOptions = {};
   for (let i = configChain.length - 1; i >= 0; i--) {
+    const {config, basePath, configPath} = configChain[i];
+    const options = filterRecognizedTsConfigTsNodeOptions(config['ts-node']).recognized;
+
+    // Some options are relative to the config file, so must be converted to absolute paths here
+    if (options.require) {
+      // Modules are found relative to the tsconfig file, not the `dir` option
+      const tsconfigRelativeRequire = createRequire(configPath);
+      options.require = options.require.map(
+        (path: string) => {
+          return tsconfigRelativeRequire.resolve(path);
+        }
+      );
+    }
+    if (options.scopeDir) {
+      options.scopeDir = resolve(
+        basePath,
+        options.scopeDir!
+      );
+    }
+
     Object.assign(
       tsNodeOptionsFromTsconfig,
-      filterRecognizedTsConfigTsNodeOptions(configChain[i].config['ts-node'])
+      options
     );
   }
 
@@ -201,16 +221,6 @@ export function readConfig(
     )
   );
 
-  if (tsNodeOptionsFromTsconfig.require) {
-    // Modules are found relative to the tsconfig file, not the `dir` option
-    const tsconfigRelativeRequire = createRequire(configFilePath!);
-    tsNodeOptionsFromTsconfig.require = tsNodeOptionsFromTsconfig.require.map(
-      (path: string) => {
-        return tsconfigRelativeRequire.resolve(path);
-      }
-    );
-  }
-
   return { configFilePath, config: fixedConfig, tsNodeOptionsFromTsconfig };
 }
 
@@ -220,8 +230,8 @@ export function readConfig(
  */
 function filterRecognizedTsConfigTsNodeOptions(
   jsonObject: any
-): TsConfigOptions {
-  if (jsonObject == null) return jsonObject;
+): { recognized: TsConfigOptions; unrecognized: any } {
+  if (jsonObject == null) return { recognized: jsonObject, unrecognized: {} };
   const {
     compiler,
     compilerHost,
@@ -238,6 +248,9 @@ function filterRecognizedTsConfigTsNodeOptions(
     transpileOnly,
     typeCheck,
     transpiler,
+    scope,
+    scopeDir,
+    ...unrecognized
   } = jsonObject as TsConfigOptions;
   const filteredTsConfigOptions = {
     compiler,
@@ -255,9 +268,11 @@ function filterRecognizedTsConfigTsNodeOptions(
     transpileOnly,
     typeCheck,
     transpiler,
+    scope,
+    scopeDir,
   };
   // Use the typechecker to make sure this implementation has the correct set of properties
   const catchExtraneousProps: keyof TsConfigOptions = (null as any) as keyof typeof filteredTsConfigOptions;
   const catchMissingProps: keyof typeof filteredTsConfigOptions = (null as any) as keyof TsConfigOptions;
-  return filteredTsConfigOptions;
+  return { recognized: filteredTsConfigOptions, unrecognized };
 }

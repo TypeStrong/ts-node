@@ -51,6 +51,8 @@ export function main(
         '--prefer-ts-exts': Boolean,
         '--log-error': Boolean,
         '--emit': Boolean,
+        '--scope': Boolean,
+        '--scope-dir': String,
 
         // Aliases.
         '-e': '--eval',
@@ -69,6 +71,7 @@ export function main(
         '-O': '--compiler-options',
         '--dir': '--cwd',
         '--showConfig': '--show-config',
+        '--scopeDir': '--scope-dir',
       },
       {
         argv,
@@ -107,6 +110,8 @@ export function main(
     '--prefer-ts-exts': preferTsExts,
     '--log-error': logError,
     '--emit': emit,
+    '--scope': scope = undefined,
+    '--scope-dir': scopeDir = undefined,
   } = args;
 
   if (help) {
@@ -115,32 +120,34 @@ export function main(
 
   Options:
 
-    -e, --eval [code]              Evaluate code
-    -p, --print                    Print result of \`--eval\`
-    -r, --require [path]           Require a node module before execution
-    -i, --interactive              Opens the REPL even if stdin does not appear to be a terminal
+    -e, --eval [code]               Evaluate code
+    -p, --print                     Print result of \`--eval\`
+    -r, --require [path]            Require a node module before execution
+    -i, --interactive               Opens the REPL even if stdin does not appear to be a terminal
 
-    -h, --help                     Print CLI usage
-    -v, --version                  Print module version information
-    --cwd-mode                     Use current directory instead of <script.ts> for config resolution
-    --show-config                  Print resolved configuration and exit
+    -h, --help                      Print CLI usage
+    -v, --version                   Print module version information
+    --cwd-mode                      Use current directory instead of <script.ts> for config resolution
+    --show-config                   Print resolved configuration and exit
 
-    -T, --transpile-only           Use TypeScript's faster \`transpileModule\` or a third-party transpiler
-    -H, --compiler-host            Use TypeScript's compiler host API
-    -I, --ignore [pattern]         Override the path patterns to skip compilation
-    -P, --project [path]           Path to TypeScript JSON project file
-    -C, --compiler [name]          Specify a custom TypeScript compiler
-    --transpiler [name]            Specify a third-party, non-typechecking transpiler
+    -T, --transpile-only            Use TypeScript's faster \`transpileModule\` or a third-party transpiler
+    -H, --compiler-host             Use TypeScript's compiler host API
+    -I, --ignore [pattern]          Override the path patterns to skip compilation
+    -P, --project [path]            Path to TypeScript JSON project file
+    -C, --compiler [name]           Specify a custom TypeScript compiler
+    --transpiler [name]             Specify a third-party, non-typechecking transpiler
     -D, --ignore-diagnostics [code] Ignore TypeScript warnings by diagnostic code
     -O, --compiler-options [opts]   JSON object to merge with compiler options
 
-    --cwd                          Behave as if invoked within this working directory.
-    --files                        Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
-    --pretty                       Use pretty diagnostic formatter (usually enabled by default)
-    --skip-project                 Skip reading \`tsconfig.json\`
-    --skip-ignore                  Skip \`--ignore\` checks
-    --prefer-ts-exts               Prefer importing TypeScript files over JavaScript files
-    --log-error                    Logs TypeScript errors to stderr instead of throwing exceptions
+    --cwd                           Behave as if invoked within this working directory.
+    --files                         Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
+    --pretty                        Use pretty diagnostic formatter (usually enabled by default)
+    --skip-project                  Skip reading \`tsconfig.json\`
+    --skip-ignore                   Skip \`--ignore\` checks
+    --scope                         Scope compiler to files within \`scopeDir\`.  Anything outside this directory is ignored.
+    --scope-dir                     Directory for \`--scope\`
+    --prefer-ts-exts                Prefer importing TypeScript files over JavaScript files
+    --log-error                     Logs TypeScript errors to stderr instead of throwing exceptions
   `);
 
     process.exit(0);
@@ -183,6 +190,8 @@ export function main(
     readFile: code !== undefined ? evalAwarePartialHost.readFile : undefined,
     fileExists:
       code !== undefined ? evalAwarePartialHost.fileExists : undefined,
+    scope,
+    scopeDir,
   });
 
   // Bind REPL service to ts-node compiler service (chicken-and-egg problem)
@@ -204,16 +213,18 @@ export function main(
       );
       process.exit(1);
     }
-    const json = ts.convertToTSConfig(
-      service.config,
-      service.configFilePath ?? join(cwd, 'ts-node-implicit-tsconfig.json'),
-      service.ts.sys
-    );
-    json['ts-node'] = {
-      ...service.options,
-      experimentalEsmLoader: undefined,
-      compilerOptions: undefined,
-      project: service.configFilePath ?? service.options.project,
+    const json = {
+      ['ts-node']: {
+        ...service.options,
+        experimentalEsmLoader: undefined,
+        compilerOptions: undefined,
+        project: service.configFilePath ?? service.options.project,
+      },
+      ...ts.convertToTSConfig(
+        service.config,
+        service.configFilePath ?? join(cwd, 'ts-node-implicit-tsconfig.json'),
+        service.ts.sys
+      ),
     };
     console.log(
       // Assumes that all configuration options which can possibly be specified via the CLI are JSON-compatible.

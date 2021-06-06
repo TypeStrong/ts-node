@@ -12,7 +12,7 @@ import type { TsConfigOptions } from './index';
  */
 export interface TsConfigSchema {
   /**
-   * ts-node options.  See also: https://github.com/TypeStrong/ts-node#configuration-options
+   * ts-node options.  See also: https://typestrong.org/ts-node/docs/configuration
    *
    * ts-node offers TypeScript execution and REPL for node.js, with source map support.
    */
