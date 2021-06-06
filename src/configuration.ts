@@ -72,7 +72,11 @@ export function readConfig(
   tsNodeOptionsFromTsconfig: TsConfigOptions;
 } {
   // Ordered [a, b, c] where config a extends b extends c
-  const configChain: Array<{ config: any; basePath: string, configPath: string }> = [];
+  const configChain: Array<{
+    config: any;
+    basePath: string;
+    configPath: string;
+  }> = [];
   let config: any = { compilerOptions: {} };
   let basePath = cwd;
   let configFilePath: string | undefined = undefined;
@@ -111,7 +115,11 @@ export function readConfig(
 
         const c = result.config;
         const bp = dirname(pathToNextConfigInChain);
-        configChain.push({ config: c, basePath: bp, configPath: pathToNextConfigInChain });
+        configChain.push({
+          config: c,
+          basePath: bp,
+          configPath: pathToNextConfigInChain,
+        });
 
         if (c.extends == null) break;
         const resolvedExtendedConfigPath = tsInternals.getExtendsConfigPath(
@@ -145,30 +153,23 @@ export function readConfig(
   // Merge and fix ts-node options that come from tsconfig.json(s)
   const tsNodeOptionsFromTsconfig: TsConfigOptions = {};
   for (let i = configChain.length - 1; i >= 0; i--) {
-    const {config, basePath, configPath} = configChain[i];
-    const options = filterRecognizedTsConfigTsNodeOptions(config['ts-node']).recognized;
+    const { config, basePath, configPath } = configChain[i];
+    const options = filterRecognizedTsConfigTsNodeOptions(config['ts-node'])
+      .recognized;
 
     // Some options are relative to the config file, so must be converted to absolute paths here
     if (options.require) {
       // Modules are found relative to the tsconfig file, not the `dir` option
       const tsconfigRelativeRequire = createRequire(configPath);
-      options.require = options.require.map(
-        (path: string) => {
-          return tsconfigRelativeRequire.resolve(path);
-        }
-      );
+      options.require = options.require.map((path: string) => {
+        return tsconfigRelativeRequire.resolve(path);
+      });
     }
     if (options.scopeDir) {
-      options.scopeDir = resolve(
-        basePath,
-        options.scopeDir!
-      );
+      options.scopeDir = resolve(basePath, options.scopeDir!);
     }
 
-    Object.assign(
-      tsNodeOptionsFromTsconfig,
-      options
-    );
+    Object.assign(tsNodeOptionsFromTsconfig, options);
   }
 
   // Remove resolution of "files".
@@ -231,7 +232,7 @@ export function readConfig(
 function filterRecognizedTsConfigTsNodeOptions(
   jsonObject: any
 ): { recognized: TsConfigOptions; unrecognized: any } {
-  if (jsonObject == null) return { recognized: jsonObject, unrecognized: {} };
+  if (jsonObject == null) return { recognized: {}, unrecognized: {} };
   const {
     compiler,
     compilerHost,
