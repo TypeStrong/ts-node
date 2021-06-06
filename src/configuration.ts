@@ -107,7 +107,7 @@ export function readConfig(
   // Fix ts-node options that come from tsconfig.json
   const tsNodeOptionsFromTsconfig: TsConfigOptions = Object.assign(
     {},
-    filterRecognizedTsConfigTsNodeOptions(config['ts-node'])
+    filterRecognizedTsConfigTsNodeOptions(config['ts-node']).recognized
   );
 
   // Remove resolution of "files".
@@ -160,6 +160,8 @@ export function readConfig(
     )
   );
 
+  // Some options are relative to the config file, so must be converted to absolute paths here
+
   if (tsNodeOptionsFromTsconfig.require) {
     // Modules are found relative to the tsconfig file, not the `dir` option
     const tsconfigRelativeRequire = createRequire(configFilePath!);
@@ -167,6 +169,12 @@ export function readConfig(
       (path: string) => {
         return tsconfigRelativeRequire.resolve(path);
       }
+    );
+  }
+  if (tsNodeOptionsFromTsconfig.scopeDir) {
+    tsNodeOptionsFromTsconfig.scopeDir = resolve(
+      basePath,
+      tsNodeOptionsFromTsconfig.scopeDir
     );
   }
 
@@ -179,8 +187,8 @@ export function readConfig(
  */
 function filterRecognizedTsConfigTsNodeOptions(
   jsonObject: any
-): TsConfigOptions {
-  if (jsonObject == null) return jsonObject;
+): { recognized: TsConfigOptions; unrecognized: any } {
+  if (jsonObject == null) return { recognized: jsonObject, unrecognized: {} };
   const {
     compiler,
     compilerHost,
@@ -197,6 +205,9 @@ function filterRecognizedTsConfigTsNodeOptions(
     transpileOnly,
     typeCheck,
     transpiler,
+    scope,
+    scopeDir,
+    ...unrecognized
   } = jsonObject as TsConfigOptions;
   const filteredTsConfigOptions = {
     compiler,
@@ -214,9 +225,11 @@ function filterRecognizedTsConfigTsNodeOptions(
     transpileOnly,
     typeCheck,
     transpiler,
+    scope,
+    scopeDir,
   };
   // Use the typechecker to make sure this implementation has the correct set of properties
   const catchExtraneousProps: keyof TsConfigOptions = (null as any) as keyof typeof filteredTsConfigOptions;
   const catchMissingProps: keyof typeof filteredTsConfigOptions = (null as any) as keyof TsConfigOptions;
-  return filteredTsConfigOptions;
+  return { recognized: filteredTsConfigOptions, unrecognized };
 }

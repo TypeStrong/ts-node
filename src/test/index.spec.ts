@@ -924,6 +924,14 @@ test.suite('ts-node', (test) => {
         expect(stderr).to.contain('Error: --show-config requires');
       });
     }
+
+    test('should support compiler scope specified via tsconfig.json', async (t) => {
+      const { err, stderr, stdout } = await exec(
+        `${cmd} --project ./scope/c/config/tsconfig.json ./scope/c/index.js`
+      );
+      expect(err).to.equal(null);
+      expect(stdout).to.equal(`value\nFailures: 0\n`);
+    });
   });
 
   test.suite('register', (_test) => {
@@ -978,53 +986,51 @@ test.suite('ts-node', (test) => {
       expect(() => require(moduleTestPath)).to.not.throw();
     });
 
-    if (semver.gte(ts.version, '2.7.0')) {
-      test('should support compiler scopes', ({
-        context: { registered, moduleTestPath },
-      }) => {
-        const calls: string[] = [];
+    test('should support compiler scopes', ({
+      context: { registered, moduleTestPath },
+    }) => {
+      const calls: string[] = [];
 
-        registered.enabled(false);
+      registered.enabled(false);
 
-        const compilers = [
-          register({
-            projectSearchDir: join(TEST_DIR, 'scope/a'),
-            scopeDir: join(TEST_DIR, 'scope/a'),
-            scope: true,
-          }),
-          register({
-            projectSearchDir: join(TEST_DIR, 'scope/a'),
-            scopeDir: join(TEST_DIR, 'scope/b'),
-            scope: true,
-          }),
-        ];
+      const compilers = [
+        register({
+          projectSearchDir: join(TEST_DIR, 'scope/a'),
+          scopeDir: join(TEST_DIR, 'scope/a'),
+          scope: true,
+        }),
+        register({
+          projectSearchDir: join(TEST_DIR, 'scope/a'),
+          scopeDir: join(TEST_DIR, 'scope/b'),
+          scope: true,
+        }),
+      ];
 
-        compilers.forEach((c) => {
-          const old = c.compile;
-          c.compile = (code, fileName, lineOffset) => {
-            calls.push(fileName);
+      compilers.forEach((c) => {
+        const old = c.compile;
+        c.compile = (code, fileName, lineOffset) => {
+          calls.push(fileName);
 
-            return old(code, fileName, lineOffset);
-          };
-        });
-
-        try {
-          expect(require('../../tests/scope/a').ext).to.equal('.ts');
-          expect(require('../../tests/scope/b').ext).to.equal('.ts');
-        } finally {
-          compilers.forEach((c) => c.enabled(false));
-        }
-
-        expect(calls).to.deep.equal([
-          join(TEST_DIR, 'scope/a/index.ts'),
-          join(TEST_DIR, 'scope/b/index.ts'),
-        ]);
-
-        delete require.cache[moduleTestPath];
-
-        expect(() => require(moduleTestPath)).to.throw();
+          return old(code, fileName, lineOffset);
+        };
       });
-    }
+
+      try {
+        expect(require('../../tests/scope/a').ext).to.equal('.ts');
+        expect(require('../../tests/scope/b').ext).to.equal('.ts');
+      } finally {
+        compilers.forEach((c) => c.enabled(false));
+      }
+
+      expect(calls).to.deep.equal([
+        join(TEST_DIR, 'scope/a/index.ts'),
+        join(TEST_DIR, 'scope/b/index.ts'),
+      ]);
+
+      delete require.cache[moduleTestPath];
+
+      expect(() => require(moduleTestPath)).to.throw();
+    });
 
     test('should compile through js and ts', () => {
       const m = require('../../tests/complex');
