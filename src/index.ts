@@ -73,8 +73,8 @@ export interface ProcessEnv {
   /** @deprecated */
   TS_NODE_DIR?: string;
   TS_NODE_EMIT?: string;
-  /** @deprecated */
   TS_NODE_SCOPE?: string;
+  TS_NODE_SCOPE_DIR?: string;
   TS_NODE_FILES?: string;
   TS_NODE_PRETTY?: string;
   TS_NODE_COMPILER?: string;
@@ -296,8 +296,6 @@ export interface TsConfigOptions
     | 'dir'
     | 'cwd'
     | 'projectSearchDir'
-    | 'scope'
-    | 'scopeDir'
     | 'experimentalEsmLoader'
   > {}
 
@@ -318,6 +316,7 @@ export const DEFAULTS: RegisterOptions = {
   cwd: env.TS_NODE_CWD ?? env.TS_NODE_DIR,
   emit: yn(env.TS_NODE_EMIT),
   scope: yn(env.TS_NODE_SCOPE),
+  scopeDir: env.TS_NODE_SCOPE_DIR,
   files: yn(env.TS_NODE_FILES),
   pretty: yn(env.TS_NODE_PRETTY),
   compiler: env.TS_NODE_COMPILER,
@@ -1292,7 +1291,8 @@ function registerExtension(
     m._compile = function (code: string, fileName: string) {
       debug('module._compile', fileName);
 
-      return _compile.call(this, service.compile(code, fileName), fileName);
+      const result = service.compile(code, fileName);
+      return _compile.call(this, result, fileName);
     };
 
     return old(m, filename);
