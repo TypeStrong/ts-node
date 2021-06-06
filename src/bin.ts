@@ -213,16 +213,18 @@ export function main(
       );
       process.exit(1);
     }
-    const json = ts.convertToTSConfig(
-      service.config,
-      service.configFilePath ?? join(cwd, 'ts-node-implicit-tsconfig.json'),
-      service.ts.sys
-    );
-    json['ts-node'] = {
-      ...service.options,
-      experimentalEsmLoader: undefined,
-      compilerOptions: undefined,
-      project: service.configFilePath ?? service.options.project,
+    const json = {
+      ['ts-node']: {
+        ...service.options,
+        experimentalEsmLoader: undefined,
+        compilerOptions: undefined,
+        project: service.configFilePath ?? service.options.project,
+      },
+      ...ts.convertToTSConfig(
+        service.config,
+        service.configFilePath ?? join(cwd, 'ts-node-implicit-tsconfig.json'),
+        service.ts.sys
+      ),
     };
     console.log(
       // Assumes that all configuration options which can possibly be specified via the CLI are JSON-compatible.

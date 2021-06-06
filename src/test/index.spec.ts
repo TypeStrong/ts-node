@@ -888,6 +888,12 @@ test.suite('ts-node', (test) => {
           stdout,
           JSON.stringify(
             {
+              'ts-node': {
+                cwd: native(`${ROOT_DIR}/tests`),
+                projectSearchDir: native(`${ROOT_DIR}/tests`),
+                project: native(`${ROOT_DIR}/tests/tsconfig.json`),
+                require: [],
+              },
               compilerOptions: {
                 target: 'es6',
                 jsx: 'react',
@@ -903,12 +909,6 @@ test.suite('ts-node', (test) => {
                 declaration: false,
                 outDir: './.ts-node',
                 module: 'commonjs',
-              },
-              'ts-node': {
-                cwd: native(`${ROOT_DIR}/tests`),
-                projectSearchDir: native(`${ROOT_DIR}/tests`),
-                project: native(`${ROOT_DIR}/tests/tsconfig.json`),
-                require: [],
               },
             },
             null,
