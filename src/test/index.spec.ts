@@ -638,12 +638,7 @@ test.suite('ts-node', (test) => {
                 // Note: vanilla node does does not have file extension
                 moduleFilename: join(TEST_DIR, `[eval].ts`),
                 modulePaths: [
-                  join(TEST_DIR, `node_modules`),
-                  '/d/Personal-dev/@TypeStrong/ts-node/node_modules',
-                  '/d/Personal-dev/@TypeStrong/node_modules',
-                  '/d/Personal-dev/node_modules',
-                  '/d/node_modules',
-                  '/node_modules',
+                  ...modulePaths,
                 ],
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
@@ -676,12 +671,7 @@ test.suite('ts-node', (test) => {
                 // Note: vanilla node does does not have file extension
                 moduleFilename: join(TEST_DIR, `[eval].ts`),
                 modulePaths: [
-                  join(TEST_DIR, `node_modules`),
-                  '/d/Personal-dev/@TypeStrong/ts-node/node_modules',
-                  '/d/Personal-dev/@TypeStrong/node_modules',
-                  '/d/Personal-dev/node_modules',
-                  '/d/node_modules',
-                  '/node_modules',
+                  ...modulePaths,
                 ],
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
@@ -714,12 +704,7 @@ test.suite('ts-node', (test) => {
                 // Note: vanilla node does does not have file extension
                 moduleFilename: join(TEST_DIR, `[eval].ts`),
                 modulePaths: [
-                  join(TEST_DIR, `node_modules`),
-                  '/d/Personal-dev/@TypeStrong/ts-node/node_modules',
-                  '/d/Personal-dev/@TypeStrong/node_modules',
-                  '/d/Personal-dev/node_modules',
-                  '/d/node_modules',
-                  '/node_modules',
+                  ...modulePaths,
                 ],
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
@@ -750,12 +735,7 @@ test.suite('ts-node', (test) => {
                 // Note: vanilla node does does not have file extension
                 moduleFilename: join(TEST_DIR, `[eval].ts`),
                 modulePaths: [
-                  join(TEST_DIR, `node_modules`),
-                  '/d/Personal-dev/@TypeStrong/ts-node/node_modules',
-                  '/d/Personal-dev/@TypeStrong/node_modules',
-                  '/d/Personal-dev/node_modules',
-                  '/d/node_modules',
-                  '/node_modules',
+                  ...modulePaths,
                 ],
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
