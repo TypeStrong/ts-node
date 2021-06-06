@@ -703,6 +703,23 @@ test.suite('ts-node', (test) => {
           join(TEST_DIR, './tsconfig-options/required1.js'),
         ]);
       });
+
+      if (semver.gte(ts.version, '3.2.0')) {
+        test('should pull ts-node options from extended `tsconfig.json`', async () => {
+          const { err, stdout } = await exec(
+            `${BIN_PATH} --show-config --project ./tsconfig-extends/tsconfig.json`
+          );
+          expect(err).to.equal(null);
+          const config = JSON.parse(stdout);
+          expect(config['ts-node'].require).to.deep.equal([
+            resolve(TEST_DIR, 'tsconfig-extends/other/require-hook.js'),
+          ]);
+          expect(config['ts-node'].scopeDir).to.equal(
+            resolve(TEST_DIR, 'tsconfig-extends/other/scopedir')
+          );
+          expect(config['ts-node'].preferTsExts).to.equal(true);
+        });
+      }
     });
 
     test.suite(

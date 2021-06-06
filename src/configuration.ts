@@ -4,7 +4,7 @@ import { CreateOptions, DEFAULTS, TSCommon, TsConfigOptions } from './index';
 import type { TSInternal } from './ts-compiler-types';
 import { createTsInternals } from './ts-internals';
 import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs';
-import { createRequire, trace } from './util';
+import { assign, createRequire, trace } from './util';
 
 /**
  * TypeScript compiler option values required by `ts-node` which cannot be overridden.
@@ -161,15 +161,15 @@ export function readConfig(
     if (options.require) {
       // Modules are found relative to the tsconfig file, not the `dir` option
       const tsconfigRelativeRequire = createRequire(configPath);
-      options.require = options.require.map((path: string) => {
-        return tsconfigRelativeRequire.resolve(path);
-      });
+      options.require = options.require.map((path: string) =>
+        tsconfigRelativeRequire.resolve(path)
+      );
     }
     if (options.scopeDir) {
       options.scopeDir = resolve(basePath, options.scopeDir!);
     }
 
-    Object.assign(tsNodeOptionsFromTsconfig, options);
+    assign(tsNodeOptionsFromTsconfig, options);
   }
 
   // Remove resolution of "files".
