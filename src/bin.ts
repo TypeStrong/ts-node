@@ -121,7 +121,7 @@ export function main(
   Options:
 
     -e, --eval [code]               Evaluate code
-    -p, --print                     vPrint result of \`--eval\`
+    -p, --print                     Print result of \`--eval\`
     -r, --require [path]            Require a node module before execution
     -i, --interactive               Opens the REPL even if stdin does not appear to be a terminal
 
