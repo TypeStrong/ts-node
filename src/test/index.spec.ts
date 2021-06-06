@@ -462,13 +462,18 @@ test.suite('ts-node', (test) => {
             await assertions(stdout, stderr, err);
           }
         );
-        interface GlobalWTestReports extends NodeJS.Global {
+        interface GlobalInRepl extends NodeJS.Global {
           testReport: any;
           replReport: any;
           stdinReport: any;
           evalReport: any;
+          module: any;
+          exports: any;
+          fs: any;
+          __filename: any;
+          __dirname: any;
         }
-        const globalWTestReports = global as GlobalWTestReports;
+        const globalInRepl = global as GlobalInRepl;
         const programmaticTest = test.macro(
           (
             {
@@ -480,10 +485,15 @@ test.suite('ts-node', (test) => {
             },
             assertions: (stdout: string) => Promise<void> | void
           ) => async (t) => {
-            globalWTestReports.testReport = undefined;
-            globalWTestReports.replReport = undefined;
-            globalWTestReports.stdinReport = undefined;
-            globalWTestReports.evalReport = undefined;
+            delete globalInRepl.testReport;
+            delete globalInRepl.replReport;
+            delete globalInRepl.stdinReport;
+            delete globalInRepl.evalReport;
+            delete globalInRepl.module;
+            delete globalInRepl.exports;
+            delete globalInRepl.fs;
+            delete globalInRepl.__filename;
+            delete globalInRepl.__dirname;
             const { stdin, stderr, stdout, replService } = createReplViaApi();
             if (typeof evalCodeBefore === 'string') {
               replService.evalCode(evalCodeBefore);
@@ -509,11 +519,11 @@ test.suite('ts-node', (test) => {
               moduleId: module.id,
               modulePath: module.path,
               moduleFilename: module.filename,
-              modulePaths: module.paths,
+              modulePaths: [...module.paths],
               exportsTest: typeof exports !== 'undefined' ? module.exports === exports : null,
               stackTest: new Error().stack!.split('\\n')[1],
               moduleAccessorsTest: typeof fs === 'undefined' ? null : fs === require('fs'),
-              argv: process.argv
+              argv: [...process.argv]
             };
           `.replace(/\n/g, '');
         }
@@ -844,7 +854,7 @@ test.suite('ts-node', (test) => {
             stdinCode: '',
           },
           (stdout) => {
-            exp(globalWTestReports.testReport).toMatchObject({
+            exp(globalInRepl.testReport).toMatchObject({
               stdinReport: false,
               evalReport: false,
               replReport: {
