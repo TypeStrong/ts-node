@@ -9,14 +9,18 @@ import { Console } from 'console';
 import type * as tty from 'tty';
 import Module = require('module');
 
-/**
- * Eval filename for REPL/debug.
- * @internal
- */
+/** @internal */
 export const EVAL_FILENAME = `[eval].ts`;
+/** @internal */
 export const EVAL_NAME = `[eval]`;
+/** @internal */
 export const STDIN_FILENAME = `[stdin].ts`;
+/** @internal */
 export const STDIN_NAME = `[stdin]`;
+/** @internal */
+export const REPL_FILENAME = '<repl>.ts';
+/** @internal */
+export const REPL_NAME = '<repl>';
 
 export interface ReplService {
   readonly state: EvalState;
@@ -70,7 +74,7 @@ export interface CreateReplOptions {
 export function createRepl(options: CreateReplOptions = {}) {
   let service = options.service;
   const state =
-    options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME));
+    options.state ?? new EvalState(join(process.cwd(), REPL_FILENAME));
   const evalAwarePartialHost = createEvalAwarePartialHost(
     state,
     options.composeWithEvalAwarePartialHost

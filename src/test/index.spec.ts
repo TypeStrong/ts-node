@@ -441,31 +441,49 @@ test.suite('ts-node', (test) => {
             {
               flags,
               stdin,
+              allowError = false,
             }: {
               flags: string;
               stdin: string;
+              allowError?: boolean;
             },
-            assertions: (stdout: string) => void
+            assertions: (
+              stdout: string,
+              stderr: string,
+              err: ExecException | null
+            ) => Promise<void> | void
           ) => async (t) => {
             const execPromise = exec(`${cmd} ${flags}`);
             // Uncomment to run against vanilla node, useful to verify that these test cases match vanilla node
             // const execPromise = exec(`node ${flags}`);
             execPromise.child.stdin!.end(stdin);
-            const { err, stdout } = await execPromise;
-            expect(err).to.equal(null);
-            await assertions(stdout);
+            const { err, stdout, stderr } = await execPromise;
+            if (!allowError) expect(err).to.equal(null);
+            await assertions(stdout, stderr, err);
           }
         );
+        interface GlobalWTestReports extends NodeJS.Global {
+          testReport: any;
+          replReport: any;
+          stdinReport: any;
+          evalReport: any;
+        }
+        const globalWTestReports = global as GlobalWTestReports;
         const programmaticTest = test.macro(
           (
-            evalCodeBefore: string | null,
-            stdinCode: string,
-            assertions: (stdout: string) => void
+            {
+              evalCodeBefore,
+              stdinCode,
+            }: {
+              evalCodeBefore: string | null;
+              stdinCode: string;
+            },
+            assertions: (stdout: string) => Promise<void> | void
           ) => async (t) => {
-            (global as any).testReport = undefined;
-            (global as any).replReport = undefined;
-            (global as any).stdinReport = undefined;
-            (global as any).evalReport = undefined;
+            globalWTestReports.testReport = undefined;
+            globalWTestReports.replReport = undefined;
+            globalWTestReports.stdinReport = undefined;
+            globalWTestReports.evalReport = undefined;
             const { stdin, stderr, stdout, replService } = createReplViaApi();
             if (typeof evalCodeBefore === 'string') {
               replService.evalCode(evalCodeBefore);
@@ -516,8 +534,8 @@ test.suite('ts-node', (test) => {
         `.replace(/\n/g, '');
 
         function parseStdoutStripReplPrompt(stdout: string) {
-          // Strip node's welcome header; TODO Remove this
-          stdout = stdout.replace(/^Welcome to.*\nType "\.help" .*\n/, '');
+          // Strip node's welcome header, only uncomment if running these tests manually against vanilla node
+          // stdout = stdout.replace(/^Welcome to.*\nType "\.help" .*\n/, '');
           expect(stdout.slice(0, 2)).to.equal('> ');
           expect(stdout.slice(-12)).to.equal('undefined\n> ');
           return parseStdout(stdout.slice(2, -12));
@@ -527,10 +545,15 @@ test.suite('ts-node', (test) => {
         }
 
         /** Every possible ./node_modules directory ascending upwards starting with ./tests/node_modules */
-        const modulePaths: string[] = [];
-        for (let path = TEST_DIR; ; path = dirname(path)) {
-          modulePaths.push(join(path, 'node_modules'));
-          if (dirname(path) === path) break;
+        const modulePaths = createModulePaths(TEST_DIR);
+        const rootModulePaths = createModulePaths(ROOT_DIR);
+        function createModulePaths(dir: string) {
+          const modulePaths: string[] = [];
+          for (let path = dir; ; path = dirname(path)) {
+            modulePaths.push(join(path, 'node_modules'));
+            if (dirname(path) === path) break;
+          }
+          return modulePaths;
         }
 
         test(
@@ -553,7 +576,9 @@ test.suite('ts-node', (test) => {
                 modulePaths,
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
-                stackTest: `    at ${join(TEST_DIR, `[stdin].ts`)}:1:429`,
+                stackTest: exp.stringContaining(
+                  `    at ${join(TEST_DIR, `[stdin].ts`)}:1:`
+                ),
                 moduleAccessorsTest: null,
                 argv: [exp.stringMatching(/\bnode$/)],
               },
@@ -591,7 +616,9 @@ test.suite('ts-node', (test) => {
                 // Note: vanilla node REPL does not set exports
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
-                stackTest: `    at ${join(TEST_DIR, '<repl>.ts')}:1:428`,
+                stackTest: exp.stringContaining(
+                  `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
+                ),
                 moduleAccessorsTest: true,
                 argv: [exp.stringMatching(/\bnode$/)],
               },
@@ -637,12 +664,12 @@ test.suite('ts-node', (test) => {
                 modulePath: '.',
                 // Note: vanilla node does does not have file extension
                 moduleFilename: join(TEST_DIR, `[eval].ts`),
-                modulePaths: [
-                  ...modulePaths,
-                ],
+                modulePaths: [...modulePaths],
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
-                stackTest: `    at ${join(TEST_DIR, `[eval].ts`)}:1:428`,
+                stackTest: exp.stringContaining(
+                  `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
+                ),
                 moduleAccessorsTest: true,
                 argv: [exp.stringMatching(/\bnode$/)],
               },
@@ -670,12 +697,12 @@ test.suite('ts-node', (test) => {
                 modulePath: '.',
                 // Note: vanilla node does does not have file extension
                 moduleFilename: join(TEST_DIR, `[eval].ts`),
-                modulePaths: [
-                  ...modulePaths,
-                ],
+                modulePaths,
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
-                stackTest: `    at ${join(TEST_DIR, `[eval].ts`)}:1:428`,
+                stackTest: exp.stringContaining(
+                  `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
+                ),
                 moduleAccessorsTest: true,
                 argv: [exp.stringMatching(/\bnode$/), './repl/script.js'],
               },
@@ -703,12 +730,12 @@ test.suite('ts-node', (test) => {
                 modulePath: '.',
                 // Note: vanilla node does does not have file extension
                 moduleFilename: join(TEST_DIR, `[eval].ts`),
-                modulePaths: [
-                  ...modulePaths,
-                ],
+                modulePaths,
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
-                stackTest: `    at ${join(TEST_DIR, `[eval].ts`)}:1:428`,
+                stackTest: exp.stringContaining(
+                  `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
+                ),
                 moduleAccessorsTest: true,
                 argv: [exp.stringMatching(/\bnode$/), './does-not-exist.js'],
               },
@@ -734,12 +761,12 @@ test.suite('ts-node', (test) => {
                 modulePath: '.',
                 // Note: vanilla node does does not have file extension
                 moduleFilename: join(TEST_DIR, `[eval].ts`),
-                modulePaths: [
-                  ...modulePaths,
-                ],
+                modulePaths,
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
-                stackTest: `    at ${join(TEST_DIR, `[eval].ts`)}:1:428`,
+                stackTest: exp.stringContaining(
+                  `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
+                ),
                 moduleAccessorsTest: true,
                 argv: [exp.stringMatching(/\bnode$/)],
               },
@@ -760,7 +787,9 @@ test.suite('ts-node', (test) => {
                 // Note: vanilla node REPL does not set exports, so this would be false
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
-                stackTest: `    at ${join(TEST_DIR, '<repl>.ts>')}:1:428`,
+                stackTest: exp.stringContaining(
+                  `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
+                ),
                 moduleAccessorsTest: true,
                 argv: [exp.stringMatching(/\bnode$/)],
               },
@@ -785,22 +814,93 @@ test.suite('ts-node', (test) => {
           }
         );
 
-        // TODO add test case when -e throws error; REPL should not run
+        test(
+          '-e -i when -e throws error, -i does not run',
+          cliTest,
+          {
+            stdin: `console.log('hello')`,
+            flags: `-e "throw new Error('error from -e')" -i`,
+            allowError: true,
+          },
+          (stdout, stderr, err) => {
+            exp(err).toBeDefined();
+            exp(stdout).toBe('');
+            exp(stderr).toContain('error from -e');
+          }
+        );
 
         // Serial because it's timing-sensitive
         test.serial(
           'programmatically, eval-ing before starting REPL',
           programmaticTest,
-          `${setReportGlobal('eval')};${saveReportsAsGlobal}`,
-          '',
-          (stdout) => {}
+          {
+            evalCodeBefore: `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
+            stdinCode: '',
+          },
+          (stdout) => {
+            exp(globalWTestReports.testReport).toMatchObject({
+              stdinReport: false,
+              evalReport: false,
+              replReport: {
+                __filename: false,
+                __dirname: false,
+                moduleId: '<repl>',
+                modulePath: '.',
+                moduleFilename: null,
+                modulePaths: [
+                  join(ROOT_DIR, `repl/node_modules`),
+                  ...rootModulePaths,
+                  join(homedir(), `.node_modules`),
+                  join(homedir(), `.node_libraries`),
+                  // additional entry goes to node's install path
+                  exp.any(String),
+                ],
+                // Note: vanilla node REPL does not set exports
+                exportsTest: true,
+                // Note: vanilla node uses different name. See #1360
+                stackTest: exp.stringContaining(
+                  `    at ${join(ROOT_DIR, '<repl>.ts')}:1:`
+                ),
+                moduleAccessorsTest: true,
+              },
+            });
+          }
         );
         test.serial(
           'programmatically, passing code to stdin after starting REPL',
           programmaticTest,
-          null,
-          `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
-          (stdout) => {}
+          {
+            evalCodeBefore: null,
+            stdinCode: `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
+          },
+          (stdout) => {
+            exp((global as any).testReport).toMatchObject({
+              stdinReport: false,
+              evalReport: false,
+              replReport: {
+                __filename: false,
+                __dirname: false,
+                moduleId: '<repl>',
+                modulePath: '.',
+                moduleFilename: null,
+                modulePaths: [
+                  join(ROOT_DIR, `repl/node_modules`),
+                  ...rootModulePaths,
+                  join(homedir(), `.node_modules`),
+                  join(homedir(), `.node_libraries`),
+                  // additional entry goes to node's install path
+                  exp.any(String),
+                ],
+                // Note: vanilla node REPL does not set exports
+                exportsTest: true,
+                // Note: vanilla node uses different name. See #1360
+                stackTest: exp.stringContaining(
+                  `    at ${join(ROOT_DIR, '<repl>.ts')}:1:`
+                ),
+                moduleAccessorsTest: true,
+              },
+            });
+          }
         );
       }
     );

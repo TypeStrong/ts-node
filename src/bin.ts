@@ -15,9 +15,11 @@ import {
   EvalAwarePartialHost,
   EVAL_NAME,
   STDIN_NAME,
+  REPL_FILENAME,
 } from './repl';
 import { VERSION, TSError, register } from './index';
 import type { TSInternal } from './ts-compiler-types';
+import { addBuiltinLibsToObject } from '../dist-raw/node-cjs-helpers';
 
 /**
  * Main `bin` functionality.
@@ -232,7 +234,7 @@ export function main(
     module.paths = (Module as any)._nodeModulePaths(cwd);
   }
   if (executeRepl) {
-    const state = new EvalState(join(cwd, '<repl>.ts'));
+    const state = new EvalState(join(cwd, REPL_FILENAME));
     replStuff = {
       state,
       repl: createRepl({
@@ -327,6 +329,7 @@ export function main(
     Module.runMain();
   } else {
     if (executeEval) {
+      addBuiltinLibsToObject(global);
       evalAndExitOnTsError(
         evalStuff!.repl,
         evalStuff!.module!,

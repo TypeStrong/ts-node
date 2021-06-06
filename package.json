@@ -41,7 +41,7 @@
     "/transpilers/",
     "/dist/",
     "!/dist/test",
-    "/dist-raw/",
+    "/dist-raw/**.js",
     "/register/",
     "/esm/",
     "/esm.mjs",
