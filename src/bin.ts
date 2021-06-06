@@ -4,7 +4,7 @@ import { join, resolve, dirname, parse as parsePath } from 'path';
 import { inspect } from 'util';
 import Module = require('module');
 import arg = require('arg');
-import { parse, createRequire } from './util';
+import { parse, createRequire, hasOwnProperty } from './util';
 import { EVAL_FILENAME, EvalState, createRepl, ReplService } from './repl';
 import { VERSION, TSError, register } from './index';
 import type { TSInternal } from './ts-compiler-types';
@@ -382,11 +382,6 @@ function evalAndExit(
   if (isPrinted) {
     console.log(typeof result === 'string' ? result : inspect(result));
   }
-}
-
-/** Safe `hasOwnProperty` */
-function hasOwnProperty(object: any, property: string): boolean {
-  return Object.prototype.hasOwnProperty.call(object, property);
 }
 
 if (require.main === module) {

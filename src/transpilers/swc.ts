@@ -1,7 +1,9 @@
+import {existsSync, readFileSync, statSync, writeFileSync} from 'fs';
 import type * as ts from 'typescript';
 import type * as swcWasm from '@swc/wasm';
 import type * as swcTypes from '@swc/core';
-import type { CreateTranspilerOptions, Transpiler } from './types';
+import type { CreateTranspilerOptions, TranspileOutput, Transpiler } from './types';
+import { createCache } from '../cache';
 
 export interface SwcTranspilerOptions extends CreateTranspilerOptions {
   /**
@@ -92,6 +94,13 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
 
   const transpile: Transpiler['transpile'] = (input, transpileOptions) => {
     const { fileName } = transpileOptions;
+    const cacheEntry = cacheApi.getEntry(rootCacheNode, fileName);
+    let hash = input;
+    try {
+      hash = `${+statSync(fileName).mtime}`;
+    } catch {}
+    if(cacheEntry && cacheEntry.hash === hash) return cacheEntry.value;
+
     const swcOptions =
       fileName.endsWith('.tsx') || fileName.endsWith('.jsx')
         ? tsxOptions
@@ -100,8 +109,25 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
       ...swcOptions,
       filename: fileName,
     });
-    return { outputText: code, sourceMapText: map };
+    const result = { outputText: code, sourceMapText: map };
+    cacheApi.setEntry(rootCacheNode, fileName, {hash, value: result});
+    return result;
   };
+
+  interface CacheEntry {
+    hash: string;
+    value: {
+      outputText: string;
+      sourceMapText: string;
+    }
+  }
+
+  const cachePath = './swc-cache.json';
+  const cacheApi = createCache<CacheEntry>(existsSync(cachePath) ? readFileSync(cachePath, 'utf16le') : undefined);
+  const rootCacheNode = cacheApi.getOrCreateSubcache(cacheApi.getRoot(), 'TODO build a hash of versions and config');
+  cacheApi.registerCallbackOnProcessExitAndDirty(() => {
+    writeFileSync(cachePath, cacheApi.serializeToString(), 'utf16le');
+  });
 
   return {
     transpile,
