@@ -910,7 +910,6 @@ test.suite('ts-node', (test) => {
                 outDir: './.ts-node',
                 module: 'commonjs',
               },
-
             },
             null,
             2
