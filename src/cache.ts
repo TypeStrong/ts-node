@@ -16,22 +16,19 @@ export function createCache<T>(cacheString?: string) {
   }
   const cache = _cache;
   let dirty = false;
-  function getSubcacheOf(subcache: any, key: string) {
+  function getRoot() {
+    return cache;
+  }
+  function getSubcache(subcache: any, key: string) {
     return hasOwnProperty(subcache, key) ? subcache[key] : undefined;
   }
-  function getSubcacheOfRootCache(key: string) {
-    return getSubcacheOf(cache, key);
-  }
-  function getOrCreateSubcacheOf(subcache: any, key: string) {
+  function getOrCreateSubcache(subcache: any, key: string) {
     if(hasOwnProperty(subcache, key)) {
       return subcache[key];
     }
     const newSubcache = {};
     subcache[key] = newSubcache;
     return newSubcache;
-  }
-  function getOrCreateSubcacheOfRoot(key: string) {
-    return getOrCreateSubcacheOf(cache, key);
   }
   function setEntry(cacheFrom: any, subcacheKey: string, value: T) {
     cacheFrom[subcacheKey] = value;
@@ -40,7 +37,7 @@ export function createCache<T>(cacheString?: string) {
   function getEntry(cacheFrom: any, subcacheKey: string): T {
     return hasOwnProperty(cacheFrom, subcacheKey) ? cacheFrom[subcacheKey] : undefined;
   }
-  function getCacheAsString() {
+  function serializeToString() {
     return JSON.stringify(cache);
   }
   function registerCallbackOnProcessExitAndDirty(cb: Function) {
@@ -51,5 +48,5 @@ export function createCache<T>(cacheString?: string) {
     });
   }
 
-  return {getOrCreateSubcacheOf, getOrCreateSubcacheOfRoot, getSubcacheOfRootCache, getEntry, getSubcacheOf, setEntry, getCacheAsString, registerCallbackOnProcessExitAndDirty};
+  return {getOrCreateSubcache, getEntry, getSubcache, setEntry, serializeToString, registerCallbackOnProcessExitAndDirty, getRoot};
 }

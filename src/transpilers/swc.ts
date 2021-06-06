@@ -1,4 +1,4 @@
-import {existsSync, readFileSync, writeFileSync} from 'fs';
+import {existsSync, readFileSync, statSync, writeFileSync} from 'fs';
 import type * as ts from 'typescript';
 import type * as swcWasm from '@swc/wasm';
 import type * as swcTypes from '@swc/core';
@@ -92,14 +92,14 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
     };
   }
 
-  const createHash = (require('typescript') as typeof ts).sys.createHash!;
   const transpile: Transpiler['transpile'] = (input, transpileOptions) => {
     const { fileName } = transpileOptions;
-    const cacheForFilename = cacheApi.getOrCreateSubcacheOf(baseCache, fileName);
-    const cacheForFileSize = cacheApi.getOrCreateSubcacheOf(cacheForFilename, `${ input.length }`);
-    const hash = createHash(input);
-    let cachedCompileOutput = cacheApi.getEntry(cacheForFileSize, hash);
-    if(cachedCompileOutput) return cachedCompileOutput as TranspileOutput;
+    const cacheEntry = cacheApi.getEntry(rootCacheNode, fileName);
+    let hash = input;
+    try {
+      hash = `${+statSync(fileName).mtime}`;
+    } catch {}
+    if(cacheEntry && cacheEntry.hash === hash) return cacheEntry.value;
 
     const swcOptions =
       fileName.endsWith('.tsx') || fileName.endsWith('.jsx')
@@ -110,14 +110,23 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
       filename: fileName,
     });
     const result = { outputText: code, sourceMapText: map };
-    cacheApi.setEntry(cacheForFileSize, hash, result);
+    cacheApi.setEntry(rootCacheNode, fileName, {hash, value: result});
     return result;
   };
 
-  const cacheApi = createCache(existsSync('./swc-cache.json') ? readFileSync('./swc-cache.json', 'utf16le') : undefined);
-  const baseCache = cacheApi.getOrCreateSubcacheOfRoot('TODO build a hash of versions and config');
+  interface CacheEntry {
+    hash: string;
+    value: {
+      outputText: string;
+      sourceMapText: string;
+    }
+  }
+
+  const cachePath = './swc-cache.json';
+  const cacheApi = createCache<CacheEntry>(existsSync(cachePath) ? readFileSync(cachePath, 'utf16le') : undefined);
+  const rootCacheNode = cacheApi.getOrCreateSubcache(cacheApi.getRoot(), 'TODO build a hash of versions and config');
   cacheApi.registerCallbackOnProcessExitAndDirty(() => {
-    writeFileSync('./swc-cache.json', cacheApi.getCacheAsString(), 'utf16le');
+    writeFileSync(cachePath, cacheApi.serializeToString(), 'utf16le');
   });
 
   return {
