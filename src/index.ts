@@ -8,7 +8,14 @@ import { BaseError } from 'make-error';
 import type * as _ts from 'typescript';
 
 import type { Transpiler, TranspilerFactory } from './transpilers/types';
-import { assign, normalizeSlashes, parse, split, yn } from './util';
+import {
+  assign,
+  cachedLookup,
+  normalizeSlashes,
+  parse,
+  split,
+  yn,
+} from './util';
 import { readConfig } from './configuration';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
 
@@ -373,21 +380,6 @@ export interface Service {
  * @see {Service}
  */
 export type Register = Service;
-
-/**
- * Cached fs operation wrapper.
- */
-function cachedLookup<T>(fn: (arg: string) => T): (arg: string) => T {
-  const cache = new Map<string, T>();
-
-  return (arg: string): T => {
-    if (!cache.has(arg)) {
-      cache.set(arg, fn(arg));
-    }
-
-    return cache.get(arg)!;
-  };
-}
 
 /** @internal */
 export function getExtensions(config: _ts.ParsedCommandLine) {

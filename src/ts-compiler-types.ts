@@ -32,6 +32,9 @@ export interface TSCommon {
   getDefaultLibFileName: typeof _ts.getDefaultLibFileName;
   createIncrementalProgram: typeof _ts.createIncrementalProgram;
   createEmitAndSemanticDiagnosticsBuilderProgram: typeof _ts.createEmitAndSemanticDiagnosticsBuilderProgram;
+
+  Extension: typeof _ts.Extension;
+  ModuleResolutionKind: typeof _ts.ModuleResolutionKind;
 }
 
 /**
@@ -50,6 +53,22 @@ export interface TSInternal {
     host: TSInternal.ConvertToTSConfigHost
   ): any;
   libs?: string[];
+  Diagnostics: {
+    File_0_not_found: _ts.DiagnosticMessage;
+  };
+  createCompilerDiagnostic(
+    message: _ts.DiagnosticMessage,
+    ...args: (string | number | undefined)[]
+  ): _ts.Diagnostic;
+  nodeModuleNameResolver(
+    moduleName: string,
+    containingFile: string,
+    compilerOptions: _ts.CompilerOptions,
+    host: _ts.ModuleResolutionHost,
+    cache?: _ts.ModuleResolutionCache,
+    redirectedReference?: _ts.ResolvedProjectReference,
+    lookupConfig?: boolean
+  ): _ts.ResolvedModuleWithFailedLookupLocations;
 }
 /** @internal */
 export namespace TSInternal {
