@@ -83,10 +83,20 @@ let { register, create, VERSION, createRepl }: typeof tsNodeTypes = {} as any;
 
 // Pack and install ts-node locally, necessary to test package "exports"
 test.beforeAll(async () => {
-  rimrafSync(join(TEST_DIR, 'node_modules'));
-  await promisify(childProcessExec)(`npm install`, { cwd: TEST_DIR });
-  const packageLockPath = join(TEST_DIR, 'package-lock.json');
-  existsSync(packageLockPath) && unlinkSync(packageLockPath);
+  const totalTries = process.platform === 'win32' ? 5 : 1;
+  let tries = 0;
+  while(true) {
+    try {
+      rimrafSync(join(TEST_DIR, 'node_modules'));
+      await promisify(childProcessExec)(`npm install`, { cwd: TEST_DIR });
+      const packageLockPath = join(TEST_DIR, 'package-lock.json');
+      existsSync(packageLockPath) && unlinkSync(packageLockPath);
+      break;
+    } catch(e) {
+      tries++;
+      if(tries >= totalTries) throw e;
+    }
+  }
   ({ register, create, VERSION, createRepl } = testsDirRequire('ts-node'));
 });
 
