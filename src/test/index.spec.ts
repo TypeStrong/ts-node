@@ -618,10 +618,9 @@ test.suite('ts-node', (test) => {
                 moduleId: '<repl>',
                 modulePath: '.',
                 moduleFilename: null,
-                modulePaths: exp.objectContaining({...[
-                  join(TEST_DIR, `repl/node_modules`),
-                  ...modulePaths,
-                ]}),
+                modulePaths: exp.objectContaining({
+                  ...[join(TEST_DIR, `repl/node_modules`), ...modulePaths],
+                }),
                 // Note: vanilla node REPL does not set exports
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
@@ -720,10 +719,7 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
                 ),
                 moduleAccessorsTest: true,
-                argv: [
-                  tsNodeExe,
-                  './repl/script.js',
-                ],
+                argv: [tsNodeExe, './repl/script.js'],
               },
               replReport: false,
             });
@@ -756,10 +752,7 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
                 ),
                 moduleAccessorsTest: true,
-                argv: [
-                  tsNodeExe,
-                  './does-not-exist.js',
-                ],
+                argv: [tsNodeExe, './does-not-exist.js'],
               },
               replReport: false,
             });
@@ -798,10 +791,9 @@ test.suite('ts-node', (test) => {
                 moduleId: '<repl>',
                 modulePath: '.',
                 moduleFilename: null,
-                modulePaths: exp.objectContaining({...[
-                  join(TEST_DIR, `repl/node_modules`),
-                  ...modulePaths
-                ]}),
+                modulePaths: exp.objectContaining({
+                  ...[join(TEST_DIR, `repl/node_modules`), ...modulePaths],
+                }),
                 // Note: vanilla node REPL does not set exports, so this would be false
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
@@ -889,12 +881,11 @@ test.suite('ts-node', (test) => {
                 // // Note: vanilla node REPL does not set exports
                 // exportsTest: true,
                 // moduleAccessorsTest: true,
-                
+
                 // Note: vanilla node uses different name. See #1360
                 stackTest: exp.stringContaining(
                   `    at ${join(ROOT_DIR, '<repl>.ts')}:1:`
                 ),
-                
               },
             });
           }
@@ -916,10 +907,9 @@ test.suite('ts-node', (test) => {
                 moduleId: '<repl>',
                 modulePath: '.',
                 moduleFilename: null,
-                modulePaths: exp.objectContaining({...[
-                  join(ROOT_DIR, `repl/node_modules`),
-                  ...rootModulePaths,
-                ]}),
+                modulePaths: exp.objectContaining({
+                  ...[join(ROOT_DIR, `repl/node_modules`), ...rootModulePaths],
+                }),
                 // Note: vanilla node REPL does not set exports
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
@@ -930,7 +920,9 @@ test.suite('ts-node', (test) => {
               },
             });
             // Prior to these, nyc adds another entry on Windows; we need to ignore it
-            exp(globalInRepl.testReport.replReport.modulePaths.slice(-3)).toMatchObject([
+            exp(
+              globalInRepl.testReport.replReport.modulePaths.slice(-3)
+            ).toMatchObject([
               join(homedir(), `.node_modules`),
               join(homedir(), `.node_libraries`),
               // additional entry goes to node's install path
@@ -1217,6 +1209,23 @@ test.suite('ts-node', (test) => {
           join(TEST_DIR, './tsconfig-options/required1.js'),
         ]);
       });
+
+      if (semver.gte(ts.version, '3.2.0')) {
+        test('should pull ts-node options from extended `tsconfig.json`', async () => {
+          const { err, stdout } = await exec(
+            `${BIN_PATH} --show-config --project ./tsconfig-extends/tsconfig.json`
+          );
+          expect(err).to.equal(null);
+          const config = JSON.parse(stdout);
+          expect(config['ts-node'].require).to.deep.equal([
+            resolve(TEST_DIR, 'tsconfig-extends/other/require-hook.js'),
+          ]);
+          expect(config['ts-node'].scopeDir).to.equal(
+            resolve(TEST_DIR, 'tsconfig-extends/other/scopedir')
+          );
+          expect(config['ts-node'].preferTsExts).to.equal(true);
+        });
+      }
     });
 
     test.suite(
