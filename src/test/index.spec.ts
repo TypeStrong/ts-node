@@ -85,16 +85,16 @@ let { register, create, VERSION, createRepl }: typeof tsNodeTypes = {} as any;
 test.beforeAll(async () => {
   const totalTries = process.platform === 'win32' ? 5 : 1;
   let tries = 0;
-  while(true) {
+  while (true) {
     try {
       rimrafSync(join(TEST_DIR, 'node_modules'));
       await promisify(childProcessExec)(`npm install`, { cwd: TEST_DIR });
       const packageLockPath = join(TEST_DIR, 'package-lock.json');
       existsSync(packageLockPath) && unlinkSync(packageLockPath);
       break;
-    } catch(e) {
+    } catch (e) {
       tries++;
-      if(tries >= totalTries) throw e;
+      if (tries >= totalTries) throw e;
     }
   }
   ({ register, create, VERSION, createRepl } = testsDirRequire('ts-node'));
