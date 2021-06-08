@@ -566,6 +566,9 @@ test.suite('ts-node', (test) => {
           return modulePaths;
         }
 
+        // Executable is `ts-node` on Posix, `bin.js` on Windows due to Windows shimming limitations (this is determined by package manager)
+        const tsNodeExe = exp.stringMatching(/\b(ts-node|bin.js)$/);
+
         test(
           'stdin',
           cliTest,
@@ -590,7 +593,7 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, `[stdin].ts`)}:1:`
                 ),
                 moduleAccessorsTest: null,
-                argv: [exp.stringMatching(/\bnode(\.exe)?$/)],
+                argv: [tsNodeExe],
               },
               evalReport: false,
               replReport: false,
@@ -630,7 +633,7 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
                 ),
                 moduleAccessorsTest: true,
-                argv: [exp.stringMatching(/\bnode(\.exe)?$/)],
+                argv: [tsNodeExe],
               },
             });
           }
@@ -681,7 +684,7 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
                 ),
                 moduleAccessorsTest: true,
-                argv: [exp.stringMatching(/\bnode(\.exe)?$/)],
+                argv: [tsNodeExe],
               },
               replReport: false,
             });
@@ -715,7 +718,7 @@ test.suite('ts-node', (test) => {
                 ),
                 moduleAccessorsTest: true,
                 argv: [
-                  exp.stringMatching(/\bnode(\.exe)?$/),
+                  tsNodeExe,
                   './repl/script.js',
                 ],
               },
@@ -751,7 +754,7 @@ test.suite('ts-node', (test) => {
                 ),
                 moduleAccessorsTest: true,
                 argv: [
-                  exp.stringMatching(/\bnode(\.exe)?$/),
+                  tsNodeExe,
                   './does-not-exist.js',
                 ],
               },
@@ -784,7 +787,7 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
                 ),
                 moduleAccessorsTest: true,
-                argv: [exp.stringMatching(/\bnode(\.exe)?$/)],
+                argv: [tsNodeExe],
               },
               replReport: {
                 __filename: '[eval]',
@@ -807,7 +810,7 @@ test.suite('ts-node', (test) => {
                   `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
                 ),
                 moduleAccessorsTest: true,
-                argv: [exp.stringMatching(/\bnode(\.exe)?$/)],
+                argv: [tsNodeExe],
               },
             });
           }
