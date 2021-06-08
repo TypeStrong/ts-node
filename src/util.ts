@@ -65,6 +65,14 @@ export function normalizeSlashes(value: string): string {
 }
 
 /**
+ * Safe `hasOwnProperty`
+ * @internal
+ */
+export function hasOwnProperty(object: any, property: string): boolean {
+  return Object.prototype.hasOwnProperty.call(object, property);
+}
+
+/**
  * Cached fs operation wrapper.
  */
 export function cachedLookup<T, R>(fn: (arg: T) => R): (arg: T) => R {

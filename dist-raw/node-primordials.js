@@ -2,10 +2,12 @@ module.exports = {
   ArrayIsArray: Array.isArray,
   ArrayPrototypeJoin: (obj, separator) => Array.prototype.join.call(obj, separator),
   ArrayPrototypeShift: (obj) => Array.prototype.shift.call(obj),
+  ArrayPrototypeForEach: (arr, ...rest) => Array.prototype.forEach.apply(arr, rest),
   JSONParse: JSON.parse,
   JSONStringify: JSON.stringify,
   ObjectFreeze: Object.freeze,
   ObjectGetOwnPropertyNames: Object.getOwnPropertyNames,
+  ObjectDefineProperty: Object.defineProperty,
   ObjectPrototypeHasOwnProperty: (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop),
   RegExpPrototypeTest: (obj, string) => RegExp.prototype.test.call(obj, string),
   SafeMap: Map,
@@ -18,5 +20,5 @@ module.exports = {
   StringPrototypeSlice: (str, ...rest) => String.prototype.slice.apply(str, rest),
   StringPrototypeSplit: (str, ...rest) => String.prototype.split.apply(str, rest),
   StringPrototypeStartsWith: (str, ...rest) => String.prototype.startsWith.apply(str, rest),
-  StringPrototypeSubstr: (str, ...rest) => String.prototype.substr.apply(str, rest)
+  StringPrototypeSubstr: (str, ...rest) => String.prototype.substr.apply(str, rest),
 };

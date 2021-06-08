@@ -1,18 +1,26 @@
 import { diffLines } from 'diff';
 import { homedir } from 'os';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import { Recoverable, start } from 'repl';
 import { Script } from 'vm';
 import { Service, CreateOptions, TSError, env } from './index';
 import { readFileSync, statSync } from 'fs';
 import { Console } from 'console';
 import type * as tty from 'tty';
+import Module = require('module');
 
-/**
- * Eval filename for REPL/debug.
- * @internal
- */
+/** @internal */
 export const EVAL_FILENAME = `[eval].ts`;
+/** @internal */
+export const EVAL_NAME = `[eval]`;
+/** @internal */
+export const STDIN_FILENAME = `[stdin].ts`;
+/** @internal */
+export const STDIN_NAME = `[stdin]`;
+/** @internal */
+export const REPL_FILENAME = '<repl>.ts';
+/** @internal */
+export const REPL_NAME = '<repl>';
 
 export interface ReplService {
   readonly state: EvalState;
@@ -49,6 +57,8 @@ export interface CreateReplOptions {
   stdin?: NodeJS.ReadableStream;
   stdout?: NodeJS.WritableStream;
   stderr?: NodeJS.WritableStream;
+  /** @internal */
+  composeWithEvalAwarePartialHost?: EvalAwarePartialHost;
 }
 
 /**
@@ -64,8 +74,11 @@ export interface CreateReplOptions {
 export function createRepl(options: CreateReplOptions = {}) {
   let service = options.service;
   const state =
-    options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME));
-  const evalAwarePartialHost = createEvalAwarePartialHost(state);
+    options.state ?? new EvalState(join(process.cwd(), REPL_FILENAME));
+  const evalAwarePartialHost = createEvalAwarePartialHost(
+    state,
+    options.composeWithEvalAwarePartialHost
+  );
   const stdin = options.stdin ?? process.stdin;
   const stdout = options.stdout ?? process.stdout;
   const stderr = options.stderr ?? process.stderr;
@@ -163,10 +176,13 @@ export type EvalAwarePartialHost = Pick<
 >;
 
 export function createEvalAwarePartialHost(
-  state: EvalState
+  state: EvalState,
+  composeWith?: EvalAwarePartialHost
 ): EvalAwarePartialHost {
   function readFile(path: string) {
     if (path === state.path) return state.input;
+
+    if (composeWith?.readFile) return composeWith.readFile(path);
 
     try {
       return readFileSync(path, 'utf8');
@@ -176,6 +192,8 @@ export function createEvalAwarePartialHost(
   }
   function fileExists(path: string) {
     if (path === state.path) return true;
+
+    if (composeWith?.fileExists) return composeWith.fileExists(path);
 
     try {
       const stats = statSync(path);
@@ -221,7 +239,7 @@ function _eval(service: Service, state: EvalState, input: string) {
  * Execute some code.
  */
 function exec(code: string, filename: string) {
-  const script = new Script(code, { filename: filename });
+  const script = new Script(code, { filename });
 
   return script.runInThisContext();
 }
@@ -367,4 +385,31 @@ const RECOVERY_CODES: Set<number> = new Set([
  */
 function isRecoverable(error: TSError) {
   return error.diagnosticCodes.every((code) => RECOVERY_CODES.has(code));
+}
+
+/** @internal */
+export function setContext(
+  context: any,
+  module: Module,
+  filenameAndDirname: 'eval' | 'stdin' | null
+) {
+  if (filenameAndDirname) {
+    context.__dirname = '.';
+    context.__filename = `[${filenameAndDirname}]`;
+  }
+  context.module = module;
+  context.exports = module.exports;
+  context.require = module.require.bind(module);
+}
+
+/** @internal */
+export function createNodeModuleForContext(
+  type: 'eval' | 'stdin',
+  cwd: string
+) {
+  // Create a local module instance based on `cwd`.
+  const module = new Module(`[${type}]`);
+  module.filename = join(cwd, module.id) + '.ts';
+  module.paths = (Module as any)._nodeModulePaths(cwd);
+  return module;
 }
