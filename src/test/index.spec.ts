@@ -516,10 +516,10 @@ test.suite('ts-node', (test) => {
             global.${type}Report = {
               __filename: typeof __filename !== 'undefined' && __filename,
               __dirname: typeof __dirname !== 'undefined' && __dirname,
-              moduleId: module.id,
-              modulePath: module.path,
-              moduleFilename: module.filename,
-              modulePaths: [...module.paths],
+              moduleId: typeof module !== 'undefined' && module.id,
+              modulePath: typeof module !== 'undefined' && module.path,
+              moduleFilename: typeof module !== 'undefined' && module.filename,
+              modulePaths: typeof module !== 'undefined' && [...module.paths],
               exportsTest: typeof exports !== 'undefined' ? module.exports === exports : null,
               stackTest: new Error().stack!.split('\\n')[1],
               moduleAccessorsTest: typeof fs === 'undefined' ? null : fs === require('fs'),
@@ -618,14 +618,10 @@ test.suite('ts-node', (test) => {
                 moduleId: '<repl>',
                 modulePath: '.',
                 moduleFilename: null,
-                modulePaths: [
+                modulePaths: exp.objectContaining({...[
                   join(TEST_DIR, `repl/node_modules`),
                   ...modulePaths,
-                  join(homedir(), `.node_modules`),
-                  join(homedir(), `.node_libraries`),
-                  // additional entry goes to node's install path
-                  exp.any(String),
-                ],
+                ]}),
                 // Note: vanilla node REPL does not set exports
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
@@ -636,6 +632,13 @@ test.suite('ts-node', (test) => {
                 argv: [tsNodeExe],
               },
             });
+            // Prior to these, nyc adds another entry on Windows; we need to ignore it
+            exp(report.replReport.modulePaths.slice(-3)).toMatchObject([
+              join(homedir(), `.node_modules`),
+              join(homedir(), `.node_libraries`),
+              // additional entry goes to node's install path
+              exp.any(String),
+            ]);
           }
         );
 
@@ -795,14 +798,10 @@ test.suite('ts-node', (test) => {
                 moduleId: '<repl>',
                 modulePath: '.',
                 moduleFilename: null,
-                modulePaths: [
+                modulePaths: exp.objectContaining({...[
                   join(TEST_DIR, `repl/node_modules`),
-                  ...modulePaths,
-                  join(homedir(), `.node_modules`),
-                  join(homedir(), `.node_libraries`),
-                  // additional entry goes to node's install path
-                  exp.any(String),
-                ],
+                  ...modulePaths
+                ]}),
                 // Note: vanilla node REPL does not set exports, so this would be false
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
@@ -813,6 +812,13 @@ test.suite('ts-node', (test) => {
                 argv: [tsNodeExe],
               },
             });
+            // Prior to these, nyc adds another entry on Windows; we need to ignore it
+            exp(report.replReport.modulePaths.slice(-3)).toMatchObject([
+              join(homedir(), `.node_modules`),
+              join(homedir(), `.node_libraries`),
+              // additional entry goes to node's install path
+              exp.any(String),
+            ]);
           }
         );
 
@@ -882,12 +888,13 @@ test.suite('ts-node', (test) => {
                 // ],
                 // // Note: vanilla node REPL does not set exports
                 // exportsTest: true,
-
+                // moduleAccessorsTest: true,
+                
                 // Note: vanilla node uses different name. See #1360
                 stackTest: exp.stringContaining(
                   `    at ${join(ROOT_DIR, '<repl>.ts')}:1:`
                 ),
-                moduleAccessorsTest: true,
+                
               },
             });
           }
@@ -900,7 +907,7 @@ test.suite('ts-node', (test) => {
             stdinCode: `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
           },
           (stdout) => {
-            exp((global as any).testReport).toMatchObject({
+            exp(globalInRepl.testReport).toMatchObject({
               stdinReport: false,
               evalReport: false,
               replReport: {
@@ -909,14 +916,10 @@ test.suite('ts-node', (test) => {
                 moduleId: '<repl>',
                 modulePath: '.',
                 moduleFilename: null,
-                modulePaths: [
+                modulePaths: exp.objectContaining({...[
                   join(ROOT_DIR, `repl/node_modules`),
                   ...rootModulePaths,
-                  join(homedir(), `.node_modules`),
-                  join(homedir(), `.node_libraries`),
-                  // additional entry goes to node's install path
-                  exp.any(String),
-                ],
+                ]}),
                 // Note: vanilla node REPL does not set exports
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
@@ -926,6 +929,13 @@ test.suite('ts-node', (test) => {
                 moduleAccessorsTest: true,
               },
             });
+            // Prior to these, nyc adds another entry on Windows; we need to ignore it
+            exp(globalInRepl.testReport.replReport.modulePaths.slice(-3)).toMatchObject([
+              join(homedir(), `.node_modules`),
+              join(homedir(), `.node_libraries`),
+              // additional entry goes to node's install path
+              exp.any(String),
+            ]);
           }
         );
       }
