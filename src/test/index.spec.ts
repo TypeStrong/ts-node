@@ -860,19 +860,26 @@ test.suite('ts-node', (test) => {
               replReport: {
                 __filename: false,
                 __dirname: false,
-                moduleId: '<repl>',
-                modulePath: '.',
-                moduleFilename: null,
-                modulePaths: [
-                  join(ROOT_DIR, `repl/node_modules`),
-                  ...rootModulePaths,
-                  join(homedir(), `.node_modules`),
-                  join(homedir(), `.node_libraries`),
-                  // additional entry goes to node's install path
-                  exp.any(String),
-                ],
-                // Note: vanilla node REPL does not set exports
-                exportsTest: true,
+
+                // Due to limitations in node's REPL API, we can't really expose
+                // the `module` prior to calling repl.start() which also sends
+                // output to stdout.
+                // For now, leaving this as unsupported / undefined behavior.
+
+                // moduleId: '<repl>',
+                // modulePath: '.',
+                // moduleFilename: null,
+                // modulePaths: [
+                //   join(ROOT_DIR, `repl/node_modules`),
+                //   ...rootModulePaths,
+                //   join(homedir(), `.node_modules`),
+                //   join(homedir(), `.node_libraries`),
+                //   // additional entry goes to node's install path
+                //   exp.any(String),
+                // ],
+                // // Note: vanilla node REPL does not set exports
+                // exportsTest: true,
+
                 // Note: vanilla node uses different name. See #1360
                 stackTest: exp.stringContaining(
                   `    at ${join(ROOT_DIR, '<repl>.ts')}:1:`
