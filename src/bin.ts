@@ -296,6 +296,7 @@ export function main(
     const json = {
       ['ts-node']: {
         ...service.options,
+        optionBasePaths: undefined,
         experimentalEsmLoader: undefined,
         compilerOptions: undefined,
         project: service.configFilePath ?? service.options.project,
