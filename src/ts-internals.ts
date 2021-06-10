@@ -3,6 +3,7 @@ import { cachedLookup, normalizeSlashes } from './util';
 import type * as _ts from 'typescript';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
 
+/** @internal */
 export const createTsInternals = cachedLookup(createTsInternalsUncached);
 /**
  * Given a reference to the TS compiler, return some TS internal functions that we
@@ -110,13 +111,8 @@ const reservedCharacterPattern = /[^\w\s\/]/g;
 
 /**
  * @internal
- * Note: not copied from TS; their impl may be subtley different
+ * See also: getRegularExpressionForWildcard, which seems to do almost the same thing
  */
-export function isString(v: any): v is string {
-  return typeof v === 'string';
-}
-
-// See also: getRegularExpressionForWildcard, which seems to do almost the same thing
 export function getPatternFromSpec(spec: string, basePath: string) {
   const pattern = spec && getSubPatternFromSpec(spec, basePath, excludeMatcher);
   return pattern && `^(${pattern})${'($|/)'}`;
@@ -191,17 +187,17 @@ const excludeMatcher: WildcardMatcher = {
   replaceWildcardCharacter: (match) =>
     replaceWildcardCharacter(match, excludeMatcher.singleAsteriskRegexFragment),
 };
-export function getNormalizedPathComponents(
+function getNormalizedPathComponents(
   path: string,
   currentDirectory: string | undefined
 ) {
   return reducePathComponents(getPathComponents(path, currentDirectory));
 }
-export function getPathComponents(path: string, currentDirectory = '') {
+function getPathComponents(path: string, currentDirectory = '') {
   path = combinePaths(currentDirectory, path);
   return pathComponents(path, getRootLength(path));
 }
-export function reducePathComponents(components: readonly string[]) {
+function reducePathComponents(components: readonly string[]) {
   if (!some(components)) return [];
   const reduced = [components[0]];
   for (let i = 1; i < components.length; i++) {
@@ -220,7 +216,7 @@ export function reducePathComponents(components: readonly string[]) {
   }
   return reduced;
 }
-export function getRootLength(path: string) {
+function getRootLength(path: string) {
   const rootLength = getEncodedRootLength(path);
   return rootLength < 0 ? ~rootLength : rootLength;
 }
@@ -290,33 +286,32 @@ function getEncodedRootLength(path: string): number {
   // relative
   return 0;
 }
-export function ensureTrailingDirectorySeparator(path: string) {
+function ensureTrailingDirectorySeparator(path: string) {
   if (!hasTrailingDirectorySeparator(path)) {
     return path + directorySeparator;
   }
 
   return path;
 }
-export function hasTrailingDirectorySeparator(path: string) {
+function hasTrailingDirectorySeparator(path: string) {
   return (
     path.length > 0 && isAnyDirectorySeparator(path.charCodeAt(path.length - 1))
   );
 }
-export function isAnyDirectorySeparator(charCode: number): boolean {
+function isAnyDirectorySeparator(charCode: number): boolean {
   return (
     charCode === CharacterCodes.slash || charCode === CharacterCodes.backslash
   );
 }
-type Path = string;
-export function removeTrailingDirectorySeparator(path: string) {
+function removeTrailingDirectorySeparator(path: string) {
   if (hasTrailingDirectorySeparator(path)) {
     return path.substr(0, path.length - 1);
   }
 
   return path;
 }
-export const directorySeparator = '/';
-export const altDirectorySeparator = '\\';
+const directorySeparator = '/';
+const altDirectorySeparator = '\\';
 const urlSchemeSeparator = '://';
 function isVolumeCharacter(charCode: number) {
   return (
@@ -336,12 +331,12 @@ function getFileUrlVolumeSeparatorEnd(url: string, start: number) {
   }
   return -1;
 }
-export function some<T>(array: readonly T[] | undefined): array is readonly T[];
-export function some<T>(
+function some<T>(array: readonly T[] | undefined): array is readonly T[];
+function some<T>(
   array: readonly T[] | undefined,
   predicate: (value: T) => boolean
 ): boolean;
-export function some<T>(
+function some<T>(
   array: readonly T[] | undefined,
   predicate?: (value: T) => boolean
 ): boolean {
@@ -359,7 +354,7 @@ export function some<T>(
   return false;
 }
 /* @internal */
-export const enum CharacterCodes {
+const enum CharacterCodes {
   _3 = 0x33,
   a = 0x61,
   z = 0x7a,
@@ -378,10 +373,10 @@ function pathComponents(path: string, rootLength: number) {
   if (rest.length && !lastOrUndefined(rest)) rest.pop();
   return [root, ...rest];
 }
-export function lastOrUndefined<T>(array: readonly T[]): T | undefined {
+function lastOrUndefined<T>(array: readonly T[]): T | undefined {
   return array.length === 0 ? undefined : array[array.length - 1];
 }
-export function last<T>(array: readonly T[]): T {
+function last<T>(array: readonly T[]): T {
   // Debug.assert(array.length !== 0);
   return array[array.length - 1];
 }
@@ -399,6 +394,6 @@ function replaceWildcardCharacter(
  * An "includes" path "foo" is implicitly a glob "foo/** /*" (without the space) if its last component has no extension,
  * and does not contain any glob characters itself.
  */
-export function isImplicitGlob(lastPathComponent: string): boolean {
+function isImplicitGlob(lastPathComponent: string): boolean {
   return !/[.*?]/.test(lastPathComponent);
 }
