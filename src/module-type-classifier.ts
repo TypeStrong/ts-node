@@ -1,8 +1,5 @@
 import { dirname } from 'path';
-import {
-  getPatternFromSpec,
-  isString,
-} from './ts-internals';
+import { getPatternFromSpec } from './ts-internals';
 import { cachedLookup } from './util';
 
 // Logic to support out `moduleTypes` option, which allows overriding node's default ESM / CJS
