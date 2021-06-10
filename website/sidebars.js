@@ -22,7 +22,8 @@ module.exports = {
       'paths',
       'types',
       'compilers',
-      'transpilers'
+      'transpilers',
+      'module-type-overrides'
     ],
   }, {
     type: 'category',

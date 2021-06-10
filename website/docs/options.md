@@ -51,6 +51,7 @@ _Environment variables, where available, are in `ALL_CAPS`_
 -  `--emit`   Emit output files into `.ts-node` directory <br/>*Default:* `false` <br/>*Environment:* `TS_NODE_EMIT`
 -  `--scope`  Scope compiler to files within `scopeDir`.  Anything outside this directory is ignored. <br/>*Default: `false` <br/>*Environment:* `TS_NODE_SCOPE`
 -  `--scopeDir` Directory within which compiler is limited when `scope` is enabled. <br/>*Default:* First of: `tsconfig.json` "rootDir" if specified, directory containing `tsconfig.json`, or cwd if no `tsconfig.json` is loaded.<br/>*Environment:* `TS_NODE_SCOPE_DIR`
+-  `moduleType`  Override the module type of certain files, ignoring the `package.json` `"type"` field.  See [Module type overrides](./module-type-overrides.md) for details.<br/>*Default:* obeys `package.json` `"type"` and `tsconfig.json` `"module"` <br/>*Can only be specified via `tsconfig.json` or API.*
 - `TS_NODE_HISTORY` Path to history file for REPL <br/>*Default:* `~/.ts_node_repl_history`<br/>
 
 ## API
