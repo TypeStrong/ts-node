@@ -8,14 +8,24 @@ const {JSONParse} = require('./node-primordials');
 
 module.exports.assertScriptCanLoadAsCJSImpl = assertScriptCanLoadAsCJSImpl;
 
-// copied from Module._extensions['.js']
-// https://github.com/nodejs/node/blob/v15.3.0/lib/internal/modules/cjs/loader.js#L1113-L1120
-function assertScriptCanLoadAsCJSImpl(filename) {
+/**
+ * copied from Module._extensions['.js']
+ * https://github.com/nodejs/node/blob/v15.3.0/lib/internal/modules/cjs/loader.js#L1113-L1120
+ * @param {import('../src/index').Service} service
+ * @param {NodeJS.Module} module
+ * @param {string} filename
+ */
+function assertScriptCanLoadAsCJSImpl(service, module, filename) {
   const pkg = readPackageScope(filename);
+
+  // ts-node modification: allow our configuration to override
+  const tsNodeClassification = service.moduleTypeClassifier.classifyModule(filename);
+  if(tsNodeClassification.moduleType === 'cjs') return;
+
   // Function require shouldn't be used in ES modules.
-  if (pkg && pkg.data && pkg.data.type === 'module') {
+  if (tsNodeClassification.moduleType === 'esm' || (pkg && pkg.data && pkg.data.type === 'module')) {
     const parentPath = module.parent && module.parent.filename;
-    const packageJsonPath = path.resolve(pkg.path, 'package.json');
+    const packageJsonPath = pkg ? path.resolve(pkg.path, 'package.json') : null;
     throw createErrRequireEsm(filename, parentPath, packageJsonPath);
   }
 }
