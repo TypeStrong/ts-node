@@ -5,15 +5,6 @@ import { cachedLookup } from './util';
 // Logic to support out `moduleTypes` option, which allows overriding node's default ESM / CJS
 // classification of `.js` files based on package.json `type` field.
 
-// How to convert glob to RegExp
-// Check for `***`; reject with an error
-// Check for `/**/`; replace with:  \/.*\/          chomp all slashes before and after, collapse adjacent **/
-// Check for `*`;  replace with:  [^/]*
-// Check for `?`;  replace with:  .
-// Check for ending file extension; if omitted, add logic to match only the correct file extensions
-// Escape strings a-la lodash escapeRegexp
-// anything matched by the glob can be a
-
 /** @internal */
 export type ModuleType = 'cjs' | 'esm' | 'package';
 /** @internal */
@@ -78,34 +69,6 @@ export function createModuleTypeClassifier(
 // TODO basePath cannot end in /
 // TODO basePath must be absolute
 function parsePattern(basePath: string, patternString: string): RegExp {
-  // if (patternString.indexOf('\\') > -1) {
-  //   throw new Error(
-  //     'moduleTypes patterns cannot contain "\\"; must use Posix path delimiters.  See TODO link to docs'
-  //   );
-  // }
-
-  // // strip any leading ./ and ../, adjusting basePath to reflect ascensions
-  // while (patternString.startsWith('.')) {
-  //   if (patternString.startsWith('./')) {
-  //     patternString = patternString.slice(2);
-  //   } else if (patternString.startsWith('../')) {
-  //     basePath = dirname(basePath);
-  //     patternString = patternString.slice(3);
-  //   } else {
-  //     break;
-  //   }
-  // }
-  // const firstAsterisk = patternString.indexOf('*');
-  // const lastAsterisk = patternString.lastIndexOf('*');
-  // if (firstAsterisk !== lastAsterisk)
-  //   throw new Error(
-  //     'moduleTypes patterns can contain at most a single asterisk.  See TODO link to docs'
-  //   );
-  // if (firstAsterisk === -1) return basePath + '/' + patternString;
-  // return {
-  //   prefix: basePath + '/' + patternString.slice(0, firstAsterisk),
-  //   suffix: patternString.slice(firstAsterisk + 1),
-  // };
   const pattern = getPatternFromSpec(patternString, basePath);
   return pattern !== undefined ? new RegExp(pattern) : /(?:)/;
 }
@@ -115,7 +78,7 @@ function matchPatterns<T>(
   getPattern: (t: T) => RegExp,
   candidate: string
 ): T | undefined {
-  for (let i = objects.length - 1; i--; i >= 0) {
+  for (let i = objects.length - 1; i >= 0; i--) {
     const object = objects[i];
     const pattern = getPattern(object);
 

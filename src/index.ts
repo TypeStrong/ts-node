@@ -474,15 +474,17 @@ export function create(rawOptions: CreateOptions = {}): Service {
   );
 
   // Read config file and merge new options between env and CLI options.
-  const { configFilePath, config, tsNodeOptionsFromTsconfig } = readConfig(
-    cwd,
-    ts,
-    rawOptions
-  );
+  const {
+    configFilePath,
+    config,
+    tsNodeOptionsFromTsconfig,
+    optionBasePaths,
+  } = readConfig(cwd, ts, rawOptions);
   const options = assign<RegisterOptions>(
     {},
     DEFAULTS,
     tsNodeOptionsFromTsconfig || {},
+    { optionBasePaths },
     rawOptions
   );
   options.require = [
@@ -1048,7 +1050,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
   ): GetOutputFunction {
     const compilerOptions = { ...config.options };
     if (overrideModuleType !== undefined)
-      compilerOptions.module === overrideModuleType;
+      compilerOptions.module = overrideModuleType;
     return (code: string, fileName: string): SourceOutput => {
       let result: _ts.TranspileOutput;
       if (customTranspiler) {

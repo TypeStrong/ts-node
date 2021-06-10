@@ -1459,10 +1459,18 @@ test.suite('ts-node', (test) => {
 
     test('should support compiler scope specified via tsconfig.json', async (t) => {
       const { err, stderr, stdout } = await exec(
-        `${cmd} --project ./scope/c/config/tsconfig.json ./scope/c/index.js`
+        `${cmdNoProject} --project ./scope/c/config/tsconfig.json ./scope/c/index.js`
       );
       expect(err).to.equal(null);
       expect(stdout).to.equal(`value\nFailures: 0\n`);
+    });
+
+    test('moduleTypes should allow importing CJS in an otherwise ESM project', async (t) => {
+      const { err, stderr, stdout } = await exec(
+        `${cmdNoProject} --project ./module-types/tsconfig.json ./module-types/test.cjs`
+      );
+      expect(err).to.equal(null);
+      expect(stdout).to.equal(`Failures: 0\n`);
     });
   });
 
