@@ -22,8 +22,9 @@ export type ModuleTypeClassifier = ReturnType<
 >;
 /**
  * @internal
- * May receive non-normalized basePath and patterns and will normalize them
+ * May receive non-normalized options -- basePath and patterns -- and will normalize them
  * internally.
+ * However, calls to `classifyModule` must pass pre-normalized paths!
  */
 export function createModuleTypeClassifier(
   options: ModuleTypeClassifierOptions
@@ -52,7 +53,7 @@ export function createModuleTypeClassifier(
   };
   const auto = classifications.package;
 
-  // TODO path must be normalized.
+  // Passed path must be normalized!
   function classifyModuleNonCached(path: string): ModuleTypeClassification {
     const matched = matchPatterns(patternTypePairs, (_) => _.pattern, path);
     if (matched) return classifications[matched.type];

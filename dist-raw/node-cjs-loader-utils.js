@@ -5,6 +5,7 @@
 const path = require('path');
 const packageJsonReader = require('./node-package-json-reader');
 const {JSONParse} = require('./node-primordials');
+const {normalizeSlashes} = require('../dist/util');
 
 module.exports.assertScriptCanLoadAsCJSImpl = assertScriptCanLoadAsCJSImpl;
 
@@ -19,7 +20,7 @@ function assertScriptCanLoadAsCJSImpl(service, module, filename) {
   const pkg = readPackageScope(filename);
 
   // ts-node modification: allow our configuration to override
-  const tsNodeClassification = service.moduleTypeClassifier.classifyModule(filename);
+  const tsNodeClassification = service.moduleTypeClassifier.classifyModule(normalizeSlashes(filename));
   if(tsNodeClassification.moduleType === 'cjs') return;
 
   // Function require shouldn't be used in ES modules.
