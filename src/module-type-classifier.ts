@@ -1,6 +1,6 @@
 import { dirname } from 'path';
 import { getPatternFromSpec } from './ts-internals';
-import { cachedLookup } from './util';
+import { cachedLookup, normalizeSlashes } from './util';
 
 // Logic to support out `moduleTypes` option, which allows overriding node's default ESM / CJS
 // classification of `.js` files based on package.json `type` field.
@@ -20,14 +20,20 @@ export interface ModuleTypeClassifierOptions {
 export type ModuleTypeClassifier = ReturnType<
   typeof createModuleTypeClassifier
 >;
-/** @internal */
+/**
+ * @internal
+ * May receive non-normalized basePath and patterns and will normalize them
+ * internally.
+ */
 export function createModuleTypeClassifier(
   options: ModuleTypeClassifierOptions
 ) {
-  const { patterns, basePath } = options;
+  const { patterns, basePath: _basePath } = options;
+  const basePath = _basePath !== undefined ? normalizeSlashes(_basePath) : undefined;
 
   const patternTypePairs = Object.entries(patterns ?? []).map(
-    ([pattern, type]) => {
+    ([_pattern, type]) => {
+      const pattern = normalizeSlashes(_pattern);
       return { pattern: parsePattern(basePath!, pattern), type };
     }
   );

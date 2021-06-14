@@ -8,6 +8,7 @@ import {
 } from 'url';
 import { extname } from 'path';
 import * as assert from 'assert';
+import { normalizeSlashes } from './util';
 const {
   createResolve,
 } = require('../dist-raw/node-esm-resolve-implementation');
@@ -108,7 +109,7 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
       (nodeSays.format === 'commonjs' || nodeSays.format === 'module')
     ) {
       const { moduleType } = tsNodeInstance.moduleTypeClassifier.classifyModule(
-        nativePath
+        normalizeSlashes(nativePath)
       );
       if (moduleType === 'cjs') {
         return { format: 'commonjs' };
