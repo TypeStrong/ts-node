@@ -29,7 +29,8 @@ export function createModuleTypeClassifier(
   options: ModuleTypeClassifierOptions
 ) {
   const { patterns, basePath: _basePath } = options;
-  const basePath = _basePath !== undefined ? normalizeSlashes(_basePath) : undefined;
+  const basePath =
+    _basePath !== undefined ? normalizeSlashes(_basePath) : undefined;
 
   const patternTypePairs = Object.entries(patterns ?? []).map(
     ([_pattern, type]) => {
