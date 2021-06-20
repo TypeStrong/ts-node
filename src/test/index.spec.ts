@@ -1888,5 +1888,12 @@ test.suite('ts-node', (test) => {
         expect(stdout).to.contain('CommonJS');
       });
     }
+
+    test('moduleTypes can override module type to CJS in an ESM loader project', async () => {
+      const { err, stderr, stdout } = await exec(
+        `${cmd} ./module-types/test.esm.js`
+      );
+      expect(err).to.equal(null);
+    });
   });
 });
