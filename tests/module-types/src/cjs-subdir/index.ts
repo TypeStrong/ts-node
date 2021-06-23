@@ -1,3 +1,5 @@
 export const cjs: boolean = true;
 
-export const requireType = typeof require;
+const requireType = typeof require;
+
+export default { requireType };
