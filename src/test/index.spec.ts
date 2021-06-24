@@ -1891,14 +1891,7 @@ test.suite('ts-node', (test) => {
 
     test('moduleTypes can override module type to CJS in an ESM loader project', async () => {
       const { err, stderr, stdout } = await exec(
-        // TODO: Is the experimental-specified-resolution flag required here, or is there a better approach?
-        `${cmd} ./module-types/test.esm.js`,
-        {
-          env: {
-            ...process.env,
-            NODE_OPTIONS: `--experimental-specifier-resolution=node`,
-          },
-        }
+        `${cmd} ./module-types/test.esm.js`
       );
       expect(err).to.equal(null);
     });
