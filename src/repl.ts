@@ -8,6 +8,7 @@ import { readFileSync, statSync } from 'fs';
 import { Console } from 'console';
 import type * as tty from 'tty';
 import Module = require('module');
+import { processTopLevelAwait } from './repl-top-level-await';
 
 /** @internal */
 export const EVAL_FILENAME = `[eval].ts`;
@@ -109,7 +110,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     return _eval(service!, state, code);
   }
 
-  function nodeEval(
+  async function nodeEval(
     code: string,
     _context: any,
     _filename: string,
@@ -125,7 +126,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     }
 
     try {
-      result = evalCode(code);
+      result = await evalCode(code);
     } catch (error) {
       if (error instanceof TSError) {
         // Support recoverable compilations using >= node 6.
@@ -219,6 +220,38 @@ function _eval(service: Service, state: EvalState, input: string) {
     // "void 0" keeps the repl from returning "use strict" as the result
     // value for statements and declarations that don't return a value.
     return code.replace(/^"use strict";/, '"use strict"; void 0;');
+  }
+
+  // Due to rewritting in `processTopLevelAwait`, `changes` won't be accurate,
+  // hence the need to compile using `input` instead of `state.input`
+  if (
+    /* ts-node flag or node --experimental-repl-await flag &&*/
+    state.input.includes('await')
+  ) {
+    try {
+      output = service.compile(input, state.path, -lines);
+    } catch (err) {
+      undo();
+      throw err;
+    }
+
+    // processTopLevelAwait doesn't properly handle the sourceMappingURL comment,
+    // hence the need to remove it
+    const sourceMapPos = output.lastIndexOf('//# sourceMappingURL');
+    if (sourceMapPos !== -1) {
+      output = output.substring(0, sourceMapPos - 1);
+    }
+
+    output = adjustUseStrict(output);
+
+    try {
+      output = processTopLevelAwait(output) ?? output;
+    } catch (err) {
+      undo();
+      throw err;
+    }
+
+    return exec(output, state.path);
   }
 
   try {
