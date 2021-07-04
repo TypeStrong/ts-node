@@ -1889,16 +1889,17 @@ test.suite('ts-node', (test) => {
       });
     }
 
+    async function execModuleTypeOverride() {
+      return exec(`${cmd} ./module-types/test.esm.js`, {
+        env: {
+          ...process.env,
+          TS_NODE_PROJECT: './module-types/tsconfig.json',
+        },
+      });
+    }
+
     test('moduleTypes can override module type to CJS in an ESM loader project', async () => {
-      const { err, stderr, stdout } = await exec(
-        `${cmd} ./module-types/test.esm.js`,
-        {
-          env: {
-            ...process.env,
-            TS_NODE_PROJECT: './module-types/tsconfig.json',
-          },
-        }
-      );
+      const { err, stderr, stdout } = await execModuleTypeOverride();
       expect(err).to.equal(null);
     });
   });
