@@ -407,7 +407,7 @@ test.suite('ts-node', (test) => {
       const { err, stdout } = await execPromise;
       expect(err).to.equal(null);
       expect(stdout).to.equal(
-        "> 'use strict'\n" + '> undefined\n' + '> const a: 123\n' + '> '
+        '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
       );
     });
 
@@ -439,7 +439,7 @@ test.suite('ts-node', (test) => {
       stderr.end();
       expect(await getStream(stderr)).to.equal('');
       expect(await getStream(stdout)).to.equal(
-        "> 'use strict'\n" + '> undefined\n' + '> const a: 123\n' + '> '
+        '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
       );
     });
 
