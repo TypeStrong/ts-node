@@ -446,7 +446,7 @@ function requireResolveNonCached(absoluteModuleSpecifier: string) {
 /**
  * Evaluate an [eval] or [stdin] script
  */
-function evalAndExitOnTsError(
+async function evalAndExitOnTsError(
   replService: ReplService,
   module: Module,
   code: string,
@@ -457,7 +457,13 @@ function evalAndExitOnTsError(
   setContext(global, module, filenameAndDirname);
 
   try {
-    result = replService.evalCode(code);
+    const { awaitPromise, result: evalResult } = replService.evalCode(code);
+
+    if (awaitPromise) {
+      result = await evalResult;
+    } else {
+      result = evalResult;
+    }
   } catch (error) {
     if (error instanceof TSError) {
       console.error(error);

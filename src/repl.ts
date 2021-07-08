@@ -30,7 +30,7 @@ export interface ReplService {
    * Bind this REPL to a ts-node compiler service.  A compiler service must be bound before `eval`-ing code or starting the REPL
    */
   setService(service: Service): void;
-  evalCode(code: string): void;
+  evalCode(code: string): { awaitPromise: boolean; result: any };
   /**
    * `eval` implementation compatible with node's REPL API
    */
@@ -111,7 +111,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     return _eval(service!, state, code);
   }
 
-  async function nodeEval(
+  function nodeEval(
     code: string,
     _context: any,
     _filename: string,
@@ -127,7 +127,15 @@ export function createRepl(options: CreateReplOptions = {}) {
     }
 
     try {
-      result = await evalCode(code);
+      const { awaitPromise, result: evalResult } = evalCode(code);
+
+      if (awaitPromise) {
+        return (async () => {
+          callback(err, await evalResult);
+        })();
+      }
+
+      result = evalResult;
     } catch (error) {
       if (error instanceof TSError) {
         // Support recoverable compilations using >= node 6.
@@ -215,6 +223,7 @@ function _eval(service: Service, state: EvalState, input: string) {
   const isCompletion = !/\n$/.test(input);
   const undo = appendEval(state, input);
   let output: string;
+  let awaitPromise = false;
 
   // Based on https://github.com/nodejs/node/blob/92573721c7cff104ccb82b6ed3e8aa69c4b27510/lib/repl.js#L457-L461
   function adjustUseStrict(code: string) {
@@ -259,6 +268,7 @@ function _eval(service: Service, state: EvalState, input: string) {
       const result = processTopLevelAwait(output);
       if (result !== null) {
         output = result;
+        awaitPromise = true;
       }
     } catch (err) {
       undo();
@@ -273,7 +283,10 @@ function _eval(service: Service, state: EvalState, input: string) {
       state.output = output;
     }
 
-    return exec(output, state.path);
+    return {
+      awaitPromise,
+      result: exec(output, state.path),
+    };
   }
 
   try {
@@ -292,9 +305,12 @@ function _eval(service: Service, state: EvalState, input: string) {
     state.output = output;
   }
 
-  return changes.reduce((result, change) => {
-    return change.added ? exec(change.value, state.path) : result;
-  }, undefined);
+  return {
+    awaitPromise,
+    result: changes.reduce((result, change) => {
+      return change.added ? exec(change.value, state.path) : result;
+    }, undefined),
+  };
 }
 
 /**

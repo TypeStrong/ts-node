@@ -1422,6 +1422,7 @@ test.suite('ts-node', (test) => {
           JSON.stringify(
             {
               'ts-node': {
+                experimentalReplAwait: false,
                 cwd: native(`${ROOT_DIR}/tests`),
                 projectSearchDir: native(`${ROOT_DIR}/tests`),
                 project: native(`${ROOT_DIR}/tests/tsconfig.json`),
