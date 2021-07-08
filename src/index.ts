@@ -283,6 +283,11 @@ export interface CreateOptions {
    */
   experimentalEsmLoader?: boolean;
   /**
+   * Allows the usage of top level await in REPL
+   * Enabled explicitly since this is an experimental feature
+   */
+  experimentalReplAwait?: boolean;
+  /**
    * Override certain paths to be compiled and executed as CommonJS or ECMAScript modules.
    * When overridden, the tsconfig "module" and package.json "type" fields are overridden.
    * This is useful because TypeScript files cannot use the .cjs nor .mjs file extensions;
@@ -341,6 +346,7 @@ export interface TsConfigOptions
     | 'cwd'
     | 'projectSearchDir'
     | 'experimentalEsmLoader'
+    | 'experimentalReplAwait'
     | 'optionBasePaths'
   > {}
 
@@ -377,6 +383,7 @@ export const DEFAULTS: RegisterOptions = {
   compilerHost: yn(env.TS_NODE_COMPILER_HOST),
   logError: yn(env.TS_NODE_LOG_ERROR),
   experimentalEsmLoader: false,
+  experimentalReplAwait: false,
 };
 
 /**

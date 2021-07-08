@@ -272,6 +272,7 @@ function filterRecognizedTsConfigTsNodeOptions(
     scope,
     scopeDir,
     moduleTypes,
+    experimentalReplAwait,
     ...unrecognized
   } = jsonObject as TsConfigOptions;
   const filteredTsConfigOptions = {

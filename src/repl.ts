@@ -224,10 +224,7 @@ function _eval(service: Service, state: EvalState, input: string) {
 
   // Due to rewritting in `processTopLevelAwait`, `changes` won't be accurate,
   // hence the need to compile using `input` instead of `state.input`
-  if (
-    /* ts-node flag or node --experimental-repl-await flag &&*/
-    state.input.includes('await')
-  ) {
+  if (service.options.experimentalReplAwait && state.input.includes('await')) {
     try {
       output = service.compile(input, state.path, -lines);
     } catch (err) {
