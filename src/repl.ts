@@ -8,6 +8,7 @@ import { readFileSync, statSync } from 'fs';
 import { Console } from 'console';
 import type * as tty from 'tty';
 import Module = require('module');
+import type { TranspileOutput } from 'typescript';
 const { processTopLevelAwait } = require('../dist-raw/node-repl-await.js');
 
 /** @internal */
@@ -225,25 +226,51 @@ function _eval(service: Service, state: EvalState, input: string) {
   // Due to rewritting in `processTopLevelAwait`, `changes` won't be accurate,
   // hence the need to compile using `input` instead of `state.input`
   if (service.options.experimentalReplAwait && state.input.includes('await')) {
+    // Compile in this step is only for checking TS errors, output is discarded
     try {
-      output = service.compile(input, state.path, -lines);
+      // TODO: Can these options be set dynamically like in `transpileModule`?
+      service.config.options.module = 99;
+      service.config.options.target = 99;
+      const compilePrefix = 'export {};';
+      service.compile(
+        (state.input.startsWith(compilePrefix) ? '' : compilePrefix) +
+          state.input,
+        state.path,
+        -lines
+      );
     } catch (err) {
       undo();
       throw err;
     }
 
-    // processTopLevelAwait doesn't properly handle the sourceMappingURL comment,
-    // hence the need to remove it
-    const sourceMapPos = output.lastIndexOf('//# sourceMappingURL');
-    if (sourceMapPos !== -1) {
-      output = output.substring(0, sourceMapPos - 1);
+    // Transpile just the input code to be used as output
+    let transpileOutput: TranspileOutput;
+    try {
+      transpileOutput = service.ts.transpileModule(input, {
+        compilerOptions: { module: 99, target: 99 },
+      });
+      output = transpileOutput.outputText;
+    } catch (error) {
+      undo();
+      throw error;
     }
 
     try {
-      output = processTopLevelAwait(output) ?? output;
+      const result = processTopLevelAwait(output);
+      if (result !== null) {
+        output = result;
+      }
     } catch (err) {
       undo();
       throw err;
+    }
+
+    output += transpileOutput.sourceMapText ?? '';
+
+    if (isCompletion) {
+      undo();
+    } else {
+      state.output = output;
     }
 
     return exec(output, state.path);
