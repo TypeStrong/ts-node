@@ -7,6 +7,8 @@ import sourceMapSupport = require('source-map-support');
 import { BaseError } from 'make-error';
 import type * as _ts from 'typescript';
 
+require('../dist-raw/node-primordials');
+
 import type { Transpiler, TranspilerFactory } from './transpilers/types';
 import {
   assign,

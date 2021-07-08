@@ -8,7 +8,7 @@ import { readFileSync, statSync } from 'fs';
 import { Console } from 'console';
 import type * as tty from 'tty';
 import Module = require('module');
-import { processTopLevelAwait } from './repl-top-level-await';
+const { processTopLevelAwait } = require('../dist-raw/node-repl-await.js');
 
 /** @internal */
 export const EVAL_FILENAME = `[eval].ts`;
@@ -242,8 +242,6 @@ function _eval(service: Service, state: EvalState, input: string) {
       output = output.substring(0, sourceMapPos - 1);
     }
 
-    output = adjustUseStrict(output);
-
     try {
       output = processTopLevelAwait(output) ?? output;
     } catch (err) {
@@ -260,8 +258,6 @@ function _eval(service: Service, state: EvalState, input: string) {
     undo();
     throw err;
   }
-
-  output = adjustUseStrict(output);
 
   // Use `diff` to check for new JavaScript to execute.
   const changes = diffLines(state.output, output);

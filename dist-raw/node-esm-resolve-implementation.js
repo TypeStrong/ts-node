@@ -47,7 +47,7 @@ const {
   StringPrototypeSplit,
   StringPrototypeStartsWith,
   StringPrototypeSubstr,
-} = require('./node-primordials');
+} = primordials;
 
 // const internalFS = require('internal/fs/utils');
 // const { NativeModule } = require('internal/bootstrap/loaders');

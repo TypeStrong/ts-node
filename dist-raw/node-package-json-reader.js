@@ -1,7 +1,7 @@
 // copied from https://github.com/nodejs/node/blob/v15.3.0/lib/internal/modules/package_json_reader.js
 'use strict';
 
-const { SafeMap } = require('./node-primordials');
+const { SafeMap } = primordials;
 const { internalModuleReadJSON } = require('./node-internal-fs');
 const { pathToFileURL } = require('url');
 const { toNamespacedPath } = require('path');
