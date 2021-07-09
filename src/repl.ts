@@ -30,7 +30,15 @@ export interface ReplService {
    * Bind this REPL to a ts-node compiler service.  A compiler service must be bound before `eval`-ing code or starting the REPL
    */
   setService(service: Service): void;
-  evalCode(code: string): { awaitPromise: boolean; result: any };
+  evalCode(code: string, includeMeta?: false): void;
+  evalCode(
+    code: string,
+    includeMeta: true
+  ): { awaitPromise: boolean; result: any };
+  evalCode(
+    code: string,
+    includeMeta?: boolean
+  ): void | { awaitPromise: boolean; result: any };
   /**
    * `eval` implementation compatible with node's REPL API
    */
@@ -107,8 +115,14 @@ export function createRepl(options: CreateReplOptions = {}) {
     service = _service;
   }
 
-  function evalCode(code: string) {
-    return _eval(service!, state, code);
+  function evalCode(code: string, includeMeta?: false): void;
+  function evalCode(
+    code: string,
+    includeMeta: true
+  ): { awaitPromise: boolean; result: any };
+  function evalCode(code: string, includeMeta = false) {
+    const evalResult = _eval(service!, state, code);
+    return includeMeta ? evalResult : evalResult.result;
   }
 
   function nodeEval(
@@ -127,7 +141,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     }
 
     try {
-      const { awaitPromise, result: evalResult } = evalCode(code);
+      const { awaitPromise, result: evalResult } = evalCode(code, true);
 
       if (awaitPromise) {
         return (async () => {

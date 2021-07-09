@@ -457,7 +457,10 @@ async function evalAndExitOnTsError(
   setContext(global, module, filenameAndDirname);
 
   try {
-    const { awaitPromise, result: evalResult } = replService.evalCode(code);
+    const { awaitPromise, result: evalResult } = replService.evalCode(
+      code,
+      true
+    );
 
     if (awaitPromise) {
       result = await evalResult;
