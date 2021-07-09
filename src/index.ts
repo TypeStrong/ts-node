@@ -529,6 +529,12 @@ export function create(rawOptions: CreateOptions = {}): Service {
     6059, // "'rootDir' is expected to contain all source files."
     18002, // "The 'files' list in config file is empty."
     18003, // "No inputs were found in config file."
+    ...(options.experimentalReplAwait
+      ? [
+          1375, // ignore module & target requirement for TLA
+          1378, // ignore 'export {}' requirement for TLA
+        ]
+      : []),
     ...(options.ignoreDiagnostics || []),
   ].map(Number);
 

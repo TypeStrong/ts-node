@@ -237,16 +237,7 @@ function _eval(service: Service, state: EvalState, input: string) {
   if (service.options.experimentalReplAwait && state.input.includes('await')) {
     // Compile in this step is only for checking TS errors, output is discarded
     try {
-      // TODO: Can these options be set dynamically like in `transpileModule`?
-      service.config.options.module = 99;
-      service.config.options.target = 99;
-      const compilePrefix = 'export {};';
-      service.compile(
-        (state.input.startsWith(compilePrefix) ? '' : compilePrefix) +
-          state.input,
-        state.path,
-        -lines
-      );
+      service.compile(state.input, state.path, -lines);
     } catch (err) {
       undo();
       throw err;
