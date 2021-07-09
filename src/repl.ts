@@ -214,12 +214,21 @@ function _eval(service: Service, state: EvalState, input: string) {
   const undo = appendEval(state, input);
   let output: string;
 
+  // Based on https://github.com/nodejs/node/blob/92573721c7cff104ccb82b6ed3e8aa69c4b27510/lib/repl.js#L457-L461
+  function adjustUseStrict(code: string) {
+    // "void 0" keeps the repl from returning "use strict" as the result
+    // value for statements and declarations that don't return a value.
+    return code.replace(/^"use strict";/, '"use strict"; void 0;');
+  }
+
   try {
     output = service.compile(state.input, state.path, -lines);
   } catch (err) {
     undo();
     throw err;
   }
+
+  output = adjustUseStrict(output);
 
   // Use `diff` to check for new JavaScript to execute.
   const changes = diffLines(state.output, output);
