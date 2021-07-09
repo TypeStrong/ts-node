@@ -1,6 +1,12 @@
 import { resolve, dirname } from 'path';
 import type * as _ts from 'typescript';
-import { CreateOptions, DEFAULTS, TSCommon, TsConfigOptions } from './index';
+import {
+  CreateOptions,
+  DEFAULTS,
+  OptionBasePaths,
+  TSCommon,
+  TsConfigOptions,
+} from './index';
 import type { TSInternal } from './ts-compiler-types';
 import { createTsInternals } from './ts-internals';
 import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs';
@@ -70,6 +76,7 @@ export function readConfig(
    * this function.
    */
   tsNodeOptionsFromTsconfig: TsConfigOptions;
+  optionBasePaths: OptionBasePaths;
 } {
   // Ordered [a, b, c] where config a extends b extends c
   const configChain: Array<{
@@ -110,6 +117,7 @@ export function readConfig(
             configFilePath,
             config: { errors: [result.error], fileNames: [], options: {} },
             tsNodeOptionsFromTsconfig: {},
+            optionBasePaths: {},
           };
         }
 
@@ -140,6 +148,7 @@ export function readConfig(
             configFilePath,
             config: { errors, fileNames: [], options: {} },
             tsNodeOptionsFromTsconfig: {},
+            optionBasePaths: {},
           };
         }
         if (resolvedExtendedConfigPath == null) break;
@@ -152,6 +161,7 @@ export function readConfig(
 
   // Merge and fix ts-node options that come from tsconfig.json(s)
   const tsNodeOptionsFromTsconfig: TsConfigOptions = {};
+  const optionBasePaths: OptionBasePaths = {};
   for (let i = configChain.length - 1; i >= 0; i--) {
     const { config, basePath, configPath } = configChain[i];
     const options = filterRecognizedTsConfigTsNodeOptions(config['ts-node'])
@@ -167,6 +177,11 @@ export function readConfig(
     }
     if (options.scopeDir) {
       options.scopeDir = resolve(basePath, options.scopeDir!);
+    }
+
+    // Downstream code uses the basePath; we do not do that here.
+    if (options.moduleTypes) {
+      optionBasePaths.moduleTypes = basePath;
     }
 
     assign(tsNodeOptionsFromTsconfig, options);
@@ -222,7 +237,12 @@ export function readConfig(
     )
   );
 
-  return { configFilePath, config: fixedConfig, tsNodeOptionsFromTsconfig };
+  return {
+    configFilePath,
+    config: fixedConfig,
+    tsNodeOptionsFromTsconfig,
+    optionBasePaths,
+  };
 }
 
 /**
@@ -251,6 +271,7 @@ function filterRecognizedTsConfigTsNodeOptions(
     transpiler,
     scope,
     scopeDir,
+    moduleTypes,
     ...unrecognized
   } = jsonObject as TsConfigOptions;
   const filteredTsConfigOptions = {
@@ -271,6 +292,7 @@ function filterRecognizedTsConfigTsNodeOptions(
     transpiler,
     scope,
     scopeDir,
+    moduleTypes,
   };
   // Use the typechecker to make sure this implementation has the correct set of properties
   const catchExtraneousProps: keyof TsConfigOptions = (null as any) as keyof typeof filteredTsConfigOptions;

@@ -1459,7 +1459,7 @@ test.suite('ts-node', (test) => {
 
     test('should support compiler scope specified via tsconfig.json', async (t) => {
       const { err, stderr, stdout } = await exec(
-        `${cmd} --project ./scope/c/config/tsconfig.json ./scope/c/index.js`
+        `${cmdNoProject} --project ./scope/c/config/tsconfig.json ./scope/c/index.js`
       );
       expect(err).to.equal(null);
       expect(stdout).to.equal(`value\nFailures: 0\n`);
@@ -1737,18 +1737,18 @@ test.suite('ts-node', (test) => {
     const experimentalModulesFlag = semver.gte(process.version, '12.17.0')
       ? ''
       : '--experimental-modules';
-    const cmd = `node ${experimentalModulesFlag} --loader ts-node/esm`;
+    const esmCmd = `node ${experimentalModulesFlag} --loader ts-node/esm`;
 
     if (semver.gte(process.version, '12.16.0')) {
       test('should compile and execute as ESM', async () => {
-        const { err, stdout } = await exec(`${cmd} index.ts`, {
+        const { err, stdout } = await exec(`${esmCmd} index.ts`, {
           cwd: join(TEST_DIR, './esm'),
         });
         expect(err).to.equal(null);
         expect(stdout).to.equal('foo bar baz biff libfoo\n');
       });
       test('should use source maps', async () => {
-        const { err, stdout } = await exec(`${cmd} "throw error.ts"`, {
+        const { err, stdout } = await exec(`${esmCmd} "throw error.ts"`, {
           cwd: join(TEST_DIR, './esm'),
         });
         expect(err).not.to.equal(null);
@@ -1770,7 +1770,7 @@ test.suite('ts-node', (test) => {
             err,
             stdout,
           } = await exec(
-            `${cmd} --experimental-specifier-resolution=node index.ts`,
+            `${esmCmd} --experimental-specifier-resolution=node index.ts`,
             { cwd: join(TEST_DIR, './esm-node-resolver') }
           );
           expect(err).to.equal(null);
@@ -1781,14 +1781,14 @@ test.suite('ts-node', (test) => {
             err,
             stdout,
           } = await exec(
-            `${cmd} --experimental-modules --es-module-specifier-resolution=node index.ts`,
+            `${esmCmd} --experimental-modules --es-module-specifier-resolution=node index.ts`,
             { cwd: join(TEST_DIR, './esm-node-resolver') }
           );
           expect(err).to.equal(null);
           expect(stdout).to.equal('foo bar baz biff libfoo\n');
         });
         test('via NODE_OPTIONS', async () => {
-          const { err, stdout } = await exec(`${cmd} index.ts`, {
+          const { err, stdout } = await exec(`${esmCmd} index.ts`, {
             cwd: join(TEST_DIR, './esm-node-resolver'),
             env: {
               ...process.env,
@@ -1801,7 +1801,7 @@ test.suite('ts-node', (test) => {
       });
 
       test('throws ERR_REQUIRE_ESM when attempting to require() an ESM script when ESM loader is enabled', async () => {
-        const { err, stderr } = await exec(`${cmd} ./index.js`, {
+        const { err, stderr } = await exec(`${esmCmd} ./index.js`, {
           cwd: join(TEST_DIR, './esm-err-require-esm'),
         });
         expect(err).to.not.equal(null);
@@ -1811,7 +1811,7 @@ test.suite('ts-node', (test) => {
       });
 
       test('defers to fallback loaders when URL should not be handled by ts-node', async () => {
-        const { err, stdout, stderr } = await exec(`${cmd} index.mjs`, {
+        const { err, stdout, stderr } = await exec(`${esmCmd} index.mjs`, {
           cwd: join(TEST_DIR, './esm-import-http-url'),
         });
         expect(err).to.not.equal(null);
@@ -1822,7 +1822,7 @@ test.suite('ts-node', (test) => {
       });
 
       test('should bypass import cache when changing search params', async () => {
-        const { err, stdout } = await exec(`${cmd} index.ts`, {
+        const { err, stdout } = await exec(`${esmCmd} index.ts`, {
           cwd: join(TEST_DIR, './esm-import-cache'),
         });
         expect(err).to.equal(null);
@@ -1830,14 +1830,17 @@ test.suite('ts-node', (test) => {
       });
 
       test('should support transpile only mode via dedicated loader entrypoint', async () => {
-        const { err, stdout } = await exec(`${cmd}/transpile-only index.ts`, {
-          cwd: join(TEST_DIR, './esm-transpile-only'),
-        });
+        const { err, stdout } = await exec(
+          `${esmCmd}/transpile-only index.ts`,
+          {
+            cwd: join(TEST_DIR, './esm-transpile-only'),
+          }
+        );
         expect(err).to.equal(null);
         expect(stdout).to.equal('');
       });
       test('should throw type errors without transpile-only enabled', async () => {
-        const { err, stdout } = await exec(`${cmd} index.ts`, {
+        const { err, stdout } = await exec(`${esmCmd} index.ts`, {
           cwd: join(TEST_DIR, './esm-transpile-only'),
         });
         if (err === null) {
@@ -1856,6 +1859,41 @@ test.suite('ts-node', (test) => {
           )
         );
         expect(stdout).to.equal('');
+      });
+
+      async function runModuleTypeTest(project: string, ext: string) {
+        const { err, stderr, stdout } = await exec(
+          `${esmCmd} ./module-types/${project}/test.${ext}`,
+          {
+            env: {
+              ...process.env,
+              TS_NODE_PROJECT: `./module-types/${project}/tsconfig.json`,
+            },
+          }
+        );
+        expect(err).to.equal(null);
+        expect(stdout).to.equal(`Failures: 0\n`);
+      }
+
+      test('moduleTypes should allow importing CJS in an otherwise ESM project', async (t) => {
+        // A notable case where you can use ts-node's CommonJS loader, not the ESM loader, in an ESM project:
+        // when loading a webpack.config.ts or similar config
+        const { err, stderr, stdout } = await exec(
+          `${cmdNoProject} --project ./module-types/override-to-cjs/tsconfig.json ./module-types/override-to-cjs/test-webpack-config.cjs`
+        );
+        expect(err).to.equal(null);
+        expect(stdout).to.equal(``);
+
+        await runModuleTypeTest('override-to-cjs', 'cjs');
+        if (semver.gte(process.version, '14.13.1'))
+          await runModuleTypeTest('override-to-cjs', 'mjs');
+      });
+
+      test('moduleTypes should allow importing ESM in an otherwise CJS project', async (t) => {
+        await runModuleTypeTest('override-to-esm', 'cjs');
+        // Node 14.13.0 has a bug(?) where it checks for ESM-only syntax *before* we transform the code.
+        if (semver.gte(process.version, '14.13.1'))
+          await runModuleTypeTest('override-to-esm', 'mjs');
       });
     }
 

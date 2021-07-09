@@ -18,6 +18,11 @@ import {
 } from './util';
 import { readConfig } from './configuration';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
+import {
+  createModuleTypeClassifier,
+  ModuleTypeClassifier,
+} from './module-type-classifier';
+import { createResolverFunctions } from './resolver-functions';
 
 export { TSCommon };
 export { createRepl, CreateReplOptions, ReplService } from './repl';
@@ -43,7 +48,9 @@ const engineSupportsPackageTypeField =
  *
  * Loaded conditionally so we don't need to support older node versions
  */
-const assertScriptCanLoadAsCJS: (
+let assertScriptCanLoadAsCJS: (
+  service: Service,
+  module: NodeJS.Module,
   filename: string
 ) => void = engineSupportsPackageTypeField
   ? require('../dist-raw/node-cjs-loader-utils').assertScriptCanLoadAsCJSImpl
@@ -273,6 +280,34 @@ export interface CreateOptions {
    * @internal
    */
   experimentalEsmLoader?: boolean;
+  /**
+   * Override certain paths to be compiled and executed as CommonJS or ECMAScript modules.
+   * When overridden, the tsconfig "module" and package.json "type" fields are overridden.
+   * This is useful because TypeScript files cannot use the .cjs nor .mjs file extensions;
+   * it achieves the same effect.
+   *
+   * Each key is a glob pattern following the same rules as tsconfig's "include" array.
+   * When multiple patterns match the same file, the last pattern takes precedence.
+   *
+   * `cjs` overrides matches files to compile and execute as CommonJS.
+   * `esm` overrides matches files to compile and execute as native ECMAScript modules.
+   * `package` overrides either of the above to default behavior, which obeys package.json "type" and
+   * tsconfig.json "module" options.
+   */
+  moduleTypes?: Record<string, 'cjs' | 'esm' | 'package'>;
+  /**
+   * @internal
+   * Set by our configuration loader whenever a config file contains options that
+   * are relative to the config file they came from, *and* when other logic needs
+   * to know this.  Some options can be eagerly resolved to absolute paths by
+   * the configuration loader, so it is *not* necessary for their source to be set here.
+   */
+  optionBasePaths?: OptionBasePaths;
+}
+
+/** @internal */
+export interface OptionBasePaths {
+  moduleTypes?: string;
 }
 
 /**
@@ -304,6 +339,7 @@ export interface TsConfigOptions
     | 'cwd'
     | 'projectSearchDir'
     | 'experimentalEsmLoader'
+    | 'optionBasePaths'
   > {}
 
 /**
@@ -372,6 +408,8 @@ export interface Service {
   getTypeInfo(code: string, fileName: string, position: number): TypeInfo;
   /** @internal */
   configFilePath: string | undefined;
+  /** @internal */
+  moduleTypeClassifier: ModuleTypeClassifier;
 }
 
 /**
@@ -447,15 +485,17 @@ export function create(rawOptions: CreateOptions = {}): Service {
   );
 
   // Read config file and merge new options between env and CLI options.
-  const { configFilePath, config, tsNodeOptionsFromTsconfig } = readConfig(
-    cwd,
-    ts,
-    rawOptions
-  );
+  const {
+    configFilePath,
+    config,
+    tsNodeOptionsFromTsconfig,
+    optionBasePaths,
+  } = readConfig(cwd, ts, rawOptions);
   const options = assign<RegisterOptions>(
     {},
     DEFAULTS,
     tsNodeOptionsFromTsconfig || {},
+    { optionBasePaths },
     rawOptions
   );
   options.require = [
@@ -600,10 +640,11 @@ export function create(rawOptions: CreateOptions = {}): Service {
       ? (path: string) => (/\.[tj]sx$/.test(path) ? '.jsx' : '.js')
       : (_: string) => '.js';
 
+  type GetOutputFunction = (code: string, fileName: string) => SourceOutput;
   /**
    * Create the basic required function using transpile mode.
    */
-  let getOutput: (code: string, fileName: string) => SourceOutput;
+  let getOutput: GetOutputFunction;
   let getTypeInfo: (
     _code: string,
     _fileName: string,
@@ -614,161 +655,10 @@ export function create(rawOptions: CreateOptions = {}): Service {
     ts.sys.useCaseSensitiveFileNames
   );
 
-  // In a factory because these are shared across both CompilerHost and LanguageService codepaths
-  function createResolverFunctions(serviceHost: _ts.ModuleResolutionHost) {
-    const moduleResolutionCache = ts.createModuleResolutionCache(
-      cwd,
-      getCanonicalFileName,
-      config.options
-    );
-    const knownInternalFilenames = new Set<string>();
-    /** "Buckets" (module directories) whose contents should be marked "internal" */
-    const internalBuckets = new Set<string>();
-
-    // Get bucket for a source filename.  Bucket is the containing `./node_modules/*/` directory
-    // For '/project/node_modules/foo/node_modules/bar/lib/index.js' bucket is '/project/node_modules/foo/node_modules/bar/'
-    // For '/project/node_modules/foo/node_modules/@scope/bar/lib/index.js' bucket is '/project/node_modules/foo/node_modules/@scope/bar/'
-    const moduleBucketRe = /.*\/node_modules\/(?:@[^\/]+\/)?[^\/]+\//;
-    function getModuleBucket(filename: string) {
-      const find = moduleBucketRe.exec(filename);
-      if (find) return find[0];
-      return '';
-    }
-
-    // Mark that this file and all siblings in its bucket should be "internal"
-    function markBucketOfFilenameInternal(filename: string) {
-      internalBuckets.add(getModuleBucket(filename));
-    }
-
-    function isFileInInternalBucket(filename: string) {
-      return internalBuckets.has(getModuleBucket(filename));
-    }
-
-    function isFileKnownToBeInternal(filename: string) {
-      return knownInternalFilenames.has(filename);
-    }
-
-    /**
-     * If we need to emit JS for a file, force TS to consider it non-external
-     */
-    const fixupResolvedModule = (
-      resolvedModule: _ts.ResolvedModule | _ts.ResolvedTypeReferenceDirective
-    ) => {
-      const { resolvedFileName } = resolvedModule;
-      if (resolvedFileName === undefined) return;
-      // .ts is always switched to internal
-      // .js is switched on-demand
-      if (
-        resolvedModule.isExternalLibraryImport &&
-        ((resolvedFileName.endsWith('.ts') &&
-          !resolvedFileName.endsWith('.d.ts')) ||
-          isFileKnownToBeInternal(resolvedFileName) ||
-          isFileInInternalBucket(resolvedFileName))
-      ) {
-        resolvedModule.isExternalLibraryImport = false;
-      }
-      if (!resolvedModule.isExternalLibraryImport) {
-        knownInternalFilenames.add(resolvedFileName);
-      }
-    };
-    /*
-     * NOTE:
-     * Older ts versions do not pass `redirectedReference` nor `options`.
-     * We must pass `redirectedReference` to newer ts versions, but cannot rely on `options`, hence the weird argument name
-     */
-    const resolveModuleNames: _ts.LanguageServiceHost['resolveModuleNames'] = (
-      moduleNames: string[],
-      containingFile: string,
-      reusedNames: string[] | undefined,
-      redirectedReference: _ts.ResolvedProjectReference | undefined,
-      optionsOnlyWithNewerTsVersions: _ts.CompilerOptions
-    ): (_ts.ResolvedModule | undefined)[] => {
-      return moduleNames.map((moduleName) => {
-        const { resolvedModule } = ts.resolveModuleName(
-          moduleName,
-          containingFile,
-          config.options,
-          serviceHost,
-          moduleResolutionCache,
-          redirectedReference
-        );
-        if (resolvedModule) {
-          fixupResolvedModule(resolvedModule);
-        }
-        return resolvedModule;
-      });
-    };
-
-    // language service never calls this, but TS docs recommend that we implement it
-    const getResolvedModuleWithFailedLookupLocationsFromCache: _ts.LanguageServiceHost['getResolvedModuleWithFailedLookupLocationsFromCache'] = (
-      moduleName,
-      containingFile
-    ): _ts.ResolvedModuleWithFailedLookupLocations | undefined => {
-      const ret = ts.resolveModuleNameFromCache(
-        moduleName,
-        containingFile,
-        moduleResolutionCache
-      );
-      if (ret && ret.resolvedModule) {
-        fixupResolvedModule(ret.resolvedModule);
-      }
-      return ret;
-    };
-
-    const resolveTypeReferenceDirectives: _ts.LanguageServiceHost['resolveTypeReferenceDirectives'] = (
-      typeDirectiveNames: string[],
-      containingFile: string,
-      redirectedReference: _ts.ResolvedProjectReference | undefined,
-      options: _ts.CompilerOptions
-    ): (_ts.ResolvedTypeReferenceDirective | undefined)[] => {
-      // Note: seems to be called with empty typeDirectiveNames array for all files.
-      return typeDirectiveNames.map((typeDirectiveName) => {
-        let {
-          resolvedTypeReferenceDirective,
-        } = ts.resolveTypeReferenceDirective(
-          typeDirectiveName,
-          containingFile,
-          config.options,
-          serviceHost,
-          redirectedReference
-        );
-        if (typeDirectiveName === 'node' && !resolvedTypeReferenceDirective) {
-          // Resolve @types/node relative to project first, then __dirname (copy logic from elsewhere / refactor into reusable function)
-          const typesNodePackageJsonPath = require.resolve(
-            '@types/node/package.json',
-            {
-              paths: [configFilePath ?? cwd, __dirname],
-            }
-          );
-          const typeRoots = [resolve(typesNodePackageJsonPath, '../..')];
-          ({
-            resolvedTypeReferenceDirective,
-          } = ts.resolveTypeReferenceDirective(
-            typeDirectiveName,
-            containingFile,
-            {
-              ...config.options,
-              typeRoots,
-            },
-            serviceHost,
-            redirectedReference
-          ));
-        }
-        if (resolvedTypeReferenceDirective) {
-          fixupResolvedModule(resolvedTypeReferenceDirective);
-        }
-        return resolvedTypeReferenceDirective;
-      });
-    };
-
-    return {
-      resolveModuleNames,
-      getResolvedModuleWithFailedLookupLocationsFromCache,
-      resolveTypeReferenceDirectives,
-      isFileKnownToBeInternal,
-      markBucketOfFilenameInternal,
-    };
-  }
+  const moduleTypeClassifier = createModuleTypeClassifier({
+    basePath: options.optionBasePaths?.moduleTypes,
+    patterns: options.moduleTypes,
+  });
 
   // Use full language services when the fast option is disabled.
   if (!transpileOnly) {
@@ -842,7 +732,14 @@ export function create(rawOptions: CreateOptions = {}): Service {
         resolveTypeReferenceDirectives,
         isFileKnownToBeInternal,
         markBucketOfFilenameInternal,
-      } = createResolverFunctions(serviceHost);
+      } = createResolverFunctions({
+        serviceHost,
+        getCanonicalFileName,
+        ts,
+        cwd,
+        config,
+        configFilePath,
+      });
       serviceHost.resolveModuleNames = resolveModuleNames;
       serviceHost.getResolvedModuleWithFailedLookupLocationsFromCache = getResolvedModuleWithFailedLookupLocationsFromCache;
       serviceHost.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives;
@@ -986,7 +883,14 @@ export function create(rawOptions: CreateOptions = {}): Service {
         resolveTypeReferenceDirectives,
         isFileKnownToBeInternal,
         markBucketOfFilenameInternal,
-      } = createResolverFunctions(host);
+      } = createResolverFunctions({
+        serviceHost: host,
+        cwd,
+        configFilePath,
+        config,
+        ts,
+        getCanonicalFileName,
+      });
       host.resolveModuleNames = resolveModuleNames;
       host.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives;
 
@@ -1143,7 +1047,22 @@ export function create(rawOptions: CreateOptions = {}): Service {
       }
     }
   } else {
-    getOutput = (code: string, fileName: string): SourceOutput => {
+    getOutput = createTranspileOnlyGetOutputFunction();
+
+    getTypeInfo = () => {
+      throw new TypeError(
+        'Type information is unavailable in "--transpile-only"'
+      );
+    };
+  }
+
+  function createTranspileOnlyGetOutputFunction(
+    overrideModuleType?: _ts.ModuleKind
+  ): GetOutputFunction {
+    const compilerOptions = { ...config.options };
+    if (overrideModuleType !== undefined)
+      compilerOptions.module = overrideModuleType;
+    return (code: string, fileName: string): SourceOutput => {
       let result: _ts.TranspileOutput;
       if (customTranspiler) {
         result = customTranspiler.transpile(code, {
@@ -1152,7 +1071,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
       } else {
         result = ts.transpileModule(code, {
           fileName,
-          compilerOptions: config.options,
+          compilerOptions,
           reportDiagnostics: true,
           transformers: transformers as _ts.CustomTransformers | undefined,
         });
@@ -1166,18 +1085,36 @@ export function create(rawOptions: CreateOptions = {}): Service {
 
       return [result.outputText, result.sourceMapText as string];
     };
-
-    getTypeInfo = () => {
-      throw new TypeError(
-        'Type information is unavailable in "--transpile-only"'
-      );
-    };
   }
+
+  // When either is undefined, it means normal `getOutput` should be used
+  const getOutputForceCommonJS =
+    config.options.module === ts.ModuleKind.CommonJS
+      ? undefined
+      : createTranspileOnlyGetOutputFunction(ts.ModuleKind.CommonJS);
+  const getOutputForceESM =
+    config.options.module === ts.ModuleKind.ES2015 ||
+    config.options.module === ts.ModuleKind.ES2020 ||
+    config.options.module === ts.ModuleKind.ESNext
+      ? undefined
+      : createTranspileOnlyGetOutputFunction(
+          ts.ModuleKind.ES2020 || ts.ModuleKind.ES2015
+        );
 
   // Create a simple TypeScript compiler proxy.
   function compile(code: string, fileName: string, lineOffset = 0) {
     const normalizedFileName = normalizeSlashes(fileName);
-    const [value, sourceMap] = getOutput(code, normalizedFileName);
+    const classification = moduleTypeClassifier.classifyModule(
+      normalizedFileName
+    );
+    // Must always call normal getOutput to throw typechecking errors
+    let [value, sourceMap] = getOutput(code, normalizedFileName);
+    // If module classification contradicts the above, call the relevant transpiler
+    if (classification.moduleType === 'cjs' && getOutputForceCommonJS) {
+      [value, sourceMap] = getOutputForceCommonJS(code, normalizedFileName);
+    } else if (classification.moduleType === 'esm' && getOutputForceESM) {
+      [value, sourceMap] = getOutputForceESM(code, normalizedFileName);
+    }
     const output = updateOutput(
       value,
       normalizedFileName,
@@ -1213,6 +1150,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     enabled,
     options,
     configFilePath,
+    moduleTypeClassifier,
   };
 }
 
@@ -1276,7 +1214,7 @@ function registerExtension(
   require.extensions[ext] = function (m: any, filename) {
     if (service.ignored(filename)) return old(m, filename);
 
-    assertScriptCanLoadAsCJS(filename);
+    assertScriptCanLoadAsCJS(service, m, filename);
 
     const _compile = m._compile;
 
