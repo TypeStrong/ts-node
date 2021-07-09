@@ -1860,6 +1860,46 @@ test.suite('ts-node', (test) => {
         );
         expect(stdout).to.equal('');
       });
+
+      test('moduleTypes should allow importing CJS in an otherwise ESM project', async (t) => {
+        // A notable case where you can use ts-node's CommonJS loader, not the ESM loader, in an ESM project:
+        // when loading a webpack.config.ts or similar config
+        const { err, stderr, stdout } = await exec(
+          `${cmdNoProject} --project ./module-types/override-to-cjs/tsconfig.json ./module-types/override-to-cjs/test-webpack-config.cjs`
+        );
+        expect(err).to.equal(null);
+        expect(stdout).to.equal(``);
+
+        for (const ext of ['cjs', 'mjs']) {
+          const { err, stderr, stdout } = await exec(
+            `${esmCmd} ./module-types/override-to-cjs/test.${ext}`,
+            {
+              env: {
+                ...process.env,
+                TS_NODE_PROJECT: './module-types/override-to-cjs/tsconfig.json',
+              },
+            }
+          );
+          expect(err).to.equal(null);
+          expect(stdout).to.equal(`Failures: 0\n`);
+        }
+      });
+
+      test('moduleTypes should allow importing ESM in an otherwise CJS project', async (t) => {
+        for (const ext of ['cjs', 'mjs']) {
+          const { err, stderr, stdout } = await exec(
+            `${esmCmd} ./module-types/override-to-esm/test.${ext}`,
+            {
+              env: {
+                ...process.env,
+                TS_NODE_PROJECT: './module-types/override-to-esm/tsconfig.json',
+              },
+            }
+          );
+          expect(err).to.equal(null);
+          expect(stdout).to.equal(`Failures: 0\n`);
+        }
+      });
     }
 
     if (semver.gte(process.version, '12.0.0')) {
@@ -1883,46 +1923,6 @@ test.suite('ts-node', (test) => {
         expect(stdout).to.contain('CommonJS');
       });
     }
-
-    test('moduleTypes should allow importing CJS in an otherwise ESM project', async (t) => {
-      // A notable case where you can use ts-node's CommonJS loader, not the ESM loader, in an ESM project:
-      // when loading a webpack.config.ts or similar config
-      const { err, stderr, stdout } = await exec(
-        `${cmdNoProject} --project ./module-types/override-to-cjs/tsconfig.json ./module-types/override-to-cjs/test-webpack-config.cjs`
-      );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal(``);
-
-      for (const ext of ['cjs', 'mjs']) {
-        const { err, stderr, stdout } = await exec(
-          `${esmCmd} ./module-types/override-to-cjs/test.${ext}`,
-          {
-            env: {
-              ...process.env,
-              TS_NODE_PROJECT: './module-types/override-to-cjs/tsconfig.json',
-            },
-          }
-        );
-        expect(err).to.equal(null);
-        expect(stdout).to.equal(`Failures: 0\n`);
-      }
-    });
-
-    test('moduleTypes should allow importing ESM in an otherwise CJS project', async (t) => {
-      for (const ext of ['cjs', 'mjs']) {
-        const { err, stderr, stdout } = await exec(
-          `${esmCmd} ./module-types/override-to-esm/test.${ext}`,
-          {
-            env: {
-              ...process.env,
-              TS_NODE_PROJECT: './module-types/override-to-esm/tsconfig.json',
-            },
-          }
-        );
-        expect(err).to.equal(null);
-        expect(stdout).to.equal(`Failures: 0\n`);
-      }
-    });
 
     // async function execModuleTypeOverride() {
     //   return exec(`${cmdNoProject} --project ./module-types/tsconfig.json ./module-types/test.mjs`, {
