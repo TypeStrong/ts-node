@@ -1,6 +1,6 @@
 import { diffLines } from 'diff';
 import { homedir } from 'os';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import { Recoverable, start } from 'repl';
 import { Script } from 'vm';
 import { Service, CreateOptions, TSError, env } from './index';
@@ -8,7 +8,6 @@ import { readFileSync, statSync } from 'fs';
 import { Console } from 'console';
 import type * as tty from 'tty';
 import Module = require('module');
-import type { TranspileOutput } from 'typescript';
 const { processTopLevelAwait } = require('../dist-raw/node-repl-await.js');
 
 /** @internal */
@@ -246,60 +245,14 @@ function _eval(service: Service, state: EvalState, input: string) {
     return code.replace(/^"use strict";/, '"use strict"; void 0;');
   }
 
-  // Due to rewritting in `processTopLevelAwait`, `changes` won't be accurate,
-  // hence the need to compile using `input` instead of `state.input`
-  if (service.options.experimentalReplAwait && state.input.includes('await')) {
-    // Compile in this step is only for checking TS errors, output is discarded
-    try {
-      service.compile(state.input, state.path, -lines);
-    } catch (err) {
-      undo();
-      throw err;
-    }
-
-    // Transpile just the input code to be used as output
-    try {
-      output = service.ts.transpileModule(input, {
-        compilerOptions: {
-          ...service.config.options,
-          // `processTopLevelAwait` is not compatible with sourceMap comment
-          sourceMap: false,
-        },
-      }).outputText;
-    } catch (error) {
-      undo();
-      throw error;
-    }
-
-    try {
-      const result = processTopLevelAwait(output);
-      if (result !== null) {
-        output = result;
-        awaitPromise = true;
-      }
-    } catch (err) {
-      undo();
-      throw err;
-    }
-
-    if (isCompletion) {
-      undo();
-    } else {
-      state.output = output;
-    }
-
-    return {
-      awaitPromise,
-      result: exec(output, state.path),
-    };
-  }
-
   try {
     output = service.compile(state.input, state.path, -lines);
   } catch (err) {
     undo();
     throw err;
   }
+
+  output = adjustUseStrict(output);
 
   // Use `diff` to check for new JavaScript to execute.
   const changes = diffLines(state.output, output);
@@ -310,11 +263,26 @@ function _eval(service: Service, state: EvalState, input: string) {
     state.output = output;
   }
 
+  const result = changes.reduce((result, change) => {
+    if (change.added) {
+      if (
+        /\bawait\b/.test(change.value) &&
+        service.options.experimentalReplAwait
+      ) {
+        const result = processTopLevelAwait(change.value);
+        if (result !== null) {
+          awaitPromise = true;
+          return exec(result, state.path);
+        }
+      }
+      return exec(change.value, state.path);
+    }
+    return result;
+  }, undefined);
+
   return {
     awaitPromise,
-    result: changes.reduce((result, change) => {
-      return change.added ? exec(change.value, state.path) : result;
-    }, undefined),
+    result,
   };
 }
 

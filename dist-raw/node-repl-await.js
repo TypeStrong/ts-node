@@ -154,8 +154,11 @@ for (const nodeType of ObjectKeys(walk.base)) {
 }
 
 function processTopLevelAwait(src) {
-  const wrapPrefix = '(async () => { ';
-  const wrapped = `${wrapPrefix}${src} })()`;
+  const wrapPrefix = '(async () => {';
+  const wrapSuffix = '})()';
+  // New lines prevent comments in `src` to create an invalid
+  // javascript output when joined with prefixes
+  const wrapped = `${wrapPrefix}\n${src}\n${wrapSuffix}`;
   const wrappedArray = ArrayFrom(wrapped);
   let root;
   try {
