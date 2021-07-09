@@ -531,8 +531,10 @@ export function create(rawOptions: CreateOptions = {}): Service {
     18003, // "No inputs were found in config file."
     ...(options.experimentalReplAwait
       ? [
-          1375, // ignore module & target requirement for TLA
-          1378, // ignore 'export {}' requirement for TLA
+          1375, // ignore 'export {}' requirement for top level 'await'
+          1378, // ignore module & target requirement for top level 'await'
+          1431, // ignore 'export {}' requirement for top level 'for await'
+          1432, // ignore module & target requirement for top level 'for await'
         ]
       : []),
     ...(options.ignoreDiagnostics || []),
