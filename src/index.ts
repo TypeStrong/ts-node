@@ -106,6 +106,7 @@ export interface ProcessEnv {
   TS_NODE_COMPILER_HOST?: string;
   TS_NODE_LOG_ERROR?: string;
   TS_NODE_HISTORY?: string;
+  TS_NODE_EXPERIMENTAL_REPL_AWAIT?: string;
 
   NODE_NO_READLINE?: string;
 }
@@ -283,8 +284,8 @@ export interface CreateOptions {
    */
   experimentalEsmLoader?: boolean;
   /**
-   * Allows the usage of top level await in REPL
-   * Enabled explicitly since this is an experimental feature
+   * Allows the usage of top level await in REPL.
+   * Enabled explicitly since this is an experimental feature.
    */
   experimentalReplAwait?: boolean;
   /**
@@ -346,7 +347,6 @@ export interface TsConfigOptions
     | 'cwd'
     | 'projectSearchDir'
     | 'experimentalEsmLoader'
-    | 'experimentalReplAwait'
     | 'optionBasePaths'
   > {}
 
@@ -383,7 +383,7 @@ export const DEFAULTS: RegisterOptions = {
   compilerHost: yn(env.TS_NODE_COMPILER_HOST),
   logError: yn(env.TS_NODE_LOG_ERROR),
   experimentalEsmLoader: false,
-  experimentalReplAwait: false,
+  experimentalReplAwait: yn(env.TS_NODE_EXPERIMENTAL_REPL_AWAIT) ?? false,
 };
 
 /**

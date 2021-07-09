@@ -280,6 +280,7 @@ function filterRecognizedTsConfigTsNodeOptions(
     compilerHost,
     compilerOptions,
     emit,
+    experimentalReplAwait,
     files,
     ignore,
     ignoreDiagnostics,

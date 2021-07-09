@@ -44,7 +44,6 @@ export function main(
         '--script-mode': Boolean,
         '--version': arg.COUNT,
         '--show-config': Boolean,
-        '--experimental-repl-await': Boolean,
 
         // Project options.
         '--cwd': String,
@@ -66,6 +65,7 @@ export function main(
         '--emit': Boolean,
         '--scope': Boolean,
         '--scope-dir': String,
+        '--experimental-repl-await': Boolean,
 
         // Aliases.
         '-e': '--eval',
@@ -254,7 +254,7 @@ export function main(
     files,
     pretty,
     transpileOnly: transpileOnly ?? transpiler != null ? true : undefined,
-    experimentalReplAwait: experimentalReplAwait ?? false,
+    experimentalReplAwait,
     typeCheck,
     transpiler,
     compilerHost,
