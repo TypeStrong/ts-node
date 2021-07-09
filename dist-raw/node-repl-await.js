@@ -20,8 +20,8 @@ const {
   SyntaxError,
 } = primordials;
 
-const parser = require('./deps/acorn/acorn/acorn').Parser;
-const walk = require('./deps/acorn/acorn-walk/walk');
+const parser = require('acorn').Parser;
+const walk = require('acorn-walk');
 const { Recoverable } = require('repl');
 
 function isTopLevelDeclaration(state) {
