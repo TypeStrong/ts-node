@@ -1861,6 +1861,20 @@ test.suite('ts-node', (test) => {
         expect(stdout).to.equal('');
       });
 
+      async function runModuleTypeTest(project: string, ext: string) {
+        const { err, stderr, stdout } = await exec(
+          `${esmCmd} ./module-types/${project}/test.${ext}`,
+          {
+            env: {
+              ...process.env,
+              TS_NODE_PROJECT: `./module-types/${project}/tsconfig.json`,
+            },
+          }
+        );
+        expect(err).to.equal(null);
+        expect(stdout).to.equal(`Failures: 0\n`);
+      }
+
       test('moduleTypes should allow importing CJS in an otherwise ESM project', async (t) => {
         // A notable case where you can use ts-node's CommonJS loader, not the ESM loader, in an ESM project:
         // when loading a webpack.config.ts or similar config
@@ -1870,35 +1884,16 @@ test.suite('ts-node', (test) => {
         expect(err).to.equal(null);
         expect(stdout).to.equal(``);
 
-        for (const ext of ['cjs', 'mjs']) {
-          const { err, stderr, stdout } = await exec(
-            `${esmCmd} ./module-types/override-to-cjs/test.${ext}`,
-            {
-              env: {
-                ...process.env,
-                TS_NODE_PROJECT: './module-types/override-to-cjs/tsconfig.json',
-              },
-            }
-          );
-          expect(err).to.equal(null);
-          expect(stdout).to.equal(`Failures: 0\n`);
-        }
+        await runModuleTypeTest('override-to-cjs', 'cjs');
+        if (semver.gte(process.version, '14.13.1'))
+          await runModuleTypeTest('override-to-cjs', 'mjs');
       });
 
       test('moduleTypes should allow importing ESM in an otherwise CJS project', async (t) => {
-        for (const ext of ['cjs', 'mjs']) {
-          const { err, stderr, stdout } = await exec(
-            `${esmCmd} ./module-types/override-to-esm/test.${ext}`,
-            {
-              env: {
-                ...process.env,
-                TS_NODE_PROJECT: './module-types/override-to-esm/tsconfig.json',
-              },
-            }
-          );
-          expect(err).to.equal(null);
-          expect(stdout).to.equal(`Failures: 0\n`);
-        }
+        await runModuleTypeTest('override-to-esm', 'cjs');
+        // Node 14.13.0 has a bug(?) where it checks for ESM-only syntax *before* allowing us to transform the code.
+        if (semver.gte(process.version, '14.13.1'))
+          await runModuleTypeTest('override-to-esm', 'mjs');
       });
     }
 
@@ -1923,38 +1918,5 @@ test.suite('ts-node', (test) => {
         expect(stdout).to.contain('CommonJS');
       });
     }
-
-    // async function execModuleTypeOverride() {
-    //   return exec(`${cmdNoProject} --project ./module-types/tsconfig.json ./module-types/test.mjs`, {
-    //     env: {
-    //       ...process.env,
-    //       TS_NODE_PROJECT: './module-types/tsconfig.json',
-    //     },
-    //   });
-    // }
-
-    // // TODO: are 12.15 and 14.13 precisely the version ranges for which overrides cause errors?
-    // if (semver.satisfies(process.version, '14.13.0')) {
-    //   test('[expected failure] moduleTypes can override module type to CJS in an ESM loader project', async () => {
-    //     const { err, stderr, stdout } = await execModuleTypeOverride();
-    //     expect(err).to.not.equal(null);
-    //     expect(stderr).to.contain(
-    //       'Error: Unexpected export statement in CJS module.'
-    //     );
-    //   });
-    // } else if (semver.satisfies(process.version, '12.15.0')) {
-    //   test('[expected failure] moduleTypes can override module type to CJS in an ESM loader project', async () => {
-    //     const { err, stderr, stdout } = await execModuleTypeOverride();
-    //     expect(err).to.not.equal(null);
-    //     expect(stderr).to.contain(
-    //       'TypeError [ERR_INVALID_RETURN_PROPERTY_VALUE]: Expected string to be returned for the "format" from the "loader resolve" function but got type undefined.'
-    //     );
-    //   });
-    // } else {
-    //   test('moduleTypes can override module type to CJS in an ESM loader project', async () => {
-    //     const { err, stderr, stdout } = await execModuleTypeOverride();
-    //     expect(err).to.equal(null);
-    //   });
-    // }
   });
 });
