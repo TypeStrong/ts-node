@@ -24,7 +24,7 @@ import { addBuiltinLibsToObject } from '../dist-raw/node-cjs-helpers';
 /**
  * Main `bin` functionality.
  */
-export function main(
+export async function main(
   argv: string[] = process.argv.slice(2),
   entrypointArgs: Record<string, any> = {}
 ) {
@@ -334,7 +334,7 @@ export function main(
   } else {
     if (executeEval) {
       addBuiltinLibsToObject(global);
-      evalAndExitOnTsError(
+      await evalAndExitOnTsError(
         evalStuff!.repl,
         evalStuff!.module!,
         code!,
@@ -348,8 +348,8 @@ export function main(
     if (executeStdin) {
       let buffer = code || '';
       process.stdin.on('data', (chunk: Buffer) => (buffer += chunk));
-      process.stdin.on('end', () => {
-        evalAndExitOnTsError(
+      process.stdin.on('end', async () => {
+        await evalAndExitOnTsError(
           stdinStuff!.repl,
           stdinStuff!.module!,
           buffer,
