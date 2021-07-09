@@ -1888,5 +1888,38 @@ test.suite('ts-node', (test) => {
         expect(stdout).to.contain('CommonJS');
       });
     }
+
+    async function execModuleTypeOverride() {
+      return exec(`${cmd} ./module-types/test.esm.js`, {
+        env: {
+          ...process.env,
+          TS_NODE_PROJECT: './module-types/tsconfig.json',
+        },
+      });
+    }
+
+    // TODO: are 12.15 and 14.13 precisely the version ranges for which overrides cause errors?
+    if (semver.satisfies(process.version, '14.13.0')) {
+      test('[expected failure] moduleTypes can override module type to CJS in an ESM loader project', async () => {
+        const { err, stderr, stdout } = await execModuleTypeOverride();
+        expect(err).to.not.equal(null);
+        expect(stderr).to.contain(
+          'Error: Unexpected export statement in CJS module.'
+        );
+      });
+    } else if (semver.satisfies(process.version, '12.15.0')) {
+      test('[expected failure] moduleTypes can override module type to CJS in an ESM loader project', async () => {
+        const { err, stderr, stdout } = await execModuleTypeOverride();
+        expect(err).to.not.equal(null);
+        expect(stderr).to.contain(
+          'TypeError [ERR_INVALID_RETURN_PROPERTY_VALUE]: Expected string to be returned for the "format" from the "loader resolve" function but got type undefined.'
+        );
+      });
+    } else {
+      test('moduleTypes can override module type to CJS in an ESM loader project', async () => {
+        const { err, stderr, stdout } = await execModuleTypeOverride();
+        expect(err).to.equal(null);
+      });
+    }
   });
 });

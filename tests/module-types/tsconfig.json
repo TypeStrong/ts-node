@@ -5,7 +5,8 @@
       "webpack.config.ts": "cjs",
       // Test that subsequent patterns override earlier ones
       "src/cjs-subdir/**/*": "esm",
-      "src/cjs-subdir": "cjs"
+      "src/cjs-subdir": "cjs",
+      "src/cjs-subdir/esm-exception": "esm"
     }
   },
   "compilerOptions": {
