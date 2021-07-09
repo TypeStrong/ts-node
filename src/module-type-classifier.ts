@@ -31,7 +31,7 @@ export function createModuleTypeClassifier(
 ) {
   const { patterns, basePath: _basePath } = options;
   const basePath =
-    _basePath !== undefined ? normalizeSlashes(_basePath) : undefined;
+    _basePath !== undefined ? normalizeSlashes(_basePath).replace(/\/$/, '') : undefined;
 
   const patternTypePairs = Object.entries(patterns ?? []).map(
     ([_pattern, type]) => {
@@ -73,9 +73,6 @@ export function createModuleTypeClassifier(
   };
 }
 
-// TODO basePath must be normalized.  Is it?
-// TODO basePath cannot end in /
-// TODO basePath must be absolute
 function parsePattern(basePath: string, patternString: string): RegExp {
   const pattern = getPatternFromSpec(patternString, basePath);
   return pattern !== undefined ? new RegExp(pattern) : /(?:)/;
