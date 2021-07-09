@@ -1891,7 +1891,7 @@ test.suite('ts-node', (test) => {
 
       test('moduleTypes should allow importing ESM in an otherwise CJS project', async (t) => {
         await runModuleTypeTest('override-to-esm', 'cjs');
-        // Node 14.13.0 has a bug(?) where it checks for ESM-only syntax *before* allowing us to transform the code.
+        // Node 14.13.0 has a bug(?) where it checks for ESM-only syntax *before* we transform the code.
         if (semver.gte(process.version, '14.13.1'))
           await runModuleTypeTest('override-to-esm', 'mjs');
       });
