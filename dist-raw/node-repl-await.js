@@ -18,7 +18,7 @@ const {
   StringPrototypeSplit,
   StringPrototypeStartsWith,
   SyntaxError,
-} = primordials;
+} = require('./node-primordials');
 
 const parser = require('acorn').Parser;
 const walk = require('acorn-walk');

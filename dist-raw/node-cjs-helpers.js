@@ -1,4 +1,4 @@
-const {ArrayPrototypeForEach, StringPrototypeStartsWith, ObjectPrototypeHasOwnProperty, StringPrototypeIncludes, ObjectDefineProperty} = primordials;
+const {ArrayPrototypeForEach, StringPrototypeStartsWith, ObjectPrototypeHasOwnProperty, StringPrototypeIncludes, ObjectDefineProperty} = require('./node-primordials');
 
 exports.addBuiltinLibsToObject = addBuiltinLibsToObject;
 

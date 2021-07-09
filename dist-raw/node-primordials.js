@@ -11,7 +11,7 @@
 // benchmark all changes made in performance-sensitive areas of the codebase.
 // See: https://github.com/nodejs/node/pull/38248
 
-globalThis.primordials = {};
+const primordials = {};
 
 const {
   defineProperty: ReflectDefineProperty,
@@ -425,3 +425,5 @@ primordials.AsyncIteratorPrototype =
 
 ObjectSetPrototypeOf(primordials, null);
 ObjectFreeze(primordials);
+
+module.exports = primordials;
