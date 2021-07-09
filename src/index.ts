@@ -281,7 +281,18 @@ export interface CreateOptions {
    */
   experimentalEsmLoader?: boolean;
   /**
-   * TODO Docs
+   * Override certain paths to be compiled and executed as CommonJS or ECMAScript modules.
+   * When overridden, the tsconfig "module" and package.json "type" fields are overridden.
+   * This is useful because TypeScript files cannot use the .cjs nor .mjs file extensions;
+   * it achieves the same effect.
+   *
+   * Each key is a glob pattern following the same rules as tsconfig's "include" array.
+   * When multiple patterns match the same file, the last pattern takes precedence.
+   *
+   * `cjs` overrides matches files to compile and execute as CommonJS.
+   * `esm` overrides matches files to compile and execute as native ECMAScript modules.
+   * `package` overrides either of the above to default behavior, which obeys package.json "type" and
+   * tsconfig.json "module" options.
    */
   moduleTypes?: Record<string, 'cjs' | 'esm' | 'package'>;
   /**
