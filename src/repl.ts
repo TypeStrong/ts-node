@@ -244,12 +244,14 @@ function _eval(service: Service, state: EvalState, input: string) {
     }
 
     // Transpile just the input code to be used as output
-    let transpileOutput: TranspileOutput;
     try {
-      transpileOutput = service.ts.transpileModule(input, {
-        compilerOptions: { module: 99, target: 99 },
-      });
-      output = transpileOutput.outputText;
+      output = service.ts.transpileModule(input, {
+        compilerOptions: {
+          ...service.config.options,
+          // `processTopLevelAwait` is not compatible with sourceMap comment
+          sourceMap: false,
+        },
+      }).outputText;
     } catch (error) {
       undo();
       throw error;
@@ -265,8 +267,6 @@ function _eval(service: Service, state: EvalState, input: string) {
       undo();
       throw err;
     }
-
-    output += transpileOutput.sourceMapText ?? '';
 
     if (isCompletion) {
       undo();
