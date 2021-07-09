@@ -1,4 +1,3 @@
-export const cjs: boolean = true;
-
+export const a: string = 'b';
 declare const require: any;
 export const requireType = typeof require;
