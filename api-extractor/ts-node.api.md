@@ -25,6 +25,7 @@ export interface CreateOptions {
     ignore?: string[];
     ignoreDiagnostics?: Array<number | string>;
     logError?: boolean;
+    moduleTypes?: Record<string, 'cjs' | 'esm' | 'package'>;
     pretty?: boolean;
     project?: string;
     projectSearchDir?: string;
@@ -165,6 +166,8 @@ export interface TSCommon {
     // (undocumented)
     displayPartsToString: typeof _ts.displayPartsToString;
     // (undocumented)
+    Extension: typeof _ts.Extension;
+    // (undocumented)
     findConfigFile: typeof _ts.findConfigFile;
     // (undocumented)
     flattenDiagnosticMessageText: typeof _ts.flattenDiagnosticMessageText;
@@ -182,6 +185,8 @@ export interface TSCommon {
     JsxEmit: typeof _ts.JsxEmit;
     // (undocumented)
     ModuleKind: typeof _ts.ModuleKind;
+    // (undocumented)
+    ModuleResolutionKind: typeof _ts.ModuleResolutionKind;
     // (undocumented)
     parseJsonConfigFileContent: typeof _ts.parseJsonConfigFileContent;
     // (undocumented)
@@ -205,7 +210,7 @@ export interface TSCommon {
 }
 
 // @public
-export interface TsConfigOptions extends Omit<RegisterOptions, 'transformers' | 'readFile' | 'fileExists' | 'skipProject' | 'project' | 'dir' | 'cwd' | 'projectSearchDir' | 'scope' | 'scopeDir' | 'experimentalEsmLoader'> {
+export interface TsConfigOptions extends Omit<RegisterOptions, 'transformers' | 'readFile' | 'fileExists' | 'skipProject' | 'project' | 'dir' | 'cwd' | 'projectSearchDir' | 'experimentalEsmLoader' | 'optionBasePaths'> {
 }
 
 // @public
