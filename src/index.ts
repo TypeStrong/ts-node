@@ -1086,7 +1086,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     config.options.module === ts.ModuleKind.ES2020 ||
     config.options.module === ts.ModuleKind.ESNext
       ? undefined
-      : createTranspileOnlyGetOutputFunction(ts.ModuleKind.ES2020);
+      : createTranspileOnlyGetOutputFunction(ts.ModuleKind.ES2020 || ts.ModuleKind.ES2015);
 
   // Create a simple TypeScript compiler proxy.
   function compile(code: string, fileName: string, lineOffset = 0) {
