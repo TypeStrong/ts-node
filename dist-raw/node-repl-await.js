@@ -190,9 +190,9 @@ function processTopLevelAwait(src) {
     if (StringPrototypeEndsWith(message, 'Unexpected token'))
       message += " '" +
         // Wrapper end may cause acorn to report error position after the source
-        (src.length - 1) >= (e.pos - wrapPrefix.length)
+        ((src.length - 1) >= (e.pos - wrapPrefix.length)
           ? src[e.pos - wrapPrefix.length]
-          : src[src.length - 1] +
+          : src[src.length - 1]) +
         "'";
     // eslint-disable-next-line no-restricted-syntax
     throw new SyntaxError(message);
