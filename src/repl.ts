@@ -29,15 +29,8 @@ export interface ReplService {
    * Bind this REPL to a ts-node compiler service.  A compiler service must be bound before `eval`-ing code or starting the REPL
    */
   setService(service: Service): void;
-  evalCode(code: string, includeMeta?: false): void;
-  evalCode(
-    code: string,
-    includeMeta: true
-  ): { awaitPromise: boolean; result: any };
-  evalCode(
-    code: string,
-    includeMeta?: boolean
-  ): void | { awaitPromise: boolean; result: any };
+  evalCode(code: string): void;
+  evalCodeInternal(code: string): { awaitPromise: boolean; result: any };
   /**
    * `eval` implementation compatible with node's REPL API
    */
@@ -100,6 +93,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     state: options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME)),
     setService,
     evalCode,
+    evalCodeInternal,
     nodeEval,
     evalAwarePartialHost,
     start,
@@ -114,14 +108,12 @@ export function createRepl(options: CreateReplOptions = {}) {
     service = _service;
   }
 
-  function evalCode(code: string, includeMeta?: false): void;
-  function evalCode(
-    code: string,
-    includeMeta: true
-  ): { awaitPromise: boolean; result: any };
-  function evalCode(code: string, includeMeta = false) {
-    const evalResult = _eval(service!, state, code);
-    return includeMeta ? evalResult : evalResult.result;
+  function evalCode(code: string) {
+    return _eval(service!, state, code).result;
+  }
+
+  function evalCodeInternal(code: string) {
+    return _eval(service!, state, code);
   }
 
   function nodeEval(
@@ -140,7 +132,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     }
 
     try {
-      const { awaitPromise, result: evalResult } = evalCode(code, true);
+      const { awaitPromise, result: evalResult } = evalCodeInternal(code);
 
       if (awaitPromise) {
         return (async () => {
@@ -263,7 +255,7 @@ function _eval(service: Service, state: EvalState, input: string) {
     state.output = output;
   }
 
-  const result = changes.reduce((result, change) => {
+  const result: any = changes.reduce((result, change) => {
     if (change.added) {
       if (
         /\bawait\b/.test(change.value) &&
