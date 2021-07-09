@@ -1,4 +1,4 @@
-// copied from https://github.com/nodejs/node/blob/394fdecc9141aa4c6a8ea7f1aecaf5fcaaaf5c72/lib/internal/repl/await.js
+// copied from https://github.com/nodejs/node/blob/88799930794045795e8abac874730f9eba7e2300/lib/internal/repl/await.js
 'use strict';
 
 const {
@@ -185,7 +185,10 @@ function processTopLevelAwait(src) {
         '^\n\n' + RegExpPrototypeSymbolReplace(/ \([^)]+\)/, e.message, '');
     // V8 unexpected token errors include the token string.
     if (StringPrototypeEndsWith(message, 'Unexpected token'))
-      message += " '" + src[e.pos - wrapPrefix.length] + "'";
+      message += " '" +
+        // Wrapper end may cause acorn to report error position after the source
+        (src[e.pos - wrapPrefix.length] ?? src[src.length - 1]) +
+        "'";
     // eslint-disable-next-line no-restricted-syntax
     throw new SyntaxError(message);
   }
