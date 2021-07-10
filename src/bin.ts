@@ -485,10 +485,10 @@ async function evalAndExitOnTsError(
 }
 
 if (require.main === module) {
-  // Since main is async, this is needed to get proper exit code and stack
-  // enabled natively since node v15
+  // Since main is async, this is needed to get proper exit code and stack.
+  // Enabled natively since node v15.
   // https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode
-  if (Number(process.versions.node.split('.')[0]) >= 15) {
+  if (Number(process.versions.node.split('.')[0]) < 15) {
     // https://github.com/nodejs/node/issues/33577#issuecomment-634920456
     process.on('unhandledRejection', (e) => {
       throw e;
