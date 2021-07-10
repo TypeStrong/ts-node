@@ -1920,4 +1920,60 @@ test.suite('ts-node', (test) => {
       });
     }
   });
+
+  test.suite('top level await', (test) => {
+    const tlaCmd = `${cmd} --experimental-repl-await`;
+
+    test('should allow evaluating top level await', async () => {
+      const { err, stdout } = await exec(`${tlaCmd} -pe "await 1"`);
+      expect(err).to.equal(null);
+      expect(stdout).to.equal('1\n');
+    });
+
+    test('should allow evaluating top level for-await', async () => {
+      const { err, stdout } = await exec(
+        `${tlaCmd} -pe "for await (const x of [1,2,3]) { console.log(x) }"`
+      );
+      expect(err).to.equal(null);
+      expect(stdout).to.equal('1\n2\n3\nundefined\n');
+    });
+
+    test('should allow evaluating top level await inside a for loop', async () => {
+      const { err, stdout } = await exec(
+        `${tlaCmd} -pe "for (const x of [1,2,3]) { await x; console.log(x) }"`
+      );
+      expect(err).to.equal(null);
+      expect(stdout).to.equal('1\n2\n3\nundefined\n');
+    });
+
+    test.serial(
+      'should wait until promise is settled when awaited with top level await',
+      async () => {
+        const awaitMs = 1000;
+        const startTime = new Date().getTime();
+        const { err, stdout } = await exec(
+          `${tlaCmd} -pe "await new Promise((r) => setTimeout(() => r(1), ${awaitMs}))"`
+        );
+        const endTime = new Date().getTime();
+        const ellapsedTime = endTime - startTime;
+        const avgMinExecutionTime = 1000;
+        const avgMaxExecutionTime = 2000;
+        expect(err).to.equal(null);
+        expect(stdout).to.equal('1\n');
+        expect(ellapsedTime).to.be.gte(awaitMs + avgMinExecutionTime);
+        expect(ellapsedTime).to.be.lte(awaitMs + avgMaxExecutionTime + 100);
+      }
+    );
+
+    test('should error with typing information when awaited result has type mismatch', async () => {
+      const { err, stdout, stderr } = await exec(
+        `${tlaCmd} -pe "const x: string = await 1"`
+      );
+      expect(err).not.to.equal(null);
+      expect(stdout).to.equal('');
+      expect(stderr).to.equal(
+        `[eval].ts(1,7): error TS2322: Type 'number' is not assignable to type 'string'.\n\n`
+      );
+    });
+  });
 });
