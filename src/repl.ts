@@ -8,7 +8,9 @@ import { readFileSync, statSync } from 'fs';
 import { Console } from 'console';
 import type * as tty from 'tty';
 import Module = require('module');
-const { processTopLevelAwait } = require('../dist-raw/node-repl-await.js');
+
+// Lazy-loaded.
+let processTopLevelAwait: (src: string) => string;
 
 /** @internal */
 export const EVAL_FILENAME = `[eval].ts`;
@@ -279,11 +281,15 @@ function _eval(
         /\bawait\b/.test(change.value) &&
         service.options.experimentalReplAwait
       ) {
+        if (processTopLevelAwait === undefined) {
+          ({ processTopLevelAwait } = require('../dist-raw/node-repl-await'));
+        }
+
         // Neline prevents comments to mess with wrapper
-        const result = processTopLevelAwait(change.value + '\n');
-        if (result !== null) {
+        const wrappedResult = processTopLevelAwait(change.value + '\n');
+        if (wrappedResult !== null) {
           awaitPromise = true;
-          return exec(result, state.path, context);
+          return exec(wrappedResult, state.path, context);
         }
       }
       return exec(change.value, state.path, context);
