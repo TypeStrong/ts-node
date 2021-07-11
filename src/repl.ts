@@ -42,7 +42,7 @@ export interface ReplService {
   ): void;
   evalAwarePartialHost: EvalAwarePartialHost;
   /** Start a node REPL */
-  start(code?: string, optionsOverride?: ReplOptions): void;
+  start(code?: string, optionsOverride?: ReplOptions): REPLServer;
   /** @internal */
   readonly stdin: NodeJS.ReadableStream;
   /** @internal */
@@ -368,6 +368,8 @@ function startRepl(
       process.exit(1);
     });
   }
+
+  return repl;
 }
 
 /**
