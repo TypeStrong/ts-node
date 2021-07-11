@@ -2,7 +2,7 @@ import { diffLines } from 'diff';
 import { homedir } from 'os';
 import { join } from 'path';
 import { Recoverable, ReplOptions, REPLServer, start } from 'repl';
-import { Script } from 'vm';
+import { Context, createContext, Script } from 'vm';
 import { Service, CreateOptions, TSError, env } from './index';
 import { readFileSync, statSync } from 'fs';
 import { Console } from 'console';
@@ -30,13 +30,16 @@ export interface ReplService {
    */
   setService(service: Service): void;
   evalCode(code: string): void;
-  evalCodeInternal(code: string): { awaitPromise: boolean; result: any };
+  evalCodeInternal(
+    code: string,
+    context?: Context
+  ): { awaitPromise: boolean; result: any };
   /**
    * `eval` implementation compatible with node's REPL API
    */
   nodeEval(
     code: string,
-    _context: any,
+    context: Context,
     _filename: string,
     callback: (err: Error | null, result?: any) => any
   ): void;
@@ -75,6 +78,7 @@ export interface CreateReplOptions {
  */
 export function createRepl(options: CreateReplOptions = {}) {
   let service = options.service;
+  let server: REPLServer;
   const state =
     options.state ?? new EvalState(join(process.cwd(), REPL_FILENAME));
   const evalAwarePartialHost = createEvalAwarePartialHost(
@@ -112,13 +116,13 @@ export function createRepl(options: CreateReplOptions = {}) {
     return _eval(service!, state, code).result;
   }
 
-  function evalCodeInternal(code: string) {
-    return _eval(service!, state, code);
+  function evalCodeInternal(code: string, context: Context | undefined) {
+    return _eval(service!, state, code, context);
   }
 
   function nodeEval(
     code: string,
-    _context: any,
+    context: Context,
     _filename: string,
     callback: (err: Error | null, result?: any) => any
   ) {
@@ -132,7 +136,10 @@ export function createRepl(options: CreateReplOptions = {}) {
     }
 
     try {
-      const { awaitPromise, result: evalResult } = evalCodeInternal(code);
+      const { awaitPromise, result: evalResult } = evalCodeInternal(
+        code,
+        server.useGlobal ? undefined : context
+      );
 
       if (awaitPromise) {
         return (async () => {
@@ -159,7 +166,13 @@ export function createRepl(options: CreateReplOptions = {}) {
 
   function start(code?: string, optionsOverride?: ReplOptions) {
     // TODO assert that service is set; remove all ! postfixes
-    return startRepl(replService, service!, state, code, optionsOverride);
+    return (server = startRepl(
+      replService,
+      service!,
+      state,
+      code,
+      optionsOverride
+    ));
   }
 }
 
@@ -223,7 +236,12 @@ export function createEvalAwarePartialHost(
 /**
  * Evaluate the code snippet.
  */
-function _eval(service: Service, state: EvalState, input: string) {
+function _eval(
+  service: Service,
+  state: EvalState,
+  input: string,
+  context?: Context
+) {
   const lines = state.lines;
   const isCompletion = !/\n$/.test(input);
   const undo = appendEval(state, input);
@@ -264,10 +282,10 @@ function _eval(service: Service, state: EvalState, input: string) {
         const result = processTopLevelAwait(change.value);
         if (result !== null) {
           awaitPromise = true;
-          return exec(result, state.path);
+          return exec(result, state.path, context);
         }
       }
-      return exec(change.value, state.path);
+      return exec(change.value, state.path, context);
     }
     return result;
   }, undefined);
@@ -281,10 +299,14 @@ function _eval(service: Service, state: EvalState, input: string) {
 /**
  * Execute some code.
  */
-function exec(code: string, filename: string) {
+function exec(code: string, filename: string, context?: Context) {
   const script = new Script(code, { filename });
 
-  return script.runInThisContext();
+  if (context === undefined) {
+    return script.runInThisContext();
+  } else {
+    return script.runInContext(context);
+  }
 }
 
 /**
@@ -297,10 +319,20 @@ function startRepl(
   code?: string,
   optionsOverride?: ReplOptions
 ) {
+  let context: Context | undefined;
+  if (optionsOverride?.useGlobal === false) {
+    context = createContext();
+    setContext(
+      context,
+      createNodeModuleForContext('repl', process.cwd()),
+      'repl'
+    );
+  }
+
   // Eval incoming code before the REPL starts.
   if (code) {
     try {
-      replService.evalCode(`${code}\n`);
+      replService.evalCodeInternal(`${code}\n`, context);
     } catch (err) {
       replService.console.error(err);
       process.exit(1);
@@ -320,6 +352,10 @@ function startRepl(
     ...optionsOverride,
   });
 
+  if (context !== undefined) {
+    Object.assign(repl.context, context);
+  }
+
   // Bookmark the point where we should reset the REPL state.
   const resetEval = appendEval(state, '');
 
@@ -327,7 +363,7 @@ function startRepl(
     resetEval();
 
     // Hard fix for TypeScript forcing `Object.defineProperty(exports, ...)`.
-    exec('exports = module.exports', state.path);
+    exec('exports = module.exports', state.path, context);
   }
 
   reset();
@@ -438,7 +474,7 @@ function isRecoverable(error: TSError) {
 export function setContext(
   context: any,
   module: Module,
-  filenameAndDirname: 'eval' | 'stdin' | null
+  filenameAndDirname: 'eval' | 'stdin' | 'repl' | null
 ) {
   if (filenameAndDirname) {
     context.__dirname = '.';
@@ -451,7 +487,7 @@ export function setContext(
 
 /** @internal */
 export function createNodeModuleForContext(
-  type: 'eval' | 'stdin',
+  type: 'eval' | 'stdin' | 'repl',
   cwd: string
 ) {
   // Create a local module instance based on `cwd`.

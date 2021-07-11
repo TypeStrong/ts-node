@@ -435,7 +435,7 @@ test.suite('ts-node', (test) => {
       );
     });
 
-    test('REPL can be configured on `start`', async () => {
+    test.serial('REPL can be configured on `start`', async () => {
       const prompt = '#> ';
 
       const stdin = new PassThrough();
@@ -453,15 +453,50 @@ test.suite('ts-node', (test) => {
       replService.setService(service);
       replService.start(undefined, {
         prompt,
+        ignoreUndefined: true,
       });
-      stdin.write('const a = 123');
+      stdin.write('const x = 3');
       stdin.end();
       await promisify(setTimeout)(1e3);
       stdout.end();
       stderr.end();
       expect(await getStream(stderr)).to.equal('');
-      expect(await getStream(stdout)).to.equal(`${prompt}undefined\n${prompt}`);
+      expect(await getStream(stdout)).to.equal(`${prompt}${prompt}`);
     });
+
+    test.serial(
+      'REPL uses a different context when `useGlobal` is false',
+      async () => {
+        const stdin = new PassThrough();
+        const stdout = new PassThrough();
+        const stderr = new PassThrough();
+        const replService = createRepl({
+          stdin,
+          stdout,
+          stderr,
+        });
+        const service = create({
+          ...replService.evalAwarePartialHost,
+          project: `${TEST_DIR}/tsconfig.json`,
+        });
+        replService.setService(service);
+        replService.start(undefined, {
+          useGlobal: false,
+        });
+        // No error when re-declaring x
+        stdin.write('const x = 3\n');
+        // console.log ouput will end up in the stream and not in test output
+        stdin.write('console.log(1)\n');
+        stdin.end();
+        await promisify(setTimeout)(1e3);
+        stdout.end();
+        stderr.end();
+        expect(await getStream(stderr)).to.equal('');
+        expect(await getStream(stdout)).to.equal(
+          `> undefined\n> 1\nundefined\n> `
+        );
+      }
+    );
 
     test.suite(
       '[eval], <repl>, and [stdin] execute with correct globals',
