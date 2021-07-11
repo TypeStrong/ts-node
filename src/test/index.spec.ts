@@ -1946,24 +1946,21 @@ test.suite('ts-node', (test) => {
       expect(stdout).to.equal('1\n2\n3\nundefined\n');
     });
 
-    test.serial(
-      'should wait until promise is settled when awaited with top level await',
-      async () => {
+    test('should wait until promise is settled when awaiting at top level', async () => {
         const awaitMs = 1000;
+      const script = `
         const startTime = new Date().getTime();
-        const { err, stdout } = await exec(
-          `${tlaCmd} -pe "await new Promise((r) => setTimeout(() => r(1), ${awaitMs}))"`
-        );
+        await new Promise((r) => setTimeout(() => r(1), ${awaitMs}));
         const endTime = new Date().getTime();
-        const ellapsedTime = endTime - startTime;
-        const avgMinExecutionTime = 1000;
-        const avgMaxExecutionTime = 2000;
+        endTime - startTime
+        `;
+      const { err, stdout } = await exec(`${tlaCmd} -pe "${script}"`);
         expect(err).to.equal(null);
-        expect(stdout).to.equal('1\n');
-        expect(ellapsedTime).to.be.gte(awaitMs + avgMinExecutionTime);
-        expect(ellapsedTime).to.be.lte(awaitMs + avgMaxExecutionTime + 100);
-      }
-    );
+
+      const ellapsedTime = Number(stdout);
+      expect(ellapsedTime).to.be.gte(awaitMs);
+      expect(ellapsedTime).to.be.lte(awaitMs + 100);
+    });
 
     test('should error with typing information when awaited result has type mismatch', async () => {
       const { err, stdout, stderr } = await exec(
