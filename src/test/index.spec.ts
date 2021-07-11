@@ -453,7 +453,7 @@ test.suite('ts-node', (test) => {
         project: `${TEST_DIR}/tsconfig.json`,
       });
       replService.setService(service);
-      replService.start(undefined, {
+      replService.startInternal({
         prompt,
         ignoreUndefined: true,
       });
@@ -483,7 +483,7 @@ test.suite('ts-node', (test) => {
           project: `${TEST_DIR}/tsconfig.json`,
         });
         replService.setService(service);
-        replService.start(undefined, {
+        replService.startInternal({
           useGlobal: false,
         });
         // No error when re-declaring x

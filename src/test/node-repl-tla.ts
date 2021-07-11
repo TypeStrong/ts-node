@@ -39,7 +39,7 @@ export async function upstreamTopLevelAwaitTests({
   (replService.stdout as NodeJS.WritableStream & {
     isTTY: boolean;
   }).isTTY = true;
-  const replServer = replService.start(undefined, {
+  const replServer = replService.startInternal({
     prompt: PROMPT,
     terminal: true,
     useColors: true,

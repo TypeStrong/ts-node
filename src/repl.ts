@@ -32,6 +32,7 @@ export interface ReplService {
    */
   setService(service: Service): void;
   evalCode(code: string): void;
+  /** @internal */
   evalCodeInternal(
     code: string,
     context?: Context
@@ -47,7 +48,9 @@ export interface ReplService {
   ): void;
   evalAwarePartialHost: EvalAwarePartialHost;
   /** Start a node REPL */
-  start(code?: string, optionsOverride?: ReplOptions): REPLServer;
+  start(code?: string): void;
+  /** @internal */
+  startInternal(opts?: ReplOptions & { code?: string }): REPLServer;
   /** @internal */
   readonly stdin: NodeJS.ReadableStream;
   /** @internal */
@@ -103,6 +106,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     nodeEval,
     evalAwarePartialHost,
     start,
+    startInternal,
     stdin,
     stdout,
     stderr,
@@ -176,7 +180,15 @@ export function createRepl(options: CreateReplOptions = {}) {
     return callback(err, result);
   }
 
-  function start(code?: string, optionsOverride?: ReplOptions) {
+  function start(code?: string) {
+    // TODO assert that service is set; remove all ! postfixes
+    server = startRepl(replService, service!, state, code);
+  }
+
+  function startInternal({
+    code,
+    ...optionsOverride
+  }: ReplOptions & { code?: string } = {}) {
     // TODO assert that service is set; remove all ! postfixes
     return (server = startRepl(
       replService,
