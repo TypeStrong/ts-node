@@ -1992,7 +1992,9 @@ test.suite('ts-node', (test) => {
         const [z] = await [3];
         x + y + z;
       `;
-      const { err, stdout } = await exec(`${tlaCmd} -pe "${script}"`);
+      const { err, stdout } = await exec(
+        `${tlaCmd} -pe "${script.split('\n').join('')}"`
+      );
       expect(err).to.equal(null);
       expect(stdout).to.equal('1\n2\n3\na\nb\n6\n');
     });
@@ -2006,12 +2008,14 @@ test.suite('ts-node', (test) => {
         const startTime = new Date().getTime();
         await new Promise((r) => setTimeout(() => r(1), ${awaitMs}));
         const endTime = new Date().getTime();
-        endTime - startTime
+        endTime - startTime;
         `;
-        const { err, stdout } = await exec(`${tlaCmd} -pe "${script}"`);
+        const { err, stdout } = await exec(
+          `${tlaCmd} -pe "${script.split('\n').join('')}"`
+        );
         expect(err).to.equal(null);
 
-        const ellapsedTime = Number(stdout);
+        const ellapsedTime = Number(stdout.trim());
         expect(ellapsedTime).to.be.gte(awaitMs);
         expect(ellapsedTime).to.be.lte(awaitMs + 100);
       }
@@ -2023,10 +2027,11 @@ test.suite('ts-node', (test) => {
       );
       expect(err).not.to.equal(null);
       expect(stdout).to.equal('');
-      expect(stderr).to.equal(
-        semver.gte(ts.version, '4.0.0')
-          ? `[eval].ts(1,7): error TS2322: Type 'number' is not assignable to type 'string'.\n\n`
-          : `[eval].ts(1,7): error TS2322: Type '1' is not assignable to type 'string'.\n\n`
+      expect(stderr.replace(/\r\n/g, '\n')).to.equal(
+        (semver.gte(ts.version, '4.0.0')
+          ? `[eval].ts(1,7): error TS2322: Type 'number' is not assignable to type 'string'.\n`
+          : `[eval].ts(1,7): error TS2322: Type '1' is not assignable to type 'string'.\n`) +
+          '\n'
       );
     });
 
@@ -2117,7 +2122,13 @@ test.suite('ts-node', (test) => {
         ['await 0; function foo() {}'],
         ['foo', '[Function: foo]'],
         ['class Foo {}; await 1;', '1'],
-        ['Foo', '[class Foo]'],
+        // Adjusted since ts-node supports older versions of node
+        [
+          'Foo',
+          semver.gte(process.version, '12.18.0')
+            ? '[class Foo]'
+            : '[Function: Foo]',
+        ],
         ['if (await true) { function fooz() {}; }'],
         ['fooz', '[Function: fooz]'],
         ['if (await true) { class Bar {}; }'],
