@@ -273,6 +273,7 @@ export async function main(
     fileExists: evalAwarePartialHost?.fileExists ?? undefined,
     scope,
     scopeDir,
+    executeEntrypoint,
   });
 
   // Bind REPL service to ts-node compiler service (chicken-and-egg problem)
@@ -302,6 +303,7 @@ export async function main(
         optionBasePaths: undefined,
         experimentalEsmLoader: undefined,
         compilerOptions: undefined,
+        executeEntrypoint: undefined,
         project: service.configFilePath ?? service.options.project,
       },
       ...ts.convertToTSConfig(

@@ -310,6 +310,12 @@ export interface CreateOptions {
    * the configuration loader, so it is *not* necessary for their source to be set here.
    */
   optionBasePaths?: OptionBasePaths;
+  /**
+   * @internal
+   * Used to conditionally exclude certain diagnostic codes that doesn't
+   * apply to experimentalReplAwait
+   */
+  executeEntrypoint?: Boolean;
 }
 
 /** @internal */
@@ -539,7 +545,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     6059, // "'rootDir' is expected to contain all source files."
     18002, // "The 'files' list in config file is empty."
     18003, // "No inputs were found in config file."
-    ...(options.experimentalReplAwait
+    ...(options.experimentalReplAwait && options.executeEntrypoint === false
       ? [
           1103, // A 'for-await-of' statement is only allowed within an async function or async generator
           1308, // 'await' expression is only allowed within an async function
