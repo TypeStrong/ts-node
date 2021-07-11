@@ -2024,7 +2024,9 @@ test.suite('ts-node', (test) => {
       expect(err).not.to.equal(null);
       expect(stdout).to.equal('');
       expect(stderr).to.equal(
-        `[eval].ts(1,7): error TS2322: Type 'number' is not assignable to type 'string'.\n\n`
+        semver.gte(ts.version, '4.0.0')
+          ? `[eval].ts(1,7): error TS2322: Type 'number' is not assignable to type 'string'.\n\n`
+          : `[eval].ts(1,7): error TS2322: Type '1' is not assignable to type 'string'.\n\n`
       );
     });
 
