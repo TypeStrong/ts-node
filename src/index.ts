@@ -473,6 +473,16 @@ export function create(rawOptions: CreateOptions = {}): Service {
   );
   const compilerName = rawOptions.compiler ?? DEFAULTS.compiler;
 
+  // Experimental REPL await is not compatible with lower targets
+  // TODO: Emit warning if node version isn't compatible
+  // related: https://github.com/TypeStrong/ts-node/issues/1248
+  if (rawOptions.experimentalReplAwait) {
+    rawOptions.compilerOptions = {
+      ...rawOptions.compilerOptions,
+      target: 'ESNext',
+    };
+  }
+
   /**
    * Load the typescript compiler. It is required to load the tsconfig but might
    * be changed by the tsconfig, so we have to do this twice.

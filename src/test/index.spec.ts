@@ -2046,10 +2046,6 @@ test.suite('ts-node', (test) => {
         project: `${TEST_DIR}/tsconfig.json`,
         experimentalReplAwait: true,
         transpileOnly: true,
-        compilerOptions: {
-          // --experimental-repl-await is not compatible with old targets
-          target: 'ESNext',
-        },
       });
       replService.setService(service);
       (replService.stdout as NodeJS.WritableStream & {
