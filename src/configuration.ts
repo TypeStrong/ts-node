@@ -272,7 +272,6 @@ function filterRecognizedTsConfigTsNodeOptions(
     scope,
     scopeDir,
     moduleTypes,
-    executeEntrypoint,
     experimentalReplAwait,
     ...unrecognized
   } = jsonObject as TsConfigOptions;
@@ -281,7 +280,6 @@ function filterRecognizedTsConfigTsNodeOptions(
     compilerHost,
     compilerOptions,
     emit,
-    executeEntrypoint,
     experimentalReplAwait,
     files,
     ignore,

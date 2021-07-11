@@ -353,6 +353,7 @@ export interface TsConfigOptions
     | 'projectSearchDir'
     | 'experimentalEsmLoader'
     | 'optionBasePaths'
+    | 'executeEntrypoint'
   > {}
 
 /**
