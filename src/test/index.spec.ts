@@ -2030,7 +2030,7 @@ test.suite('ts-node', (test) => {
 
     // Based on https://github.com/nodejs/node/blob/88799930794045795e8abac874730f9eba7e2300/test/parallel/test-repl-top-level-await.js
     test('should pass upstream test cases', async () => {
-      const PROMPT = '> ';
+      const PROMPT = 'await repl > ';
 
       const putIn = new REPLStream();
       const replService = createRepl({
@@ -2046,12 +2046,21 @@ test.suite('ts-node', (test) => {
         project: `${TEST_DIR}/tsconfig.json`,
         experimentalReplAwait: true,
         transpileOnly: true,
+        compilerOptions: {
+          // --experimental-repl-await is not compatible with old targets
+          target: 'ESNext',
+        },
       });
       replService.setService(service);
       (replService.stdout as NodeJS.WritableStream & {
         isTTY: boolean;
       }).isTTY = true;
-      replService.start();
+      replService.start(undefined, {
+        prompt: PROMPT,
+        terminal: true,
+        useColors: true,
+        useGlobal: false,
+      });
 
       function runAndWait(cmds: string[]) {
         const promise = putIn.wait();
@@ -2069,11 +2078,11 @@ test.suite('ts-node', (test) => {
       const testCases = [
         ['await Promise.resolve(0)', '0'],
 
-        // TODO: Adjust once underlying issue is resolved
         // issue: { a: await Promise.resolve(1) } is being interpreted as a block
-        // removing surrounding parenthesis
+        // remove surrounding parenthesis once issue is fixed
         ['({ a: await Promise.resolve(1) })', '{ a: 1 }'],
 
+        ['_', '{ a: 1 }'],
         ['let { aa, bb } = await Promise.resolve({ aa: 1, bb: 2 }), f = 5;'],
         ['aa', '1'],
         ['bb', '2'],
@@ -2138,13 +2147,15 @@ test.suite('ts-node', (test) => {
         ['p'],
         ['let q = 1, s = await 2'],
         ['s', '2'],
-
-        // TODO: adjust once underlying issue is resolved
-        // issue: console.log are being printed on parent stdout
-        // instead of stream stdout
         [
-          'for await (let i of [1,2,3]) i',
-          ['for await (let i of [1,2,3]) i\r', 'undefined'],
+          'for await (let i of [1,2,3]) console.log(i)',
+          [
+            'for await (let i of [1,2,3]) console.log(i)\r',
+            '1',
+            '2',
+            '3',
+            'undefined',
+          ],
         ],
 
         // TODO: uncomment once underlying issue is resolved
@@ -2179,39 +2190,30 @@ test.suite('ts-node', (test) => {
             'undefined',
           ],
         ],
-
-        // TODO: uncomment once underlying issue is resolved
-        // issue: `compile` is mutating previous compiled information,
-        // which makes `diffs` to include old statements resulting in error
-        // issue2: console.log are being printed on parent stdout
-        // instead of stream stdout
-        // [
-        //   'for await (const x of [1,2,3]) {\nconsole.log(x)\n}',
-        //   [
-        //     'for await (const x of [1,2,3]) {\r',
-        //     '... console.log(x)\r',
-        //     '... }\r',
-        //     '1',
-        //     '2',
-        //     '3',
-        //     'undefined',
-        //   ],
-        // ],
-
-        // TODO: uncomment once underlying issue is resolved
-        // issues: same as above
-        // [
-        //   'for await (const x of [1,2,3]) {\nconsole.log(x);\n}',
-        //   [
-        //     'for await (const x of [1,2,3]) {\r',
-        //     '... console.log(x);\r',
-        //     '... }\r',
-        //     '1',
-        //     '2',
-        //     '3',
-        //     'undefined',
-        //   ],
-        // ],
+        [
+          'for await (const x of [1,2,3]) {\nconsole.log(x)\n}',
+          [
+            'for await (const x of [1,2,3]) {\r',
+            '... console.log(x)\r',
+            '... }\r',
+            '1',
+            '2',
+            '3',
+            'undefined',
+          ],
+        ],
+        [
+          'for await (const x of [1,2,3]) {\nconsole.log(x);\n}',
+          [
+            'for await (const x of [1,2,3]) {\r',
+            '... console.log(x);\r',
+            '... }\r',
+            '1',
+            '2',
+            '3',
+            'undefined',
+          ],
+        ],
       ] as const;
 
       for (const [
