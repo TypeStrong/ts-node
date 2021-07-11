@@ -529,10 +529,13 @@ export function create(rawOptions: CreateOptions = {}): Service {
     18003, // "No inputs were found in config file."
     ...(options.experimentalReplAwait
       ? [
-          1375, // ignore 'export {}' requirement for top level 'await'
-          1378, // ignore module & target requirement for top level 'await'
-          1431, // ignore 'export {}' requirement for top level 'for await'
-          1432, // ignore module & target requirement for top level 'for await'
+          1103, // A 'for-await-of' statement is only allowed within an async function or async generator
+          1308, // 'await' expression is only allowed within an async function
+          1375, // 'export {}' requirement for top level 'await'
+          1378, // module & target requirement for top level 'await'
+          1431, // 'export {}' requirement for top level 'for await'
+          1432, // module & target requirement for top level 'for await'
+          2304, // Cannot find name 'await'
         ]
       : []),
     ...(options.ignoreDiagnostics || []),
