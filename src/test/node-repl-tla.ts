@@ -31,6 +31,9 @@ export async function upstreamTopLevelAwaitTests({
     project: `${TEST_DIR}/tsconfig.json`,
     experimentalReplAwait: true,
     transpileOnly: true,
+    compilerOptions: {
+      target: 'ES2018',
+    },
   });
   replService.setService(service);
   (replService.stdout as NodeJS.WritableStream & {

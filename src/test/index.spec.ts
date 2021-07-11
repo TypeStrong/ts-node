@@ -1980,7 +1980,7 @@ test.suite('ts-node', (test) => {
   });
 
   test.suite('top level await', (test) => {
-    const tlaCmd = `${cmd} --experimental-repl-await`;
+    const tlaCmd = `${cmd} -O '{"target": "ES2018"}' --experimental-repl-await`;
 
     test('should allow evaluating top level await', async () => {
       const script = `

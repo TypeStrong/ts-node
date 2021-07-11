@@ -23,6 +23,7 @@ import {
   ModuleTypeClassifier,
 } from './module-type-classifier';
 import { createResolverFunctions } from './resolver-functions';
+import { ScriptTarget } from 'typescript';
 
 export { TSCommon };
 export { createRepl, CreateReplOptions, ReplService } from './repl';
@@ -473,16 +474,6 @@ export function create(rawOptions: CreateOptions = {}): Service {
   );
   const compilerName = rawOptions.compiler ?? DEFAULTS.compiler;
 
-  // Experimental REPL await is not compatible with lower targets
-  // TODO: Emit warning if node version isn't compatible
-  // related: https://github.com/TypeStrong/ts-node/issues/1248
-  if (rawOptions.experimentalReplAwait) {
-    rawOptions.compilerOptions = {
-      ...rawOptions.compilerOptions,
-      target: 'ESNext',
-    };
-  }
-
   /**
    * Load the typescript compiler. It is required to load the tsconfig but might
    * be changed by the tsconfig, so we have to do this twice.
@@ -519,6 +510,17 @@ export function create(rawOptions: CreateOptions = {}): Service {
     ...(tsNodeOptionsFromTsconfig.require || []),
     ...(rawOptions.require || []),
   ];
+
+  // Experimental REPL await is not compatible targets lower than ES2018
+  if (
+    options.experimentalReplAwait &&
+    config.options.target! < ScriptTarget.ES2018
+  ) {
+    console.error(
+      'Experimental REPL await is not compatible with targets lower than ES2018'
+    );
+    process.exit(1);
+  }
 
   // Re-load the compiler in case it has changed.
   // Compiler is loaded relative to tsconfig.json, so tsconfig discovery may cause us to load a
