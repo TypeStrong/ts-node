@@ -279,7 +279,8 @@ function _eval(
         /\bawait\b/.test(change.value) &&
         service.options.experimentalReplAwait
       ) {
-        const result = processTopLevelAwait(change.value);
+        // Neline prevents comments to mess with wrapper
+        const result = processTopLevelAwait(change.value + '\n');
         if (result !== null) {
           awaitPromise = true;
           return exec(result, state.path, context);
