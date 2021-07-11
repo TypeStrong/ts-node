@@ -25,6 +25,7 @@ import type * as Module from 'module';
 import { PassThrough } from 'stream';
 import * as getStream from 'get-stream';
 import { once } from 'lodash';
+import type { Key } from 'readline';
 
 const xfs = new NodeFS(fs);
 
@@ -2058,17 +2059,21 @@ test.suite('ts-node', (test) => {
       (replService.stdout as NodeJS.WritableStream & {
         isTTY: boolean;
       }).isTTY = true;
-      replService.start(undefined, {
+      const replServer = replService.start(undefined, {
         prompt: PROMPT,
         terminal: true,
         useColors: true,
         useGlobal: false,
       });
 
-      function runAndWait(cmds: string[]) {
+      function runAndWait(cmds: Array<string | Key>) {
         const promise = putIn.wait();
         for (const cmd of cmds) {
-          putIn.run([cmd]);
+          if (typeof cmd === 'string') {
+            putIn.run([cmd]);
+          } else {
+            replServer.write('', cmd);
+          }
         }
         return promise;
       }
@@ -2122,9 +2127,10 @@ test.suite('ts-node', (test) => {
         ['await 0; function foo() {}'],
         ['foo', '[Function: foo]'],
         ['class Foo {}; await 1;', '1'],
-        // Adjusted since ts-node supports older versions of node
+
         [
           'Foo',
+          // Adjusted since ts-node supports older versions of node
           semver.gte(process.version, '12.18.0')
             ? '[class Foo]'
             : '[Function: Foo]',
@@ -2133,24 +2139,47 @@ test.suite('ts-node', (test) => {
         ['fooz', '[Function: fooz]'],
         ['if (await true) { class Bar {}; }'],
 
-        // Line increased due to TS added lines
-        ['Bar', 'Uncaught ReferenceError: Bar is not defined', { line: 4 }],
+        [
+          'Bar',
+          // Adjusted since ts-node supports older versions of node
+          semver.gte(process.version, '12.16.0')
+            ? 'Uncaught ReferenceError: Bar is not defined'
+            : 'ReferenceError: Bar is not defined',
+          // Line increased due to TS added lines
+          {
+            line: semver.gte(process.version, '12.16.0') ? 4 : 5,
+          },
+        ],
 
         ['await 0; function* gen(){}'],
         ['for (var i = 0; i < 10; ++i) { await i; }'],
         ['i', '10'],
         ['for (let j = 0; j < 5; ++j) { await j; }'],
 
-        // Line increased due to TS added lines
-        ['j', 'Uncaught ReferenceError: j is not defined', { line: 4 }],
+        [
+          'j',
+          // Adjusted since ts-node supports older versions of node
+          semver.gte(process.version, '12.16.0')
+            ? 'Uncaught ReferenceError: j is not defined'
+            : 'ReferenceError: j is not defined',
+          // Line increased due to TS added lines
+          {
+            line: semver.gte(process.version, '12.16.0') ? 4 : 5,
+          },
+        ],
 
         ['gen', '[GeneratorFunction: gen]'],
 
         [
           'return 42; await 5;',
-          'Uncaught SyntaxError: Illegal return statement',
+          // Adjusted since ts-node supports older versions of node
+          semver.gte(process.version, '12.16.0')
+            ? 'Uncaught SyntaxError: Illegal return statement'
+            : 'SyntaxError: Illegal return statement',
           // Line increased due to TS added lines
-          { line: 4 },
+          {
+            line: semver.gte(process.version, '12.16.0') ? 4 : 5,
+          },
         ],
 
         ['let o = await 1, p'],
