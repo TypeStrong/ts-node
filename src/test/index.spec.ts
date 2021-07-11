@@ -435,6 +435,7 @@ test.suite('ts-node', (test) => {
       );
     });
 
+    // Serial because it's timing-sensitive
     test.serial('REPL can be configured on `start`', async () => {
       const prompt = '#> ';
 
@@ -464,6 +465,7 @@ test.suite('ts-node', (test) => {
       expect(await getStream(stdout)).to.equal(`${prompt}${prompt}`);
     });
 
+    // Serial because it's timing-sensitive
     test.serial(
       'REPL uses a different context when `useGlobal` is false',
       async () => {
@@ -1980,42 +1982,40 @@ test.suite('ts-node', (test) => {
     const tlaCmd = `${cmd} --experimental-repl-await`;
 
     test('should allow evaluating top level await', async () => {
-      const { err, stdout } = await exec(`${tlaCmd} -pe "await 1"`);
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('1\n');
-    });
-
-    test('should allow evaluating top level for-await', async () => {
-      const { err, stdout } = await exec(
-        `${tlaCmd} -pe "for await (const x of [1,2,3]) { console.log(x) }"`
-      );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('1\n2\n3\nundefined\n');
-    });
-
-    test('should allow evaluating top level await inside a for loop', async () => {
-      const { err, stdout } = await exec(
-        `${tlaCmd} -pe "for (const x of [1,2,3]) { await x; console.log(x) }"`
-      );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('1\n2\n3\nundefined\n');
-    });
-
-    test('should wait until promise is settled when awaiting at top level', async () => {
-      const awaitMs = 1000;
       const script = `
+        const x = await new Promise((r) => r(1));
+        for await (const x of [1,2,3]) { console.log(x) };
+        for (const x of ['a', 'b']) { await x; console.log(x) };
+        class Foo {}; await 1;
+        function Bar() {}; await 2;
+        const {y} = await ({y: 2});
+        const [z] = await [3];
+        x + y + z;
+      `;
+      const { err, stdout } = await exec(`${tlaCmd} -pe "${script}"`);
+      expect(err).to.equal(null);
+      expect(stdout).to.equal('1\n2\n3\na\nb\n6\n');
+    });
+
+    // Serial because it's timing-sensitive
+    test.serial(
+      'should wait until promise is settled when awaiting at top level',
+      async () => {
+        const awaitMs = 1000;
+        const script = `
         const startTime = new Date().getTime();
         await new Promise((r) => setTimeout(() => r(1), ${awaitMs}));
         const endTime = new Date().getTime();
         endTime - startTime
         `;
-      const { err, stdout } = await exec(`${tlaCmd} -pe "${script}"`);
-      expect(err).to.equal(null);
+        const { err, stdout } = await exec(`${tlaCmd} -pe "${script}"`);
+        expect(err).to.equal(null);
 
-      const ellapsedTime = Number(stdout);
-      expect(ellapsedTime).to.be.gte(awaitMs);
-      expect(ellapsedTime).to.be.lte(awaitMs + 100);
-    });
+        const ellapsedTime = Number(stdout);
+        expect(ellapsedTime).to.be.gte(awaitMs);
+        expect(ellapsedTime).to.be.lte(awaitMs + 100);
+      }
+    );
 
     test('should error with typing information when awaited result has type mismatch', async () => {
       const { err, stdout, stderr } = await exec(
@@ -2071,7 +2071,7 @@ test.suite('ts-node', (test) => {
       }
 
       runAndWait([
-        'function foo(x: any) { return x; }',
+        'function foo(x) { return x; }',
         'function koo() { return Promise.resolve(4); }',
       ]);
 
@@ -2101,8 +2101,9 @@ test.suite('ts-node', (test) => {
         ['const m = foo(await koo());'],
         ['m', '4'],
 
-        // TODO: Uncomment once underlying issue is resolved
         // issue: REPL doesn't recognize end of input
+        // compile is returning TS1005 after second line even though
+        // it's valid syntax
         // [
         //   'const n = foo(await\nkoo());',
         //   ['const n = foo(await\r', '... koo());\r', 'undefined'],
@@ -2158,8 +2159,8 @@ test.suite('ts-node', (test) => {
           ],
         ],
 
-        // TODO: uncomment once underlying issue is resolved
         // issue: REPL is expecting more input to finish execution
+        // compiler is returning TS1003 error
         // [
         //   'await Promise..resolve()',
         //   [
