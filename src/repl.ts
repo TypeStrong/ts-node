@@ -137,20 +137,7 @@ export function createRepl(options: CreateReplOptions = {}) {
       return;
     }
 
-    try {
-      const { awaitPromise, result: evalResult } = evalCodeInternal(
-        code,
-        server.useGlobal ? undefined : context
-      );
-
-      if (awaitPromise) {
-        return (async () => {
-          callback(err, await evalResult);
-        })();
-      }
-
-      result = evalResult;
-    } catch (error) {
+    function handleError(error: unknown) {
       if (error instanceof TSError) {
         // Support recoverable compilations using >= node 6.
         if (Recoverable && isRecoverable(error)) {
@@ -159,8 +146,31 @@ export function createRepl(options: CreateReplOptions = {}) {
           _console.error(error);
         }
       } else {
-        err = error;
+        err = error as Error;
       }
+    }
+
+    try {
+      const { awaitPromise, result: evalResult } = evalCodeInternal(
+        code,
+        server.useGlobal ? undefined : context
+      );
+
+      if (awaitPromise) {
+        return (async () => {
+          try {
+            result = await evalResult;
+          } catch (promiseError) {
+            handleError(promiseError);
+          }
+
+          callback(err, result);
+        })();
+      }
+
+      result = evalResult;
+    } catch (error) {
+      handleError(error);
     }
 
     return callback(err, result);

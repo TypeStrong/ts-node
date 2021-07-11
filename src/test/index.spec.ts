@@ -2036,6 +2036,20 @@ test.suite('ts-node', (test) => {
       );
     });
 
+    test('should error with typing when importing a file with type errors', async () => {
+      const { err, stdout, stderr } = await exec(
+        `${tlaCmd} -pe "const {foo} = await import('./repl/tla-import')"`
+      );
+      expect(err).not.to.equal(null);
+      expect(stdout).to.equal('');
+      expect(stderr.replace(/\r\n/g, '\n')).to.equal(
+        (semver.gte(ts.version, '4.0.0')
+          ? `repl/tla-import.ts(1,14): error TS2322: Type 'number' is not assignable to type 'string'.\n`
+          : `repl/tla-import.ts(1,14): error TS2322: Type '1' is not assignable to type 'string'.\n`) +
+          '\n'
+      );
+    });
+
     test('should pass upstream test cases', async () =>
       upstreamTopLevelAwaitTests({ TEST_DIR, create, createRepl }));
   });
