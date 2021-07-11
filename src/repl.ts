@@ -1,7 +1,7 @@
 import { diffLines } from 'diff';
 import { homedir } from 'os';
 import { join } from 'path';
-import { Recoverable, start } from 'repl';
+import { Recoverable, ReplOptions, REPLServer, start } from 'repl';
 import { Script } from 'vm';
 import { Service, CreateOptions, TSError, env } from './index';
 import { readFileSync, statSync } from 'fs';
@@ -42,7 +42,7 @@ export interface ReplService {
   ): void;
   evalAwarePartialHost: EvalAwarePartialHost;
   /** Start a node REPL */
-  start(code?: string): void;
+  start(code?: string, optionsOverride?: ReplOptions): void;
   /** @internal */
   readonly stdin: NodeJS.ReadableStream;
   /** @internal */
@@ -157,9 +157,9 @@ export function createRepl(options: CreateReplOptions = {}) {
     return callback(err, result);
   }
 
-  function start(code?: string) {
+  function start(code?: string, optionsOverride?: ReplOptions) {
     // TODO assert that service is set; remove all ! postfixes
-    return startRepl(replService, service!, state, code);
+    return startRepl(replService, service!, state, code, optionsOverride);
   }
 }
 
@@ -294,7 +294,8 @@ function startRepl(
   replService: ReplService,
   service: Service,
   state: EvalState,
-  code?: string
+  code?: string,
+  optionsOverride?: ReplOptions
 ) {
   // Eval incoming code before the REPL starts.
   if (code) {
@@ -316,6 +317,7 @@ function startRepl(
       !parseInt(env.NODE_NO_READLINE!, 10),
     eval: replService.nodeEval,
     useGlobal: true,
+    ...optionsOverride,
   });
 
   // Bookmark the point where we should reset the REPL state.

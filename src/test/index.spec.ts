@@ -435,6 +435,34 @@ test.suite('ts-node', (test) => {
       );
     });
 
+    test('REPL can be configured on `start`', async () => {
+      const prompt = '#> ';
+
+      const stdin = new PassThrough();
+      const stdout = new PassThrough();
+      const stderr = new PassThrough();
+      const replService = createRepl({
+        stdin,
+        stdout,
+        stderr,
+      });
+      const service = create({
+        ...replService.evalAwarePartialHost,
+        project: `${TEST_DIR}/tsconfig.json`,
+      });
+      replService.setService(service);
+      replService.start(undefined, {
+        prompt,
+      });
+      stdin.write('const a = 123');
+      stdin.end();
+      await promisify(setTimeout)(1e3);
+      stdout.end();
+      stderr.end();
+      expect(await getStream(stderr)).to.equal('');
+      expect(await getStream(stdout)).to.equal(`${prompt}undefined\n${prompt}`);
+    });
+
     test.suite(
       '[eval], <repl>, and [stdin] execute with correct globals',
       (test) => {
