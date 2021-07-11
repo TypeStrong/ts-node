@@ -1,4 +1,4 @@
-import { test, TestInterface } from './testlib';
+import { REPLStream, test } from './testlib';
 import { expect } from 'chai';
 import * as exp from 'expect';
 import {
@@ -14,15 +14,7 @@ import ts = require('typescript');
 import proxyquire = require('proxyquire');
 import type * as tsNodeTypes from '../index';
 import * as fs from 'fs';
-import {
-  unlinkSync,
-  existsSync,
-  lstatSync,
-  mkdtempSync,
-  fstat,
-  copyFileSync,
-  writeFileSync,
-} from 'fs';
+import { unlinkSync, existsSync, lstatSync, mkdtempSync } from 'fs';
 import { NodeFS, npath } from '@yarnpkg/fslib';
 import * as promisify from 'util.promisify';
 import { sync as rimrafSync } from 'rimraf';
@@ -1947,7 +1939,7 @@ test.suite('ts-node', (test) => {
     });
 
     test('should wait until promise is settled when awaiting at top level', async () => {
-        const awaitMs = 1000;
+      const awaitMs = 1000;
       const script = `
         const startTime = new Date().getTime();
         await new Promise((r) => setTimeout(() => r(1), ${awaitMs}));
@@ -1955,7 +1947,7 @@ test.suite('ts-node', (test) => {
         endTime - startTime
         `;
       const { err, stdout } = await exec(`${tlaCmd} -pe "${script}"`);
-        expect(err).to.equal(null);
+      expect(err).to.equal(null);
 
       const ellapsedTime = Number(stdout);
       expect(ellapsedTime).to.be.gte(awaitMs);
@@ -1971,6 +1963,212 @@ test.suite('ts-node', (test) => {
       expect(stderr).to.equal(
         `[eval].ts(1,7): error TS2322: Type 'number' is not assignable to type 'string'.\n\n`
       );
+    });
+
+    // Based on https://github.com/nodejs/node/blob/88799930794045795e8abac874730f9eba7e2300/test/parallel/test-repl-top-level-await.js
+    test('should pass upstream test cases', async () => {
+      const PROMPT = '> ';
+
+      const putIn = new REPLStream();
+      const replService = createRepl({
+        // @ts-ignore
+        stdin: putIn,
+        // @ts-ignore
+        stdout: putIn,
+        // @ts-ignore
+        stderr: putIn,
+      });
+      const service = create({
+        ...replService.evalAwarePartialHost,
+        project: `${TEST_DIR}/tsconfig.json`,
+        experimentalReplAwait: true,
+        transpileOnly: true,
+      });
+      replService.setService(service);
+      (replService.stdout as NodeJS.WritableStream & {
+        isTTY: boolean;
+      }).isTTY = true;
+      replService.start();
+
+      function runAndWait(cmds: string[]) {
+        const promise = putIn.wait();
+        for (const cmd of cmds) {
+          putIn.run([cmd]);
+        }
+        return promise;
+      }
+
+      runAndWait([
+        'function foo(x: any) { return x; }',
+        'function koo() { return Promise.resolve(4); }',
+      ]);
+
+      const testCases = [
+        ['await Promise.resolve(0)', '0'],
+
+        // TODO: Adjust once underlying issue is resolved
+        // issue: { a: await Promise.resolve(1) } is being interpreted as a block
+        // removing surrounding parenthesis
+        ['({ a: await Promise.resolve(1) })', '{ a: 1 }'],
+
+        ['let { aa, bb } = await Promise.resolve({ aa: 1, bb: 2 }), f = 5;'],
+        ['aa', '1'],
+        ['bb', '2'],
+        ['f', '5'],
+        ['let cc = await Promise.resolve(2)'],
+        ['cc', '2'],
+        ['let dd;'],
+        ['dd'],
+        ['let [ii, { abc: { kk } }] = [0, { abc: { kk: 1 } }];'],
+        ['ii', '0'],
+        ['kk', '1'],
+        ['var ll = await Promise.resolve(2);'],
+        ['ll', '2'],
+        ['foo(await koo())', '4'],
+        ['_', '4'],
+        ['const m = foo(await koo());'],
+        ['m', '4'],
+
+        // TODO: Uncomment once underlying issue is resolved
+        // issue: REPL doesn't recognize end of input
+        // [
+        //   'const n = foo(await\nkoo());',
+        //   ['const n = foo(await\r', '... koo());\r', 'undefined'],
+        // ],
+
+        [
+          '`status: ${(await Promise.resolve({ status: 200 })).status}`',
+          "'status: 200'",
+        ],
+        ['for (let i = 0; i < 2; ++i) await i'],
+        ['for (let i = 0; i < 2; ++i) { await i }'],
+        ['await 0', '0'],
+        ['await 0; function foo() {}'],
+        ['foo', '[Function: foo]'],
+        ['class Foo {}; await 1;', '1'],
+        ['Foo', '[class Foo]'],
+        ['if (await true) { function fooz() {}; }'],
+        ['fooz', '[Function: fooz]'],
+        ['if (await true) { class Bar {}; }'],
+
+        // Line increased due to TS added lines
+        ['Bar', 'Uncaught ReferenceError: Bar is not defined', { line: 4 }],
+
+        ['await 0; function* gen(){}'],
+        ['for (var i = 0; i < 10; ++i) { await i; }'],
+        ['i', '10'],
+        ['for (let j = 0; j < 5; ++j) { await j; }'],
+
+        // Line increased due to TS added lines
+        ['j', 'Uncaught ReferenceError: j is not defined', { line: 4 }],
+
+        ['gen', '[GeneratorFunction: gen]'],
+
+        [
+          'return 42; await 5;',
+          'Uncaught SyntaxError: Illegal return statement',
+          // Line increased due to TS added lines
+          { line: 4 },
+        ],
+
+        ['let o = await 1, p'],
+        ['p'],
+        ['let q = 1, s = await 2'],
+        ['s', '2'],
+
+        // TODO: adjust once underlying issue is resolved
+        // issue: console.log are being printed on parent stdout
+        // instead of stream stdout
+        [
+          'for await (let i of [1,2,3]) i',
+          ['for await (let i of [1,2,3]) i\r', 'undefined'],
+        ],
+
+        // TODO: uncomment once underlying issue is resolved
+        // issue: REPL is expecting more input to finish execution
+        // [
+        //   'await Promise..resolve()',
+        //   [
+        //     'await Promise..resolve()\r',
+        //     'Uncaught SyntaxError: ',
+        //     'await Promise..resolve()',
+        //     '              ^',
+        //     '',
+        //     "Unexpected token '.'",
+        //   ],
+        // ],
+
+        [
+          'for (const x of [1,2,3]) {\nawait x\n}',
+          [
+            'for (const x of [1,2,3]) {\r',
+            '... await x\r',
+            '... }\r',
+            'undefined',
+          ],
+        ],
+        [
+          'for (const x of [1,2,3]) {\nawait x;\n}',
+          [
+            'for (const x of [1,2,3]) {\r',
+            '... await x;\r',
+            '... }\r',
+            'undefined',
+          ],
+        ],
+
+        // TODO: uncomment once underlying issue is resolved
+        // issue: `compile` is mutating previous compiled information,
+        // which makes `diffs` to include old statements resulting in error
+        // issue2: console.log are being printed on parent stdout
+        // instead of stream stdout
+        // [
+        //   'for await (const x of [1,2,3]) {\nconsole.log(x)\n}',
+        //   [
+        //     'for await (const x of [1,2,3]) {\r',
+        //     '... console.log(x)\r',
+        //     '... }\r',
+        //     '1',
+        //     '2',
+        //     '3',
+        //     'undefined',
+        //   ],
+        // ],
+
+        // TODO: uncomment once underlying issue is resolved
+        // issues: same as above
+        // [
+        //   'for await (const x of [1,2,3]) {\nconsole.log(x);\n}',
+        //   [
+        //     'for await (const x of [1,2,3]) {\r',
+        //     '... console.log(x);\r',
+        //     '... }\r',
+        //     '1',
+        //     '2',
+        //     '3',
+        //     'undefined',
+        //   ],
+        // ],
+      ] as const;
+
+      for (const [
+        input,
+        expected = [`${input}\r`],
+        options = {} as { line?: number },
+      ] of testCases) {
+        const toBeRun = input.split('\n');
+        const lines = await runAndWait(toBeRun);
+        if (Array.isArray(expected)) {
+          if (expected.length === 1) expected.push('undefined');
+          if (lines[0] === input) lines.shift();
+          expect(lines).to.eqls([...expected, PROMPT]);
+        } else if ('line' in options) {
+          expect(lines[toBeRun.length + options.line!]).to.eqls(expected);
+        } else {
+          const echoed = toBeRun.map((a, i) => `${i > 0 ? '... ' : ''}${a}\r`);
+          expect(lines).to.eqls([...echoed, expected, PROMPT]);
+        }
+      }
     });
   });
 });
