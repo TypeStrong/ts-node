@@ -33,10 +33,7 @@ export interface ReplService {
   setService(service: Service): void;
   evalCode(code: string): void;
   /** @internal */
-  evalCodeInternal(
-    code: string,
-    context?: Context
-  ): { awaitPromise: boolean; result: any };
+  evalCodeInternal(code: string, context?: Context): Promise<any>;
   /**
    * `eval` implementation compatible with node's REPL API
    */
@@ -119,7 +116,7 @@ export function createRepl(options: CreateReplOptions = {}) {
   }
 
   function evalCode(code: string) {
-    return _eval(service!, state, code).result;
+    return _eval(service!, state, code);
   }
 
   function evalCodeInternal(code: string, context: Context | undefined) {
@@ -141,43 +138,27 @@ export function createRepl(options: CreateReplOptions = {}) {
       return;
     }
 
-    function handleError(error: unknown) {
-      if (error instanceof TSError) {
-        // Support recoverable compilations using >= node 6.
-        if (Recoverable && isRecoverable(error)) {
-          err = new Recoverable(error);
-        } else {
-          _console.error(error);
-        }
-      } else {
-        err = error as any;
-      }
-    }
-
-    try {
-      const { awaitPromise, result: evalResult } = evalCodeInternal(
-        code,
-        server.useGlobal ? undefined : context
-      );
-
-      if (awaitPromise) {
-        return (async () => {
-          try {
-            result = await evalResult;
-          } catch (promiseError) {
-            handleError(promiseError);
+    (async () => {
+      try {
+        result = await evalCodeInternal(
+          code,
+          server.useGlobal ? undefined : context
+        );
+      } catch (error) {
+        if (error instanceof TSError) {
+          // Support recoverable compilations using >= node 6.
+          if (Recoverable && isRecoverable(error)) {
+            err = new Recoverable(error);
+          } else {
+            _console.error(error);
           }
-
-          callback(err, result);
-        })();
+        } else {
+          err = error as any;
+        }
       }
 
-      result = evalResult;
-    } catch (error) {
-      handleError(error);
-    }
-
-    return callback(err, result);
+      return callback(err, result);
+    })();
   }
 
   function start(code?: string) {
@@ -260,7 +241,7 @@ export function createEvalAwarePartialHost(
 /**
  * Evaluate the code snippet.
  */
-function _eval(
+async function _eval(
   service: Service,
   state: EvalState,
   input: string,
@@ -270,7 +251,6 @@ function _eval(
   const isCompletion = !/\n$/.test(input);
   const undo = appendEval(state, input);
   let output: string;
-  let awaitPromise = false;
 
   // Based on https://github.com/nodejs/node/blob/92573721c7cff104ccb82b6ed3e8aa69c4b27510/lib/repl.js#L457-L461
   function adjustUseStrict(code: string) {
@@ -297,7 +277,8 @@ function _eval(
     state.output = output;
   }
 
-  const result: any = changes.reduce((result, change) => {
+  let result: any;
+  for (const change of changes) {
     if (change.added) {
       if (
         /\bawait\b/.test(change.value) &&
@@ -310,19 +291,15 @@ function _eval(
         // Neline prevents comments to mess with wrapper
         const wrappedResult = processTopLevelAwait(change.value + '\n');
         if (wrappedResult !== null) {
-          awaitPromise = true;
-          return exec(wrappedResult, state.path, context);
+          result = await exec(wrappedResult, state.path, context);
+          continue;
         }
       }
-      return exec(change.value, state.path, context);
+      result = exec(change.value, state.path, context);
     }
-    return result;
-  }, undefined);
+  }
 
-  return {
-    awaitPromise,
-    result,
-  };
+  return result;
 }
 
 /**
