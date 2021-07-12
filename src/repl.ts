@@ -122,9 +122,10 @@ export function createRepl(options: CreateReplOptions = {}) {
   }
 
   function evalCode(code: string) {
-    const { commands } = _eval(service!, state, code);
-
-    return commands.reduce<any>((_, { caller }) => caller(), undefined);
+    return _eval(service!, state, code).commands.reduce<any>(
+      (_, { caller }) => caller(),
+      undefined
+    );
   }
 
   function evalCodeInternal(code: string, context: Context | undefined) {
@@ -179,7 +180,7 @@ export function createRepl(options: CreateReplOptions = {}) {
             handleError(promiseError);
           }
 
-          callback(err, result);
+          return callback(err, result);
         })();
       }
 
