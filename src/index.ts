@@ -98,6 +98,7 @@ export interface ProcessEnv {
   TS_NODE_SKIP_PROJECT?: string;
   TS_NODE_SKIP_IGNORE?: string;
   TS_NODE_PREFER_TS_EXTS?: string;
+  TS_NODE_TRY_TS_EXT?: string;
   TS_NODE_IGNORE_DIAGNOSTICS?: string;
   TS_NODE_TRANSPILE_ONLY?: string;
   TS_NODE_TYPE_CHECK?: string;
@@ -322,6 +323,13 @@ export interface RegisterOptions extends CreateOptions {
    * @default false
    */
   preferTsExts?: boolean;
+
+  /**
+   * Attempt to resolve the typescript file when the js file cannot be found.
+   *
+   * @default false
+   */
+  tryTsExt?: boolean
 }
 
 /**
@@ -369,6 +377,7 @@ export const DEFAULTS: RegisterOptions = {
   skipProject: yn(env.TS_NODE_SKIP_PROJECT),
   skipIgnore: yn(env.TS_NODE_SKIP_IGNORE),
   preferTsExts: yn(env.TS_NODE_PREFER_TS_EXTS),
+  tryTsExt: yn(env.TS_NODE_TRY_TS_EXT),
   ignoreDiagnostics: split(env.TS_NODE_IGNORE_DIAGNOSTICS),
   transpileOnly: yn(env.TS_NODE_TRANSPILE_ONLY),
   typeCheck: yn(env.TS_NODE_TYPE_CHECK),
@@ -431,6 +440,27 @@ export function getExtensions(config: _ts.ParsedCommandLine) {
   return { tsExtensions, jsExtensions };
 }
 
+function patchResolveFileName() {
+  const originalResolveFilename = (Module as any)._resolveFilename;
+  const jsExt = /\.[mc]?js(x)?/;
+
+  (Module as any)._resolveFilename = function (...args: any[]) {
+    const [request, _, isMain ] = args
+    if (isMain) {
+      return originalResolveFilename.apply(this, args);
+    }
+    try {
+      return originalResolveFilename.apply(this, args);
+    } catch (e) {
+      if (e.code === 'MODULE_NOT_FOUND' && jsExt.test(request)) {
+        args[0] = request.replace(jsExt, '.ts$1');
+        return originalResolveFilename.apply(this, args);
+      }
+      throw e;
+    }
+  };
+}
+
 /**
  * Register TypeScript compiler instance onto node.js
  */
@@ -450,6 +480,10 @@ export function register(opts: RegisterOptions = {}): Service {
     service,
     originalJsHandler
   );
+
+  if (service.options.tryTsExt) {
+    patchResolveFileName();
+  }
 
   // Require specified modules before start-up.
   (Module as any)._preloadModules(service.options.require);
