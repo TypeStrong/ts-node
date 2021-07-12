@@ -1980,7 +1980,16 @@ test.suite('ts-node', (test) => {
   });
 
   test.suite('top level await', (test) => {
-    const tlaCmd = `${cmd} -O '{"target": "ES2018"}' --experimental-repl-await`;
+    const compilerOptions = {
+      target: semver.gte(ts.version, '3.0.1')
+        ? 'es2018'
+        : // TS 2.7 is using polyfill for async interator even though they
+          // were added in es2018
+          'esnext',
+    };
+    const tlaCmd = `${cmd} -O '${JSON.stringify(
+      compilerOptions
+    )}' --experimental-repl-await`;
 
     test('should allow evaluating top level await', async () => {
       const script = `
@@ -2038,7 +2047,7 @@ test.suite('ts-node', (test) => {
 
     test('should error with typing when importing a file with type errors', async () => {
       const { err, stdout, stderr } = await exec(
-        `${tlaCmd} -pe "const {foo} = await import('./repl/tla-import')"`
+        `${tlaCmd} -pe "const {foo} = await require('./repl/tla-import')"`
       );
       expect(err).not.to.equal(null);
       expect(stdout).to.equal('');
