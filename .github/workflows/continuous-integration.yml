@@ -27,8 +27,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: temp/npm-cache
-          key: npm-cache-ubuntu-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-cache-ubuntu-
+          key: npm-cache-packaging-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-cache-packaging-
       # lint, build, test
       - run: npm ci
       - run: npm run lint
