@@ -6,14 +6,16 @@ Some projects require a patched typescript compiler which adds additional featur
 add the ability to configure custom transformers.  These are drop-in replacements for the vanilla `typescript` module and
 implement the same API.
 
-For example, to use `ts-patch` and `ts-transformer-keys`, add this to your `tsconfig.json`:
+For example, to use `ttypescript` and `ts-transformer-keys`, add this to your `tsconfig.json`:
 
 ```json title="tsconfig.json"
 {
   "ts-node": {
-    "compiler": "ts-patch"
+    // This can be omitted when using ts-patch
+    "compiler": "ttypescript"
   },
   "compilerOptions": {
+    // plugin configuration is the same for both ts-patch and ttypescript
     "plugins": [
       { "transform": "ts-transformer-keys/transformer" }
     ]
