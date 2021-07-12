@@ -58,10 +58,11 @@ function exec(
   );
 }
 
+// Formats an object to a JSON string compatible in both linux & windows
 function formatObjectCommandLine(object: Record<string, any>) {
   const asString = JSON.stringify(object);
   if (process.platform === 'win32') {
-    return asString.replace(/"/g, '\\"\\"\\"');
+    return `"${asString.replace(/"/g, '\\"')}"`;
   }
 
   return `'${asString}'`;
