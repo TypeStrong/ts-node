@@ -24,7 +24,7 @@ import { addBuiltinLibsToObject } from '../dist-raw/node-cjs-helpers';
 /**
  * Main `bin` functionality.
  */
-export async function main(
+export function main(
   argv: string[] = process.argv.slice(2),
   entrypointArgs: Record<string, any> = {}
 ) {
@@ -334,33 +334,48 @@ export async function main(
   if (executeEntrypoint) {
     Module.runMain();
   } else {
+    const executionCallbacks: Array<() => void> = [];
+
     if (executeEval) {
-      addBuiltinLibsToObject(global);
-      await evalAndExitOnTsError(
-        evalStuff!.repl,
-        evalStuff!.module!,
-        code!,
-        print,
-        'eval'
-      );
-    }
-    if (executeRepl) {
-      replStuff!.repl.start();
-    }
-    if (executeStdin) {
-      let buffer = code || '';
-      process.stdin.on('data', (chunk: Buffer) => (buffer += chunk));
-      process.stdin.on('end', async () => {
-        await evalAndExitOnTsError(
-          stdinStuff!.repl,
-          stdinStuff!.module!,
-          buffer,
-          // `echo 123 | node -p` still prints 123
+      executionCallbacks.push(() => {
+        addBuiltinLibsToObject(global);
+        evalAndExitOnTsError(
+          evalStuff!.repl,
+          evalStuff!.module!,
+          code!,
           print,
-          'stdin'
+          'eval',
+          executionCallbacks.shift()
         );
       });
     }
+
+    if (executeRepl) {
+      executionCallbacks.push(() => {
+        replStuff!.repl.start();
+        executionCallbacks.shift()?.();
+      });
+    }
+
+    if (executeStdin) {
+      executionCallbacks.push(() => {
+        let buffer = code || '';
+        process.stdin.on('data', (chunk: Buffer) => (buffer += chunk));
+        process.stdin.on('end', () => {
+          evalAndExitOnTsError(
+            stdinStuff!.repl,
+            stdinStuff!.module!,
+            buffer,
+            // `echo 123 | node -p` still prints 123
+            print,
+            'stdin',
+            executionCallbacks.shift()
+          );
+        });
+      });
+    }
+
+    executionCallbacks.shift()?.();
   }
 }
 
@@ -448,31 +463,18 @@ function requireResolveNonCached(absoluteModuleSpecifier: string) {
 /**
  * Evaluate an [eval] or [stdin] script
  */
-async function evalAndExitOnTsError(
+function evalAndExitOnTsError(
   replService: ReplService,
   module: Module,
   code: string,
   isPrinted: boolean,
-  filenameAndDirname: 'eval' | 'stdin'
+  filenameAndDirname: 'eval' | 'stdin',
+  cb: (() => void) | undefined
 ) {
   let result: any;
   setContext(global, module, filenameAndDirname);
 
-  try {
-    const { containsTLA, commands } = replService.evalCodeInternal(code);
-
-    if (containsTLA) {
-      for (const { mustAwait, caller } of commands) {
-        if (mustAwait) {
-          result = await caller();
-        } else {
-          result = caller();
-        }
-      }
-    } else {
-      result = commands.reduce((_, { caller }) => caller(), undefined);
-    }
-  } catch (error) {
+  function handleError(error: unknown) {
     if (error instanceof TSError) {
       console.error(error);
       process.exit(1);
@@ -481,22 +483,71 @@ async function evalAndExitOnTsError(
     throw error;
   }
 
-  if (isPrinted) {
-    console.log(
-      typeof result === 'string'
-        ? result
-        : inspect(result, { colors: process.stdout.isTTY })
-    );
+  function handleSuccess() {
+    if (isPrinted) {
+      console.log(
+        typeof result === 'string'
+          ? result
+          : inspect(result, { colors: process.stdout.isTTY })
+      );
+    }
+
+    cb?.();
   }
+
+  try {
+    const { containsTLA, commands } = replService.evalCodeInternal(code);
+
+    if (containsTLA) {
+      return (async () => {
+        let lastCommandAwaited = false;
+        try {
+          for (const { mustAwait, caller } of commands) {
+            lastCommandAwaited = Boolean(mustAwait);
+            if (mustAwait) {
+              result = await caller();
+            } else {
+              result = caller();
+            }
+          }
+        } catch (error) {
+          try {
+            handleError(error);
+          } catch (nestedError) {
+            // `handleError` will terminate the process if error was a `TSError`,
+            // so `nestedError` can be any value except that.
+
+            let errorToEmit: Error;
+
+            // Since `uncaughtException` requires an `Error`, it's necessary
+            // to wrap the value in case it's not one
+            if (nestedError instanceof Error) {
+              errorToEmit = nestedError;
+            } else {
+              const message =
+                `Uncaught ` + (lastCommandAwaited ? '(in promise) ' : '');
+
+              errorToEmit = new Error(
+                message + inspect(nestedError, { colors: process.stdout.isTTY })
+              );
+            }
+
+            process.emit('uncaughtException', errorToEmit);
+          }
+        }
+
+        handleSuccess();
+      })();
+    }
+
+    result = commands.reduce((_, { caller }) => caller(), undefined);
+  } catch (error) {
+    handleError(error);
+  }
+
+  handleSuccess();
 }
 
 if (require.main === module) {
-  // Since main is async, this is needed to get proper exit code and stack.
-  (async function () {
-    try {
-      await main();
-    } catch (error) {
-      process.emit('uncaughtException', error);
-    }
-  })();
+  main();
 }
