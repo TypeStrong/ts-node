@@ -459,7 +459,19 @@ async function evalAndExitOnTsError(
   setContext(global, module, filenameAndDirname);
 
   try {
-    result = await replService.evalCodeInternal(code);
+    const { containsTLA, commands } = replService.evalCodeInternal(code);
+
+    if (containsTLA) {
+      for (const { mustAwait, caller } of commands) {
+        if (mustAwait) {
+          result = await caller();
+        } else {
+          result = caller();
+        }
+      }
+    } else {
+      result = commands.reduce((_, { caller }) => caller(), undefined);
+    }
   } catch (error) {
     if (error instanceof TSError) {
       console.error(error);

@@ -31,9 +31,15 @@ export interface ReplService {
    * Bind this REPL to a ts-node compiler service.  A compiler service must be bound before `eval`-ing code or starting the REPL
    */
   setService(service: Service): void;
-  evalCode(code: string): void;
+  evalCode(code: string): any;
   /** @internal */
-  evalCodeInternal(code: string, context?: Context): Promise<any>;
+  evalCodeInternal(
+    code: string,
+    context?: Context
+  ): {
+    containsTLA: boolean;
+    commands: Array<{ mustAwait?: true; caller: () => any }>;
+  };
   /**
    * `eval` implementation compatible with node's REPL API
    */
@@ -116,7 +122,9 @@ export function createRepl(options: CreateReplOptions = {}) {
   }
 
   function evalCode(code: string) {
-    return _eval(service!, state, code);
+    const { commands } = _eval(service!, state, code);
+
+    return commands.reduce<any>((_, { caller }) => caller(), undefined);
   }
 
   function evalCodeInternal(code: string, context: Context | undefined) {
@@ -138,27 +146,49 @@ export function createRepl(options: CreateReplOptions = {}) {
       return;
     }
 
-    (async () => {
-      try {
-        result = await evalCodeInternal(
-          code,
-          server.useGlobal ? undefined : context
-        );
-      } catch (error) {
-        if (error instanceof TSError) {
-          // Support recoverable compilations using >= node 6.
-          if (Recoverable && isRecoverable(error)) {
-            err = new Recoverable(error);
-          } else {
-            _console.error(error);
-          }
+    function handleError(error: unknown) {
+      if (error instanceof TSError) {
+        // Support recoverable compilations using >= node 6.
+        if (Recoverable && isRecoverable(error)) {
+          err = new Recoverable(error);
         } else {
-          err = error as any;
+          _console.error(error);
         }
+      } else {
+        err = error as any;
+      }
+    }
+
+    try {
+      const { containsTLA, commands } = evalCodeInternal(
+        code,
+        server.useGlobal ? undefined : context
+      );
+
+      if (containsTLA) {
+        return (async () => {
+          try {
+            for (const { mustAwait, caller } of commands) {
+              if (mustAwait) {
+                result = await caller();
+              } else {
+                result = caller();
+              }
+            }
+          } catch (promiseError) {
+            handleError(promiseError);
+          }
+
+          callback(err, result);
+        })();
       }
 
-      return callback(err, result);
-    })();
+      result = commands.reduce((_, { caller }) => caller(), undefined);
+    } catch (error) {
+      handleError(error);
+    }
+
+    return callback(err, result);
   }
 
   function start(code?: string) {
@@ -241,7 +271,7 @@ export function createEvalAwarePartialHost(
 /**
  * Evaluate the code snippet.
  */
-async function _eval(
+function _eval(
   service: Service,
   state: EvalState,
   input: string,
@@ -277,7 +307,9 @@ async function _eval(
     state.output = output;
   }
 
-  let result: any;
+  let commands: Array<{ mustAwait?: true; caller: () => any }> = [];
+  let containsTLA = false;
+
   for (const change of changes) {
     if (change.added) {
       if (
@@ -291,15 +323,19 @@ async function _eval(
         // Neline prevents comments to mess with wrapper
         const wrappedResult = processTopLevelAwait(change.value + '\n');
         if (wrappedResult !== null) {
-          result = await exec(wrappedResult, state.path, context);
+          containsTLA = true;
+          commands.push({
+            mustAwait: true,
+            caller: () => exec(wrappedResult, state.path, context),
+          });
           continue;
         }
       }
-      result = exec(change.value, state.path, context);
+      commands.push({ caller: () => exec(change.value, state.path, context) });
     }
   }
 
-  return result;
+  return { containsTLA, commands };
 }
 
 /**
