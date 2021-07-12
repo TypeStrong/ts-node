@@ -58,6 +58,15 @@ function exec(
   );
 }
 
+function formatObjectCommandLine(object: Record<string, any>) {
+  const asString = JSON.stringify(object);
+  if (process.platform === 'win32') {
+    return asString.replace(/"/g, '\\"\\"\\"');
+  }
+
+  return `'${asString}'`;
+}
+
 const ROOT_DIR = resolve(__dirname, '../..');
 const DIST_DIR = resolve(__dirname, '..');
 const TEST_DIR = join(__dirname, '../../tests');
@@ -1987,9 +1996,9 @@ test.suite('ts-node', (test) => {
           // were added in es2018
           'esnext',
     };
-    const tlaCmd = `${cmd} -O '${JSON.stringify(
+    const tlaCmd = `${cmd} -O ${formatObjectCommandLine(
       compilerOptions
-    )}' --experimental-repl-await`;
+    )} --experimental-repl-await`;
 
     test('should allow evaluating top level await', async () => {
       const script = `
@@ -2045,7 +2054,7 @@ test.suite('ts-node', (test) => {
       );
     });
 
-    test('should error with typing when importing a file with type errors', async () => {
+    test('should error with typing information when importing a file with type errors', async () => {
       const { err, stdout, stderr } = await exec(
         `${tlaCmd} -pe "const {foo} = await require('./repl/tla-import')"`
       );
