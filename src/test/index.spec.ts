@@ -2041,6 +2041,26 @@ test.suite('ts-node', (test) => {
       }
     );
 
+    test.serial(
+      'should not wait until promise is settled when not using await at top level',
+      async () => {
+        const script = `
+        const startTime = new Date().getTime();
+        (async () => await new Promise((r) => setTimeout(() => r(1), ${1000})))();
+        const endTime = new Date().getTime();
+        endTime - startTime;
+        `;
+        const { err, stdout } = await exec(
+          `${tlaCmd} -pe "${script.split('\n').join('')}"`
+        );
+        expect(err).to.equal(null);
+
+        const ellapsedTime = Number(stdout.trim());
+        expect(ellapsedTime).to.be.gte(0);
+        expect(ellapsedTime).to.be.lte(10);
+      }
+    );
+
     test('should error with typing information when awaited result has type mismatch', async () => {
       const { err, stdout, stderr } = await exec(
         `${tlaCmd} -pe "const x: string = await 1"`
