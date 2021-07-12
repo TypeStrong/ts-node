@@ -150,7 +150,7 @@ export function createRepl(options: CreateReplOptions = {}) {
           _console.error(error);
         }
       } else {
-        err = error as Error;
+        err = error as any;
       }
     }
 
