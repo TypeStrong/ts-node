@@ -5,7 +5,6 @@ import avaTest, {
 } from 'ava';
 import * as assert from 'assert';
 import throat from 'throat';
-import { Stream } from 'stream';
 
 const concurrencyLimiter = throat(8);
 
@@ -232,84 +231,4 @@ function createTestInterface<Context>(opts: {
     automaticallyDoSerial = true;
   };
   return test as any;
-}
-
-// copied from https://github.com/nodejs/node/blob/88799930794045795e8abac874730f9eba7e2300/lib/internal/util/inspect.js#L220-L227
-// Regex used for ansi escape code splitting
-// Adopted from https://github.com/chalk/ansi-regex/blob/HEAD/index.js
-// License: MIT, authors: @sindresorhus, Qix-, arjunmehta and LitoMore
-// Matches all ansi escape code sequences in a string
-const ansiPattern =
-  '[\\u001B\\u009B][[\\]()#;?]*' +
-  '(?:(?:(?:[a-zA-Z\\d]*(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)' +
-  '|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))';
-const ansi = new RegExp(ansiPattern, 'g');
-
-// copied from https://github.com/nodejs/node/blob/88799930794045795e8abac874730f9eba7e2300/lib/internal/util/inspect.js#L2112-L2117
-/**
- * Remove all VT control characters. Use to estimate displayed string width.
- */
-function stripVTControlCharacters(str: string) {
-  return str.replace(ansi, '');
-}
-
-// copied from https://github.com/nodejs/node/blob/88799930794045795e8abac874730f9eba7e2300/test/parallel/test-repl-top-level-await.js
-class ArrayStream extends Stream {
-  readable = true;
-  writable = true;
-
-  run(data: string[]) {
-    data.forEach((line) => {
-      this.emit('data', `${line}\n`);
-    });
-  }
-
-  pause() {}
-  resume() {}
-  write(_chunk: Buffer | string, _encoding: string, _callback: () => {}) {}
-}
-
-export class REPLStream extends ArrayStream {
-  waitingForResponse = false;
-  lines = [''];
-
-  constructor() {
-    super();
-  }
-
-  write(chunk: Buffer | string, encoding: string, callback: () => void) {
-    if (Buffer.isBuffer(chunk)) {
-      chunk = chunk.toString(encoding);
-    }
-    const chunkLines = stripVTControlCharacters(chunk).split('\n');
-    this.lines[this.lines.length - 1] += chunkLines[0];
-    if (chunkLines.length > 1) {
-      this.lines.push(...chunkLines.slice(1));
-    }
-    this.emit('line');
-    if (callback) callback();
-    return true;
-  }
-
-  wait(): Promise<string[]> {
-    if (this.waitingForResponse) {
-      throw new Error('Currently waiting for response to another command');
-    }
-    this.lines = [''];
-    return new Promise((resolve, reject) => {
-      const onError = (err: any) => {
-        this.removeListener('line', onLine);
-        reject(err);
-      };
-      const onLine = () => {
-        if (this.lines[this.lines.length - 1].includes('> ')) {
-          this.removeListener('error', onError);
-          this.removeListener('line', onLine);
-          resolve(this.lines);
-        }
-      };
-      this.once('error', onError);
-      this.on('line', onLine);
-    });
-  }
 }
