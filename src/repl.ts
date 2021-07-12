@@ -10,7 +10,7 @@ import type * as tty from 'tty';
 import Module = require('module');
 
 // Lazy-loaded.
-let processTopLevelAwait: (src: string) => string;
+let processTopLevelAwait: (src: string) => string | null;
 
 /** @internal */
 export const EVAL_FILENAME = `[eval].ts`;
