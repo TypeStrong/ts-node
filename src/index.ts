@@ -528,16 +528,18 @@ export function create(rawOptions: CreateOptions = {}): Service {
   const transpileOnly =
     options.transpileOnly === true && options.typeCheck !== true;
   const transformers = options.transformers || undefined;
-  const diagnosticFilters: Array<DiagnosticFilter> = [{
-    appliesToAllFiles: true,
-    filenamesAbsolute: [],
-    diagnosticsIgnored: [
-      6059, // "'rootDir' is expected to contain all source files."
-      18002, // "The 'files' list in config file is empty."
-      18003, // "No inputs were found in config file."
-      ...(options.ignoreDiagnostics || []),
-    ].map(Number)
-  }];
+  const diagnosticFilters: Array<DiagnosticFilter> = [
+    {
+      appliesToAllFiles: true,
+      filenamesAbsolute: [],
+      diagnosticsIgnored: [
+        6059, // "'rootDir' is expected to contain all source files."
+        18002, // "The 'files' list in config file is empty."
+        18003, // "No inputs were found in config file."
+        ...(options.ignoreDiagnostics || []),
+      ].map(Number),
+    },
+  ];
 
   const configDiagnosticList = filterDiagnostics(
     config.errors,
@@ -1157,6 +1159,10 @@ export function create(rawOptions: CreateOptions = {}): Service {
     return true;
   };
 
+  function addDiagnosticFilter(filter: DiagnosticFilter) {
+    diagnosticFilters.push(filter);
+  }
+
   return {
     ts,
     config,
@@ -1167,6 +1173,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     options,
     configFilePath,
     moduleTypeClassifier,
+    addDiagnosticFilter,
   };
 }
 
@@ -1324,8 +1331,13 @@ function filterDiagnostics(
   diagnostics: readonly _ts.Diagnostic[],
   filters: DiagnosticFilter[]
 ) {
-  return diagnostics.filter(d =>
-    filters.every(f => (!f.appliesToAllFiles && f.filenamesAbsolute.indexOf(d.file?.fileName!) === -1) || f.diagnosticsIgnored.indexOf(d.code) === -1)
+  return diagnostics.filter((d) =>
+    filters.every(
+      (f) =>
+        (!f.appliesToAllFiles &&
+          f.filenamesAbsolute.indexOf(d.file?.fileName!) === -1) ||
+        f.diagnosticsIgnored.indexOf(d.code) === -1
+    )
   );
 }
 

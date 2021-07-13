@@ -91,7 +91,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     stdout === process.stdout && stderr === process.stderr
       ? console
       : new Console(stdout, stderr);
-  const {ignoreExtraDiagnostics = true} = options;
+  const { ignoreExtraDiagnostics = true } = options;
 
   const replService: ReplService = {
     state: options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME)),
@@ -109,7 +109,7 @@ export function createRepl(options: CreateReplOptions = {}) {
 
   function setService(_service: Service) {
     service = _service;
-    if(ignoreExtraDiagnostics) {
+    if (ignoreExtraDiagnostics) {
       service.addDiagnosticFilter({
         appliesToAllFiles: false,
         filenamesAbsolute: [state.path],
@@ -117,7 +117,7 @@ export function createRepl(options: CreateReplOptions = {}) {
           2393, // Duplicate function implementation: https://github.com/TypeStrong/ts-node/issues/729
           6133, // <identifier> is declared but its value is never read. https://github.com/TypeStrong/ts-node/issues/850
           7027, // Unreachable code detected. https://github.com/TypeStrong/ts-node/issues/469
-        ]
+        ],
       });
     }
   }
