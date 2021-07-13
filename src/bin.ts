@@ -474,7 +474,9 @@ function evalAndExitOnTsError(
   let result: any;
   setContext(global, module, filenameAndDirname);
 
-  function handleError(error: unknown) {
+  try {
+    result = replService.evalCode(code);
+  } catch (error) {
     if (error instanceof TSError) {
       console.error(error);
       process.exit(1);
@@ -483,69 +485,15 @@ function evalAndExitOnTsError(
     throw error;
   }
 
-  function handleSuccess() {
-    if (isPrinted) {
-      console.log(
-        typeof result === 'string'
-          ? result
-          : inspect(result, { colors: process.stdout.isTTY })
-      );
-    }
-
-    cb?.();
+  if (isPrinted) {
+    console.log(
+      typeof result === 'string'
+        ? result
+        : inspect(result, { colors: process.stdout.isTTY })
+    );
   }
 
-  try {
-    const { containsTLA, commands } = replService.evalCodeInternal(code);
-
-    if (containsTLA) {
-      return (async () => {
-        let lastCommandAwaited = false;
-        try {
-          for (const { mustAwait, caller } of commands) {
-            lastCommandAwaited = Boolean(mustAwait);
-            if (mustAwait) {
-              result = await caller();
-            } else {
-              result = caller();
-            }
-          }
-        } catch (error) {
-          try {
-            handleError(error);
-          } catch (nestedError) {
-            // `handleError` will terminate the process if error was a `TSError`,
-            // so `nestedError` can be any value except that.
-
-            let errorToEmit: Error;
-
-            // Since `uncaughtException` requires an `Error`, it's necessary
-            // to wrap the value in case it's not one
-            if (nestedError instanceof Error) {
-              errorToEmit = nestedError;
-            } else {
-              const message =
-                `Uncaught ` + (lastCommandAwaited ? '(in promise) ' : '');
-
-              errorToEmit = new Error(
-                message + inspect(nestedError, { colors: process.stdout.isTTY })
-              );
-            }
-
-            process.emit('uncaughtException', errorToEmit);
-          }
-        }
-
-        handleSuccess();
-      })();
-    }
-
-    result = commands.reduce((_, { caller }) => caller(), undefined);
-  } catch (error) {
-    handleError(error);
-  }
-
-  handleSuccess();
+  cb?.();
 }
 
 if (require.main === module) {

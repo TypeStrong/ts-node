@@ -33,10 +33,11 @@ export interface ReplService {
   setService(service: Service): void;
   evalCode(code: string): any;
   /** @internal */
-  evalCodeInternal(
-    code: string,
-    context?: Context
-  ): {
+  evalCodeInternal(opts: {
+    code: string;
+    enableTLA?: boolean;
+    context?: Context;
+  }): {
     containsTLA: boolean;
     commands: Array<{ mustAwait?: true; caller: () => any }>;
   };
@@ -122,14 +123,23 @@ export function createRepl(options: CreateReplOptions = {}) {
   }
 
   function evalCode(code: string) {
-    return _eval(service!, state, code).commands.reduce<any>(
-      (_, { caller }) => caller(),
-      undefined
-    );
+    return _eval({
+      service: service!,
+      state,
+      input: code,
+    }).commands.reduce<any>((_, { caller }) => caller(), undefined);
   }
 
-  function evalCodeInternal(code: string, context: Context | undefined) {
-    return _eval(service!, state, code, context);
+  function evalCodeInternal({
+    code,
+    enableTLA,
+    context,
+  }: {
+    code: string;
+    enableTLA?: boolean;
+    context?: Context;
+  }) {
+    return _eval({ service: service!, state, input: code, enableTLA, context });
   }
 
   function nodeEval(
@@ -161,10 +171,11 @@ export function createRepl(options: CreateReplOptions = {}) {
     }
 
     try {
-      const { containsTLA, commands } = evalCodeInternal(
+      const { containsTLA, commands } = evalCodeInternal({
         code,
-        server.useGlobal ? undefined : context
-      );
+        enableTLA: true,
+        context: server.useGlobal ? undefined : context,
+      });
 
       if (containsTLA) {
         return (async () => {
@@ -272,12 +283,19 @@ export function createEvalAwarePartialHost(
 /**
  * Evaluate the code snippet.
  */
-function _eval(
-  service: Service,
-  state: EvalState,
-  input: string,
-  context?: Context
-) {
+function _eval({
+  service,
+  state,
+  input,
+  enableTLA = false,
+  context,
+}: {
+  service: Service;
+  state: EvalState;
+  input: string;
+  enableTLA?: boolean;
+  context?: Context;
+}) {
   const lines = state.lines;
   const isCompletion = !/\n$/.test(input);
   const undo = appendEval(state, input);
@@ -314,6 +332,7 @@ function _eval(
   for (const change of changes) {
     if (change.added) {
       if (
+        enableTLA &&
         /\bawait\b/.test(change.value) &&
         service.options.experimentalReplAwait
       ) {
@@ -375,7 +394,7 @@ function startRepl(
   // Eval incoming code before the REPL starts.
   if (code) {
     try {
-      replService.evalCodeInternal(`${code}\n`, context);
+      replService.evalCode(`${code}\n`);
     } catch (err) {
       replService.console.error(err);
       process.exit(1);
