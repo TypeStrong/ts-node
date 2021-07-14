@@ -1,8 +1,9 @@
-import { relative, basename, extname, resolve, dirname, join } from 'path';
 import { Module } from 'module';
+import { relative, basename, extname, resolve, dirname, join, delimiter as pathDelimiter } from 'path';
 import * as util from 'util';
 import { fileURLToPath } from 'url';
 
+import * as ynModule from 'yn';
 import sourceMapSupport = require('source-map-support');
 import { BaseError } from 'make-error';
 import type * as _ts from 'typescript';
@@ -269,8 +270,8 @@ export interface CreateOptions {
    * best results.
    */
   require?: Array<string>;
-  readFile?: (path: string) => string | undefined;
-  fileExists?: (path: string) => boolean;
+  readFile?: ReadFileFunction;
+  fileExists?: FileExistsFunction;
   transformers?:
     | _ts.CustomTransformers
     | ((p: _ts.Program) => _ts.CustomTransformers);
@@ -341,6 +342,9 @@ export interface TsConfigOptions
     | 'experimentalEsmLoader'
     | 'optionBasePaths'
   > {}
+
+export type ReadFileFunction = (path: string) => string | undefined;
+export type FileExistsFunction = (path: string) => boolean;
 
 /**
  * Information retrieved from type info check.
@@ -660,18 +664,132 @@ export function create(rawOptions: CreateOptions = {}): Service {
     patterns: options.moduleTypes,
   });
 
+  /**
+   * Create filesystem access functions which implement appropriate caching and
+   * are usable in `*Host` implementations.
+   */
+  function createCachedFilesystem(opts: {
+    readFile: ReadFileFunction;
+    fileExists: FileExistsFunction;
+  }) {
+    const { readFile: _readFile, fileExists: _fileExists } = opts;
+
+    const fileExistsCache = new Map<string, boolean>();
+    const fileExists = cachedLookup(debugFn('fileExists', _fileExists), fileExistsCache);
+    const readFileCache = new Map<string, string | undefined>();
+    const readFile = cachedLookup(debugFn('readFile', _readFile), readFileCache);
+    function setFileContents(path: string, content: string | undefined) {
+      readFileCache.set(path, content);
+      fileExistsCache.set(path, true);
+    }
+    // Not cached until TS exposes a proper way to inject fs dependencies so that
+    // this function obeys our readFile, etc caches.
+    const readDirectory = (path: string, extensions?: readonly string[], exclude?: readonly string[], include?: readonly string[], depth?: number): string[] => {
+      debug('readDirectory', path, extensions, exclude, include, depth);
+      return ts.sys.readDirectory(path, extensions, exclude, include, depth);
+    }
+    const getDirectories = cachedLookup(
+      debugFn('getDirectories', ts.sys.getDirectories)
+    );
+    const directoryExists = cachedLookup(
+      debugFn('directoryExists', ts.sys.directoryExists)
+    );
+    // Cache probably has little effect; this is an in-memory transformation based on CWD
+    const resolvePath = debugFn('resolvePath', ts.sys.resolvePath);
+    // Note: cache does not understand when intermediate symlinks are changed; cannot be invalidated correctly.
+    const realpath = ts.sys.realpath
+      ? cachedLookup(debugFn('realpath', ts.sys.realpath))
+      : undefined;
+
+    return {
+      readFile,
+      readDirectory,
+      getDirectories,
+      fileExists,
+      directoryExists,
+      resolvePath,
+      realpath,
+      setFileContents,
+      fileContents: readFileCache,
+    };
+
+    function cachedLookup<T>(fn: (arg: string) => T, cache = new Map<string, T>()): (arg: string) => T {
+      return (arg: string): T => {
+        if (!cache.has(arg)) {
+          cache.set(arg, fn(arg));
+        }
+
+        return cache.get(arg)!;
+      };
+    }
+  }
+
+  function createUpdateMemoryCacheFunction(opts: {
+    onProjectMustUpdate: () => void;
+    isFileKnownToBeInternal: ReturnType<
+      typeof createResolverFunctions
+    >['isFileKnownToBeInternal'];
+    markBucketOfFilenameInternal: ReturnType<
+      typeof createResolverFunctions
+    >['markBucketOfFilenameInternal'];
+    rootFileNames: Set<string>;
+    fileVersions: Map<string, number>;
+    fileContents: Map<string, string | undefined>;
+    setFileContents(path: string, contents: string | undefined): void;
+  }) {
+    const {
+      onProjectMustUpdate,
+      isFileKnownToBeInternal,
+      fileContents,
+      setFileContents,
+      fileVersions,
+      markBucketOfFilenameInternal,
+      rootFileNames,
+    } = opts;
+    const updateMemoryCache = (contents: string, fileName: string) => {
+      let projectMustUpdate = false;
+      // Add to `rootFiles` as necessary, either to make TS include a file it has not seen,
+      // or to trigger a re-classification of files from external to internal.
+      if (!rootFileNames.has(fileName) && !isFileKnownToBeInternal(fileName)) {
+        markBucketOfFilenameInternal(fileName);
+        rootFileNames.add(fileName);
+        projectMustUpdate = true;
+      }
+
+      const previousVersion = fileVersions.get(fileName) || 0;
+      const previousContents = fileContents.get(fileName);
+      // Avoid incrementing cache when nothing has changed.
+      if (contents !== previousContents) {
+        fileVersions.set(fileName, previousVersion + 1);
+        setFileContents(fileName, contents);
+        projectMustUpdate = true;
+      }
+      if (projectMustUpdate) onProjectMustUpdate();
+    };
+    return { updateMemoryCache };
+  }
+
   // Use full language services when the fast option is disabled.
   if (!transpileOnly) {
-    const fileContents = new Map<string, string>();
+    const {
+      readFile: cachedReadFile,
+      fileExists: cachedFileExists,
+      directoryExists,
+      getDirectories,
+      readDirectory,
+      realpath,
+      resolvePath,
+      setFileContents,
+      fileContents,
+    } = createCachedFilesystem({ readFile, fileExists });
     const rootFileNames = new Set(config.fileNames);
-    const cachedReadFile = cachedLookup(debugFn('readFile', readFile));
+    const fileVersions = new Map(
+      Array.from(rootFileNames).map((fileName) => [fileName, 0])
+    );
 
     // Use language services by default (TODO: invert next major version).
     if (!options.compilerHost) {
       let projectVersion = 1;
-      const fileVersions = new Map(
-        Array.from(rootFileNames).map((fileName) => [fileName, 0])
-      );
 
       const getCustomTransformers = () => {
         if (typeof transformers === 'function') {
@@ -687,38 +805,28 @@ export function create(rawOptions: CreateOptions = {}): Service {
         Required<Pick<_ts.LanguageServiceHost, 'fileExists' | 'readFile'>> = {
         getProjectVersion: () => String(projectVersion),
         getScriptFileNames: () => Array.from(rootFileNames),
-        getScriptVersion: (fileName: string) => {
-          const version = fileVersions.get(fileName);
-          return version ? version.toString() : '';
-        },
+        // Language service calls getScriptSnapshot, then getScriptVersion, in that order
         getScriptSnapshot(fileName: string) {
-          // TODO ordering of this with getScriptVersion?  Should they sync up?
-          let contents = fileContents.get(fileName);
-
-          // Read contents into TypeScript memory cache.
-          if (contents === undefined) {
-            contents = cachedReadFile(fileName);
-            if (contents === undefined) return;
-
-            fileVersions.set(fileName, 1);
-            fileContents.set(fileName, contents);
-            projectVersion++;
-          }
-
+          debug('getScriptSnapshot', fileName);
+          const contents = cachedReadFile(fileName);
+          if (contents === undefined) return;
           return ts.ScriptSnapshot.fromString(contents);
         },
+        getScriptVersion(fileName: string) {
+          debug('getScriptVersion', fileName);
+          let version = fileVersions.get(fileName);
+          if(version === undefined) {
+            version = 1;
+            fileVersions.set(fileName, version);
+          }
+          return version.toString();
+        },
         readFile: cachedReadFile,
-        readDirectory: ts.sys.readDirectory,
-        getDirectories: cachedLookup(
-          debugFn('getDirectories', ts.sys.getDirectories)
-        ),
-        fileExists: cachedLookup(debugFn('fileExists', fileExists)),
-        directoryExists: cachedLookup(
-          debugFn('directoryExists', ts.sys.directoryExists)
-        ),
-        realpath: ts.sys.realpath
-          ? cachedLookup(debugFn('realpath', ts.sys.realpath))
-          : undefined,
+        readDirectory,
+        getDirectories,
+        fileExists: cachedFileExists,
+        directoryExists,
+        realpath,
         getNewLine: () => ts.sys.newLine,
         useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
         getCurrentDirectory: () => cwd,
@@ -750,29 +858,18 @@ export function create(rawOptions: CreateOptions = {}): Service {
       );
       const service = ts.createLanguageService(serviceHost, registry);
 
-      const updateMemoryCache = (contents: string, fileName: string) => {
-        // Add to `rootFiles` as necessary, either to make TS include a file it has not seen,
-        // or to trigger a re-classification of files from external to internal.
-        if (
-          !rootFileNames.has(fileName) &&
-          !isFileKnownToBeInternal(fileName)
-        ) {
-          markBucketOfFilenameInternal(fileName);
-          rootFileNames.add(fileName);
-          // Increment project version for every change to rootFileNames.
+      const { updateMemoryCache } = createUpdateMemoryCacheFunction({
+        rootFileNames,
+        fileContents,
+        setFileContents,
+        fileVersions,
+        isFileKnownToBeInternal,
+        markBucketOfFilenameInternal,
+        onProjectMustUpdate() {
+          // Increment project version for every file change or addition to rootFileNames
           projectVersion++;
-        }
-
-        const previousVersion = fileVersions.get(fileName) || 0;
-        const previousContents = fileContents.get(fileName);
-        // Avoid incrementing cache when nothing has changed.
-        if (contents !== previousContents) {
-          fileVersions.set(fileName, previousVersion + 1);
-          fileContents.set(fileName, contents);
-          // Increment project version for every file change.
-          projectVersion++;
-        }
-      };
+        },
+      });
 
       let previousProgram: _ts.Program | undefined = undefined;
 
@@ -835,6 +932,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         return { name, comment };
       };
     } else {
+      // options.compilerHost === true
       const sys: _ts.System & _ts.FormatDiagnosticsHost = {
         ...ts.sys,
         ...diagnosticHost,
@@ -845,18 +943,12 @@ export function create(rawOptions: CreateOptions = {}): Service {
           if (contents) fileContents.set(fileName, contents);
           return contents;
         },
-        readDirectory: ts.sys.readDirectory,
-        getDirectories: cachedLookup(
-          debugFn('getDirectories', ts.sys.getDirectories)
-        ),
-        fileExists: cachedLookup(debugFn('fileExists', fileExists)),
-        directoryExists: cachedLookup(
-          debugFn('directoryExists', ts.sys.directoryExists)
-        ),
-        resolvePath: cachedLookup(debugFn('resolvePath', ts.sys.resolvePath)),
-        realpath: ts.sys.realpath
-          ? cachedLookup(debugFn('realpath', ts.sys.realpath))
-          : undefined,
+        readDirectory,
+        getDirectories,
+        fileExists: cachedFileExists,
+        directoryExists,
+        resolvePath,
+        realpath,
       };
 
       const host: _ts.CompilerHost = ts.createIncrementalCompilerHost
@@ -919,26 +1011,15 @@ export function create(rawOptions: CreateOptions = {}): Service {
           : transformers;
 
       // Set the file contents into cache manually.
-      const updateMemoryCache = (contents: string, fileName: string) => {
-        const previousContents = fileContents.get(fileName);
-        const contentsChanged = previousContents !== contents;
-        if (contentsChanged) {
-          fileContents.set(fileName, contents);
-        }
-
-        // Add to `rootFiles` when discovered by compiler for the first time.
-        let addedToRootFileNames = false;
-        if (
-          !rootFileNames.has(fileName) &&
-          !isFileKnownToBeInternal(fileName)
-        ) {
-          markBucketOfFilenameInternal(fileName);
-          rootFileNames.add(fileName);
-          addedToRootFileNames = true;
-        }
-
-        // Update program when file changes.
-        if (addedToRootFileNames || contentsChanged) {
+      const { updateMemoryCache } = createUpdateMemoryCacheFunction({
+        rootFileNames,
+        fileVersions,
+        fileContents,
+        setFileContents,
+        isFileKnownToBeInternal,
+        markBucketOfFilenameInternal,
+        onProjectMustUpdate() {
+          // Update program when file changes.
           builderProgram = ts.createEmitAndSemanticDiagnosticsBuilderProgram(
             Array.from(rootFileNames),
             config.options,
@@ -947,8 +1028,8 @@ export function create(rawOptions: CreateOptions = {}): Service {
             config.errors,
             config.projectReferences
           );
-        }
-      };
+        },
+      });
 
       getOutput = (code: string, fileName: string) => {
         const output: [string, string] = ['', ''];
