@@ -3,6 +3,7 @@ import type { Key } from 'readline';
 import { Stream } from 'stream';
 import type * as tsNodeTypes from '../index';
 import semver = require('semver');
+import ts = require('typescript');
 
 interface SharedObjects
   extends Pick<typeof tsNodeTypes, 'create' | 'createRepl'> {
@@ -30,9 +31,14 @@ export async function upstreamTopLevelAwaitTests({
     ...replService.evalAwarePartialHost,
     project: `${TEST_DIR}/tsconfig.json`,
     experimentalReplAwait: true,
+    executeEntrypoint: false,
     transpileOnly: true,
     compilerOptions: {
-      target: 'ES2018',
+      target: semver.gte(ts.version, '3.0.1')
+        ? 'es2018'
+        : // TS 2.7 is using polyfill for async interator even though they
+          // were added in es2018
+          'esnext',
     },
   });
   replService.setService(service);

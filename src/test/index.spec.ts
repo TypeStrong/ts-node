@@ -58,14 +58,29 @@ function exec(
   );
 }
 
-// Formats an object to a JSON string compatible in both linux & windows
-function formatObjectCommandLine(object: Record<string, any>) {
-  const asString = JSON.stringify(object);
-  if (process.platform === 'win32') {
-    return `"${asString.replace(/"/g, '\\"')}"`;
-  }
-
-  return `'${asString}'`;
+function createReplViaApi({
+  createReplOpts,
+  createServiceOpts,
+}: {
+  createReplOpts?: Partial<tsNodeTypes.CreateReplOptions>;
+  createServiceOpts?: Partial<tsNodeTypes.CreateOptions>;
+} = {}) {
+  const stdin = new PassThrough();
+  const stdout = new PassThrough();
+  const stderr = new PassThrough();
+  const replService = createRepl({
+    stdin,
+    stdout,
+    stderr,
+    ...createReplOpts,
+  });
+  const service = create({
+    ...replService.evalAwarePartialHost,
+    project: `${TEST_DIR}/tsconfig.json`,
+    ...createServiceOpts,
+  });
+  replService.setService(service);
+  return { stdin, stdout, stderr, replService, service };
 }
 
 const ROOT_DIR = resolve(__dirname, '../..');
@@ -413,23 +428,6 @@ test.suite('ts-node', (test) => {
         '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
       );
     });
-
-    function createReplViaApi() {
-      const stdin = new PassThrough();
-      const stdout = new PassThrough();
-      const stderr = new PassThrough();
-      const replService = createRepl({
-        stdin,
-        stdout,
-        stderr,
-      });
-      const service = create({
-        ...replService.evalAwarePartialHost,
-        project: `${TEST_DIR}/tsconfig.json`,
-      });
-      replService.setService(service);
-      return { stdin, stdout, stderr, replService, service };
-    }
 
     // Serial because it's timing-sensitive
     test.serial('REPL can be created via API', async () => {
@@ -1997,11 +1995,40 @@ test.suite('ts-node', (test) => {
           // were added in es2018
           'esnext',
     };
-    const tlaCmd = `${cmd} -O ${formatObjectCommandLine(
-      compilerOptions
-    )} --experimental-repl-await`;
 
-    test('should allow evaluating top level await', async () => {
+    async function executeIntoTlaRepl(input: string, waitMs = 1000) {
+      const res = createReplViaApi({
+        createServiceOpts: {
+          experimentalReplAwait: true,
+          compilerOptions,
+          executeEntrypoint: false,
+        },
+      });
+      res.replService.startInternal({
+        useGlobal: false,
+      });
+
+      const { stdin, stdout, stderr } = res;
+
+      stdin.write(
+        input
+          .split('\n')
+          .map((line) => line.trim())
+          .join('')
+      );
+      stdin.end();
+      await promisify(setTimeout)(waitMs);
+      stdout.end();
+      stderr.end();
+
+      return {
+        stdin,
+        stdout: await getStream(stdout),
+        stderr: await getStream(stderr),
+      };
+    }
+
+    test.serial('should allow evaluating top level await', async () => {
       const script = `
         const x = await new Promise((r) => r(1));
         for await (const x of [1,2,3]) { console.log(x) };
@@ -2012,30 +2039,30 @@ test.suite('ts-node', (test) => {
         const [z] = await [3];
         x + y + z;
       `;
-      const { err, stdout } = await exec(
-        `${tlaCmd} -pe "${script.split('\n').join('')}"`
-      );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('1\n2\n3\na\nb\n6\n');
+
+      const { stdout, stderr } = await executeIntoTlaRepl(script);
+      expect(stderr).to.equal('');
+      expect(stdout).to.equal('> 1\n2\n3\na\nb\n6\n> ');
     });
 
     // Serial because it's timing-sensitive
     test.serial(
       'should wait until promise is settled when awaiting at top level',
       async () => {
-        const awaitMs = 1000;
+        const awaitMs = 500;
         const script = `
-        const startTime = new Date().getTime();
-        await new Promise((r) => setTimeout(() => r(1), ${awaitMs}));
-        const endTime = new Date().getTime();
-        endTime - startTime;
+          const startTime = new Date().getTime();
+          await new Promise((r) => setTimeout(() => r(1), ${awaitMs}));
+          const endTime = new Date().getTime();
+          endTime - startTime;
         `;
-        const { err, stdout } = await exec(
-          `${tlaCmd} -pe "${script.split('\n').join('')}"`
-        );
-        expect(err).to.equal(null);
+        const { stdout, stderr } = await executeIntoTlaRepl(script, 2000);
 
-        const ellapsedTime = Number(stdout.trim());
+        expect(stderr).to.equal('');
+
+        const ellapsedTime = Number(
+          stdout.split('\n')[0].replace('> ', '').trim()
+        );
         expect(ellapsedTime).to.be.gte(awaitMs);
         expect(ellapsedTime).to.be.lte(awaitMs + 100);
       }
@@ -2045,49 +2072,58 @@ test.suite('ts-node', (test) => {
       'should not wait until promise is settled when not using await at top level',
       async () => {
         const script = `
-        const startTime = new Date().getTime();
-        (async () => await new Promise((r) => setTimeout(() => r(1), ${1000})))();
-        const endTime = new Date().getTime();
-        endTime - startTime;
+          const startTime = new Date().getTime();
+          (async () => await new Promise((r) => setTimeout(() => r(1), ${1000})))();
+          const endTime = new Date().getTime();
+          endTime - startTime;
         `;
-        const { err, stdout } = await exec(
-          `${tlaCmd} -pe "${script.split('\n').join('')}"`
-        );
-        expect(err).to.equal(null);
+        const { stdout, stderr } = await executeIntoTlaRepl(script);
 
-        const ellapsedTime = Number(stdout.trim());
+        expect(stderr).to.equal('');
+
+        const ellapsedTime = Number(
+          stdout.split('\n')[0].replace('> ', '').trim()
+        );
         expect(ellapsedTime).to.be.gte(0);
         expect(ellapsedTime).to.be.lte(10);
       }
     );
 
-    test('should error with typing information when awaited result has type mismatch', async () => {
-      const { err, stdout, stderr } = await exec(
-        `${tlaCmd} -pe "const x: string = await 1"`
-      );
-      expect(err).not.to.equal(null);
-      expect(stdout).to.equal('');
-      expect(stderr.replace(/\r\n/g, '\n')).to.equal(
-        (semver.gte(ts.version, '4.0.0')
-          ? `[eval].ts(1,7): error TS2322: Type 'number' is not assignable to type 'string'.\n`
-          : `[eval].ts(1,7): error TS2322: Type '1' is not assignable to type 'string'.\n`) +
-          '\n'
-      );
-    });
+    test.serial(
+      'should error with typing information when awaited result has type mismatch',
+      async () => {
+        const { stdout, stderr } = await executeIntoTlaRepl(
+          'const x: string = await 1'
+        );
 
-    test('should error with typing information when importing a file with type errors', async () => {
-      const { err, stdout, stderr } = await exec(
-        `${tlaCmd} -pe "const {foo} = await require('./repl/tla-import')"`
-      );
-      expect(err).not.to.equal(null);
-      expect(stdout).to.equal('');
-      expect(stderr.replace(/\r\n/g, '\n')).to.equal(
-        (semver.gte(ts.version, '4.0.0')
-          ? `repl/tla-import.ts(1,14): error TS2322: Type 'number' is not assignable to type 'string'.\n`
-          : `repl/tla-import.ts(1,14): error TS2322: Type '1' is not assignable to type 'string'.\n`) +
-          '\n'
-      );
-    });
+        expect(stdout).to.equal('> undefined\n> ');
+        expect(stderr.replace(/\r\n/g, '\n')).to.equal(
+          '<repl>.ts(1,7): error TS2322: ' +
+            (semver.gte(ts.version, '4.0.0')
+              ? `Type 'number' is not assignable to type 'string'.\n`
+              : `Type '1' is not assignable to type 'string'.\n`) +
+            '\n'
+        );
+      }
+    );
+
+    test.serial(
+      'should error with typing information when importing a file with type errors',
+      async () => {
+        const { stdout, stderr } = await executeIntoTlaRepl(
+          `const {foo} = await import('./tests/repl/tla-import');`
+        );
+
+        expect(stdout).to.equal('> undefined\n> ');
+        expect(stderr.replace(/\r\n/g, '\n')).to.equal(
+          'tests/repl/tla-import.ts(1,14): error TS2322: ' +
+            (semver.gte(ts.version, '4.0.0')
+              ? `Type 'number' is not assignable to type 'string'.\n`
+              : `Type '1' is not assignable to type 'string'.\n`) +
+            '\n'
+        );
+      }
+    );
 
     test('should pass upstream test cases', async () =>
       upstreamTopLevelAwaitTests({ TEST_DIR, create, createRepl }));
