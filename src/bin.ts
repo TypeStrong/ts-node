@@ -335,48 +335,37 @@ export function main(
   if (executeEntrypoint) {
     Module.runMain();
   } else {
-    const executionCallbacks: Array<() => void> = [];
-
+    // Note: eval and repl may both run, but never with stdin.
+    // If stdin runs, eval and repl will not.
     if (executeEval) {
-      executionCallbacks.push(() => {
-        addBuiltinLibsToObject(global);
-        evalAndExitOnTsError(
-          evalStuff!.repl,
-          evalStuff!.module!,
-          code!,
-          print,
-          'eval',
-          executionCallbacks.shift()
-        );
-      });
+      addBuiltinLibsToObject(global);
+      evalAndExitOnTsError(
+        evalStuff!.repl,
+        evalStuff!.module!,
+        code!,
+        print,
+        'eval',
+      );
     }
 
     if (executeRepl) {
-      executionCallbacks.push(() => {
-        replStuff!.repl.start();
-        executionCallbacks.shift()?.();
-      });
+      replStuff!.repl.start();
     }
 
     if (executeStdin) {
-      executionCallbacks.push(() => {
-        let buffer = code || '';
-        process.stdin.on('data', (chunk: Buffer) => (buffer += chunk));
-        process.stdin.on('end', () => {
-          evalAndExitOnTsError(
-            stdinStuff!.repl,
-            stdinStuff!.module!,
-            buffer,
-            // `echo 123 | node -p` still prints 123
-            print,
-            'stdin',
-            executionCallbacks.shift()
-          );
-        });
+      let buffer = code || '';
+      process.stdin.on('data', (chunk: Buffer) => (buffer += chunk));
+      process.stdin.on('end', () => {
+        evalAndExitOnTsError(
+          stdinStuff!.repl,
+          stdinStuff!.module!,
+          buffer,
+          // `echo 123 | node -p` still prints 123
+          print,
+          'stdin',
+        );
       });
     }
-
-    executionCallbacks.shift()?.();
   }
 }
 
@@ -469,8 +458,7 @@ function evalAndExitOnTsError(
   module: Module,
   code: string,
   isPrinted: boolean,
-  filenameAndDirname: 'eval' | 'stdin',
-  cb: (() => void) | undefined
+  filenameAndDirname: 'eval' | 'stdin'
 ) {
   let result: any;
   setContext(global, module, filenameAndDirname);
@@ -493,8 +481,6 @@ function evalAndExitOnTsError(
         : inspect(result, { colors: process.stdout.isTTY })
     );
   }
-
-  cb?.();
 }
 
 if (require.main === module) {
