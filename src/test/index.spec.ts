@@ -411,6 +411,25 @@ test.suite('ts-node', (test) => {
       );
     });
 
+    test('REPL "type" command can be used on types', async () => {
+      const execPromise = exec(`${cmd} --interactive`);
+      execPromise.child.stdin!.end(
+        'type Foo = string | { x: 1 }\n' +
+          '.type Foo\n' +
+          'interface Bar { x: string; y: number; }\n' +
+          '.type Bar'
+      );
+      const { err, stdout } = await execPromise;
+      expect(err).to.equal(null);
+      expect(stdout).to.equal(
+        '> undefined\n' +
+          '> type Foo = string | {\n    x: 1;\n}\n' +
+          '> undefined\n' +
+          '> interface Bar\n' +
+          '> '
+      );
+    });
+
     function createReplViaApi() {
       const stdin = new PassThrough();
       const stdout = new PassThrough();
@@ -1654,6 +1673,7 @@ test.suite('ts-node', (test) => {
           service.getTypeInfo('/**jsdoc here*/const x = 10', 'test.ts', 21)
         ).to.deep.equal({
           comment: 'jsdoc here',
+          kind: 'const',
           name: 'const x: 10',
         });
       });
@@ -1664,6 +1684,7 @@ test.suite('ts-node', (test) => {
           service.getTypeInfo('/**jsdoc here*/const x = 10', 'test.ts', 0)
         ).to.deep.equal({
           comment: '',
+          kind: undefined,
           name: '',
         });
       });

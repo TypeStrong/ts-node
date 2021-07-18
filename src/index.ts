@@ -348,6 +348,7 @@ export interface TsConfigOptions
 export interface TypeInfo {
   name: string;
   comment: string;
+  kind?: _ts.ScriptElementKind;
 }
 
 /**
@@ -831,8 +832,9 @@ export function create(rawOptions: CreateOptions = {}): Service {
         const info = service.getQuickInfoAtPosition(fileName, position);
         const name = ts.displayPartsToString(info ? info.displayParts : []);
         const comment = ts.displayPartsToString(info ? info.documentation : []);
+        const kind = info?.kind;
 
-        return { name, comment };
+        return { name, comment, kind };
       };
     } else {
       const sys: _ts.System & _ts.FormatDiagnosticsHost = {
