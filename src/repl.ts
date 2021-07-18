@@ -333,8 +333,8 @@ function _eval({
     if (change.added) {
       if (
         enableTLA &&
-        /\bawait\b/.test(change.value) &&
-        service.options.experimentalReplAwait
+        service.shouldReplAwait &&
+        change.value.indexOf('await') > -1
       ) {
         if (processTopLevelAwait === undefined) {
           ({ processTopLevelAwait } = require('../dist-raw/node-repl-await'));

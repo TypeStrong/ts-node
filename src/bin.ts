@@ -65,7 +65,7 @@ export function main(
         '--emit': Boolean,
         '--scope': Boolean,
         '--scope-dir': String,
-        '--experimental-repl-await': Boolean,
+        '--no-experimental-repl-await': Boolean,
 
         // Aliases.
         '-e': '--eval',
@@ -125,7 +125,7 @@ export function main(
     '--emit': emit,
     '--scope': scope = undefined,
     '--scope-dir': scopeDir = undefined,
-    '--experimental-repl-await': experimentalReplAwait,
+    '--no-experimental-repl-await': noExperimentalReplAwait,
   } = args;
 
   if (help) {
@@ -162,6 +162,7 @@ export function main(
     --scope-dir                     Directory for \`--scope\`
     --prefer-ts-exts                Prefer importing TypeScript files over JavaScript files
     --log-error                     Logs TypeScript errors to stderr instead of throwing exceptions
+    --no-experimental-repl-await    Disable top-level await in REPL.  Equivalent to node's --no-experimental-repl-await
   `);
 
     process.exit(0);
@@ -254,7 +255,7 @@ export function main(
     files,
     pretty,
     transpileOnly: transpileOnly ?? transpiler != null ? true : undefined,
-    experimentalReplAwait,
+    experimentalReplAwait: noExperimentalReplAwait ? false : undefined,
     typeCheck,
     transpiler,
     compilerHost,

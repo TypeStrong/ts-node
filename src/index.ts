@@ -284,7 +284,10 @@ export interface CreateOptions {
   experimentalEsmLoader?: boolean;
   /**
    * Allows the usage of top level await in REPL.
-   * Enabled explicitly since this is an experimental feature.
+   * 
+   * Uses node's implementation which accomplishes this with an AST syntax transformation.
+   * 
+   * Enabled by default when tsconfig target is es2018 or above. Set to false to disable.
    */
   experimentalReplAwait?: boolean;
   /**
@@ -389,7 +392,7 @@ export const DEFAULTS: RegisterOptions = {
   compilerHost: yn(env.TS_NODE_COMPILER_HOST),
   logError: yn(env.TS_NODE_LOG_ERROR),
   experimentalEsmLoader: false,
-  experimentalReplAwait: yn(env.TS_NODE_EXPERIMENTAL_REPL_AWAIT) ?? false,
+  experimentalReplAwait: yn(env.TS_NODE_EXPERIMENTAL_REPL_AWAIT) ?? true,
 };
 
 /**
@@ -425,6 +428,8 @@ export interface Service {
   configFilePath: string | undefined;
   /** @internal */
   moduleTypeClassifier: ModuleTypeClassifier;
+  /** @internal */
+  readonly shouldReplAwait: boolean;
 }
 
 /**
@@ -520,14 +525,17 @@ export function create(rawOptions: CreateOptions = {}): Service {
 
   // Experimental REPL await is not compatible targets lower than ES2018
   if (
-    options.experimentalReplAwait &&
+    options.experimentalReplAwait === true &&
     config.options.target! < ScriptTarget.ES2018
   ) {
-    console.error(
+    throw new Error(
       'Experimental REPL await is not compatible with targets lower than ES2018'
     );
-    process.exit(1);
   }
+
+  const shouldReplAwait = 
+    options.experimentalReplAwait !== false &&
+    config.options.target! >= ScriptTarget.ES2018;
 
   // Re-load the compiler in case it has changed.
   // Compiler is loaded relative to tsconfig.json, so tsconfig discovery may cause us to load a
@@ -546,7 +554,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     6059, // "'rootDir' is expected to contain all source files."
     18002, // "The 'files' list in config file is empty."
     18003, // "No inputs were found in config file."
-    ...(options.experimentalReplAwait && options.executeEntrypoint === false
+    ...(shouldReplAwait && options.executeEntrypoint === false
       ? [
           1103, // A 'for-await-of' statement is only allowed within an async function or async generator
           1308, // 'await' expression is only allowed within an async function
@@ -1188,6 +1196,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     options,
     configFilePath,
     moduleTypeClassifier,
+    shouldReplAwait
   };
 }
 
