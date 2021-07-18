@@ -1,13 +1,16 @@
 import { diffLines } from 'diff';
 import { homedir } from 'os';
-import { dirname, join } from 'path';
-import { Recoverable, start } from 'repl';
-import { Script } from 'vm';
+import { join } from 'path';
+import { Recoverable, ReplOptions, REPLServer, start } from 'repl';
+import { Context, createContext, Script } from 'vm';
 import { Service, CreateOptions, TSError, env } from './index';
 import { readFileSync, statSync } from 'fs';
 import { Console } from 'console';
 import type * as tty from 'tty';
 import Module = require('module');
+
+// Lazy-loaded.
+let processTopLevelAwait: (src: string) => string | null;
 
 /** @internal */
 export const EVAL_FILENAME = `[eval].ts`;
@@ -28,19 +31,30 @@ export interface ReplService {
    * Bind this REPL to a ts-node compiler service.  A compiler service must be bound before `eval`-ing code or starting the REPL
    */
   setService(service: Service): void;
-  evalCode(code: string): void;
+  evalCode(code: string): any;
+  /** @internal */
+  evalCodeInternal(opts: {
+    code: string;
+    enableTLA?: boolean;
+    context?: Context;
+  }): {
+    containsTLA: boolean;
+    commands: Array<{ mustAwait?: true; caller: () => any }>;
+  };
   /**
    * `eval` implementation compatible with node's REPL API
    */
   nodeEval(
     code: string,
-    _context: any,
+    context: Context,
     _filename: string,
     callback: (err: Error | null, result?: any) => any
   ): void;
   evalAwarePartialHost: EvalAwarePartialHost;
   /** Start a node REPL */
   start(code?: string): void;
+  /** @internal */
+  startInternal(opts?: ReplOptions & { code?: string }): REPLServer;
   /** @internal */
   readonly stdin: NodeJS.ReadableStream;
   /** @internal */
@@ -73,6 +87,7 @@ export interface CreateReplOptions {
  */
 export function createRepl(options: CreateReplOptions = {}) {
   let service = options.service;
+  let server: REPLServer;
   const state =
     options.state ?? new EvalState(join(process.cwd(), REPL_FILENAME));
   const evalAwarePartialHost = createEvalAwarePartialHost(
@@ -91,9 +106,11 @@ export function createRepl(options: CreateReplOptions = {}) {
     state: options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME)),
     setService,
     evalCode,
+    evalCodeInternal,
     nodeEval,
     evalAwarePartialHost,
     start,
+    startInternal,
     stdin,
     stdout,
     stderr,
@@ -106,12 +123,28 @@ export function createRepl(options: CreateReplOptions = {}) {
   }
 
   function evalCode(code: string) {
-    return _eval(service!, state, code);
+    return _eval({
+      service: service!,
+      state,
+      input: code,
+    }).commands.reduce<any>((_, { caller }) => caller(), undefined);
+  }
+
+  function evalCodeInternal({
+    code,
+    enableTLA,
+    context,
+  }: {
+    code: string;
+    enableTLA?: boolean;
+    context?: Context;
+  }) {
+    return _eval({ service: service!, state, input: code, enableTLA, context });
   }
 
   function nodeEval(
     code: string,
-    _context: any,
+    context: Context,
     _filename: string,
     callback: (err: Error | null, result?: any) => any
   ) {
@@ -124,9 +157,7 @@ export function createRepl(options: CreateReplOptions = {}) {
       return;
     }
 
-    try {
-      result = evalCode(code);
-    } catch (error) {
+    function handleError(error: unknown) {
       if (error instanceof TSError) {
         // Support recoverable compilations using >= node 6.
         if (Recoverable && isRecoverable(error)) {
@@ -135,8 +166,38 @@ export function createRepl(options: CreateReplOptions = {}) {
           _console.error(error);
         }
       } else {
-        err = error;
+        err = error as any;
       }
+    }
+
+    try {
+      const { containsTLA, commands } = evalCodeInternal({
+        code,
+        enableTLA: true,
+        context: server.useGlobal ? undefined : context,
+      });
+
+      if (containsTLA) {
+        return (async () => {
+          try {
+            for (const { mustAwait, caller } of commands) {
+              if (mustAwait) {
+                result = await caller();
+              } else {
+                result = caller();
+              }
+            }
+          } catch (promiseError) {
+            handleError(promiseError);
+          }
+
+          return callback(err, result);
+        })();
+      }
+
+      result = commands.reduce((_, { caller }) => caller(), undefined);
+    } catch (error) {
+      handleError(error);
     }
 
     return callback(err, result);
@@ -144,7 +205,21 @@ export function createRepl(options: CreateReplOptions = {}) {
 
   function start(code?: string) {
     // TODO assert that service is set; remove all ! postfixes
-    return startRepl(replService, service!, state, code);
+    server = startRepl(replService, service!, state, code);
+  }
+
+  function startInternal({
+    code,
+    ...optionsOverride
+  }: ReplOptions & { code?: string } = {}) {
+    // TODO assert that service is set; remove all ! postfixes
+    return (server = startRepl(
+      replService,
+      service!,
+      state,
+      code,
+      optionsOverride
+    ));
   }
 }
 
@@ -208,7 +283,19 @@ export function createEvalAwarePartialHost(
 /**
  * Evaluate the code snippet.
  */
-function _eval(service: Service, state: EvalState, input: string) {
+function _eval({
+  service,
+  state,
+  input,
+  enableTLA = false,
+  context,
+}: {
+  service: Service;
+  state: EvalState;
+  input: string;
+  enableTLA?: boolean;
+  context?: Context;
+}) {
   const lines = state.lines;
   const isCompletion = !/\n$/.test(input);
   const undo = appendEval(state, input);
@@ -239,18 +326,49 @@ function _eval(service: Service, state: EvalState, input: string) {
     state.output = output;
   }
 
-  return changes.reduce((result, change) => {
-    return change.added ? exec(change.value, state.path) : result;
-  }, undefined);
+  let commands: Array<{ mustAwait?: true; caller: () => any }> = [];
+  let containsTLA = false;
+
+  for (const change of changes) {
+    if (change.added) {
+      if (
+        enableTLA &&
+        service.shouldReplAwait &&
+        change.value.indexOf('await') > -1
+      ) {
+        if (processTopLevelAwait === undefined) {
+          ({ processTopLevelAwait } = require('../dist-raw/node-repl-await'));
+        }
+
+        // Neline prevents comments to mess with wrapper
+        const wrappedResult = processTopLevelAwait(change.value + '\n');
+        if (wrappedResult !== null) {
+          containsTLA = true;
+          commands.push({
+            mustAwait: true,
+            caller: () => exec(wrappedResult, state.path, context),
+          });
+          continue;
+        }
+      }
+      commands.push({ caller: () => exec(change.value, state.path, context) });
+    }
+  }
+
+  return { containsTLA, commands };
 }
 
 /**
  * Execute some code.
  */
-function exec(code: string, filename: string) {
+function exec(code: string, filename: string, context?: Context) {
   const script = new Script(code, { filename });
 
-  return script.runInThisContext();
+  if (context === undefined) {
+    return script.runInThisContext();
+  } else {
+    return script.runInContext(context);
+  }
 }
 
 /**
@@ -260,8 +378,19 @@ function startRepl(
   replService: ReplService,
   service: Service,
   state: EvalState,
-  code?: string
+  code?: string,
+  optionsOverride?: ReplOptions
 ) {
+  let context: Context | undefined;
+  if (optionsOverride?.useGlobal === false) {
+    context = createContext();
+    setContext(
+      context,
+      createNodeModuleForContext('repl', process.cwd()),
+      'repl'
+    );
+  }
+
   // Eval incoming code before the REPL starts.
   if (code) {
     try {
@@ -282,7 +411,12 @@ function startRepl(
       !parseInt(env.NODE_NO_READLINE!, 10),
     eval: replService.nodeEval,
     useGlobal: true,
+    ...optionsOverride,
   });
+
+  if (context !== undefined) {
+    Object.assign(repl.context, context);
+  }
 
   // Bookmark the point where we should reset the REPL state.
   const resetEval = appendEval(state, '');
@@ -291,7 +425,7 @@ function startRepl(
     resetEval();
 
     // Hard fix for TypeScript forcing `Object.defineProperty(exports, ...)`.
-    exec('exports = module.exports', state.path);
+    exec('exports = module.exports', state.path, context);
   }
 
   reset();
@@ -332,6 +466,8 @@ function startRepl(
       process.exit(1);
     });
   }
+
+  return repl;
 }
 
 /**
@@ -400,7 +536,7 @@ function isRecoverable(error: TSError) {
 export function setContext(
   context: any,
   module: Module,
-  filenameAndDirname: 'eval' | 'stdin' | null
+  filenameAndDirname: 'eval' | 'stdin' | 'repl' | null
 ) {
   if (filenameAndDirname) {
     context.__dirname = '.';
@@ -413,7 +549,7 @@ export function setContext(
 
 /** @internal */
 export function createNodeModuleForContext(
-  type: 'eval' | 'stdin',
+  type: 'eval' | 'stdin' | 'repl',
   cwd: string
 ) {
   // Create a local module instance based on `cwd`.

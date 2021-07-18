@@ -23,6 +23,7 @@ import {
   ModuleTypeClassifier,
 } from './module-type-classifier';
 import { createResolverFunctions } from './resolver-functions';
+import { ScriptTarget } from 'typescript';
 
 export { TSCommon };
 export { createRepl, CreateReplOptions, ReplService } from './repl';
@@ -104,6 +105,7 @@ export interface ProcessEnv {
   TS_NODE_COMPILER_HOST?: string;
   TS_NODE_LOG_ERROR?: string;
   TS_NODE_HISTORY?: string;
+  TS_NODE_EXPERIMENTAL_REPL_AWAIT?: string;
 
   NODE_NO_READLINE?: string;
 }
@@ -281,6 +283,14 @@ export interface CreateOptions {
    */
   experimentalEsmLoader?: boolean;
   /**
+   * Allows the usage of top level await in REPL.
+   * 
+   * Uses node's implementation which accomplishes this with an AST syntax transformation.
+   * 
+   * Enabled by default when tsconfig target is es2018 or above. Set to false to disable.
+   */
+  experimentalReplAwait?: boolean;
+  /**
    * Override certain paths to be compiled and executed as CommonJS or ECMAScript modules.
    * When overridden, the tsconfig "module" and package.json "type" fields are overridden.
    * This is useful because TypeScript files cannot use the .cjs nor .mjs file extensions;
@@ -303,6 +313,12 @@ export interface CreateOptions {
    * the configuration loader, so it is *not* necessary for their source to be set here.
    */
   optionBasePaths?: OptionBasePaths;
+  /**
+   * @internal
+   * Used to conditionally exclude certain diagnostic codes that doesn't
+   * apply to experimentalReplAwait
+   */
+  executeEntrypoint?: Boolean;
 }
 
 /** @internal */
@@ -340,6 +356,7 @@ export interface TsConfigOptions
     | 'projectSearchDir'
     | 'experimentalEsmLoader'
     | 'optionBasePaths'
+    | 'executeEntrypoint'
   > {}
 
 /**
@@ -375,6 +392,7 @@ export const DEFAULTS: RegisterOptions = {
   compilerHost: yn(env.TS_NODE_COMPILER_HOST),
   logError: yn(env.TS_NODE_LOG_ERROR),
   experimentalEsmLoader: false,
+  experimentalReplAwait: yn(env.TS_NODE_EXPERIMENTAL_REPL_AWAIT) ?? true,
 };
 
 /**
@@ -410,6 +428,8 @@ export interface Service {
   configFilePath: string | undefined;
   /** @internal */
   moduleTypeClassifier: ModuleTypeClassifier;
+  /** @internal */
+  readonly shouldReplAwait: boolean;
 }
 
 /**
@@ -503,6 +523,20 @@ export function create(rawOptions: CreateOptions = {}): Service {
     ...(rawOptions.require || []),
   ];
 
+  // Experimental REPL await is not compatible targets lower than ES2018
+  if (
+    options.experimentalReplAwait === true &&
+    config.options.target! < ScriptTarget.ES2018
+  ) {
+    throw new Error(
+      'Experimental REPL await is not compatible with targets lower than ES2018'
+    );
+  }
+
+  const shouldReplAwait = 
+    options.experimentalReplAwait !== false &&
+    config.options.target! >= ScriptTarget.ES2018;
+
   // Re-load the compiler in case it has changed.
   // Compiler is loaded relative to tsconfig.json, so tsconfig discovery may cause us to load a
   // different compiler than we did above, even if the name has not changed.
@@ -520,6 +554,17 @@ export function create(rawOptions: CreateOptions = {}): Service {
     6059, // "'rootDir' is expected to contain all source files."
     18002, // "The 'files' list in config file is empty."
     18003, // "No inputs were found in config file."
+    ...(shouldReplAwait && options.executeEntrypoint === false
+      ? [
+          1103, // A 'for-await-of' statement is only allowed within an async function or async generator
+          1308, // 'await' expression is only allowed within an async function
+          1375, // 'export {}' requirement for top level 'await'
+          1378, // module & target requirement for top level 'await'
+          1431, // 'export {}' requirement for top level 'for await'
+          1432, // module & target requirement for top level 'for await'
+          2304, // Cannot find name 'await'
+        ]
+      : []),
     ...(options.ignoreDiagnostics || []),
   ].map(Number);
 
@@ -1151,6 +1196,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     options,
     configFilePath,
     moduleTypeClassifier,
+    shouldReplAwait
   };
 }
 

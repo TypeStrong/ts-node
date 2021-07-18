@@ -1,4 +1,4 @@
-import { test, TestInterface } from './testlib';
+import { test } from './testlib';
 import { expect } from 'chai';
 import * as exp from 'expect';
 import {
@@ -14,15 +14,7 @@ import ts = require('typescript');
 import proxyquire = require('proxyquire');
 import type * as tsNodeTypes from '../index';
 import * as fs from 'fs';
-import {
-  unlinkSync,
-  existsSync,
-  lstatSync,
-  mkdtempSync,
-  fstat,
-  copyFileSync,
-  writeFileSync,
-} from 'fs';
+import { unlinkSync, existsSync, lstatSync, mkdtempSync } from 'fs';
 import { NodeFS, npath } from '@yarnpkg/fslib';
 import * as promisify from 'util.promisify';
 import { sync as rimrafSync } from 'rimraf';
@@ -33,6 +25,7 @@ import type * as Module from 'module';
 import { PassThrough } from 'stream';
 import * as getStream from 'get-stream';
 import { once } from 'lodash';
+import { upstreamTopLevelAwaitTests } from './node-repl-tla';
 
 const xfs = new NodeFS(fs);
 
@@ -63,6 +56,59 @@ function exec(
       child: childProcess,
     }
   );
+}
+
+function createReplViaApi({
+  createReplOpts,
+  createServiceOpts,
+}: {
+  createReplOpts?: Partial<tsNodeTypes.CreateReplOptions>;
+  createServiceOpts?: Partial<tsNodeTypes.CreateOptions>;
+} = {}) {
+  const stdin = new PassThrough();
+  const stdout = new PassThrough();
+  const stderr = new PassThrough();
+  const replService = createRepl({
+    stdin,
+    stdout,
+    stderr,
+    ...createReplOpts,
+  });
+  const service = create({
+    ...replService.evalAwarePartialHost,
+    project: `${TEST_DIR}/tsconfig.json`,
+    ...createServiceOpts,
+  });
+  replService.setService(service);
+  return { stdin, stdout, stderr, replService, service };
+}
+
+async function executeInRepl(
+  input: string,
+  {
+    waitMs = 1e3,
+    startOptions,
+    ...rest
+  }: Parameters<typeof createReplViaApi>[0] & {
+    waitMs?: number;
+    startOptions?: Parameters<typeof replService.startInternal>[0];
+  } = {}
+) {
+  const { stdin, stdout, stderr, replService } = createReplViaApi(rest);
+
+  replService.startInternal(startOptions);
+
+  stdin.write(input);
+  stdin.end();
+  await promisify(setTimeout)(waitMs);
+  stdout.end();
+  stderr.end();
+
+  return {
+    stdin,
+    stdout: await getStream(stdout),
+    stderr: await getStream(stderr),
+  };
 }
 
 const ROOT_DIR = resolve(__dirname, '../..');
@@ -411,37 +457,53 @@ test.suite('ts-node', (test) => {
       );
     });
 
-    function createReplViaApi() {
-      const stdin = new PassThrough();
-      const stdout = new PassThrough();
-      const stderr = new PassThrough();
-      const replService = createRepl({
-        stdin,
-        stdout,
-        stderr,
-      });
-      const service = create({
-        ...replService.evalAwarePartialHost,
-        project: `${TEST_DIR}/tsconfig.json`,
-      });
-      replService.setService(service);
-      return { stdin, stdout, stderr, replService, service };
-    }
-
     // Serial because it's timing-sensitive
     test.serial('REPL can be created via API', async () => {
-      const { stdin, stdout, stderr, replService } = createReplViaApi();
-      replService.start();
-      stdin.write('\nconst a = 123\n.type a\n');
-      stdin.end();
-      await promisify(setTimeout)(1e3);
-      stdout.end();
-      stderr.end();
-      expect(await getStream(stderr)).to.equal('');
-      expect(await getStream(stdout)).to.equal(
+      const { stdout, stderr } = await executeInRepl(
+        '\nconst a = 123\n.type a\n'
+      );
+
+      expect(stderr).to.equal('');
+      expect(stdout).to.equal(
         '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
       );
     });
+
+    // Serial because it's timing-sensitive
+    test.serial('REPL can be configured on `start`', async () => {
+      const prompt = '#> ';
+
+      const { stdout, stderr } = await executeInRepl('const x = 3', {
+        startOptions: {
+          prompt,
+          ignoreUndefined: true,
+        },
+      });
+
+      expect(stderr).to.equal('');
+      expect(stdout).to.equal(`${prompt}${prompt}`);
+    });
+
+    // Serial because it's timing-sensitive
+    test.serial(
+      'REPL uses a different context when `useGlobal` is false',
+      async () => {
+        const { stdout, stderr } = await executeInRepl(
+          // No error when re-declaring x
+          'const x = 3\n' +
+            // console.log ouput will end up in the stream and not in test output
+            'console.log(1)\n',
+          {
+            startOptions: {
+              useGlobal: false,
+            },
+          }
+        );
+
+        expect(stderr).to.equal('');
+        expect(stdout).to.equal(`> undefined\n> 1\nundefined\n> `);
+      }
+    );
 
     test.suite(
       '[eval], <repl>, and [stdin] execute with correct globals',
@@ -1422,6 +1484,7 @@ test.suite('ts-node', (test) => {
           JSON.stringify(
             {
               'ts-node': {
+                experimentalReplAwait: false,
                 cwd: native(`${ROOT_DIR}/tests`),
                 projectSearchDir: native(`${ROOT_DIR}/tests`),
                 project: native(`${ROOT_DIR}/tests/tsconfig.json`),
@@ -1918,5 +1981,137 @@ test.suite('ts-node', (test) => {
         expect(stdout).to.contain('CommonJS');
       });
     }
+  });
+
+  test.suite('top level await', (test) => {
+    const compilerOptions = {
+      target: semver.gte(ts.version, '3.0.1')
+        ? 'es2018'
+        : // TS 2.7 is using polyfill for async interator even though they
+          // were added in es2018
+          'esnext',
+    };
+
+    function executeInTlaRepl(input: string, waitMs = 1000) {
+      return executeInRepl(
+        input
+          .split('\n')
+          .map((line) => line.trim())
+          .join(''),
+        {
+          waitMs,
+          createServiceOpts: {
+            experimentalReplAwait: true,
+            compilerOptions,
+            executeEntrypoint: false,
+          },
+          startOptions: { useGlobal: false },
+        }
+      );
+    }
+
+    // Serial because it's timing-sensitive
+    test.serial('should allow evaluating top level await', async () => {
+      const script = `
+        const x = await new Promise((r) => r(1));
+        for await (const x of [1,2,3]) { console.log(x) };
+        for (const x of ['a', 'b']) { await x; console.log(x) };
+        class Foo {}; await 1;
+        function Bar() {}; await 2;
+        const {y} = await ({y: 2});
+        const [z] = await [3];
+        x + y + z;
+      `;
+
+      const { stdout, stderr } = await executeInTlaRepl(script);
+      expect(stderr).to.equal('');
+      expect(stdout).to.equal('> 1\n2\n3\na\nb\n6\n> ');
+    });
+
+    // Serial because it's timing-sensitive
+    test.serial(
+      'should wait until promise is settled when awaiting at top level',
+      async () => {
+        const awaitMs = 500;
+        const script = `
+          const startTime = new Date().getTime();
+          await new Promise((r) => setTimeout(() => r(1), ${awaitMs}));
+          const endTime = new Date().getTime();
+          endTime - startTime;
+        `;
+        const { stdout, stderr } = await executeInTlaRepl(script, 2500);
+
+        expect(stderr).to.equal('');
+
+        const ellapsedTime = Number(
+          stdout.split('\n')[0].replace('> ', '').trim()
+        );
+        expect(ellapsedTime).to.be.gte(awaitMs);
+        expect(ellapsedTime).to.be.lte(awaitMs + 100);
+      }
+    );
+
+    // Serial because it's timing-sensitive
+    test.serial(
+      'should not wait until promise is settled when not using await at top level',
+      async () => {
+        const script = `
+          const startTime = new Date().getTime();
+          (async () => await new Promise((r) => setTimeout(() => r(1), ${1000})))();
+          const endTime = new Date().getTime();
+          endTime - startTime;
+        `;
+        const { stdout, stderr } = await executeInTlaRepl(script);
+
+        expect(stderr).to.equal('');
+
+        const ellapsedTime = Number(
+          stdout.split('\n')[0].replace('> ', '').trim()
+        );
+        expect(ellapsedTime).to.be.gte(0);
+        expect(ellapsedTime).to.be.lte(10);
+      }
+    );
+
+    // Serial because it's timing-sensitive
+    test.serial(
+      'should error with typing information when awaited result has type mismatch',
+      async () => {
+        const { stdout, stderr } = await executeInTlaRepl(
+          'const x: string = await 1'
+        );
+
+        expect(stdout).to.equal('> undefined\n> ');
+        expect(stderr.replace(/\r\n/g, '\n')).to.equal(
+          '<repl>.ts(1,7): error TS2322: ' +
+            (semver.gte(ts.version, '4.0.0')
+              ? `Type 'number' is not assignable to type 'string'.\n`
+              : `Type '1' is not assignable to type 'string'.\n`) +
+            '\n'
+        );
+      }
+    );
+
+    // Serial because it's timing-sensitive
+    test.serial(
+      'should error with typing information when importing a file with type errors',
+      async () => {
+        const { stdout, stderr } = await executeInTlaRepl(
+          `const {foo} = await import('./tests/repl/tla-import');`
+        );
+
+        expect(stdout).to.equal('> undefined\n> ');
+        expect(stderr.replace(/\r\n/g, '\n')).to.equal(
+          'tests/repl/tla-import.ts(1,14): error TS2322: ' +
+            (semver.gte(ts.version, '4.0.0')
+              ? `Type 'number' is not assignable to type 'string'.\n`
+              : `Type '1' is not assignable to type 'string'.\n`) +
+            '\n'
+        );
+      }
+    );
+
+    test('should pass upstream test cases', async () =>
+      upstreamTopLevelAwaitTests({ TEST_DIR, create, createRepl }));
   });
 });

@@ -65,6 +65,7 @@ export function main(
         '--emit': Boolean,
         '--scope': Boolean,
         '--scope-dir': String,
+        '--no-experimental-repl-await': Boolean,
 
         // Aliases.
         '-e': '--eval',
@@ -124,6 +125,7 @@ export function main(
     '--emit': emit,
     '--scope': scope = undefined,
     '--scope-dir': scopeDir = undefined,
+    '--no-experimental-repl-await': noExperimentalReplAwait,
   } = args;
 
   if (help) {
@@ -160,6 +162,7 @@ export function main(
     --scope-dir                     Directory for \`--scope\`
     --prefer-ts-exts                Prefer importing TypeScript files over JavaScript files
     --log-error                     Logs TypeScript errors to stderr instead of throwing exceptions
+    --no-experimental-repl-await    Disable top-level await in REPL.  Equivalent to node's --no-experimental-repl-await
   `);
 
     process.exit(0);
@@ -252,6 +255,7 @@ export function main(
     files,
     pretty,
     transpileOnly: transpileOnly ?? transpiler != null ? true : undefined,
+    experimentalReplAwait: noExperimentalReplAwait ? false : undefined,
     typeCheck,
     transpiler,
     compilerHost,
@@ -270,6 +274,7 @@ export function main(
     fileExists: evalAwarePartialHost?.fileExists ?? undefined,
     scope,
     scopeDir,
+    executeEntrypoint,
   });
 
   // Bind REPL service to ts-node compiler service (chicken-and-egg problem)
@@ -299,6 +304,7 @@ export function main(
         optionBasePaths: undefined,
         experimentalEsmLoader: undefined,
         compilerOptions: undefined,
+        executeEntrypoint: undefined,
         project: service.configFilePath ?? service.options.project,
       },
       ...ts.convertToTSConfig(
@@ -329,6 +335,8 @@ export function main(
   if (executeEntrypoint) {
     Module.runMain();
   } else {
+    // Note: eval and repl may both run, but never with stdin.
+    // If stdin runs, eval and repl will not.
     if (executeEval) {
       addBuiltinLibsToObject(global);
       evalAndExitOnTsError(
@@ -336,12 +344,14 @@ export function main(
         evalStuff!.module!,
         code!,
         print,
-        'eval'
+        'eval',
       );
     }
+
     if (executeRepl) {
       replStuff!.repl.start();
     }
+
     if (executeStdin) {
       let buffer = code || '';
       process.stdin.on('data', (chunk: Buffer) => (buffer += chunk));
@@ -352,7 +362,7 @@ export function main(
           buffer,
           // `echo 123 | node -p` still prints 123
           print,
-          'stdin'
+          'stdin',
         );
       });
     }
