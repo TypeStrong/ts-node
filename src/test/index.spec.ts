@@ -401,6 +401,7 @@ test.suite('ts-node', (test) => {
       expect(stdout).to.equal('> 123\n' + 'undefined\n' + '> ');
     });
 
+    // TODO: REPL shouldn't require a leading `\n` to properly work on Windows
     test('REPL has command to get type information', async () => {
       const execPromise = exec(`${cmd} --interactive`);
       execPromise.child.stdin!.end('\nconst a = 123\n.type a');
@@ -411,10 +412,12 @@ test.suite('ts-node', (test) => {
       );
     });
 
+    // TODO: Same as above
     test('REPL "type" command can be used on types', async () => {
       const execPromise = exec(`${cmd} --interactive`);
       execPromise.child.stdin!.end(
-        'type Foo = string | { x: 1 }\n' +
+        '\n' +
+          'type Foo = string | { x: 1 }\n' +
           '.type Foo\n' +
           'interface Bar { x: string; y: number; }\n' +
           '.type Bar'
@@ -423,6 +426,7 @@ test.suite('ts-node', (test) => {
       expect(err).to.equal(null);
       expect(stdout).to.equal(
         '> undefined\n' +
+          '> undefined\n' +
           '> type Foo = string | {\n    x: 1;\n}\n' +
           '> undefined\n' +
           '> interface Bar\n' +
