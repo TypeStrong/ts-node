@@ -59,6 +59,11 @@ export interface CreateReplOptions {
   stderr?: NodeJS.WritableStream;
   /** @internal */
   composeWithEvalAwarePartialHost?: EvalAwarePartialHost;
+  /**
+   * @internal
+   * Ignore diagnostics that are annoying when interactively entering input line-by-line.
+   */
+  ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl?: boolean;
 }
 
 /**
@@ -86,6 +91,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     stdout === process.stdout && stderr === process.stderr
       ? console
       : new Console(stdout, stderr);
+  const { ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl = true } = options;
 
   const replService: ReplService = {
     state: options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME)),
@@ -103,6 +109,17 @@ export function createRepl(options: CreateReplOptions = {}) {
 
   function setService(_service: Service) {
     service = _service;
+    if (ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl) {
+      service.addDiagnosticFilter({
+        appliesToAllFiles: false,
+        filenamesAbsolute: [state.path],
+        diagnosticsIgnored: [
+          2393, // Duplicate function implementation: https://github.com/TypeStrong/ts-node/issues/729
+          6133, // <identifier> is declared but its value is never read. https://github.com/TypeStrong/ts-node/issues/850
+          7027, // Unreachable code detected. https://github.com/TypeStrong/ts-node/issues/469
+        ],
+      });
+    }
   }
 
   function evalCode(code: string) {

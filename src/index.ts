@@ -410,6 +410,8 @@ export interface Service {
   configFilePath: string | undefined;
   /** @internal */
   moduleTypeClassifier: ModuleTypeClassifier;
+  /** @internal */
+  addDiagnosticFilter(filter: DiagnosticFilter): void;
 }
 
 /**
@@ -418,6 +420,16 @@ export interface Service {
  * @see {Service}
  */
 export type Register = Service;
+
+/** @internal */
+export interface DiagnosticFilter {
+  /** if true, filter applies to all files */
+  appliesToAllFiles: boolean;
+  /** Filter applies onto to these filenames.  Only used if appliesToAllFiles is false */
+  filenamesAbsolute: string[];
+  /** these diagnostic codes are ignored */
+  diagnosticsIgnored: number[];
+}
 
 /** @internal */
 export function getExtensions(config: _ts.ParsedCommandLine) {
@@ -516,16 +528,22 @@ export function create(rawOptions: CreateOptions = {}): Service {
   const transpileOnly =
     options.transpileOnly === true && options.typeCheck !== true;
   const transformers = options.transformers || undefined;
-  const ignoreDiagnostics = [
-    6059, // "'rootDir' is expected to contain all source files."
-    18002, // "The 'files' list in config file is empty."
-    18003, // "No inputs were found in config file."
-    ...(options.ignoreDiagnostics || []),
-  ].map(Number);
+  const diagnosticFilters: Array<DiagnosticFilter> = [
+    {
+      appliesToAllFiles: true,
+      filenamesAbsolute: [],
+      diagnosticsIgnored: [
+        6059, // "'rootDir' is expected to contain all source files."
+        18002, // "The 'files' list in config file is empty."
+        18003, // "No inputs were found in config file."
+        ...(options.ignoreDiagnostics || []),
+      ].map(Number),
+    },
+  ];
 
   const configDiagnosticList = filterDiagnostics(
     config.errors,
-    ignoreDiagnostics
+    diagnosticFilters
   );
   const outputCache = new Map<
     string,
@@ -804,7 +822,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
 
         const diagnosticList = filterDiagnostics(
           diagnostics,
-          ignoreDiagnostics
+          diagnosticFilters
         );
         if (diagnosticList.length) reportTSError(diagnosticList);
 
@@ -963,7 +981,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         const diagnostics = ts.getPreEmitDiagnostics(program, sourceFile);
         const diagnosticList = filterDiagnostics(
           diagnostics,
-          ignoreDiagnostics
+          diagnosticFilters
         );
         if (diagnosticList.length) reportTSError(diagnosticList);
 
@@ -1079,7 +1097,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
 
       const diagnosticList = filterDiagnostics(
         result.diagnostics || [],
-        ignoreDiagnostics
+        diagnosticFilters
       );
       if (diagnosticList.length) reportTSError(diagnosticList);
 
@@ -1141,6 +1159,10 @@ export function create(rawOptions: CreateOptions = {}): Service {
     return true;
   };
 
+  function addDiagnosticFilter(filter: DiagnosticFilter) {
+    diagnosticFilters.push(filter);
+  }
+
   return {
     ts,
     config,
@@ -1151,6 +1173,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     options,
     configFilePath,
     moduleTypeClassifier,
+    addDiagnosticFilter,
   };
 }
 
@@ -1306,9 +1329,16 @@ function updateSourceMap(sourceMapText: string, fileName: string) {
  */
 function filterDiagnostics(
   diagnostics: readonly _ts.Diagnostic[],
-  ignore: number[]
+  filters: DiagnosticFilter[]
 ) {
-  return diagnostics.filter((x) => ignore.indexOf(x.code) === -1);
+  return diagnostics.filter((d) =>
+    filters.every(
+      (f) =>
+        (!f.appliesToAllFiles &&
+          f.filenamesAbsolute.indexOf(d.file?.fileName!) === -1) ||
+        f.diagnosticsIgnored.indexOf(d.code) === -1
+    )
+  );
 }
 
 /**
