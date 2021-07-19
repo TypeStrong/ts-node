@@ -1,11 +1,11 @@
 module.exports = {
   title: 'ts-node',
   tagline: 'TypeScript execution and REPL for node.js',
-  url: 'https://typestrong.org/ts-node',
+  url: 'https://typestrong.org',
   baseUrl: '/ts-node/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon/favicon.ico',
   organizationName: 'TypeStrong', // Usually your GitHub org/user name.
   projectName: 'ts-node', // Usually your repo name.
   themeConfig: {
