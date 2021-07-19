@@ -453,7 +453,6 @@ test.suite('ts-node', (test) => {
     test.suite(
       '[eval], <repl>, and [stdin] execute with correct globals',
       (test) => {
-        cmd;
         interface GlobalInRepl extends NodeJS.Global {
           testReport: any;
           replReport: any;
@@ -1137,9 +1136,7 @@ test.suite('ts-node', (test) => {
       test('should locate tsconfig relative to cwd in --cwd-mode', async () => {
         const { err, stdout } = await exec(
           `${BIN_PATH} --cwd-mode ../a/index`,
-          {
-            cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
-          }
+          { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }
         );
         expect(err).to.equal(null);
         expect(stdout).to.match(/plugin-b/);
@@ -1289,12 +1286,11 @@ test.suite('ts-node', (test) => {
             const {
               context: { tempDir },
             } = t;
-            const { err: err1, stdout: stdout1, stderr: stderr1 } = await exec(
-              `${BIN_PATH} --showConfig`,
-              {
-                cwd: tempDir,
-              }
-            );
+            const {
+              err: err1,
+              stdout: stdout1,
+              stderr: stderr1,
+            } = await exec(`${BIN_PATH} --showConfig`, { cwd: tempDir });
             expect(err1).to.equal(null);
             t.like(JSON.parse(stdout1), {
               compilerOptions: {
@@ -1803,21 +1799,23 @@ test.suite('ts-node', (test) => {
 
       test.suite('supports experimental-specifier-resolution=node', (test) => {
         test('via --experimental-specifier-resolution', async () => {
-          const { err, stdout } = await exec(
+          const {
+            err,
+            stdout,
+          } = await exec(
             `${esmCmd} --experimental-specifier-resolution=node index.ts`,
-            {
-              cwd: join(TEST_DIR, './esm-node-resolver'),
-            }
+            { cwd: join(TEST_DIR, './esm-node-resolver') }
           );
           expect(err).to.equal(null);
           expect(stdout).to.equal('foo bar baz biff libfoo\n');
         });
         test('via --es-module-specifier-resolution alias', async () => {
-          const { err, stdout } = await exec(
+          const {
+            err,
+            stdout,
+          } = await exec(
             `${esmCmd} --experimental-modules --es-module-specifier-resolution=node index.ts`,
-            {
-              cwd: join(TEST_DIR, './esm-node-resolver'),
-            }
+            { cwd: join(TEST_DIR, './esm-node-resolver') }
           );
           expect(err).to.equal(null);
           expect(stdout).to.equal('foo bar baz biff libfoo\n');
