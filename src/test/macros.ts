@@ -1,10 +1,10 @@
-import type { ChildProcess, ExecException, ExecOptions } from "child_process";
-import {exec as childProcessExec} from 'child_process';
-import type { TestInterface } from "./testlib";
+import type { ChildProcess, ExecException, ExecOptions } from 'child_process';
+import { exec as childProcessExec } from 'child_process';
+import type { TestInterface } from './testlib';
 import { expect } from 'chai';
 import * as exp from 'expect';
 
-export type ExecReturn = Promise<ExecResult> & {child: ChildProcess};
+export type ExecReturn = Promise<ExecResult> & { child: ChildProcess };
 export interface ExecResult {
   stdout: string;
   stderr: string;
@@ -20,30 +20,26 @@ export interface ExecMacroOptions {
   env?: Record<string, string>;
   stdin?: string;
   expectError?: boolean;
-  delay?: number;
 }
 export type ExecMacroAssertionCallback = (
-          stdout: string,
-          stderr: string,
-          err: ExecException | null
-        ) => Promise<void> | void
+  stdout: string,
+  stderr: string,
+  err: ExecException | null
+) => Promise<void> | void;
 
 export interface createMacrosAndHelpersOptions {
   test: TestInterface<unknown>;
   defaultCwd: string;
 }
 export function createMacrosAndHelpers(opts: createMacrosAndHelpersOptions) {
-  const {test, defaultCwd} = opts;
+  const { test, defaultCwd } = opts;
 
   /**
    * Helper to exec a child process.
    * Returns a Promise and a reference to the child process to suite multiple situations.
    * Promise resolves with the process's stdout, stderr, and error.
    */
-  function exec(
-    cmd: string,
-    opts: ExecOptions = {}
-  ): ExecReturn {
+  function exec(cmd: string, opts: ExecOptions = {}): ExecReturn {
     let child!: ChildProcess;
     return Object.assign(
       new Promise<ExecResult>((resolve, reject) => {
@@ -59,7 +55,7 @@ export function createMacrosAndHelpers(opts: createMacrosAndHelpersOptions) {
         );
       }),
       {
-        child
+        child,
       }
     );
   }
@@ -68,28 +64,29 @@ export function createMacrosAndHelpers(opts: createMacrosAndHelpersOptions) {
    * Create a macro that launches a CLI command, optionally pipes stdin, optionally sets env vars,
    * and allows assertions against the output.
    */
-  function createExecMacro<T extends Partial<ExecMacroOptions>>(preBoundOptions: T) {
+  function createExecMacro<T extends Partial<ExecMacroOptions>>(
+    preBoundOptions: T
+  ) {
     return test.macro(
       (
-        options: Pick<ExecMacroOptions, Exclude<keyof ExecMacroOptions, keyof T>> & Partial<Pick<ExecMacroOptions, keyof T & keyof ExecMacroOptions>>,
+        options: Pick<
+          ExecMacroOptions,
+          Exclude<keyof ExecMacroOptions, keyof T>
+        > &
+          Partial<Pick<ExecMacroOptions, keyof T & keyof ExecMacroOptions>>,
         assertions: ExecMacroAssertionCallback
       ) => [
         (title) => `${options.titlePrefix ?? ''}${title}`,
         async (t) => {
-          const {
-            cmd,
-            flags = '',
-            stdin,
-            expectError = false,
-            cwd,
-            delay = 0,
-            env,
-          } = { ...preBoundOptions, ...options };
+          const { cmd, flags = '', stdin, expectError = false, cwd, env } = {
+            ...preBoundOptions,
+            ...options,
+          };
           const execPromise = exec(`${cmd} ${flags}`, {
             cwd,
-            env: {...process.env, ...env},
+            env: { ...process.env, ...env },
           });
-          if(stdin !== undefined) {
+          if (stdin !== undefined) {
             execPromise.child.stdin!.end(stdin);
           }
           const { err, stdout, stderr } = await execPromise;
@@ -99,13 +96,13 @@ export function createMacrosAndHelpers(opts: createMacrosAndHelpersOptions) {
             exp(err).toBeNull();
           }
           await assertions(stdout, stderr, err);
-        }
+        },
       ]
     );
   }
 
   return {
     exec,
-    createExecMacro
+    createExecMacro,
   };
 }

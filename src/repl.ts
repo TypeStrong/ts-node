@@ -61,9 +61,9 @@ export interface CreateReplOptions {
   composeWithEvalAwarePartialHost?: EvalAwarePartialHost;
   /**
    * @internal
-   * Ignore diagnostics that are annoying when interactively entering input line-by-line
+   * Ignore diagnostics that are annoying when interactively entering input line-by-line.
    */
-  ignoreExtraDiagnostics?: boolean;
+  ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl?: boolean;
 }
 
 /**
@@ -91,7 +91,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     stdout === process.stdout && stderr === process.stderr
       ? console
       : new Console(stdout, stderr);
-  const { ignoreExtraDiagnostics = true } = options;
+  const { ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl = true } = options;
 
   const replService: ReplService = {
     state: options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME)),
@@ -109,7 +109,7 @@ export function createRepl(options: CreateReplOptions = {}) {
 
   function setService(_service: Service) {
     service = _service;
-    if (ignoreExtraDiagnostics) {
+    if (ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl) {
       service.addDiagnosticFilter({
         appliesToAllFiles: false,
         filenamesAbsolute: [state.path],

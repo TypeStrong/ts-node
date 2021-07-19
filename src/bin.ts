@@ -205,7 +205,7 @@ export function main(
       repl: createRepl({
         state,
         composeWithEvalAwarePartialHost: evalAwarePartialHost,
-        ignoreExtraDiagnostics: false,
+        ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl: false,
       }),
     };
     ({ evalAwarePartialHost } = evalStuff.repl);
@@ -221,7 +221,7 @@ export function main(
       repl: createRepl({
         state,
         composeWithEvalAwarePartialHost: evalAwarePartialHost,
-        ignoreExtraDiagnostics: false,
+        ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl: false,
       }),
     };
     ({ evalAwarePartialHost } = stdinStuff.repl);

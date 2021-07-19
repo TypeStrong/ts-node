@@ -409,6 +409,7 @@ test.suite('ts-node', (test) => {
 
     const execMacro = createExecMacro({
       cmd,
+      cwd: TEST_DIR,
     });
 
     type ReplApiMacroAssertions = (
@@ -417,11 +418,9 @@ test.suite('ts-node', (test) => {
     ) => Promise<void>;
 
     const replApiMacro = test.macro(
-      (opts: {
-        input: string;
-      },
-      assertions: ReplApiMacroAssertions
-      ) => async (t) => {
+      (opts: { input: string }, assertions: ReplApiMacroAssertions) => async (
+        t
+      ) => {
         const { input } = opts;
         const { stdin, stdout, stderr, replService } = createReplViaApi();
         replService.start();
@@ -437,11 +436,12 @@ test.suite('ts-node', (test) => {
     );
 
     // Serial because it's timing-sensitive
-    test.serial('REPL can be created via API',
-    replApiMacro,
-    {
-      input: '\nconst a = 123\n.type a\n',
-    },
+    test.serial(
+      'REPL can be created via API',
+      replApiMacro,
+      {
+        input: '\nconst a = 123\n.type a\n',
+      },
       async (stdout, stderr) => {
         expect(stderr).to.equal('');
         expect(stdout).to.equal(
@@ -925,6 +925,58 @@ test.suite('ts-node', (test) => {
       }
     );
 
+    test.suite(
+      'REPL ignores diagnostics that are annoying in interactive sessions',
+      (test) => {
+        const code = `function foo() {};\nfunction foo() {return 123};\nconsole.log(foo());\n`;
+        const diagnosticMessage = `Duplicate function implementation`;
+        test(
+          'interactive repl should ignore them',
+          execMacro,
+          {
+            flags: '-i',
+            stdin: code,
+          },
+          async (stdout, stderr) => {
+            exp(stdout).not.toContain(diagnosticMessage);
+          }
+        );
+        test(
+          'interactive repl should not ignore them if they occur in other files',
+          execMacro,
+          {
+            flags: '-i',
+            stdin: `import './repl-ignored-diagnostics/index.ts';\n`,
+          },
+          async (stdout, stderr) => {
+            exp(stderr).toContain(diagnosticMessage);
+          }
+        );
+        test(
+          '[stdin] should not ignore them',
+          execMacro,
+          {
+            stdin: code,
+            expectError: true,
+          },
+          async (stdout, stderr) => {
+            exp(stderr).toContain(diagnosticMessage);
+          }
+        );
+        test(
+          '[eval] should not ignore them',
+          execMacro,
+          {
+            flags: `-e "${code.replace(/\n/g, '')}"`,
+            expectError: true,
+          },
+          async (stdout, stderr) => {
+            exp(stderr).toContain(diagnosticMessage);
+          }
+        );
+      }
+    );
+
     test('should support require flags', async () => {
       const { err, stdout } = await exec(
         `${cmd} -r ./hello-world -pe "console.log('success')"`
@@ -1085,7 +1137,9 @@ test.suite('ts-node', (test) => {
       test('should locate tsconfig relative to cwd in --cwd-mode', async () => {
         const { err, stdout } = await exec(
           `${BIN_PATH} --cwd-mode ../a/index`,
-          { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }
+          {
+            cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
+          }
         );
         expect(err).to.equal(null);
         expect(stdout).to.match(/plugin-b/);
@@ -1235,11 +1289,12 @@ test.suite('ts-node', (test) => {
             const {
               context: { tempDir },
             } = t;
-            const {
-              err: err1,
-              stdout: stdout1,
-              stderr: stderr1,
-            } = await exec(`${BIN_PATH} --showConfig`, { cwd: tempDir });
+            const { err: err1, stdout: stdout1, stderr: stderr1 } = await exec(
+              `${BIN_PATH} --showConfig`,
+              {
+                cwd: tempDir,
+              }
+            );
             expect(err1).to.equal(null);
             t.like(JSON.parse(stdout1), {
               compilerOptions: {
@@ -1748,23 +1803,21 @@ test.suite('ts-node', (test) => {
 
       test.suite('supports experimental-specifier-resolution=node', (test) => {
         test('via --experimental-specifier-resolution', async () => {
-          const {
-            err,
-            stdout,
-          } = await exec(
+          const { err, stdout } = await exec(
             `${esmCmd} --experimental-specifier-resolution=node index.ts`,
-            { cwd: join(TEST_DIR, './esm-node-resolver') }
+            {
+              cwd: join(TEST_DIR, './esm-node-resolver'),
+            }
           );
           expect(err).to.equal(null);
           expect(stdout).to.equal('foo bar baz biff libfoo\n');
         });
         test('via --es-module-specifier-resolution alias', async () => {
-          const {
-            err,
-            stdout,
-          } = await exec(
+          const { err, stdout } = await exec(
             `${esmCmd} --experimental-modules --es-module-specifier-resolution=node index.ts`,
-            { cwd: join(TEST_DIR, './esm-node-resolver') }
+            {
+              cwd: join(TEST_DIR, './esm-node-resolver'),
+            }
           );
           expect(err).to.equal(null);
           expect(stdout).to.equal('foo bar baz biff libfoo\n');
