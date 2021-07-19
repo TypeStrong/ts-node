@@ -33,37 +33,9 @@ import type * as Module from 'module';
 import { PassThrough } from 'stream';
 import * as getStream from 'get-stream';
 import { once } from 'lodash';
+import { createMacrosAndHelpers, ExecMacroAssertionCallback } from './macros';
 
 const xfs = new NodeFS(fs);
-
-type TestExecReturn = {
-  stdout: string;
-  stderr: string;
-  err: null | ExecException;
-};
-function exec(
-  cmd: string,
-  opts: ExecOptions = {}
-): Promise<TestExecReturn> & { child: ChildProcess } {
-  let childProcess!: ChildProcess;
-  return Object.assign(
-    new Promise<TestExecReturn>((resolve, reject) => {
-      childProcess = childProcessExec(
-        cmd,
-        {
-          cwd: TEST_DIR,
-          ...opts,
-        },
-        (error, stdout, stderr) => {
-          resolve({ err: error, stdout, stderr });
-        }
-      );
-    }),
-    {
-      child: childProcess,
-    }
-  );
-}
 
 const ROOT_DIR = resolve(__dirname, '../..');
 const DIST_DIR = resolve(__dirname, '..');
@@ -80,6 +52,11 @@ const testsDirRequire = createRequire(join(TEST_DIR, 'index.js'));
 
 // Set after ts-node is installed locally
 let { register, create, VERSION, createRepl }: typeof tsNodeTypes = {} as any;
+
+const { exec, createExecMacro } = createMacrosAndHelpers({
+  test,
+  defaultCwd: TEST_DIR,
+});
 
 // Pack and install ts-node locally, necessary to test package "exports"
 test.beforeAll(async () => {
@@ -101,7 +78,9 @@ test.beforeAll(async () => {
 });
 
 test.suite('ts-node', (test) => {
+  /** Default `ts-node --project` invocation */
   const cmd = `"${BIN_PATH}" --project "${PROJECT}"`;
+  /** Default `ts-node` invocation without `--project` */
   const cmdNoProject = `"${BIN_PATH}"`;
 
   test('should export the correct version', () => {
@@ -428,50 +407,53 @@ test.suite('ts-node', (test) => {
       return { stdin, stdout, stderr, replService, service };
     }
 
-    // Serial because it's timing-sensitive
-    test.serial('REPL can be created via API', async () => {
-      const { stdin, stdout, stderr, replService } = createReplViaApi();
-      replService.start();
-      stdin.write('\nconst a = 123\n.type a\n');
-      stdin.end();
-      await promisify(setTimeout)(1e3);
-      stdout.end();
-      stderr.end();
-      expect(await getStream(stderr)).to.equal('');
-      expect(await getStream(stdout)).to.equal(
-        '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
-      );
+    const execMacro = createExecMacro({
+      cmd,
     });
+
+    type ReplApiMacroAssertions = (
+      stdout: string,
+      stderr: string
+    ) => Promise<void>;
+
+    const replApiMacro = test.macro(
+      (opts: {
+        input: string;
+      },
+      assertions: ReplApiMacroAssertions
+      ) => async (t) => {
+        const { input } = opts;
+        const { stdin, stdout, stderr, replService } = createReplViaApi();
+        replService.start();
+        stdin.write(input);
+        stdin.end();
+        await promisify(setTimeout)(1e3);
+        stdout.end();
+        stderr.end();
+        const stderrString = await getStream(stderr);
+        const stdoutString = await getStream(stdout);
+        await assertions(stdoutString, stderrString);
+      }
+    );
+
+    // Serial because it's timing-sensitive
+    test.serial('REPL can be created via API',
+    replApiMacro,
+    {
+      input: '\nconst a = 123\n.type a\n',
+    },
+      async (stdout, stderr) => {
+        expect(stderr).to.equal('');
+        expect(stdout).to.equal(
+          '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
+        );
+      }
+    );
 
     test.suite(
       '[eval], <repl>, and [stdin] execute with correct globals',
       (test) => {
-        const cliTest = test.macro(
-          (
-            {
-              flags,
-              stdin,
-              allowError = false,
-            }: {
-              flags: string;
-              stdin: string;
-              allowError?: boolean;
-            },
-            assertions: (
-              stdout: string,
-              stderr: string,
-              err: ExecException | null
-            ) => Promise<void> | void
-          ) => async (t) => {
-            const execPromise = exec(`${cmd} ${flags}`);
-            // Uncomment to run against vanilla node, useful to verify that these test cases match vanilla node
-            // const execPromise = exec(`node ${flags}`);
-            execPromise.child.stdin!.end(stdin);
-            const { err, stdout, stderr } = await execPromise;
-            if (!allowError) expect(err).to.equal(null);
-            await assertions(stdout, stderr, err);
-          }
-        );
+        cmd;
         interface GlobalInRepl extends NodeJS.Global {
           testReport: any;
           replReport: any;
@@ -581,7 +563,7 @@ test.suite('ts-node', (test) => {
 
         test(
           'stdin',
-          cliTest,
+          execMacro,
           {
             stdin: `${setReportGlobal('stdin')};${printReports}`,
             flags: '',
@@ -612,7 +594,7 @@ test.suite('ts-node', (test) => {
         );
         test(
           'repl',
-          cliTest,
+          execMacro,
           {
             stdin: `${setReportGlobal('repl')};${printReports}`,
             flags: '-i',
@@ -654,7 +636,7 @@ test.suite('ts-node', (test) => {
         // Should ignore -i and run the entrypoint
         test(
           '-i w/entrypoint ignores -i',
-          cliTest,
+          execMacro,
           {
             stdin: `${setReportGlobal('repl')};${printReports}`,
             flags: '-i ./repl/script.js',
@@ -673,7 +655,7 @@ test.suite('ts-node', (test) => {
         // Should not interpret positional arg as an entrypoint script
         test(
           '-e',
-          cliTest,
+          execMacro,
           {
             stdin: `throw new Error()`,
             flags: `-e "${setReportGlobal('eval')};${printReports}"`,
@@ -704,7 +686,7 @@ test.suite('ts-node', (test) => {
         );
         test(
           '-e w/entrypoint arg does not execute entrypoint',
-          cliTest,
+          execMacro,
           {
             stdin: `throw new Error()`,
             flags: `-e "${setReportGlobal(
@@ -737,7 +719,7 @@ test.suite('ts-node', (test) => {
         );
         test(
           '-e w/non-path arg',
-          cliTest,
+          execMacro,
           {
             stdin: `throw new Error()`,
             flags: `-e "${setReportGlobal(
@@ -770,7 +752,7 @@ test.suite('ts-node', (test) => {
         );
         test(
           '-e -i',
-          cliTest,
+          execMacro,
           {
             stdin: `${setReportGlobal('repl')};${printReports}`,
             flags: `-e "${setReportGlobal('eval')}" -i`,
@@ -826,7 +808,7 @@ test.suite('ts-node', (test) => {
 
         test(
           '-e -i w/entrypoint ignores -e and -i, runs entrypoint',
-          cliTest,
+          execMacro,
           {
             stdin: `throw new Error()`,
             flags: '-e "throw new Error()" -i ./repl/script.js',
@@ -843,11 +825,11 @@ test.suite('ts-node', (test) => {
 
         test(
           '-e -i when -e throws error, -i does not run',
-          cliTest,
+          execMacro,
           {
             stdin: `console.log('hello')`,
             flags: `-e "throw new Error('error from -e')" -i`,
-            allowError: true,
+            expectError: true,
           },
           (stdout, stderr, err) => {
             exp(err).toBeDefined();
