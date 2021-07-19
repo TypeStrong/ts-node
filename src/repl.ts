@@ -318,7 +318,7 @@ function startRepl(
       // Check if the user intended to query a Type/Interface
       if (kind === '') {
         // Workaround to get type information
-        const undo = appendEval(state, `1 as ${identifier}`);
+        const undo = appendEval(state, `undefined as unknown as ${identifier}`);
         const getTypeInfoRes = service.getTypeInfo(
           state.input,
           state.path,
