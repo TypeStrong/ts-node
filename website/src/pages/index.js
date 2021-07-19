@@ -2,6 +2,7 @@ import React from 'react';
 import clsx from 'clsx';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import Head from '@docusaurus/Head';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from './styles.module.css';
@@ -26,6 +27,17 @@ function Home() {
     <Layout
       title={siteConfig.title}
       description={siteConfig.tagline}>
+      <Head>
+        <link rel="apple-touch-icon" sizes="180x180" href="/ts-node/img/favicon/apple-touch-icon.png"/>
+        <link rel="icon" type="image/png" sizes="32x32" href="/ts-node/img/favicon/favicon-32x32.png"/>
+        <link rel="icon" type="image/png" sizes="16x16" href="/ts-node/img/favicon/favicon-16x16.png"/>
+        <link rel="manifest" href="/ts-node/img/favicon/site.webmanifest"/>
+        <link rel="mask-icon" href="/ts-node/img/favicon/safari-pinned-tab.svg" color="#5bbad5"/>
+        <link rel="shortcut icon" href="/ts-node/img/favicon/favicon.ico"/>
+        <meta name="msapplication-TileColor" content="#2b5797"/>
+        <meta name="msapplication-config" content="/ts-node/img/favicon/browserconfig.xml"/>
+        <meta name="theme-color" content="#ffffff"/>
+      </Head>
       <header className={clsx('hero hero--primary', styles.heroBanner)}>
         <div className="container">
           <h1 className="hero__title">{siteConfig.title}</h1>
