@@ -3,7 +3,7 @@ import { Module } from 'module';
 import * as util from 'util';
 import { fileURLToPath } from 'url';
 
-const sourceMapSupport = require('@cspotcode/source-map-support') as typeof import('source-map-support');
+import sourceMapSupport = require('@cspotcode/source-map-support');
 import { BaseError } from 'make-error';
 import type * as _ts from 'typescript';
 
