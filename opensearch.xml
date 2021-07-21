@@ -4,8 +4,8 @@
   <ShortName>ts-node</ShortName>
   <Description>Search ts-node</Description>
   <InputEncoding>UTF-8</InputEncoding>
-  <Image width="16" height="16" type="image/x-icon">https://typestrong.org/ts-node/ts-node/img/favicon.ico</Image>
-  <Url type="text/html" method="get" template="https://typestrong.org/ts-node/ts-node/search?q={searchTerms}"/>
-  <Url type="application/opensearchdescription+xml" rel="self" template="https://typestrong.org/ts-node/ts-node/opensearch.xml" />
-  <moz:SearchForm>https://typestrong.org/ts-node/ts-node/</moz:SearchForm>
+  <Image width="16" height="16" type="image/x-icon">https://typestrong.org/ts-node/img/favicon/favicon.ico</Image>
+  <Url type="text/html" method="get" template="https://typestrong.org/ts-node/search?q={searchTerms}"/>
+  <Url type="application/opensearchdescription+xml" rel="self" template="https://typestrong.org/ts-node/opensearch.xml" />
+  <moz:SearchForm>https://typestrong.org/ts-node/</moz:SearchForm>
 </OpenSearchDescription>
