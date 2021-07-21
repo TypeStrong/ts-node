@@ -197,11 +197,6 @@ export function main(
   let evalStuff: VirtualFileState | undefined;
   let replStuff: VirtualFileState | undefined;
   let stdinStuff: VirtualFileState | undefined;
-  // let evalService: ReplService | undefined;
-  // let replState: EvalState | undefined;
-  // let replService: ReplService | undefined;
-  // let stdinState: EvalState | undefined;
-  // let stdinService: ReplService | undefined;
   let evalAwarePartialHost: EvalAwarePartialHost | undefined = undefined;
   if (executeEval) {
     const state = new EvalState(join(cwd, EVAL_FILENAME));
@@ -210,6 +205,7 @@ export function main(
       repl: createRepl({
         state,
         composeWithEvalAwarePartialHost: evalAwarePartialHost,
+        ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl: false,
       }),
     };
     ({ evalAwarePartialHost } = evalStuff.repl);
@@ -225,6 +221,7 @@ export function main(
       repl: createRepl({
         state,
         composeWithEvalAwarePartialHost: evalAwarePartialHost,
+        ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl: false,
       }),
     };
     ({ evalAwarePartialHost } = stdinStuff.repl);
