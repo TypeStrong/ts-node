@@ -1281,6 +1281,9 @@ test.suite('ts-node', (test) => {
           semver.gte(ts.version, '3.5.0') &&
           semver.gte(process.versions.node, '14.0.0')
         ) {
+          const libAndTarget = semver.gte(process.versions.node, '16.0.0')
+            ? 'es2021'
+            : 'es2020';
           test('implicitly uses @tsconfig/node14 or @tsconfig/node16 compilerOptions when both TS and node versions support it', async (t) => {
             // node14 and node16 configs are identical, hence the "or"
             const {
@@ -1294,8 +1297,8 @@ test.suite('ts-node', (test) => {
             expect(err1).to.equal(null);
             t.like(JSON.parse(stdout1), {
               compilerOptions: {
-                target: 'es2020',
-                lib: ['es2020'],
+                target: libAndTarget,
+                lib: [libAndTarget],
               },
             });
             const {
