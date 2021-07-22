@@ -2080,7 +2080,7 @@ test.suite('ts-node', (test) => {
       );
     }
 
-    if (semver.satisfies(ts.version, '>=3.8.0')) {
+    if (semver.gte(ts.version, '3.8.0')) {
       // Serial because it's timing-sensitive
       test.serial('should allow evaluating top level await', async () => {
         const script = `
@@ -2118,7 +2118,7 @@ test.suite('ts-node', (test) => {
           const ellapsedTime = Number(
             stdout.split('\n')[0].replace('> ', '').trim()
           );
-          expect(ellapsedTime).to.be.gte(awaitMs);
+          expect(ellapsedTime).to.be.gte(awaitMs - 50);
           expect(ellapsedTime).to.be.lte(awaitMs + 100);
         }
       );
