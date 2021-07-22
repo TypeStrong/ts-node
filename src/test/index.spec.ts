@@ -56,6 +56,7 @@ function createReplViaApi({
   return { stdin, stdout, stderr, replService, service };
 }
 
+// Todo combine with replApiMacro
 async function executeInRepl(
   input: string,
   {
@@ -481,17 +482,7 @@ test.suite('ts-node', (test) => {
         await assertions(stdoutString, stderrString);
       }
     );
-    // Serial because it's timing-sensitive
-    test.serial('REPL can be created via API', async () => {
-      const { stdout, stderr } = await executeInRepl(
-        '\nconst a = 123\n.type a\n'
-      );
 
-      expect(stderr).to.equal('');
-      expect(stdout).to.equal(
-        '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
-      );
-    });
     // Serial because it's timing-sensitive
     test.serial(
       'REPL can be created via API',
@@ -1551,7 +1542,6 @@ test.suite('ts-node', (test) => {
           JSON.stringify(
             {
               'ts-node': {
-                experimentalReplAwait: false,
                 cwd: native(`${ROOT_DIR}/tests`),
                 projectSearchDir: native(`${ROOT_DIR}/tests`),
                 project: native(`${ROOT_DIR}/tests/tsconfig.json`),
@@ -2070,7 +2060,6 @@ test.suite('ts-node', (test) => {
           createServiceOpts: {
             experimentalReplAwait: true,
             compilerOptions,
-            executeEntrypoint: false,
           },
           startOptions: { useGlobal: false },
         }
@@ -2080,6 +2069,7 @@ test.suite('ts-node', (test) => {
     // Serial because it's timing-sensitive
     test.serial('should allow evaluating top level await', async () => {
       const script = `
+        export {}; /* TODO remove this line; implement automatic export{}; in the REPL */
         const x = await new Promise((r) => r(1));
         for await (const x of [1,2,3]) { console.log(x) };
         for (const x of ['a', 'b']) { await x; console.log(x) };

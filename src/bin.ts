@@ -271,7 +271,6 @@ export function main(
     fileExists: evalAwarePartialHost?.fileExists ?? undefined,
     scope,
     scopeDir,
-    executeEntrypoint,
   });
 
   // Bind REPL service to ts-node compiler service (chicken-and-egg problem)
@@ -341,7 +340,7 @@ export function main(
         evalStuff!.module!,
         code!,
         print,
-        'eval',
+        'eval'
       );
     }
 
@@ -359,7 +358,7 @@ export function main(
           buffer,
           // `echo 123 | node -p` still prints 123
           print,
-          'stdin',
+          'stdin'
         );
       });
     }

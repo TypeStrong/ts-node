@@ -31,7 +31,6 @@ export async function upstreamTopLevelAwaitTests({
     ...replService.evalAwarePartialHost,
     project: `${TEST_DIR}/tsconfig.json`,
     experimentalReplAwait: true,
-    executeEntrypoint: false,
     transpileOnly: true,
     compilerOptions: {
       target: semver.gte(ts.version, '3.0.1')

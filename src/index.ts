@@ -288,6 +288,9 @@ export interface CreateOptions {
    * Uses node's implementation which accomplishes this with an AST syntax transformation.
    *
    * Enabled by default when tsconfig target is es2018 or above. Set to false to disable.
+   *
+   * **Note**: setting to `true` when tsconfig target is too low will throw an Error.  Leave as `undefined`
+   * to get default, automatic behavior.
    */
   experimentalReplAwait?: boolean;
   /**
@@ -313,12 +316,6 @@ export interface CreateOptions {
    * the configuration loader, so it is *not* necessary for their source to be set here.
    */
   optionBasePaths?: OptionBasePaths;
-  /**
-   * @internal
-   * Used to conditionally exclude certain diagnostic codes that doesn't
-   * apply to experimentalReplAwait
-   */
-  executeEntrypoint?: Boolean;
 }
 
 /** @internal */
@@ -356,7 +353,6 @@ export interface TsConfigOptions
     | 'projectSearchDir'
     | 'experimentalEsmLoader'
     | 'optionBasePaths'
-    | 'executeEntrypoint'
   > {}
 
 /**
@@ -392,7 +388,7 @@ export const DEFAULTS: RegisterOptions = {
   compilerHost: yn(env.TS_NODE_COMPILER_HOST),
   logError: yn(env.TS_NODE_LOG_ERROR),
   experimentalEsmLoader: false,
-  experimentalReplAwait: yn(env.TS_NODE_EXPERIMENTAL_REPL_AWAIT) ?? true,
+  experimentalReplAwait: yn(env.TS_NODE_EXPERIMENTAL_REPL_AWAIT) ?? undefined,
 };
 
 /**
