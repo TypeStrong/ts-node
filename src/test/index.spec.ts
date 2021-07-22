@@ -10,7 +10,7 @@ import {
 import { dirname, join, resolve, sep as pathSep } from 'path';
 import { homedir, tmpdir } from 'os';
 import semver = require('semver');
-import ts = require('../../tests/node_modules/typescript');
+import ts = require('typescript');
 import proxyquire = require('proxyquire');
 import type * as tsNodeTypes from '../index';
 import * as fs from 'fs';
