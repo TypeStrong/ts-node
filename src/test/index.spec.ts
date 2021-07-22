@@ -2039,12 +2039,7 @@ test.suite('ts-node', (test) => {
 
   test.suite('top level await', (test) => {
     const compilerOptions = {
-      target: semver.gte(ts.version, '3.0.1')
-        ? 'es2018'
-        : // TODO should this be kept if tla is not supported on TS <3.8.0?
-          // TS 2.7 is using polyfill for async interator even though they
-          // were added in es2018
-          'esnext',
+      target: 'es2018',
     };
     function executeInTlaRepl(input: string, waitMs = 1000) {
       return executeInRepl(
