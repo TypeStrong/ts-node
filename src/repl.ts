@@ -123,6 +123,14 @@ export function createRepl(options: CreateReplOptions = {}) {
     stderr,
     console: _console,
   };
+
+  const topLevelAwaitDiagnosticCodes = [
+    1375, // 'await' expressions are only allowed at the top level of a file when that file is a module, but this file has no imports or exports. Consider adding an empty 'export {}' to make this file a module.
+    1378, // Top-level 'await' expressions are only allowed when the 'module' option is set to 'esnext' or 'system', and the 'target' option is set to 'es2017' or higher.
+    1431, // 'for await' loops are only allowed at the top level of a file when that file is a module, but this file has no imports or exports. Consider adding an empty 'export {}' to make this file a module.
+    1432, // Top-level 'for await' loops are only allowed when the 'module' option is set to 'esnext' or 'system', and the 'target' option is set to 'es2017' or higher.
+  ];
+
   return replService;
 
   function setService(_service: Service) {
@@ -135,14 +143,7 @@ export function createRepl(options: CreateReplOptions = {}) {
           2393, // Duplicate function implementation: https://github.com/TypeStrong/ts-node/issues/729
           6133, // <identifier> is declared but its value is never read. https://github.com/TypeStrong/ts-node/issues/850
           7027, // Unreachable code detected. https://github.com/TypeStrong/ts-node/issues/469
-          ...(service.shouldReplAwait
-            ? [
-                1375, // 'await' expressions are only allowed at the top level of a file when that file is a module, but this file has no imports or exports. Consider adding an empty 'export {}' to make this file a module.
-                1378, // Top-level 'await' expressions are only allowed when the 'module' option is set to 'esnext' or 'system', and the 'target' option is set to 'es2017' or higher.
-                1431, // 'for await' loops are only allowed at the top level of a file when that file is a module, but this file has no imports or exports. Consider adding an empty 'export {}' to make this file a module.
-                1432, // Top-level 'for await' loops are only allowed when the 'module' option is set to 'esnext' or 'system', and the 'target' option is set to 'es2017' or higher.
-              ]
-            : []),
+          ...(service.shouldReplAwait ? topLevelAwaitDiagnosticCodes : []),
         ],
       });
     }
@@ -190,6 +191,23 @@ export function createRepl(options: CreateReplOptions = {}) {
           err = new Recoverable(error);
         } else {
           _console.error(error);
+
+          if (
+            // Don't show the hint if the user explicitly disabled repl tla
+            service!.options.experimentalReplAwait !== false &&
+            !service!.shouldReplAwait &&
+            error.diagnosticCodes.some((dC) =>
+              topLevelAwaitDiagnosticCodes.includes(dC)
+            )
+          ) {
+            _console.error(
+              `Hint: Found some errors that are related to top level await.\nYou're using ts ${
+                service!.ts.version
+              } with target ${
+                service!.ts.ScriptTarget[service!.config.options.target!]
+              }, must use ts 3.8+ & target ES2018+`
+            );
+          }
         }
       } else {
         err = error as any;
