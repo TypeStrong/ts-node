@@ -2070,7 +2070,7 @@ test.suite('ts-node', (test) => {
     test.serial('should allow evaluating top level await', async () => {
       const script = `
         export {}; /* TODO remove this line; implement automatic export{}; in the REPL */
-        const x = await new Promise((r) => r(1));
+        const x: number = await new Promise((r) => r(1));
         for await (const x of [1,2,3]) { console.log(x) };
         for (const x of ['a', 'b']) { await x; console.log(x) };
         class Foo {}; await 1;
