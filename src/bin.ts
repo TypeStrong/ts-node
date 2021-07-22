@@ -209,7 +209,6 @@ export function main(
         state,
         composeWithEvalAwarePartialHost: evalAwarePartialHost,
         ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl: false,
-        forceToBeModule: false,
       }),
     };
     ({ evalAwarePartialHost } = evalStuff.repl);
@@ -226,7 +225,6 @@ export function main(
         state,
         composeWithEvalAwarePartialHost: evalAwarePartialHost,
         ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl: false,
-        forceToBeModule: false,
       }),
     };
     ({ evalAwarePartialHost } = stdinStuff.repl);

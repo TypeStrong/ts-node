@@ -79,11 +79,6 @@ export interface CreateReplOptions {
    * Ignore diagnostics that are annoying when interactively entering input line-by-line.
    */
   ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl?: boolean;
-  /**
-   * @internal
-   * Force compiler to treat as a module by prepending `export {};`
-   */
-  forceToBeModule?: boolean;
 }
 
 /**
@@ -97,15 +92,11 @@ export interface CreateReplOptions {
  *     repl.start()
  */
 export function createRepl(options: CreateReplOptions = {}) {
-  const {
-    ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl = true,
-    forceToBeModule = true,
-  } = options;
+  const { ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl = true } = options;
   let service = options.service;
   let server: REPLServer;
   const state =
     options.state ?? new EvalState(join(process.cwd(), REPL_FILENAME));
-  if (forceToBeModule) state.input += ';export {};void 0;\n';
   const evalAwarePartialHost = createEvalAwarePartialHost(
     state,
     options.composeWithEvalAwarePartialHost
@@ -414,7 +405,8 @@ function startRepl(
   service: Service,
   state: EvalState,
   code?: string,
-  optionsOverride?: ReplOptions
+  optionsOverride?: ReplOptions,
+  forceToBeModule = true
 ) {
   let context: Context | undefined;
   if (optionsOverride?.useGlobal === false) {
@@ -461,6 +453,9 @@ function startRepl(
 
     // Hard fix for TypeScript forcing `Object.defineProperty(exports, ...)`.
     exec('exports = module.exports', state.path, context);
+    if (forceToBeModule) {
+      state.input += 'export {};void 0;\n';
+    }
   }
 
   reset();
