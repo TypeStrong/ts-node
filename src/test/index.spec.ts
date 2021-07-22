@@ -2189,8 +2189,9 @@ test.suite('ts-node', (test) => {
       test('should throw error when attempting to use top level await on TS < 3.8', async () => {
         exp(await settled(() => executeInTlaRepl('', 1000))).toMatchObject({
           status: 'rejected',
-          reason:
-            'Experimental REPL await is not compatible with TypeScript versions older than 3.8',
+          reason: exp.stringContaining(
+            'Experimental REPL await is not compatible with TypeScript versions older than 3.8'
+          ),
         });
       });
     }
