@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2018",
-    "module": "ESNext",
+    "module": "CommonJS",
     "allowJs": true,
     "jsx": "react",
     "experimentalDecorators": true

@@ -58,21 +58,23 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   function createSwcOptions(isTsx: boolean): swcTypes.Options {
     const swcTarget = targetMapping.get(target!) ?? 'es3';
     const keepClassNames = target! >= /* ts.ScriptTarget.ES2016 */ 3;
-    const moduleConfig = {
-      noInterop: !esModuleInterop,
-      type:
-        module === ModuleKind.CommonJS
-          ? 'commonjs'
-          : module === ModuleKind.AMD
-          ? 'amd'
-          : module === ModuleKind.UMD
-          ? 'umd'
-          : undefined,
-    } as swcTypes.ModuleConfig;
+    const moduleType =
+      module === ModuleKind.CommonJS
+        ? 'commonjs'
+        : module === ModuleKind.AMD
+        ? 'amd'
+        : module === ModuleKind.UMD
+        ? 'umd'
+        : undefined;
     return {
       sourceMaps: sourceMap,
       // isModule: true,
-      module: moduleConfig,
+      module: moduleType
+        ? ({
+            noInterop: !esModuleInterop,
+            type: moduleType,
+          } as swcTypes.ModuleConfig)
+        : undefined,
       swcrc: false,
       jsc: {
         externalHelpers: importHelpers,

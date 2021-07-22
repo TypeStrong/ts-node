@@ -7,3 +7,7 @@ class World {}
 parseInt(1101, 2);
 const x: number = `Hello ${World.name}!`;
 console.log(x);
+
+// test module type emit
+import { readFileSync } from 'fs';
+readFileSync;

@@ -103,6 +103,7 @@ test.beforeAll(async () => {
 test.suite('ts-node', (test) => {
   const cmd = `"${BIN_PATH}" --project "${PROJECT}"`;
   const cmdNoProject = `"${BIN_PATH}"`;
+  const cmdEsmLoaderNoProject = `node --loader ts-node/esm`;
 
   test('should export the correct version', () => {
     expect(VERSION).to.equal(require('../../package.json').version);
@@ -365,6 +366,17 @@ test.suite('ts-node', (test) => {
       );
       expect(err).to.equal(null);
       expect(stdout).to.contain('Hello World!');
+    });
+
+    test('swc transpiler supports native ESM emit', async () => {
+      const { err, stdout } = await exec(
+        `${cmdEsmLoaderNoProject} ./index.ts`,
+        {
+          cwd: resolve(TEST_DIR, 'transpile-only-swc-native-esm'),
+        }
+      );
+      expect(err).to.equal(null);
+      expect(stdout).to.contain('Hello file://');
     });
 
     test('should pipe into `ts-node` and evaluate', async () => {
