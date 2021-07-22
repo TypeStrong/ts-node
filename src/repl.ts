@@ -8,6 +8,7 @@ import { readFileSync, statSync } from 'fs';
 import { Console } from 'console';
 import type * as tty from 'tty';
 import Module = require('module');
+import { ScriptElementKind } from 'typescript';
 
 /** @internal */
 export const EVAL_FILENAME = `[eval].ts`;
@@ -323,13 +324,36 @@ function startRepl(
       }
 
       const undo = appendEval(state, identifier);
-      const { name, comment } = service.getTypeInfo(
+      let { name, comment, kind } = service.getTypeInfo(
         state.input,
         state.path,
         state.input.length
       );
 
       undo();
+
+      // Check if the user intended to query a Type/Interface
+      if (kind === '') {
+        // Workaround to get type information
+        const undo = appendEval(state, `undefined as unknown as ${identifier}`);
+        const getTypeInfoRes = service.getTypeInfo(
+          state.input,
+          state.path,
+          state.input.length
+        );
+
+        undo();
+
+        if (
+          [
+            ScriptElementKind.typeElement,
+            ScriptElementKind.interfaceElement,
+          ].includes(getTypeInfoRes.kind!)
+        ) {
+          name = getTypeInfoRes.name;
+          comment = getTypeInfoRes.comment;
+        }
+      }
 
       if (name) repl.outputStream.write(`${name}\n`);
       if (comment) repl.outputStream.write(`${comment}\n`);

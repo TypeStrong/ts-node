@@ -397,6 +397,7 @@ test.suite('ts-node', (test) => {
       expect(stdout).to.equal('> 123\n' + 'undefined\n' + '> ');
     });
 
+    // TODO: REPL shouldn't require a leading `\n` to properly work on Windows
     test('REPL has command to get type information', async () => {
       const execPromise = exec(`${cmd} --interactive`);
       execPromise.child.stdin!.end('\nconst a = 123\n.type a');
@@ -404,6 +405,36 @@ test.suite('ts-node', (test) => {
       expect(err).to.equal(null);
       expect(stdout).to.equal(
         '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
+      );
+    });
+
+    // TODO: Same as above
+    // TODO2: Merge with below test once #1126 is fixed
+    test('REPL "type" command can be used on types', async () => {
+      const execPromise = exec(`${cmd} --interactive`);
+      execPromise.child.stdin!.end(
+        '\n' + 'type Foo = string | { x: 1 }\n' + '.type Foo\n'
+      );
+      const { err, stdout } = await execPromise;
+      expect(err).to.equal(null);
+      expect(stdout).to.equal(
+        '> undefined\n' +
+          '> undefined\n' +
+          '> type Foo = string | {\n    x: 1;\n}\n' +
+          '> '
+      );
+    });
+
+    // TODO: Same as above
+    test('REPL "type" command can be used on interfaces', async () => {
+      const execPromise = exec(`${cmd} --interactive`);
+      execPromise.child.stdin!.end(
+        '\n' + 'interface Bar { x: string; y: number; }\n' + '.type Bar'
+      );
+      const { err, stdout } = await execPromise;
+      expect(err).to.equal(null);
+      expect(stdout).to.equal(
+        '> undefined\n' + '> undefined\n' + '> interface Bar\n' + '> '
       );
     });
 
@@ -1707,6 +1738,7 @@ test.suite('ts-node', (test) => {
           service.getTypeInfo('/**jsdoc here*/const x = 10', 'test.ts', 21)
         ).to.deep.equal({
           comment: 'jsdoc here',
+          kind: 'const',
           name: 'const x: 10',
         });
       });
@@ -1717,6 +1749,7 @@ test.suite('ts-node', (test) => {
           service.getTypeInfo('/**jsdoc here*/const x = 10', 'test.ts', 0)
         ).to.deep.equal({
           comment: '',
+          kind: undefined,
           name: '',
         });
       });
