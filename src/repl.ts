@@ -105,7 +105,7 @@ export function createRepl(options: CreateReplOptions = {}) {
   let server: REPLServer;
   const state =
     options.state ?? new EvalState(join(process.cwd(), REPL_FILENAME));
-  if (forceToBeModule) state.input += ';export {};\n';
+  if (forceToBeModule) state.input += ';export {};void 0;\n';
   const evalAwarePartialHost = createEvalAwarePartialHost(
     state,
     options.composeWithEvalAwarePartialHost
