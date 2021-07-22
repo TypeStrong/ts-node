@@ -1850,9 +1850,7 @@ test.suite('ts-node', (test) => {
         expect(err).to.not.equal(null);
         // expect error from node's default resolver
         expect(stderr).to.match(
-          semver.gte(process.version, '16.5.0')
-            ? /Error:.*(?:\n.*){0,1}\n *at defaultResolve/
-            : /Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,1}\n *at defaultResolve/
+          /Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,1}\n *at defaultResolve/
         );
       });
 
