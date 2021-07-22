@@ -1210,7 +1210,12 @@ export function create(rawOptions: CreateOptions = {}): Service {
   };
 
   function addDiagnosticFilter(filter: DiagnosticFilter) {
-    diagnosticFilters.push(filter);
+    diagnosticFilters.push({
+      ...filter,
+      filenamesAbsolute: filter.filenamesAbsolute.map((f) =>
+        normalizeSlashes(f)
+      ),
+    });
   }
 
   return {
