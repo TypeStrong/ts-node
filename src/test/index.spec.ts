@@ -2046,6 +2046,7 @@ test.suite('ts-node', (test) => {
         input
           .split('\n')
           .map((line) => line.trim())
+          // Restore newline once https://github.com/nodejs/node/pull/39392 is merged
           .join(''),
         {
           waitMs,
@@ -2062,7 +2063,6 @@ test.suite('ts-node', (test) => {
       // Serial because it's timing-sensitive
       test.serial('should allow evaluating top level await', async () => {
         const script = `
-        export {}; /* TODO remove this line; implement automatic export{}; in the REPL */
         const x: number = await new Promise((r) => r(1));
         for await (const x of [1,2,3]) { console.log(x) };
         for (const x of ['a', 'b']) { await x; console.log(x) };
