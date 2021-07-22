@@ -10,7 +10,7 @@ import {
 import { dirname, join, resolve, sep as pathSep } from 'path';
 import { homedir, tmpdir } from 'os';
 import semver = require('semver');
-import ts = require('typescript');
+import ts = require('../../tests/node_modules/typescript');
 import proxyquire = require('proxyquire');
 import type * as tsNodeTypes from '../index';
 import * as fs from 'fs';
@@ -2187,12 +2187,9 @@ test.suite('ts-node', (test) => {
         upstreamTopLevelAwaitTests({ TEST_DIR, create, createRepl }));
     } else {
       test('should throw error when attempting to use top level await on TS < 3.8', async () => {
-        exp(await settled(() => executeInTlaRepl('', 1000))).toMatchObject({
-          status: 'rejected',
-          reason: exp.stringContaining(
-            'Experimental REPL await is not compatible with TypeScript versions older than 3.8'
-          ),
-        });
+        exp(executeInTlaRepl('', 1000)).rejects.toThrow(
+          'Experimental REPL await is not compatible with TypeScript versions older than 3.8'
+        );
       });
     }
   });
