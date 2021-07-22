@@ -30,6 +30,20 @@ import { createMacrosAndHelpers, ExecMacroAssertionCallback } from './macros';
 
 const xfs = new NodeFS(fs);
 
+async function settled<T>(fn: () => Promise<T> | T) {
+  try {
+    return {
+      status: 'fulfilled',
+      value: await fn(),
+    };
+  } catch (reason) {
+    return {
+      status: 'rejected',
+      reason,
+    };
+  }
+}
+
 interface CreateReplViaApiOptions {
   createReplOpts?: Partial<tsNodeTypes.CreateReplOptions>;
   createServiceOpts?: Partial<tsNodeTypes.CreateOptions>;
@@ -2173,8 +2187,9 @@ test.suite('ts-node', (test) => {
         upstreamTopLevelAwaitTests({ TEST_DIR, create, createRepl }));
     } else {
       test('should throw error when attempting to use top level await on TS < 3.8', async () => {
-        await exp(executeInTlaRepl('', 1000)).rejects.toMatchObject({
-          message:
+        exp(await settled(() => executeInTlaRepl('', 1000))).toMatchObject({
+          status: 'rejected',
+          reason:
             'Experimental REPL await is not compatible with TypeScript versions older than 3.8',
         });
       });
