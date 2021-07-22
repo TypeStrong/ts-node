@@ -371,16 +371,18 @@ test.suite('ts-node', (test) => {
       expect(stdout).to.contain('Hello World!');
     });
 
-    test('swc transpiler supports native ESM emit', async () => {
-      const { err, stdout } = await exec(
-        `${cmdEsmLoaderNoProject} ./index.ts`,
-        {
-          cwd: resolve(TEST_DIR, 'transpile-only-swc-native-esm'),
-        }
-      );
-      expect(err).to.equal(null);
-      expect(stdout).to.contain('Hello file://');
-    });
+    if (semver.gte(process.version, '12.16.0')) {
+      test('swc transpiler supports native ESM emit', async () => {
+        const { err, stdout } = await exec(
+          `${cmdEsmLoaderNoProject} ./index.ts`,
+          {
+            cwd: resolve(TEST_DIR, 'transpile-only-swc-native-esm'),
+          }
+        );
+        expect(err).to.equal(null);
+        expect(stdout).to.contain('Hello file://');
+      });
+    }
 
     test('should pipe into `ts-node` and evaluate', async () => {
       const execPromise = exec(cmd);
