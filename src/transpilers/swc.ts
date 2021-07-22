@@ -49,6 +49,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
     experimentalDecorators,
     emitDecoratorMetadata,
     target,
+    module,
     jsxFactory,
     jsxFragmentFactory,
   } = compilerOptions;
@@ -57,13 +58,23 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   function createSwcOptions(isTsx: boolean): swcTypes.Options {
     const swcTarget = targetMapping.get(target!) ?? 'es3';
     const keepClassNames = target! >= /* ts.ScriptTarget.ES2016 */ 3;
+    const moduleType =
+      module === ModuleKind.CommonJS
+        ? 'commonjs'
+        : module === ModuleKind.AMD
+        ? 'amd'
+        : module === ModuleKind.UMD
+        ? 'umd'
+        : undefined;
     return {
       sourceMaps: sourceMap,
       // isModule: true,
-      module: {
-        type: 'commonjs',
-        noInterop: !esModuleInterop,
-      },
+      module: moduleType
+        ? ({
+            noInterop: !esModuleInterop,
+            type: moduleType,
+          } as swcTypes.ModuleConfig)
+        : undefined,
       swcrc: false,
       jsc: {
         externalHelpers: importHelpers,
@@ -118,3 +129,14 @@ targetMapping.set(/* ts.ScriptTarget.ES2018 */ 5, 'es2018');
 targetMapping.set(/* ts.ScriptTarget.ES2019 */ 6, 'es2019');
 targetMapping.set(/* ts.ScriptTarget.ES2020 */ 7, 'es2019');
 targetMapping.set(/* ts.ScriptTarget.ESNext */ 99, 'es2019');
+
+const ModuleKind = {
+  None: 0,
+  CommonJS: 1,
+  AMD: 2,
+  UMD: 3,
+  System: 4,
+  ES2015: 5,
+  ES2020: 6,
+  ESNext: 99,
+} as const;

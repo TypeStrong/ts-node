@@ -82,6 +82,10 @@ test.suite('ts-node', (test) => {
   const cmd = `"${BIN_PATH}" --project "${PROJECT}"`;
   /** Default `ts-node` invocation without `--project` */
   const cmdNoProject = `"${BIN_PATH}"`;
+  const experimentalModulesFlag = semver.gte(process.version, '12.17.0')
+    ? ''
+    : '--experimental-modules';
+  const cmdEsmLoaderNoProject = `node ${experimentalModulesFlag} --loader ts-node/esm`;
 
   test('should export the correct version', () => {
     expect(VERSION).to.equal(require('../../package.json').version);
@@ -345,6 +349,19 @@ test.suite('ts-node', (test) => {
       expect(err).to.equal(null);
       expect(stdout).to.contain('Hello World!');
     });
+
+    if (semver.gte(process.version, '12.16.0')) {
+      test('swc transpiler supports native ESM emit', async () => {
+        const { err, stdout } = await exec(
+          `${cmdEsmLoaderNoProject} ./index.ts`,
+          {
+            cwd: resolve(TEST_DIR, 'transpile-only-swc-native-esm'),
+          }
+        );
+        expect(err).to.equal(null);
+        expect(stdout).to.contain('Hello file://');
+      });
+    }
 
     test('should pipe into `ts-node` and evaluate', async () => {
       const execPromise = exec(cmd);
@@ -1770,23 +1787,24 @@ test.suite('ts-node', (test) => {
   });
 
   test.suite('esm', (test) => {
-    const experimentalModulesFlag = semver.gte(process.version, '12.17.0')
-      ? ''
-      : '--experimental-modules';
-    const esmCmd = `node ${experimentalModulesFlag} --loader ts-node/esm`;
-
     if (semver.gte(process.version, '12.16.0')) {
       test('should compile and execute as ESM', async () => {
-        const { err, stdout } = await exec(`${esmCmd} index.ts`, {
-          cwd: join(TEST_DIR, './esm'),
-        });
+        const { err, stdout } = await exec(
+          `${cmdEsmLoaderNoProject} index.ts`,
+          {
+            cwd: join(TEST_DIR, './esm'),
+          }
+        );
         expect(err).to.equal(null);
         expect(stdout).to.equal('foo bar baz biff libfoo\n');
       });
       test('should use source maps', async () => {
-        const { err, stdout } = await exec(`${esmCmd} "throw error.ts"`, {
-          cwd: join(TEST_DIR, './esm'),
-        });
+        const { err, stdout } = await exec(
+          `${cmdEsmLoaderNoProject} "throw error.ts"`,
+          {
+            cwd: join(TEST_DIR, './esm'),
+          }
+        );
         expect(err).not.to.equal(null);
         expect(err!.message).to.contain(
           [
@@ -1806,7 +1824,7 @@ test.suite('ts-node', (test) => {
             err,
             stdout,
           } = await exec(
-            `${esmCmd} --experimental-specifier-resolution=node index.ts`,
+            `${cmdEsmLoaderNoProject} --experimental-specifier-resolution=node index.ts`,
             { cwd: join(TEST_DIR, './esm-node-resolver') }
           );
           expect(err).to.equal(null);
@@ -1817,29 +1835,35 @@ test.suite('ts-node', (test) => {
             err,
             stdout,
           } = await exec(
-            `${esmCmd} --experimental-modules --es-module-specifier-resolution=node index.ts`,
+            `${cmdEsmLoaderNoProject} --experimental-modules --es-module-specifier-resolution=node index.ts`,
             { cwd: join(TEST_DIR, './esm-node-resolver') }
           );
           expect(err).to.equal(null);
           expect(stdout).to.equal('foo bar baz biff libfoo\n');
         });
         test('via NODE_OPTIONS', async () => {
-          const { err, stdout } = await exec(`${esmCmd} index.ts`, {
-            cwd: join(TEST_DIR, './esm-node-resolver'),
-            env: {
-              ...process.env,
-              NODE_OPTIONS: `${experimentalModulesFlag} --experimental-specifier-resolution=node`,
-            },
-          });
+          const { err, stdout } = await exec(
+            `${cmdEsmLoaderNoProject} index.ts`,
+            {
+              cwd: join(TEST_DIR, './esm-node-resolver'),
+              env: {
+                ...process.env,
+                NODE_OPTIONS: `${experimentalModulesFlag} --experimental-specifier-resolution=node`,
+              },
+            }
+          );
           expect(err).to.equal(null);
           expect(stdout).to.equal('foo bar baz biff libfoo\n');
         });
       });
 
       test('throws ERR_REQUIRE_ESM when attempting to require() an ESM script when ESM loader is enabled', async () => {
-        const { err, stderr } = await exec(`${esmCmd} ./index.js`, {
-          cwd: join(TEST_DIR, './esm-err-require-esm'),
-        });
+        const { err, stderr } = await exec(
+          `${cmdEsmLoaderNoProject} ./index.js`,
+          {
+            cwd: join(TEST_DIR, './esm-err-require-esm'),
+          }
+        );
         expect(err).to.not.equal(null);
         expect(stderr).to.contain(
           'Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:'
@@ -1847,9 +1871,12 @@ test.suite('ts-node', (test) => {
       });
 
       test('defers to fallback loaders when URL should not be handled by ts-node', async () => {
-        const { err, stdout, stderr } = await exec(`${esmCmd} index.mjs`, {
-          cwd: join(TEST_DIR, './esm-import-http-url'),
-        });
+        const { err, stdout, stderr } = await exec(
+          `${cmdEsmLoaderNoProject} index.mjs`,
+          {
+            cwd: join(TEST_DIR, './esm-import-http-url'),
+          }
+        );
         expect(err).to.not.equal(null);
         // expect error from node's default resolver
         expect(stderr).to.match(
@@ -1858,16 +1885,19 @@ test.suite('ts-node', (test) => {
       });
 
       test('should bypass import cache when changing search params', async () => {
-        const { err, stdout } = await exec(`${esmCmd} index.ts`, {
-          cwd: join(TEST_DIR, './esm-import-cache'),
-        });
+        const { err, stdout } = await exec(
+          `${cmdEsmLoaderNoProject} index.ts`,
+          {
+            cwd: join(TEST_DIR, './esm-import-cache'),
+          }
+        );
         expect(err).to.equal(null);
         expect(stdout).to.equal('log1\nlog2\nlog2\n');
       });
 
       test('should support transpile only mode via dedicated loader entrypoint', async () => {
         const { err, stdout } = await exec(
-          `${esmCmd}/transpile-only index.ts`,
+          `${cmdEsmLoaderNoProject}/transpile-only index.ts`,
           {
             cwd: join(TEST_DIR, './esm-transpile-only'),
           }
@@ -1876,9 +1906,12 @@ test.suite('ts-node', (test) => {
         expect(stdout).to.equal('');
       });
       test('should throw type errors without transpile-only enabled', async () => {
-        const { err, stdout } = await exec(`${esmCmd} index.ts`, {
-          cwd: join(TEST_DIR, './esm-transpile-only'),
-        });
+        const { err, stdout } = await exec(
+          `${cmdEsmLoaderNoProject} index.ts`,
+          {
+            cwd: join(TEST_DIR, './esm-transpile-only'),
+          }
+        );
         if (err === null) {
           throw new Error('Command was expected to fail, but it succeeded.');
         }
@@ -1899,7 +1932,7 @@ test.suite('ts-node', (test) => {
 
       async function runModuleTypeTest(project: string, ext: string) {
         const { err, stderr, stdout } = await exec(
-          `${esmCmd} ./module-types/${project}/test.${ext}`,
+          `${cmdEsmLoaderNoProject} ./module-types/${project}/test.${ext}`,
           {
             env: {
               ...process.env,
