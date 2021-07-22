@@ -73,11 +73,17 @@ export interface CreateReplOptions {
   stderr?: NodeJS.WritableStream;
   /** @internal */
   composeWithEvalAwarePartialHost?: EvalAwarePartialHost;
+  // TODO collapse both of the following two flags into a single `isInteractive` or `isLineByLine` flag.
   /**
    * @internal
    * Ignore diagnostics that are annoying when interactively entering input line-by-line.
    */
   ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl?: boolean;
+  /**
+   * @internal
+   * Force compiler to treat as a module by prepending `export {};`
+   */
+  forceToBeModule?: boolean;
 }
 
 /**
@@ -91,10 +97,15 @@ export interface CreateReplOptions {
  *     repl.start()
  */
 export function createRepl(options: CreateReplOptions = {}) {
+  const {
+    ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl = true,
+    forceToBeModule = true,
+  } = options;
   let service = options.service;
   let server: REPLServer;
   const state =
     options.state ?? new EvalState(join(process.cwd(), REPL_FILENAME));
+  if (forceToBeModule) state.input += ';export {};\n';
   const evalAwarePartialHost = createEvalAwarePartialHost(
     state,
     options.composeWithEvalAwarePartialHost
@@ -106,7 +117,6 @@ export function createRepl(options: CreateReplOptions = {}) {
     stdout === process.stdout && stderr === process.stderr
       ? console
       : new Console(stdout, stderr);
-  const { ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl = true } = options;
 
   const replService: ReplService = {
     state: options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME)),
