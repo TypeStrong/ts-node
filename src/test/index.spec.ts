@@ -452,23 +452,6 @@ test.suite('ts-node', (test) => {
       );
     });
 
-    function createReplViaApi() {
-      const stdin = new PassThrough();
-      const stdout = new PassThrough();
-      const stderr = new PassThrough();
-      const replService = createRepl({
-        stdin,
-        stdout,
-        stderr,
-      });
-      const service = create({
-        ...replService.evalAwarePartialHost,
-        project: `${TEST_DIR}/tsconfig.json`,
-      });
-      replService.setService(service);
-      return { stdin, stdout, stderr, replService, service };
-    }
-
     const execMacro = createExecMacro({
       cmd,
       cwd: TEST_DIR,
@@ -714,7 +697,7 @@ test.suite('ts-node', (test) => {
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
                 stackTest: exp.stringContaining(
-                  `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
+                  `    at ${join(TEST_DIR, '<repl>.ts')}:2:`
                 ),
                 moduleAccessorsTest: true,
                 argv: [tsNodeExe],
@@ -887,7 +870,7 @@ test.suite('ts-node', (test) => {
                 exportsTest: true,
                 // Note: vanilla node uses different name. See #1360
                 stackTest: exp.stringContaining(
-                  `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
+                  `    at ${join(TEST_DIR, '<repl>.ts')}:2:`
                 ),
                 moduleAccessorsTest: true,
                 argv: [tsNodeExe],
@@ -2155,7 +2138,7 @@ test.suite('ts-node', (test) => {
 
           expect(stdout).to.equal('> undefined\n> ');
           expect(stderr.replace(/\r\n/g, '\n')).to.equal(
-            '<repl>.ts(1,7): error TS2322: ' +
+            '<repl>.ts(2,7): error TS2322: ' +
               (semver.gte(ts.version, '4.0.0')
                 ? `Type 'number' is not assignable to type 'string'.\n`
                 : `Type '1' is not assignable to type 'string'.\n`) +
