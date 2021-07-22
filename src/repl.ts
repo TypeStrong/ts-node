@@ -146,17 +146,10 @@ export function createRepl(options: CreateReplOptions = {}) {
           7027, // Unreachable code detected. https://github.com/TypeStrong/ts-node/issues/469
           ...(service.shouldReplAwait
             ? [
-                // TODO remove.  Should not be ignored.  If someone writes an inline non-async function with await in it, it's a mistake.
-                // 1103, // 'for await' loops are only allowed within async functions and at the top levels of modules.
-                // 1308, // 'await' expressions are only allowed within async functions and at the top levels of modules.
-
                 1375, // 'await' expressions are only allowed at the top level of a file when that file is a module, but this file has no imports or exports. Consider adding an empty 'export {}' to make this file a module.
                 1378, // Top-level 'await' expressions are only allowed when the 'module' option is set to 'esnext' or 'system', and the 'target' option is set to 'es2017' or higher.
                 1431, // 'for await' loops are only allowed at the top level of a file when that file is a module, but this file has no imports or exports. Consider adding an empty 'export {}' to make this file a module.
                 1432, // Top-level 'for await' loops are only allowed when the 'module' option is set to 'esnext' or 'system', and the 'target' option is set to 'es2017' or higher.
-
-                // TODO remove. Should not be ignored.  const a = await; is a mistake
-                // 2304, // Cannot find name 'await'
               ]
             : []),
         ],
