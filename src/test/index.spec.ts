@@ -26,45 +26,18 @@ import { PassThrough } from 'stream';
 import * as getStream from 'get-stream';
 import { once } from 'lodash';
 import { upstreamTopLevelAwaitTests } from './node-repl-tla';
+import { createMacrosAndHelpers, ExecMacroAssertionCallback } from './macros';
 
 const xfs = new NodeFS(fs);
 
-type TestExecReturn = {
-  stdout: string;
-  stderr: string;
-  err: null | ExecException;
-};
-function exec(
-  cmd: string,
-  opts: ExecOptions = {}
-): Promise<TestExecReturn> & { child: ChildProcess } {
-  let childProcess!: ChildProcess;
-  return Object.assign(
-    new Promise<TestExecReturn>((resolve, reject) => {
-      childProcess = childProcessExec(
-        cmd,
-        {
-          cwd: TEST_DIR,
-          ...opts,
-        },
-        (error, stdout, stderr) => {
-          resolve({ err: error, stdout, stderr });
-        }
-      );
-    }),
-    {
-      child: childProcess,
-    }
-  );
+interface CreateReplViaApiOptions {
+  createReplOpts?: Partial<tsNodeTypes.CreateReplOptions>;
+  createServiceOpts?: Partial<tsNodeTypes.CreateOptions>;
 }
-
 function createReplViaApi({
   createReplOpts,
   createServiceOpts,
-}: {
-  createReplOpts?: Partial<tsNodeTypes.CreateReplOptions>;
-  createServiceOpts?: Partial<tsNodeTypes.CreateOptions>;
-} = {}) {
+}: CreateReplViaApiOptions = {}) {
   const stdin = new PassThrough();
   const stdout = new PassThrough();
   const stderr = new PassThrough();
@@ -89,7 +62,7 @@ async function executeInRepl(
     waitMs = 1e3,
     startOptions,
     ...rest
-  }: Parameters<typeof createReplViaApi>[0] & {
+  }: CreateReplViaApiOptions & {
     waitMs?: number;
     startOptions?: Parameters<typeof replService.startInternal>[0];
   } = {}
@@ -127,6 +100,11 @@ const testsDirRequire = createRequire(join(TEST_DIR, 'index.js'));
 // Set after ts-node is installed locally
 let { register, create, VERSION, createRepl }: typeof tsNodeTypes = {} as any;
 
+const { exec, createExecMacro } = createMacrosAndHelpers({
+  test,
+  defaultCwd: TEST_DIR,
+});
+
 // Pack and install ts-node locally, necessary to test package "exports"
 test.beforeAll(async () => {
   const totalTries = process.platform === 'win32' ? 5 : 1;
@@ -147,7 +125,9 @@ test.beforeAll(async () => {
 });
 
 test.suite('ts-node', (test) => {
+  /** Default `ts-node --project` invocation */
   const cmd = `"${BIN_PATH}" --project "${PROJECT}"`;
+  /** Default `ts-node` invocation without `--project` */
   const cmdNoProject = `"${BIN_PATH}"`;
 
   test('should export the correct version', () => {
@@ -457,6 +437,50 @@ test.suite('ts-node', (test) => {
       );
     });
 
+    function createReplViaApi() {
+      const stdin = new PassThrough();
+      const stdout = new PassThrough();
+      const stderr = new PassThrough();
+      const replService = createRepl({
+        stdin,
+        stdout,
+        stderr,
+      });
+      const service = create({
+        ...replService.evalAwarePartialHost,
+        project: `${TEST_DIR}/tsconfig.json`,
+      });
+      replService.setService(service);
+      return { stdin, stdout, stderr, replService, service };
+    }
+
+    const execMacro = createExecMacro({
+      cmd,
+      cwd: TEST_DIR,
+    });
+
+    type ReplApiMacroAssertions = (
+      stdout: string,
+      stderr: string
+    ) => Promise<void>;
+
+    const replApiMacro = test.macro(
+      (opts: { input: string }, assertions: ReplApiMacroAssertions) => async (
+        t
+      ) => {
+        const { input } = opts;
+        const { stdin, stdout, stderr, replService } = createReplViaApi();
+        replService.start();
+        stdin.write(input);
+        stdin.end();
+        await promisify(setTimeout)(1e3);
+        stdout.end();
+        stderr.end();
+        const stderrString = await getStream(stderr);
+        const stdoutString = await getStream(stdout);
+        await assertions(stdoutString, stderrString);
+      }
+    );
     // Serial because it's timing-sensitive
     test.serial('REPL can be created via API', async () => {
       const { stdout, stderr } = await executeInRepl(
@@ -468,6 +492,20 @@ test.suite('ts-node', (test) => {
         '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
       );
     });
+    // Serial because it's timing-sensitive
+    test.serial(
+      'REPL can be created via API',
+      replApiMacro,
+      {
+        input: '\nconst a = 123\n.type a\n',
+      },
+      async (stdout, stderr) => {
+        expect(stderr).to.equal('');
+        expect(stdout).to.equal(
+          '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
+        );
+      }
+    );
 
     // Serial because it's timing-sensitive
     test.serial('REPL can be configured on `start`', async () => {
@@ -508,32 +546,6 @@ test.suite('ts-node', (test) => {
     test.suite(
       '[eval], <repl>, and [stdin] execute with correct globals',
       (test) => {
-        const cliTest = test.macro(
-          (
-            {
-              flags,
-              stdin,
-              allowError = false,
-            }: {
-              flags: string;
-              stdin: string;
-              allowError?: boolean;
-            },
-            assertions: (
-              stdout: string,
-              stderr: string,
-              err: ExecException | null
-            ) => Promise<void> | void
-          ) => async (t) => {
-            const execPromise = exec(`${cmd} ${flags}`);
-            // Uncomment to run against vanilla node, useful to verify that these test cases match vanilla node
-            // const execPromise = exec(`node ${flags}`);
-            execPromise.child.stdin!.end(stdin);
-            const { err, stdout, stderr } = await execPromise;
-            if (!allowError) expect(err).to.equal(null);
-            await assertions(stdout, stderr, err);
-          }
-        );
         interface GlobalInRepl extends NodeJS.Global {
           testReport: any;
           replReport: any;
@@ -643,7 +655,7 @@ test.suite('ts-node', (test) => {
 
         test(
           'stdin',
-          cliTest,
+          execMacro,
           {
             stdin: `${setReportGlobal('stdin')};${printReports}`,
             flags: '',
@@ -674,7 +686,7 @@ test.suite('ts-node', (test) => {
         );
         test(
           'repl',
-          cliTest,
+          execMacro,
           {
             stdin: `${setReportGlobal('repl')};${printReports}`,
             flags: '-i',
@@ -716,7 +728,7 @@ test.suite('ts-node', (test) => {
         // Should ignore -i and run the entrypoint
         test(
           '-i w/entrypoint ignores -i',
-          cliTest,
+          execMacro,
           {
             stdin: `${setReportGlobal('repl')};${printReports}`,
             flags: '-i ./repl/script.js',
@@ -735,7 +747,7 @@ test.suite('ts-node', (test) => {
         // Should not interpret positional arg as an entrypoint script
         test(
           '-e',
-          cliTest,
+          execMacro,
           {
             stdin: `throw new Error()`,
             flags: `-e "${setReportGlobal('eval')};${printReports}"`,
@@ -766,7 +778,7 @@ test.suite('ts-node', (test) => {
         );
         test(
           '-e w/entrypoint arg does not execute entrypoint',
-          cliTest,
+          execMacro,
           {
             stdin: `throw new Error()`,
             flags: `-e "${setReportGlobal(
@@ -799,7 +811,7 @@ test.suite('ts-node', (test) => {
         );
         test(
           '-e w/non-path arg',
-          cliTest,
+          execMacro,
           {
             stdin: `throw new Error()`,
             flags: `-e "${setReportGlobal(
@@ -832,7 +844,7 @@ test.suite('ts-node', (test) => {
         );
         test(
           '-e -i',
-          cliTest,
+          execMacro,
           {
             stdin: `${setReportGlobal('repl')};${printReports}`,
             flags: `-e "${setReportGlobal('eval')}" -i`,
@@ -888,7 +900,7 @@ test.suite('ts-node', (test) => {
 
         test(
           '-e -i w/entrypoint ignores -e and -i, runs entrypoint',
-          cliTest,
+          execMacro,
           {
             stdin: `throw new Error()`,
             flags: '-e "throw new Error()" -i ./repl/script.js',
@@ -905,11 +917,11 @@ test.suite('ts-node', (test) => {
 
         test(
           '-e -i when -e throws error, -i does not run',
-          cliTest,
+          execMacro,
           {
             stdin: `console.log('hello')`,
             flags: `-e "throw new Error('error from -e')" -i`,
-            allowError: true,
+            expectError: true,
           },
           (stdout, stderr, err) => {
             exp(err).toBeDefined();
@@ -1000,6 +1012,58 @@ test.suite('ts-node', (test) => {
               // additional entry goes to node's install path
               exp.any(String),
             ]);
+          }
+        );
+      }
+    );
+
+    test.suite(
+      'REPL ignores diagnostics that are annoying in interactive sessions',
+      (test) => {
+        const code = `function foo() {};\nfunction foo() {return 123};\nconsole.log(foo());\n`;
+        const diagnosticMessage = `Duplicate function implementation`;
+        test(
+          'interactive repl should ignore them',
+          execMacro,
+          {
+            flags: '-i',
+            stdin: code,
+          },
+          async (stdout, stderr) => {
+            exp(stdout).not.toContain(diagnosticMessage);
+          }
+        );
+        test(
+          'interactive repl should not ignore them if they occur in other files',
+          execMacro,
+          {
+            flags: '-i',
+            stdin: `import './repl-ignored-diagnostics/index.ts';\n`,
+          },
+          async (stdout, stderr) => {
+            exp(stderr).toContain(diagnosticMessage);
+          }
+        );
+        test(
+          '[stdin] should not ignore them',
+          execMacro,
+          {
+            stdin: code,
+            expectError: true,
+          },
+          async (stdout, stderr) => {
+            exp(stderr).toContain(diagnosticMessage);
+          }
+        );
+        test(
+          '[eval] should not ignore them',
+          execMacro,
+          {
+            flags: `-e "${code.replace(/\n/g, '')}"`,
+            expectError: true,
+          },
+          async (stdout, stderr) => {
+            exp(stderr).toContain(diagnosticMessage);
           }
         );
       }
@@ -1310,6 +1374,9 @@ test.suite('ts-node', (test) => {
           semver.gte(ts.version, '3.5.0') &&
           semver.gte(process.versions.node, '14.0.0')
         ) {
+          const libAndTarget = semver.gte(process.versions.node, '16.0.0')
+            ? 'es2021'
+            : 'es2020';
           test('implicitly uses @tsconfig/node14 or @tsconfig/node16 compilerOptions when both TS and node versions support it', async (t) => {
             // node14 and node16 configs are identical, hence the "or"
             const {
@@ -1323,8 +1390,8 @@ test.suite('ts-node', (test) => {
             expect(err1).to.equal(null);
             t.like(JSON.parse(stdout1), {
               compilerOptions: {
-                target: 'es2020',
-                lib: ['es2020'],
+                target: libAndTarget,
+                lib: [libAndTarget],
               },
             });
             const {

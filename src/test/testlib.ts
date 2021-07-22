@@ -1,3 +1,9 @@
+/*
+ * Extensions to ava, for declaring and running test cases and suites
+ * Utilities specific to testing ts-node, for example handling streams and exec-ing processes,
+ * should go in a separate module.
+ */
+
 import avaTest, {
   ExecutionContext,
   Implementation,
@@ -60,7 +66,7 @@ export interface TestInterface<
       ...args: Args
     ) =>
       | [
-          (title: string | undefined) => string,
+          (title: string | undefined) => string | undefined,
           (t: ExecutionContext<Context>) => Promise<void>
         ]
       | ((t: ExecutionContext<Context>) => Promise<void>)

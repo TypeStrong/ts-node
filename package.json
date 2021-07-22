@@ -122,7 +122,6 @@
     "@types/react": "^16.0.2",
     "@types/rimraf": "^3.0.0",
     "@types/semver": "^7.1.0",
-    "@types/source-map-support": "^0.5.0",
     "@yarnpkg/fslib": "^2.4.0",
     "ava": "^3.15.0",
     "axios": "^0.21.1",
@@ -158,17 +157,17 @@
     }
   },
   "dependencies": {
+    "@cspotcode/source-map-support": "0.6.1",
     "@tsconfig/node10": "^1.0.7",
     "@tsconfig/node12": "^1.0.7",
     "@tsconfig/node14": "^1.0.0",
-    "@tsconfig/node16": "^1.0.1",
+    "@tsconfig/node16": "^1.0.2",
     "acorn": "^8.4.1",
     "acorn-walk": "^8.1.1",
     "arg": "^4.1.0",
     "create-require": "^1.1.0",
     "diff": "^4.0.1",
     "make-error": "^1.1.1",
-    "source-map-support": "^0.5.17",
     "yn": "3.1.1"
   },
   "prettier": {
