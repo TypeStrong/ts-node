@@ -302,7 +302,6 @@ export function main(
         optionBasePaths: undefined,
         experimentalEsmLoader: undefined,
         compilerOptions: undefined,
-        executeEntrypoint: undefined,
         project: service.configFilePath ?? service.options.project,
       },
       ...ts.convertToTSConfig(
