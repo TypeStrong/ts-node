@@ -43,6 +43,20 @@ export type {
 const engineSupportsPackageTypeField =
   parseInt(process.versions.node.split('.')[0], 10) >= 12;
 
+function versionGte(version: string, requirement: string) {
+  const [major, minor, patch, extra] = version
+    .split(/[\.-]/)
+    .map((s) => parseInt(s, 10));
+  const [reqMajor, reqMinor, reqPatch] = requirement
+    .split('.')
+    .map((s) => parseInt(s, 10));
+  return (
+    major > reqMajor ||
+    (major === reqMajor &&
+      (minor > reqMinor || (minor === reqMinor && patch >= reqPatch)))
+  );
+}
+
 /**
  * Assert that script can be loaded as CommonJS when we attempt to require it.
  * If it should be loaded as ESM, throw ERR_REQUIRE_ESM like node does.
@@ -532,18 +546,24 @@ export function create(rawOptions: CreateOptions = {}): Service {
   ];
 
   // Experimental REPL await is not compatible targets lower than ES2018
-  if (
-    options.experimentalReplAwait === true &&
-    config.options.target! < ScriptTarget.ES2018
-  ) {
+  const targetSupportsTla = config.options.target! >= ScriptTarget.ES2018;
+  if (options.experimentalReplAwait === true && !targetSupportsTla) {
     throw new Error(
       'Experimental REPL await is not compatible with targets lower than ES2018'
+    );
+  }
+  // Top-level await was added in TS 3.8
+  const tsVersionSupportsTla = versionGte(ts.version, '3.8.0');
+  if (options.experimentalReplAwait === true && !tsVersionSupportsTla) {
+    throw new Error(
+      'Experimental REPL await is not compatible with TypeScript versions older than 3.8'
     );
   }
 
   const shouldReplAwait =
     options.experimentalReplAwait !== false &&
-    config.options.target! >= ScriptTarget.ES2018;
+    tsVersionSupportsTla &&
+    targetSupportsTla;
 
   // Re-load the compiler in case it has changed.
   // Compiler is loaded relative to tsconfig.json, so tsconfig discovery may cause us to load a
