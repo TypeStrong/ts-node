@@ -625,8 +625,13 @@ export function create(rawOptions: CreateOptions = {}): Service {
     },
   });
 
-  const formatDiagnostics =
-    process.stdout.isTTY || options.pretty
+  const shouldHavePrettyErrors = 
+    options.pretty === undefined 
+      ? process.stdout.isTTY
+      : options.pretty
+
+  const formatDiagnostics = 
+    shouldHavePrettyErrors
       ? ts.formatDiagnosticsWithColorAndContext || ts.formatDiagnostics
       : ts.formatDiagnostics;
 
