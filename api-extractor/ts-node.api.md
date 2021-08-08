@@ -19,6 +19,7 @@ export interface CreateOptions {
     // @deprecated
     dir?: string;
     emit?: boolean;
+    experimentalReplAwait?: boolean;
     // (undocumented)
     fileExists?: (path: string) => boolean;
     files?: boolean;
@@ -69,6 +70,9 @@ export interface CreateTranspilerOptions {
     service: Pick<Service, 'config' | 'options'>;
 }
 
+// @public
+export type EvalAwarePartialHost = Pick<CreateOptions, 'readFile' | 'fileExists'>;
+
 // @public @deprecated
 export type Register = Service;
 
@@ -85,15 +89,14 @@ export interface RegisterOptions extends CreateOptions {
 
 // @public (undocumented)
 export interface ReplService {
-    // Warning: (ae-forgotten-export) The symbol "EvalAwarePartialHost" needs to be exported by the entry point index.d.ts
-    //
     // (undocumented)
     evalAwarePartialHost: EvalAwarePartialHost;
-    // (undocumented)
-    evalCode(code: string): void;
-    nodeEval(code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any): void;
+    evalCode(code: string): any;
+    nodeEval(code: string, context: any, _filename: string, callback: (err: Error | null, result?: any) => any): void;
     setService(service: Service): void;
-    start(code?: string): void;
+    start(): void;
+    // @deprecated
+    start(code: string): void;
     // (undocumented)
     readonly state: EvalState;
 }
