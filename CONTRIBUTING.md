@@ -7,7 +7,7 @@ We use npm scripts for building, testing, and linting.  Read the scripts to beco
 ```
 npm install
 npm run build
-npm run test
+npm run test-local
 npm run lint-fix
 ```
 
@@ -21,7 +21,7 @@ compiled code in `dist`.
 
 ## Documentation
 
-Documentation is written in markdown in `website/docs` and rendered into a website by Docusaurus.
+Documentation is written in markdown in `website/docs` and rendered into a website by Docusaurus.  The README is also generated from these markdown files.
 
 To edit documentation, modify the markdown files in `./website/docs` and the sidebar declaration in `./website/sidebars.js`
 
@@ -36,6 +36,8 @@ cd ./website
 yarn
 yarn start
 # Will host live website locally
+
+yarn build-readme # will rebuild the README.md
 ```
 
 This site was used to generate the favicon from a high-res PNG export of the SVG. https://realfavicongenerator.net/
