@@ -2089,15 +2089,15 @@ test.suite('ts-node', (test) => {
           const endTime = new Date().getTime();
           endTime - startTime;
         `;
-          const { stdout, stderr } = await executeInTlaRepl(script, 2500);
+          const { stdout, stderr } = await executeInTlaRepl(script, 6000);
 
           expect(stderr).to.equal('');
 
-          const ellapsedTime = Number(
+          const elapsedTime = Number(
             stdout.split('\n')[0].replace('> ', '').trim()
           );
-          expect(ellapsedTime).to.be.gte(awaitMs - 50);
-          expect(ellapsedTime).to.be.lte(awaitMs + 100);
+          expect(elapsedTime).to.be.gte(awaitMs - 50);
+          expect(elapsedTime).to.be.lte(awaitMs + 100);
         }
       );
 
