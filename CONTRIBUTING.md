@@ -48,13 +48,14 @@ We publish using `np`: https://npm.im/np
 
 1. Merge `docs` into `main` using a pull request, ensuring a consistent squash-merge
 2. Rebuild the README (see instructions above, necessary because npmjs.com renders the readme)
-3. Publish with `np`
-4. Add changelog to the Github Release; match formatting from previous releases
-5. Move `docs` branch to head of `main`
+3. (optional) Update the api-extractor report; check for unexpected changes.  See below
+4. Publish with `np`
+5. Add changelog to the Github Release; match formatting from previous releases
+6. Move `docs` branch to head of `main`
   - this rebuilds the website
   - `git push --force origin main:docs`
   - avoids merge messiness due to earlier squash-merge from `docs` to `main`
-6. If tsconfig schema has changed, send a pull request to schemastore.  [Example](https://github.com/SchemaStore/schemastore/pull/1208)
+7. If tsconfig schema has changed, send a pull request to schemastore.  [Example](https://github.com/SchemaStore/schemastore/pull/1208)
 
 ## APIExtractor
 
