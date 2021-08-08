@@ -2,7 +2,7 @@
 title: License
 ---
 
-[MIT](https://github.com/TypeStrong/ts-node/blob/main/LICENSE)
+ts-node is licensed under the MIT license.  [MIT](https://github.com/TypeStrong/ts-node/blob/main/LICENSE)
 
 ts-node includes source code from Node.js which is licensed under the MIT license.  [Node.js license information](https://raw.githubusercontent.com/nodejs/node/master/LICENSE)
 
