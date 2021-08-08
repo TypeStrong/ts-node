@@ -10,7 +10,7 @@ import {
   EvalState,
   createRepl,
   ReplService,
-  setContext,
+  setupContext,
   STDIN_FILENAME,
   EvalAwarePartialHost,
   EVAL_NAME,
@@ -456,7 +456,7 @@ function evalAndExitOnTsError(
   filenameAndDirname: 'eval' | 'stdin'
 ) {
   let result: any;
-  setContext(global, module, filenameAndDirname);
+  setupContext(global, module, filenameAndDirname);
 
   try {
     result = replService.evalCode(code);

@@ -2131,7 +2131,7 @@ test.suite('ts-node', (test) => {
             'const x: string = await 1'
           );
 
-          expect(stdout).to.equal('> undefined\n> ');
+          expect(stdout).to.equal('> > ');
           expect(stderr.replace(/\r\n/g, '\n')).to.equal(
             '<repl>.ts(2,7): error TS2322: ' +
               (semver.gte(ts.version, '4.0.0')
@@ -2150,7 +2150,7 @@ test.suite('ts-node', (test) => {
             `const {foo} = await import('./tests/repl/tla-import');`
           );
 
-          expect(stdout).to.equal('> undefined\n> ');
+          expect(stdout).to.equal('> > ');
           expect(stderr.replace(/\r\n/g, '\n')).to.equal(
             'tests/repl/tla-import.ts(1,14): error TS2322: ' +
               (semver.gte(ts.version, '4.0.0')
