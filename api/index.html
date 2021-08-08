@@ -88,6 +88,7 @@
 						<section class="tsd-index-section ">
 							<h3>Type aliases</h3>
 							<ul class="tsd-index-list">
+								<li class="tsd-kind-type-alias"><a href="index.html#EvalAwarePartialHost" class="tsd-kind-icon">Eval<wbr>Aware<wbr>Partial<wbr>Host</a></li>
 								<li class="tsd-kind-type-alias"><a href="index.html#Register" class="tsd-kind-icon">Register</a></li>
 								<li class="tsd-kind-type-alias"><a href="index.html#TranspilerFactory" class="tsd-kind-icon">Transpiler<wbr>Factory</a></li>
 							</ul>
@@ -113,12 +114,28 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Type aliases</h2>
 				<section class="tsd-panel tsd-member tsd-kind-type-alias">
+					<a name="EvalAwarePartialHost" class="tsd-anchor"></a>
+					<h3>Eval<wbr>Aware<wbr>Partial<wbr>Host</h3>
+					<div class="tsd-signature tsd-kind-icon">Eval<wbr>Aware<wbr>Partial<wbr>Host<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Pick</span><span class="tsd-signature-symbol">&lt;</span><a href="interfaces/CreateOptions.html" class="tsd-signature-type" data-tsd-kind="Interface">CreateOptions</a><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">&quot;readFile&quot;</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">&quot;fileExists&quot;</span><span class="tsd-signature-symbol">&gt;</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/repl.ts#L426">src/repl.ts:426</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Filesystem host functions which are aware of the &quot;virtual&quot; <code>[eval].ts</code>, <code>&lt;repl&gt;</code>, or <code>[stdin].ts</code> file used to compile REPL inputs.
+							Must be passed to <code>create()</code> to create a ts-node compiler service which can compile REPL inputs.</p>
+						</div>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias">
 					<a name="Register" class="tsd-anchor"></a>
 					<h3>Register</h3>
 					<div class="tsd-signature tsd-kind-icon">Register<span class="tsd-signature-symbol">:</span> <a href="interfaces/Service.html" class="tsd-signature-type" data-tsd-kind="Interface">Service</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/89eb57c/src/index.ts#L420">src/index.ts:420</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/index.ts#L457">src/index.ts:457</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -141,7 +158,7 @@
 					<div class="tsd-signature tsd-kind-icon">Transpiler<wbr>Factory<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>options<span class="tsd-signature-symbol">: </span><a href="interfaces/CreateTranspilerOptions.html" class="tsd-signature-type" data-tsd-kind="Interface">CreateTranspilerOptions</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><a href="interfaces/Transpiler.html" class="tsd-signature-type" data-tsd-kind="Interface">Transpiler</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/89eb57c/src/transpilers/types.ts#L14">src/transpilers/types.ts:14</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/transpilers/types.ts#L14">src/transpilers/types.ts:14</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -180,7 +197,7 @@
 					<div class="tsd-signature tsd-kind-icon">REGISTER_<wbr>INSTANCE<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">typeof </span><a href="index.html#REGISTER_INSTANCE" class="tsd-signature-type" data-tsd-kind="Variable">REGISTER_INSTANCE</a><span class="tsd-signature-symbol"> = ...</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/89eb57c/src/index.ts#L64">src/index.ts:64</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/index.ts#L84">src/index.ts:84</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -195,7 +212,7 @@
 					<div class="tsd-signature tsd-kind-icon">VERSION<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol"> = ...</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/89eb57c/src/index.ts#L138">src/index.ts:138</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/index.ts#L159">src/index.ts:159</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -217,7 +234,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/89eb57c/src/index.ts#L463">src/index.ts:463</a></li>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/index.ts#L510">src/index.ts:510</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -245,18 +262,21 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/89eb57c/src/repl.ts#L74">src/repl.ts:74</a></li>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/repl.ts#L140">src/repl.ts:140</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Create a ts-node REPL instance.</p>
 								</div>
+								<p>Pay close attention to the example below.  Today, the API requires a few lines
+									of boilerplate to correctly bind the <code>ReplService</code> to the ts-node <code>Service</code> and
+								vice-versa.</p>
 								<p>Usage example:</p>
-								<pre><code><span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #0070C1">repl</span><span style="color: #000000"> = </span><span style="color: #001080">tsNode</span><span style="color: #000000">.</span><span style="color: #795E26">createRepl</span><span style="color: #000000">()</span>
-<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #0070C1">service</span><span style="color: #000000"> = </span><span style="color: #001080">tsNode</span><span style="color: #000000">.</span><span style="color: #795E26">create</span><span style="color: #000000">({...</span><span style="color: #001080">repl</span><span style="color: #000000">.</span><span style="color: #001080">evalAwarePartialHost</span><span style="color: #000000">})</span>
-<span style="color: #001080">repl</span><span style="color: #000000">.</span><span style="color: #795E26">setService</span><span style="color: #000000">(</span><span style="color: #001080">service</span><span style="color: #000000">)</span>
-<span style="color: #001080">repl</span><span style="color: #000000">.</span><span style="color: #795E26">start</span><span style="color: #000000">()</span>
+								<pre><code><span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #0070C1">repl</span><span style="color: #000000"> = </span><span style="color: #001080">tsNode</span><span style="color: #000000">.</span><span style="color: #795E26">createRepl</span><span style="color: #000000">();</span>
+<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #0070C1">service</span><span style="color: #000000"> = </span><span style="color: #001080">tsNode</span><span style="color: #000000">.</span><span style="color: #795E26">create</span><span style="color: #000000">({...</span><span style="color: #001080">repl</span><span style="color: #000000">.</span><span style="color: #001080">evalAwarePartialHost</span><span style="color: #000000">});</span>
+<span style="color: #001080">repl</span><span style="color: #000000">.</span><span style="color: #795E26">setService</span><span style="color: #000000">(</span><span style="color: #001080">service</span><span style="color: #000000">);</span>
+<span style="color: #001080">repl</span><span style="color: #000000">.</span><span style="color: #795E26">start</span><span style="color: #000000">();</span>
 </code></pre>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -279,7 +299,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/89eb57c/src/index.ts#L437">src/index.ts:437</a></li>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/index.ts#L484">src/index.ts:484</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -350,6 +370,9 @@
 					</li>
 					<li class=" tsd-kind-interface">
 						<a href="interfaces/TypeInfo.html" class="tsd-kind-icon">Type<wbr>Info</a>
+					</li>
+					<li class=" tsd-kind-type-alias">
+						<a href="index.html#EvalAwarePartialHost" class="tsd-kind-icon">Eval<wbr>Aware<wbr>Partial<wbr>Host</a>
 					</li>
 					<li class=" tsd-kind-type-alias">
 						<a href="index.html#Register" class="tsd-kind-icon">Register</a>

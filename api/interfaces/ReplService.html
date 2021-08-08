@@ -101,10 +101,10 @@
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
 					<a name="evalAwarePartialHost" class="tsd-anchor"></a>
 					<h3>eval<wbr>Aware<wbr>Partial<wbr>Host</h3>
-					<div class="tsd-signature tsd-kind-icon">eval<wbr>Aware<wbr>Partial<wbr>Host<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">EvalAwarePartialHost</span></div>
+					<div class="tsd-signature tsd-kind-icon">eval<wbr>Aware<wbr>Partial<wbr>Host<span class="tsd-signature-symbol">:</span> <a href="../index.html#EvalAwarePartialHost" class="tsd-signature-type" data-tsd-kind="Type alias">EvalAwarePartialHost</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/89eb57c/src/repl.ts#L41">src/repl.ts:41</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/repl.ts#L90">src/repl.ts:90</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -114,7 +114,7 @@
 					<div class="tsd-signature tsd-kind-icon">state<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">EvalState</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/89eb57c/src/repl.ts#L26">src/repl.ts:26</a></li>
+							<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/repl.ts#L43">src/repl.ts:43</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -125,22 +125,32 @@
 					<a name="evalCode" class="tsd-anchor"></a>
 					<h3>eval<wbr>Code</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-interface">
-						<li class="tsd-signature tsd-kind-icon">eval<wbr>Code<span class="tsd-signature-symbol">(</span>code<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+						<li class="tsd-signature tsd-kind-icon">eval<wbr>Code<span class="tsd-signature-symbol">(</span>code<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/89eb57c/src/repl.ts#L31">src/repl.ts:31</a></li>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/repl.ts#L56">src/repl.ts:56</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Append code to the virtual <repl> source file, compile it to JavaScript, throw semantic errors if the typechecker is enabled,
+									and execute it.</p>
+								</div>
+								<p>Note: typically, you will want to call <code>start()</code> instead of using this method.</p>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
 									<h5>code: <span class="tsd-signature-type">string</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>string of TypeScript.</p>
+									</div>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -148,19 +158,26 @@
 					<a name="nodeEval" class="tsd-anchor"></a>
 					<h3>node<wbr>Eval</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-interface">
-						<li class="tsd-signature tsd-kind-icon">node<wbr>Eval<span class="tsd-signature-symbol">(</span>code<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, _context<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span>, _filename<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, callback<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span>err<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">null</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Error</span>, result<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+						<li class="tsd-signature tsd-kind-icon">node<wbr>Eval<span class="tsd-signature-symbol">(</span>code<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, context<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span>, _filename<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, callback<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span>err<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">null</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Error</span>, result<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/89eb57c/src/repl.ts#L35">src/repl.ts:35</a></li>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/repl.ts#L83">src/repl.ts:83</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p><code>eval</code> implementation compatible with node&#39;s REPL API</p>
 								</div>
+								<p>Can be used in advanced scenarios if you want to manually create your own
+								node REPL instance and delegate eval to this <code>ReplService</code>.</p>
+								<p>Example:</p>
+								<pre><code><span style="color: #AF00DB">import</span><span style="color: #000000"> {</span><span style="color: #001080">start</span><span style="color: #000000">} </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;repl&#039;</span><span style="color: #000000">;</span>
+<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #0070C1">replService</span><span style="color: #000000">: </span><span style="color: #267F99">tsNode</span><span style="color: #000000">.</span><span style="color: #267F99">ReplService</span><span style="color: #000000"> = ...; </span><span style="color: #008000">// assuming you have already created a ts-node ReplService</span>
+<span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #0070C1">nodeRepl</span><span style="color: #000000"> = </span><span style="color: #795E26">start</span><span style="color: #000000">({</span><span style="color: #001080">eval:</span><span style="color: #000000"> </span><span style="color: #001080">replService</span><span style="color: #000000">.</span><span style="color: #001080">eval</span><span style="color: #000000">});</span>
+</code></pre>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
@@ -168,7 +185,7 @@
 									<h5>code: <span class="tsd-signature-type">string</span></h5>
 								</li>
 								<li>
-									<h5>_context: <span class="tsd-signature-type">any</span></h5>
+									<h5>context: <span class="tsd-signature-type">any</span></h5>
 								</li>
 								<li>
 									<h5>_filename: <span class="tsd-signature-type">string</span></h5>
@@ -212,7 +229,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/89eb57c/src/repl.ts#L30">src/repl.ts:30</a></li>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/repl.ts#L47">src/repl.ts:47</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -234,13 +251,14 @@
 					<a name="start" class="tsd-anchor"></a>
 					<h3>start</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-interface">
-						<li class="tsd-signature tsd-kind-icon">start<span class="tsd-signature-symbol">(</span>code<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+						<li class="tsd-signature tsd-kind-icon">start<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+						<li class="tsd-signature tsd-kind-icon">start<span class="tsd-signature-symbol">(</span>code<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/89eb57c/src/repl.ts#L43">src/repl.ts:43</a></li>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/repl.ts#L92">src/repl.ts:92</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -248,10 +266,27 @@
 									<p>Start a node REPL</p>
 								</div>
 							</div>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+						</li>
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/TypeStrong/ts-node/blob/8114afc/src/repl.ts#L97">src/repl.ts:97</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Start a node REPL, evaling a string of TypeScript before it starts.</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>deprecated</dt>
+									<dd></dd>
+								</dl>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5><span class="tsd-flag ts-flagOptional">Optional</span> code: <span class="tsd-signature-type">string</span></h5>
+									<h5>code: <span class="tsd-signature-type">string</span></h5>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
@@ -335,6 +370,9 @@
 					</li>
 					<li class=" tsd-kind-interface">
 						<a href="TypeInfo.html" class="tsd-kind-icon">Type<wbr>Info</a>
+					</li>
+					<li class=" tsd-kind-type-alias">
+						<a href="../index.html#EvalAwarePartialHost" class="tsd-kind-icon">Eval<wbr>Aware<wbr>Partial<wbr>Host</a>
 					</li>
 					<li class=" tsd-kind-type-alias">
 						<a href="../index.html#Register" class="tsd-kind-icon">Register</a>
