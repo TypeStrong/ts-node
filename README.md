@@ -327,6 +327,7 @@ node --trace-deprecation --abort-on-uncaught-exception -r ts-node/register ./ind
 *   `--scopeDir` Directory within which compiler is limited when `scope` is enabled. <br/>*Default:* First of: `tsconfig.json` "rootDir" if specified, directory containing `tsconfig.json`, or cwd if no `tsconfig.json` is loaded.<br/>*Environment:* `TS_NODE_SCOPE_DIR`
 *   `moduleType`  Override the module type of certain files, ignoring the `package.json` `"type"` field.  See [Module type overrides](#module-type-overrides) for details.<br/>*Default:* obeys `package.json` `"type"` and `tsconfig.json` `"module"` <br/>*Can only be specified via `tsconfig.json` or API.*
 *   `TS_NODE_HISTORY` Path to history file for REPL <br/>*Default:* `~/.ts_node_repl_history`<br/>
+*   `--no-experimental-repl-await` Disable top-level await in REPL.  Equivalent to node's [`--no-experimental-repl-await`](https://nodejs.org/api/cli.html#cli_no_experimental_repl_await)<br/>*Default:* Enabled if TypeScript version is 3.8 or higher and target is ES2018 or higher.<br/>*Environment:* `TS_NODE_EXPERIMENTAL_REPL_AWAIT` set `false` to disable
 
 ## API
 
@@ -615,14 +616,16 @@ Some projects require a patched typescript compiler which adds additional featur
 add the ability to configure custom transformers.  These are drop-in replacements for the vanilla `typescript` module and
 implement the same API.
 
-For example, to use `ts-patch` and `ts-transformer-keys`, add this to your `tsconfig.json`:
+For example, to use `ttypescript` and `ts-transformer-keys`, add this to your `tsconfig.json`:
 
 ```jsonc title="tsconfig.json"
 {
   "ts-node": {
-    "compiler": "ts-patch"
+    // This can be omitted when using ts-patch
+    "compiler": "ttypescript"
   },
   "compilerOptions": {
+    // plugin configuration is the same for both ts-patch and ttypescript
     "plugins": [
       { "transform": "ts-transformer-keys/transformer" }
     ]
@@ -870,7 +873,7 @@ This tells any node processes which receive this environment variable to install
 
 # License
 
-[MIT](https://github.com/TypeStrong/ts-node/blob/main/LICENSE)
+ts-node is licensed under the MIT license.  [MIT](https://github.com/TypeStrong/ts-node/blob/main/LICENSE)
 
 ts-node includes source code from Node.js which is licensed under the MIT license.  [Node.js license information](https://raw.githubusercontent.com/nodejs/node/master/LICENSE)
 
