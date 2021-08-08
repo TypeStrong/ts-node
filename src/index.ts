@@ -675,10 +675,12 @@ export function create(rawOptions: CreateOptions = {}): Service {
     },
   });
 
-  const formatDiagnostics =
-    process.stdout.isTTY || options.pretty
-      ? ts.formatDiagnosticsWithColorAndContext || ts.formatDiagnostics
-      : ts.formatDiagnostics;
+  const shouldHavePrettyErrors =
+    options.pretty === undefined ? process.stdout.isTTY : options.pretty;
+
+  const formatDiagnostics = shouldHavePrettyErrors
+    ? ts.formatDiagnosticsWithColorAndContext || ts.formatDiagnostics
+    : ts.formatDiagnostics;
 
   function createTSError(diagnostics: ReadonlyArray<_ts.Diagnostic>) {
     const diagnosticText = formatDiagnostics(diagnostics, diagnosticHost);
