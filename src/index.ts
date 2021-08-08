@@ -26,7 +26,12 @@ import { createResolverFunctions } from './resolver-functions';
 import { ScriptTarget } from 'typescript';
 
 export { TSCommon };
-export { createRepl, CreateReplOptions, ReplService } from './repl';
+export {
+  createRepl,
+  CreateReplOptions,
+  ReplService,
+  EvalAwarePartialHost,
+} from './repl';
 export type {
   TranspilerModule,
   TranspilerFactory,
