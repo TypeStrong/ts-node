@@ -23,6 +23,7 @@ import {
   ModuleTypeClassifier,
 } from './module-type-classifier';
 import { createResolverFunctions } from './resolver-functions';
+import { ScriptTarget } from 'typescript';
 
 export { TSCommon };
 export { createRepl, CreateReplOptions, ReplService } from './repl';
@@ -41,6 +42,20 @@ export type {
  */
 const engineSupportsPackageTypeField =
   parseInt(process.versions.node.split('.')[0], 10) >= 12;
+
+function versionGte(version: string, requirement: string) {
+  const [major, minor, patch, extra] = version
+    .split(/[\.-]/)
+    .map((s) => parseInt(s, 10));
+  const [reqMajor, reqMinor, reqPatch] = requirement
+    .split('.')
+    .map((s) => parseInt(s, 10));
+  return (
+    major > reqMajor ||
+    (major === reqMajor &&
+      (minor > reqMinor || (minor === reqMinor && patch >= reqPatch)))
+  );
+}
 
 /**
  * Assert that script can be loaded as CommonJS when we attempt to require it.
@@ -104,6 +119,7 @@ export interface ProcessEnv {
   TS_NODE_COMPILER_HOST?: string;
   TS_NODE_LOG_ERROR?: string;
   TS_NODE_HISTORY?: string;
+  TS_NODE_EXPERIMENTAL_REPL_AWAIT?: string;
 
   NODE_NO_READLINE?: string;
 }
@@ -281,6 +297,17 @@ export interface CreateOptions {
    */
   experimentalEsmLoader?: boolean;
   /**
+   * Allows the usage of top level await in REPL.
+   *
+   * Uses node's implementation which accomplishes this with an AST syntax transformation.
+   *
+   * Enabled by default when tsconfig target is es2018 or above. Set to false to disable.
+   *
+   * **Note**: setting to `true` when tsconfig target is too low will throw an Error.  Leave as `undefined`
+   * to get default, automatic behavior.
+   */
+  experimentalReplAwait?: boolean;
+  /**
    * Override certain paths to be compiled and executed as CommonJS or ECMAScript modules.
    * When overridden, the tsconfig "module" and package.json "type" fields are overridden.
    * This is useful because TypeScript files cannot use the .cjs nor .mjs file extensions;
@@ -375,6 +402,7 @@ export const DEFAULTS: RegisterOptions = {
   compilerHost: yn(env.TS_NODE_COMPILER_HOST),
   logError: yn(env.TS_NODE_LOG_ERROR),
   experimentalEsmLoader: false,
+  experimentalReplAwait: yn(env.TS_NODE_EXPERIMENTAL_REPL_AWAIT) ?? undefined,
 };
 
 /**
@@ -410,6 +438,8 @@ export interface Service {
   configFilePath: string | undefined;
   /** @internal */
   moduleTypeClassifier: ModuleTypeClassifier;
+  /** @internal */
+  readonly shouldReplAwait: boolean;
   /** @internal */
   addDiagnosticFilter(filter: DiagnosticFilter): void;
 }
@@ -514,6 +544,26 @@ export function create(rawOptions: CreateOptions = {}): Service {
     ...(tsNodeOptionsFromTsconfig.require || []),
     ...(rawOptions.require || []),
   ];
+
+  // Experimental REPL await is not compatible targets lower than ES2018
+  const targetSupportsTla = config.options.target! >= ScriptTarget.ES2018;
+  if (options.experimentalReplAwait === true && !targetSupportsTla) {
+    throw new Error(
+      'Experimental REPL await is not compatible with targets lower than ES2018'
+    );
+  }
+  // Top-level await was added in TS 3.8
+  const tsVersionSupportsTla = versionGte(ts.version, '3.8.0');
+  if (options.experimentalReplAwait === true && !tsVersionSupportsTla) {
+    throw new Error(
+      'Experimental REPL await is not compatible with TypeScript versions older than 3.8'
+    );
+  }
+
+  const shouldReplAwait =
+    options.experimentalReplAwait !== false &&
+    tsVersionSupportsTla &&
+    targetSupportsTla;
 
   // Re-load the compiler in case it has changed.
   // Compiler is loaded relative to tsconfig.json, so tsconfig discovery may cause us to load a
@@ -1160,7 +1210,12 @@ export function create(rawOptions: CreateOptions = {}): Service {
   };
 
   function addDiagnosticFilter(filter: DiagnosticFilter) {
-    diagnosticFilters.push(filter);
+    diagnosticFilters.push({
+      ...filter,
+      filenamesAbsolute: filter.filenamesAbsolute.map((f) =>
+        normalizeSlashes(f)
+      ),
+    });
   }
 
   return {
@@ -1173,6 +1228,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     options,
     configFilePath,
     moduleTypeClassifier,
+    shouldReplAwait,
     addDiagnosticFilter,
   };
 }
