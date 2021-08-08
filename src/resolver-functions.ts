@@ -137,23 +137,30 @@ export function createResolverFunctions(kwargs: {
       );
       if (typeDirectiveName === 'node' && !resolvedTypeReferenceDirective) {
         // Resolve @types/node relative to project first, then __dirname (copy logic from elsewhere / refactor into reusable function)
-        const typesNodePackageJsonPath = require.resolve(
-          '@types/node/package.json',
-          {
-            paths: [configFilePath ?? cwd, __dirname],
-          }
-        );
-        const typeRoots = [resolve(typesNodePackageJsonPath, '../..')];
-        ({ resolvedTypeReferenceDirective } = ts.resolveTypeReferenceDirective(
-          typeDirectiveName,
-          containingFile,
-          {
-            ...config.options,
-            typeRoots,
-          },
-          serviceHost,
-          redirectedReference
-        ));
+        let typesNodePackageJsonPath: string | undefined;
+        try {
+          typesNodePackageJsonPath = require.resolve(
+            '@types/node/package.json',
+            {
+              paths: [configFilePath ?? cwd, __dirname],
+            }
+          );
+        } catch {} // gracefully do nothing when @types/node is not installed for any reason
+        if (typesNodePackageJsonPath) {
+          const typeRoots = [resolve(typesNodePackageJsonPath, '../..')];
+          ({
+            resolvedTypeReferenceDirective,
+          } = ts.resolveTypeReferenceDirective(
+            typeDirectiveName,
+            containingFile,
+            {
+              ...config.options,
+              typeRoots,
+            },
+            serviceHost,
+            redirectedReference
+          ));
+        }
       }
       if (resolvedTypeReferenceDirective) {
         fixupResolvedModule(resolvedTypeReferenceDirective);
