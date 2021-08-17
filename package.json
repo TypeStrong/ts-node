@@ -129,7 +129,6 @@
     "expect": "^27.0.2",
     "get-stream": "^6.0.0",
     "lodash": "^4.17.15",
-    "ntypescript": "^1.201507091536.1",
     "nyc": "^15.0.1",
     "prettier": "^2.2.1",
     "proxyquire": "^2.0.0",
