@@ -23,7 +23,6 @@ import {
   ModuleTypeClassifier,
 } from './module-type-classifier';
 import { createResolverFunctions } from './resolver-functions';
-import { ScriptTarget } from 'typescript';
 
 export { TSCommon };
 export {
@@ -551,7 +550,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
   ];
 
   // Experimental REPL await is not compatible targets lower than ES2018
-  const targetSupportsTla = config.options.target! >= ScriptTarget.ES2018;
+  const targetSupportsTla = config.options.target! >= ts.ScriptTarget.ES2018;
   if (options.experimentalReplAwait === true && !targetSupportsTla) {
     throw new Error(
       'Experimental REPL await is not compatible with targets lower than ES2018'
