@@ -45,4 +45,4 @@ When multiple patterns match the same file, the last pattern takes precedence.
 
 Files with an overridden module type are transformed with the same limitations as [`isolatedModules`](https://www.typescriptlang.org/tsconfig#isolatedModules).  This will only affect rare cases such as using `const enum`s with [`preserveConstEnums`](https://www.typescriptlang.org/tsconfig#preserveConstEnums) disabled.
 
-This feature is meant to faciliate scenarios where normal `compilerOptions` and `package.json` configuration is not possible.  For example, a `webpack.config.ts` cannot be given its own `package.json` to override `"type"`.  Wherever possible you should favor using traditional `package.json` and `tsconfig.json` configurations.
+This feature is meant to facilitate scenarios where normal `compilerOptions` and `package.json` configuration is not possible.  For example, a `webpack.config.ts` cannot be given its own `package.json` to override `"type"`.  Wherever possible you should favor using traditional `package.json` and `tsconfig.json` configurations.
