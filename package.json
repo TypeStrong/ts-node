@@ -15,8 +15,6 @@
     "./dist/bin-script.js": "./dist/bin-script.js",
     "./dist/bin-cwd": "./dist/bin-cwd.js",
     "./dist/bin-cwd.js": "./dist/bin-cwd.js",
-    "./dist/esm": "./dist/esm.js",
-    "./dist/esm.js": "./dist/esm.js",
     "./register": "./register/index.js",
     "./register/files": "./register/files.js",
     "./register/transpile-only": "./register/transpile-only.js",
