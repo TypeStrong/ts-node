@@ -3,9 +3,17 @@ import { createRequire } from 'module';
 const require = createRequire(fileURLToPath(import.meta.url));
 
 /** @type {import('../dist/esm')} */
-const esm = require('../dist/esm');
-export const {
-  resolve,
-  getFormat,
-  transformSource,
-} = esm.registerAndCreateEsmHooks({ transpileOnly: true });
+const { createEsmHooks } = require('../dist/esm');
+
+/** @type {import('../dist/index')} */
+const { register } = require('../dist/index');
+
+// Automatically performs registration just like `-r ts-node/register`
+const tsNodeInstance = register({
+  transpileOnly: true,
+  experimentalEsmLoader: true,
+});
+
+export const { resolve, getFormat, transformSource } = createEsmHooks(
+  tsNodeInstance
+);

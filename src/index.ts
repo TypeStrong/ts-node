@@ -1430,3 +1430,8 @@ function getTokenAtPosition(
     return current;
   }
 }
+
+import type { createEsmHooks as createEsmHooksFn } from './esm';
+export const createEsmHooks: typeof createEsmHooksFn = (
+  tsNodeService: Service
+) => require('./esm').createEsmHooks(tsNodeService);
