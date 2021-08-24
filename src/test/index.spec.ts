@@ -1867,6 +1867,25 @@ test.suite('ts-node', (test) => {
     });
   });
 
+  test.suite('createEsmHooks', (test) => {
+    if (semver.gte(process.version, '12.0.0')) {
+      test('should create proper hooks with provided instance', async () => {
+        const { err } = await exec(
+          `node ${experimentalModulesFlag} --loader ./loader.mjs index.ts`,
+          {
+            cwd: join(TEST_DIR, './esm-custom-loader'),
+          }
+        );
+
+        if (err === null) {
+          throw new Error('Command was expected to fail, but it succeeded.');
+        }
+
+        expect(err.message).to.match(/TS6133:\s+'unusedVar'/);
+      });
+    }
+  });
+
   test.suite('esm', (test) => {
     if (semver.gte(process.version, '12.16.0')) {
       test('should compile and execute as ESM', async () => {
