@@ -1,4 +1,4 @@
-import { getExtensions, Service } from './index';
+import { getExtensions, register, RegisterOptions, Service } from './index';
 import {
   parse as parseUrl,
   format as formatUrl,
@@ -14,6 +14,17 @@ const {
 } = require('../dist-raw/node-esm-resolve-implementation');
 
 // Note: On Windows, URLs look like this: file:///D:/dev/@TypeStrong/ts-node-examples/foo.ts
+
+/** @internal */
+export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
+  // Automatically performs registration just like `-r ts-node/register`
+  const tsNodeInstance = register({
+    ...opts,
+    experimentalEsmLoader: true,
+  });
+
+  return createEsmHooks(tsNodeInstance);
+}
 
 export function createEsmHooks(tsNodeService: Service) {
   // Custom implementation that considers additional file extensions and automatically adds file extensions
