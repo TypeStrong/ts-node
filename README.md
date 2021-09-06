@@ -165,12 +165,9 @@ ts-node-cwd script.ts
 console.log("Hello, world!")
 ```
 
-Passing CLI arguments via shebang is allowed on Mac but not Linux.  For example, the following will fail on Linux:
+Passing CLI arguments via shebang requires passing the `-S` argument to `env` when using GNU Coreutils.
 
-    #!/usr/bin/env ts-node --files
-    // This shebang is not portable.  It only works on Mac
-
-Instead, specify all `ts-node` options in your `tsconfig.json`.
+    #!/usr/bin/env -S ts-node --files
 
 ## Programmatic
 
