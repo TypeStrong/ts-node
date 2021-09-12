@@ -4,8 +4,10 @@
     "transpiler": "ts-node/transpilers/swc-experimental"
   },
   "compilerOptions": {
-    "module": "ESNext",
+    "target": "ES2018",
+    "module": "CommonJS",
     "allowJs": true,
-    "jsx": "react"
+    "jsx": "react",
+    "experimentalDecorators": true
   }
 }

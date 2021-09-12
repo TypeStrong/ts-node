@@ -4,15 +4,22 @@ import { join, resolve, dirname, parse as parsePath } from 'path';
 import { inspect } from 'util';
 import Module = require('module');
 import arg = require('arg');
-import { EVAL_FILENAME, EvalState, createRepl, ReplService } from './repl';
+import { parse, createRequire, hasOwnProperty } from './util';
 import {
-  VERSION,
-  TSError,
-  parse,
-  register,
-  createRequire,
-  TSInternal,
-} from './index';
+  EVAL_FILENAME,
+  EvalState,
+  createRepl,
+  ReplService,
+  setupContext,
+  STDIN_FILENAME,
+  EvalAwarePartialHost,
+  EVAL_NAME,
+  STDIN_NAME,
+  REPL_FILENAME,
+} from './repl';
+import { VERSION, TSError, register } from './index';
+import type { TSInternal } from './ts-compiler-types';
+import { addBuiltinLibsToObject } from '../dist-raw/node-cjs-helpers';
 
 /**
  * Main `bin` functionality.
@@ -56,6 +63,9 @@ export function main(
         '--prefer-ts-exts': Boolean,
         '--log-error': Boolean,
         '--emit': Boolean,
+        '--scope': Boolean,
+        '--scope-dir': String,
+        '--no-experimental-repl-await': Boolean,
 
         // Aliases.
         '-e': '--eval',
@@ -74,6 +84,7 @@ export function main(
         '-O': '--compiler-options',
         '--dir': '--cwd',
         '--showConfig': '--show-config',
+        '--scopeDir': '--scope-dir',
       },
       {
         argv,
@@ -112,6 +123,9 @@ export function main(
     '--prefer-ts-exts': preferTsExts,
     '--log-error': logError,
     '--emit': emit,
+    '--scope': scope = undefined,
+    '--scope-dir': scopeDir = undefined,
+    '--no-experimental-repl-await': noExperimentalReplAwait,
   } = args;
 
   if (help) {
@@ -120,32 +134,35 @@ export function main(
 
   Options:
 
-    -e, --eval [code]              Evaluate code
-    -p, --print                    Print result of \`--eval\`
-    -r, --require [path]           Require a node module before execution
-    -i, --interactive              Opens the REPL even if stdin does not appear to be a terminal
+    -e, --eval [code]               Evaluate code
+    -p, --print                     Print result of \`--eval\`
+    -r, --require [path]            Require a node module before execution
+    -i, --interactive               Opens the REPL even if stdin does not appear to be a terminal
 
-    -h, --help                     Print CLI usage
-    -v, --version                  Print module version information
-    --cwd-mode                     Use current directory instead of <script.ts> for config resolution
-    --show-config                  Print resolved configuration and exit
+    -h, --help                      Print CLI usage
+    -v, --version                   Print module version information
+    --cwd-mode                      Use current directory instead of <script.ts> for config resolution
+    --show-config                   Print resolved configuration and exit
 
-    -T, --transpile-only           Use TypeScript's faster \`transpileModule\` or a third-party transpiler
-    -H, --compiler-host            Use TypeScript's compiler host API
-    -I, --ignore [pattern]         Override the path patterns to skip compilation
-    -P, --project [path]           Path to TypeScript JSON project file
-    -C, --compiler [name]          Specify a custom TypeScript compiler
-    --transpiler [name]            Specify a third-party, non-typechecking transpiler
+    -T, --transpile-only            Use TypeScript's faster \`transpileModule\` or a third-party transpiler
+    -H, --compiler-host             Use TypeScript's compiler host API
+    -I, --ignore [pattern]          Override the path patterns to skip compilation
+    -P, --project [path]            Path to TypeScript JSON project file
+    -C, --compiler [name]           Specify a custom TypeScript compiler
+    --transpiler [name]             Specify a third-party, non-typechecking transpiler
     -D, --ignore-diagnostics [code] Ignore TypeScript warnings by diagnostic code
     -O, --compiler-options [opts]   JSON object to merge with compiler options
 
-    --cwd                          Behave as if invoked within this working directory.
-    --files                        Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
-    --pretty                       Use pretty diagnostic formatter (usually enabled by default)
-    --skip-project                 Skip reading \`tsconfig.json\`
-    --skip-ignore                  Skip \`--ignore\` checks
-    --prefer-ts-exts               Prefer importing TypeScript files over JavaScript files
-    --log-error                    Logs TypeScript errors to stderr instead of throwing exceptions
+    --cwd                           Behave as if invoked within this working directory.
+    --files                         Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
+    --pretty                        Use pretty diagnostic formatter (usually enabled by default)
+    --skip-project                  Skip reading \`tsconfig.json\`
+    --skip-ignore                   Skip \`--ignore\` checks
+    --scope                         Scope compiler to files within \`scopeDir\`.  Anything outside this directory is ignored.
+    --scope-dir                     Directory for \`--scope\`
+    --prefer-ts-exts                Prefer importing TypeScript files over JavaScript files
+    --log-error                     Logs TypeScript errors to stderr instead of throwing exceptions
+    --no-experimental-repl-await    Disable top-level await in REPL.  Equivalent to node's --no-experimental-repl-await
   `);
 
     process.exit(0);
@@ -157,12 +174,76 @@ export function main(
     process.exit(0);
   }
 
+  // Figure out which we are executing: piped stdin, --eval, REPL, and/or entrypoint
+  // This is complicated because node's behavior is complicated
+  // `node -e code -i ./script.js` ignores -e
+  const executeEval = code != null && !(interactive && args._.length);
+  const executeEntrypoint = !executeEval && args._.length > 0;
+  const executeRepl =
+    !executeEntrypoint &&
+    (interactive || (process.stdin.isTTY && !executeEval));
+  const executeStdin = !executeEval && !executeRepl && !executeEntrypoint;
+
   const cwd = cwdArg || process.cwd();
   /** Unresolved.  May point to a symlink, not realpath.  May be missing file extension */
-  const scriptPath = args._.length ? resolve(cwd, args._[0]) : undefined;
-  const state = new EvalState(scriptPath || join(cwd, EVAL_FILENAME));
-  const replService = createRepl({ state });
-  const { evalAwarePartialHost } = replService;
+  const scriptPath = executeEntrypoint ? resolve(cwd, args._[0]) : undefined;
+
+  /**
+   * <repl>, [stdin], and [eval] are all essentially virtual files that do not exist on disc and are backed by a REPL
+   * service to handle eval-ing of code.
+   */
+  interface VirtualFileState {
+    state: EvalState;
+    repl: ReplService;
+    module?: Module;
+  }
+  let evalStuff: VirtualFileState | undefined;
+  let replStuff: VirtualFileState | undefined;
+  let stdinStuff: VirtualFileState | undefined;
+  let evalAwarePartialHost: EvalAwarePartialHost | undefined = undefined;
+  if (executeEval) {
+    const state = new EvalState(join(cwd, EVAL_FILENAME));
+    evalStuff = {
+      state,
+      repl: createRepl({
+        state,
+        composeWithEvalAwarePartialHost: evalAwarePartialHost,
+        ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl: false,
+      }),
+    };
+    ({ evalAwarePartialHost } = evalStuff.repl);
+    // Create a local module instance based on `cwd`.
+    const module = (evalStuff.module = new Module(EVAL_NAME));
+    module.filename = evalStuff.state.path;
+    module.paths = (Module as any)._nodeModulePaths(cwd);
+  }
+  if (executeStdin) {
+    const state = new EvalState(join(cwd, STDIN_FILENAME));
+    stdinStuff = {
+      state,
+      repl: createRepl({
+        state,
+        composeWithEvalAwarePartialHost: evalAwarePartialHost,
+        ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl: false,
+      }),
+    };
+    ({ evalAwarePartialHost } = stdinStuff.repl);
+    // Create a local module instance based on `cwd`.
+    const module = (stdinStuff.module = new Module(STDIN_NAME));
+    module.filename = stdinStuff.state.path;
+    module.paths = (Module as any)._nodeModulePaths(cwd);
+  }
+  if (executeRepl) {
+    const state = new EvalState(join(cwd, REPL_FILENAME));
+    replStuff = {
+      state,
+      repl: createRepl({
+        state,
+        composeWithEvalAwarePartialHost: evalAwarePartialHost,
+      }),
+    };
+    ({ evalAwarePartialHost } = replStuff.repl);
+  }
 
   // Register the TypeScript compiler instance.
   const service = register({
@@ -171,6 +252,7 @@ export function main(
     files,
     pretty,
     transpileOnly: transpileOnly ?? transpiler != null ? true : undefined,
+    experimentalReplAwait: noExperimentalReplAwait ? false : undefined,
     typeCheck,
     transpiler,
     compilerHost,
@@ -185,13 +267,16 @@ export function main(
     ignoreDiagnostics,
     compilerOptions,
     require: argsRequire,
-    readFile: code !== undefined ? evalAwarePartialHost.readFile : undefined,
-    fileExists:
-      code !== undefined ? evalAwarePartialHost.fileExists : undefined,
+    readFile: evalAwarePartialHost?.readFile ?? undefined,
+    fileExists: evalAwarePartialHost?.fileExists ?? undefined,
+    scope,
+    scopeDir,
   });
 
   // Bind REPL service to ts-node compiler service (chicken-and-egg problem)
-  replService.setService(service);
+  replStuff?.repl.setService(service);
+  evalStuff?.repl.setService(service);
+  stdinStuff?.repl.setService(service);
 
   // Output project information.
   if (version >= 2) {
@@ -209,16 +294,19 @@ export function main(
       );
       process.exit(1);
     }
-    const json = ts.convertToTSConfig(
-      service.config,
-      service.configFilePath ?? join(cwd, 'ts-node-implicit-tsconfig.json'),
-      service.ts.sys
-    );
-    json['ts-node'] = {
-      ...service.options,
-      experimentalEsmLoader: undefined,
-      compilerOptions: undefined,
-      project: service.configFilePath ?? service.options.project,
+    const json = {
+      ['ts-node']: {
+        ...service.options,
+        optionBasePaths: undefined,
+        experimentalEsmLoader: undefined,
+        compilerOptions: undefined,
+        project: service.configFilePath ?? service.options.project,
+      },
+      ...ts.convertToTSConfig(
+        service.config,
+        service.configFilePath ?? join(cwd, 'ts-node-implicit-tsconfig.json'),
+        service.ts.sys
+      ),
     };
     console.log(
       // Assumes that all configuration options which can possibly be specified via the CLI are JSON-compatible.
@@ -229,38 +317,49 @@ export function main(
     process.exit(0);
   }
 
-  // Create a local module instance based on `cwd`.
-  const module = new Module(state.path);
-  module.filename = state.path;
-  module.paths = (Module as any)._nodeModulePaths(cwd);
-
   // Prepend `ts-node` arguments to CLI for child processes.
   process.execArgv.unshift(
     __filename,
     ...process.argv.slice(2, process.argv.length - args._.length)
   );
   process.argv = [process.argv[1]]
-    .concat(scriptPath || [])
-    .concat(args._.slice(1));
+    .concat(executeEntrypoint ? ([scriptPath] as string[]) : [])
+    .concat(args._.slice(executeEntrypoint ? 1 : 0));
 
   // Execute the main contents (either eval, script or piped).
-  if (code !== undefined && !interactive) {
-    evalAndExit(replService, module, code, print);
+  if (executeEntrypoint) {
+    Module.runMain();
   } else {
-    if (args._.length) {
-      Module.runMain();
-    } else {
-      // Piping of execution _only_ occurs when no other script is specified.
-      // --interactive flag forces REPL
-      if (interactive || process.stdin.isTTY) {
-        replService.start(code);
-      } else {
-        let buffer = code || '';
-        process.stdin.on('data', (chunk: Buffer) => (buffer += chunk));
-        process.stdin.on('end', () =>
-          evalAndExit(replService, module, buffer, print)
+    // Note: eval and repl may both run, but never with stdin.
+    // If stdin runs, eval and repl will not.
+    if (executeEval) {
+      addBuiltinLibsToObject(global);
+      evalAndExitOnTsError(
+        evalStuff!.repl,
+        evalStuff!.module!,
+        code!,
+        print,
+        'eval'
+      );
+    }
+
+    if (executeRepl) {
+      replStuff!.repl.start();
+    }
+
+    if (executeStdin) {
+      let buffer = code || '';
+      process.stdin.on('data', (chunk: Buffer) => (buffer += chunk));
+      process.stdin.on('end', () => {
+        evalAndExitOnTsError(
+          stdinStuff!.repl,
+          stdinStuff!.module!,
+          buffer,
+          // `echo 123 | node -p` still prints 123
+          print,
+          'stdin'
         );
-      }
+      });
     }
   }
 }
@@ -347,20 +446,17 @@ function requireResolveNonCached(absoluteModuleSpecifier: string) {
 }
 
 /**
- * Evaluate a script.
+ * Evaluate an [eval] or [stdin] script
  */
-function evalAndExit(
+function evalAndExitOnTsError(
   replService: ReplService,
   module: Module,
   code: string,
-  isPrinted: boolean
+  isPrinted: boolean,
+  filenameAndDirname: 'eval' | 'stdin'
 ) {
   let result: any;
-  (global as any).__filename = module.filename;
-  (global as any).__dirname = dirname(module.filename);
-  (global as any).exports = module.exports;
-  (global as any).module = module;
-  (global as any).require = module.require.bind(module);
+  setupContext(global, module, filenameAndDirname);
 
   try {
     result = replService.evalCode(code);
@@ -374,13 +470,12 @@ function evalAndExit(
   }
 
   if (isPrinted) {
-    console.log(typeof result === 'string' ? result : inspect(result));
+    console.log(
+      typeof result === 'string'
+        ? result
+        : inspect(result, { colors: process.stdout.isTTY })
+    );
   }
-}
-
-/** Safe `hasOwnProperty` */
-function hasOwnProperty(object: any, property: string): boolean {
-  return Object.prototype.hasOwnProperty.call(object, property);
 }
 
 if (require.main === module) {

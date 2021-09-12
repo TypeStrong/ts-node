@@ -1,4 +1,4 @@
-import { TsConfigOptions } from '.';
+import type { TsConfigOptions } from './index';
 
 /*
  * This interface exists solely for generating a JSON schema for tsconfig.json.
@@ -12,7 +12,7 @@ import { TsConfigOptions } from '.';
  */
 export interface TsConfigSchema {
   /**
-   * ts-node options.  See also: https://github.com/TypeStrong/ts-node#configuration-options
+   * ts-node options.  See also: https://typestrong.org/ts-node/docs/configuration
    *
    * ts-node offers TypeScript execution and REPL for node.js, with source map support.
    */

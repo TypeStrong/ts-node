@@ -1,0 +1,13 @@
+{
+  "ts-node": {
+    "moduleTypes": {
+      // Test that subsequent patterns override earlier ones
+      "src/esm-subdir/**/*": "cjs",
+      "src/esm-subdir": "esm",
+      "src/esm-subdir/cjs-exception.ts": "cjs"
+    }
+  },
+  "compilerOptions": {
+    "module": "CommonJS"
+  }
+}

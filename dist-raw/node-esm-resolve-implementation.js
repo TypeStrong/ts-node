@@ -2,14 +2,23 @@
 // Then modified to suite our needs.
 // Formatting is intentionally bad to keep the diff as small as possible, to make it easier to merge
 // upstream changes and understand our modifications.
+//
+// Github diff to easily view the changes:
+//   https://github.com/TypeStrong/ts-node/compare/esm-resolver-diff..main
 'use strict';
 
 const [nodeMajor, nodeMinor, nodePatch] = process.versions.node.split('.').map(s => parseInt(s, 10))
-// Test for 14.13.1 or higher
+// Test for node >14.13.1 || (>=12.20.0 && <13)
 const builtinModuleProtocol = nodeMajor > 14 || (
     nodeMajor === 14 && (
       nodeMinor > 13 || (
         nodeMinor === 13 && nodePatch > 0
+      )
+    )
+  ) || (
+    nodeMajor === 12 && (
+      nodeMinor > 20 || (
+        nodeMinor === 20
       )
     )
   )
