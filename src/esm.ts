@@ -8,6 +8,7 @@ import {
 } from 'url';
 import { extname } from 'path';
 import * as assert from 'assert';
+import { normalizeSlashes } from './util';
 const {
   createResolve,
 } = require('../dist-raw/node-esm-resolve-implementation');
@@ -109,11 +110,27 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
 
     // If file has .ts, .tsx, or .jsx extension, then ask node how it would treat this file if it were .js
     const ext = extname(nativePath);
+    let nodeSays: { format: Format };
     if (ext !== '.js' && !tsNodeInstance.ignored(nativePath)) {
-      return defer(formatUrl(pathToFileURL(nativePath + '.js')));
+      nodeSays = await defer(formatUrl(pathToFileURL(nativePath + '.js')));
+    } else {
+      nodeSays = await defer();
     }
-
-    return defer();
+    // For files compiled by ts-node that node believes are either CJS or ESM, check if we should override that classification
+    if (
+      !tsNodeInstance.ignored(nativePath) &&
+      (nodeSays.format === 'commonjs' || nodeSays.format === 'module')
+    ) {
+      const { moduleType } = tsNodeInstance.moduleTypeClassifier.classifyModule(
+        normalizeSlashes(nativePath)
+      );
+      if (moduleType === 'cjs') {
+        return { format: 'commonjs' };
+      } else if (moduleType === 'esm') {
+        return { format: 'module' };
+      }
+    }
+    return nodeSays;
   }
 
   async function transformSource(
