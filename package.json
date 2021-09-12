@@ -65,7 +65,8 @@
     "test": "npm run build && npm run lint && npm run test-cov --",
     "test-local": "npm run lint && npm run build-tsc && npm run build-pack && npm run test-spec --",
     "coverage-report": "nyc report --reporter=lcov",
-    "prepare": "npm run clean && npm run build-nopack"
+    "prepare": "npm run clean && npm run build-nopack",
+    "esm-usage-example": "npm run build-tsc && cd esm-usage-example && node --experimental-specifier-resolution node --loader ../esm.mjs ./index"
   },
   "engines": {
     "node": ">=10.0.0"

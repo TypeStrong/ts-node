@@ -27,7 +27,8 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
     preferTsExts: tsNodeInstance.options.preferTsExts,
   });
 
-  return { resolve, getFormat, transformSource };
+  // return { resolve, getFormat, transformSource };
+  return { resolve, load };
 
   function isFileUrlOrNodeStyleSpecifier(parsed: UrlWithStringQuery) {
     // We only understand file:// URLs, but in node, the specifier can be a node-style `./foo` or `foo`
@@ -64,11 +65,23 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
 
     // pathname is the path to be resolved
 
-    return nodeResolveImplementation.defaultResolve(
+    console.log('got here');
+
+    const x = nodeResolveImplementation.defaultResolve(
       specifier,
       context,
       defaultResolve
     );
+    console.log('x', x);
+    return x;
+  }
+
+  async function load(
+    url: string,
+    context: {},
+    defaultLoad: typeof load
+  ): Promise<{ format: Format }> {
+    throw new Error('load');
   }
 
   type Format = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
