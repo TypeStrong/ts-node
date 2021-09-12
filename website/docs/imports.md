@@ -2,7 +2,7 @@
 title: "CommonJS vs native ECMAScript modules"
 ---
 
-TypeScript is almost always written using modern `import` syntax, but you can choose to either transform to CommonJS or use node's native ESM support.  Configuration is different for each.
+TypeScript is almost always written using modern `import` syntax, but it is also transformed before being executed by the underlying runtime.  You can choose to either transform to CommonJS or to preserve the native `import` syntax, using node's native ESM support.  Configuration is different for each.
 
 Here is a brief comparison of the two.
 
@@ -49,8 +49,7 @@ If you must keep `"module": "ESNext"` for `tsc`, webpack, or another build tool,
 
 ## Native ECMAScript modules
 
-[Node's ESM loader hooks](https://nodejs.org/api/esm.html#esm_experimental_loaders) are [**experimental**](https://nodejs.org/api/documentation.html#documentation_stability_index) and subject to change. `ts-node`'s ESM support is also experimental. They may have
-breaking changes in minor and patch releases and are not recommended for production.
+[Node's ESM loader hooks](https://nodejs.org/api/esm.html#esm_experimental_loaders) are [**experimental**](https://nodejs.org/api/documentation.html#documentation_stability_index) and subject to change. `ts-node`'s ESM support is as stable as possible, but it relies on APIs which node can *and will* break in new versions of node.  Thus it is not recommended for production.
 
 For complete usage, limitations, and to provide feedback, see [#1007](https://github.com/TypeStrong/ts-node/issues/1007).
 
