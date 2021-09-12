@@ -66,23 +66,42 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
 
     // pathname is the path to be resolved
 
-    console.log('got here');
-
-    const x = nodeResolveImplementation.defaultResolve(
+    return nodeResolveImplementation.defaultResolve(
       specifier,
       context,
       defaultResolve
     );
-    console.log('x', x);
-    return x;
   }
 
   async function load(
     url: string,
     context: {},
     defaultLoad: typeof load
-  ): Promise<{ format: Format }> {
-    throw new Error('load');
+  ): Promise<{ format: Format; source: string | Buffer }> {
+    let defaultLoadReturn: ReturnType<typeof load> | undefined = undefined;
+    const defaultGetFormat: typeof getFormat = (
+      url,
+      context,
+      _defaultGetFormat
+    ) => {
+      defaultLoadReturn = defaultLoad(url, context, defaultLoad);
+      return defaultLoadReturn;
+    };
+    const defaultTransformSource: typeof transformSource = (
+      url,
+      context,
+      _defaultTransformSource
+    ) => defaultLoadReturn || defaultLoad(url as string, context, defaultLoad);
+    const { format } = await getFormat(url, context, defaultGetFormat);
+    const { source } = await transformSource(
+      url,
+      { url, format },
+      defaultTransformSource
+    );
+    return {
+      format,
+      source,
+    };
   }
 
   type Format = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
