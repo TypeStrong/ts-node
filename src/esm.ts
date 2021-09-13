@@ -78,6 +78,8 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
     context: {},
     defaultLoad: typeof load
   ): Promise<{ format: Format; source: string | Buffer }> {
+    console.log('url for load', url);
+
     let defaultLoadReturn: ReturnType<typeof load> | undefined = undefined;
     const defaultGetFormat: typeof getFormat = (
       url,
@@ -87,14 +89,23 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
       defaultLoadReturn = defaultLoad(url, context, defaultLoad);
       return defaultLoadReturn;
     };
-    const defaultTransformSource: typeof transformSource = (
+    const { format } = await getFormat(url, context, defaultGetFormat);
+
+    // const rawSource = await readFileAsync(url);
+    console.log('url for default load', url);
+    const { source: rawSource } = await defaultLoad(
       url,
+      { format },
+      defaultLoad
+    );
+
+    const defaultTransformSource: typeof transformSource = (
+      _source,
       context,
       _defaultTransformSource
     ) => defaultLoadReturn || defaultLoad(url as string, context, defaultLoad);
-    const { format } = await getFormat(url, context, defaultGetFormat);
     const { source } = await transformSource(
-      url,
+      rawSource,
       { url, format },
       defaultTransformSource
     );
