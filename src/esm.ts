@@ -12,6 +12,7 @@ import { normalizeSlashes } from './util';
 const {
   createResolve,
 } = require('../dist-raw/node-esm-resolve-implementation');
+const { defaultGetFormat } = require('../dist-raw/node-esm-default-get-format');
 
 // Note: On Windows, URLs look like this: file:///D:/dev/@TypeStrong/ts-node-examples/foo.ts
 
@@ -78,21 +79,8 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
     context: {},
     defaultLoad: typeof load
   ): Promise<{ format: Format; source: string | Buffer }> {
-    console.log('url for load', url);
-
-    let defaultLoadReturn: ReturnType<typeof load> | undefined = undefined;
-    const defaultGetFormat: typeof getFormat = (
-      url,
-      context,
-      _defaultGetFormat
-    ) => {
-      defaultLoadReturn = defaultLoad(url, context, defaultLoad);
-      return defaultLoadReturn;
-    };
     const { format } = await getFormat(url, context, defaultGetFormat);
 
-    // const rawSource = await readFileAsync(url);
-    console.log('url for default load', url);
     const { source: rawSource } = await defaultLoad(
       url,
       { format },
@@ -103,7 +91,7 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
       _source,
       context,
       _defaultTransformSource
-    ) => defaultLoadReturn || defaultLoad(url as string, context, defaultLoad);
+    ) => defaultLoad(url as string, context, defaultLoad);
     const { source } = await transformSource(
       rawSource,
       { url, format },

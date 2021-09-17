@@ -7,17 +7,17 @@
 const {
   RegExpPrototypeExec,
   StringPrototypeStartsWith,
-} = primordials;
+} = require('./node-primordials');
 const { extname } = require('path');
-const { getOptionValue } = require('internal/options');
+const { getOptionValue } = require('./node-options');
 
 const experimentalJsonModules = getOptionValue('--experimental-json-modules');
 const experimentalSpeciferResolution =
   getOptionValue('--experimental-specifier-resolution');
 const experimentalWasmModules = getOptionValue('--experimental-wasm-modules');
-const { getPackageType } = require('internal/modules/esm/resolve');
-const { URL, fileURLToPath } = require('internal/url');
-const { ERR_UNKNOWN_FILE_EXTENSION } = require('internal/errors').codes;
+const { getPackageType } = require('./node-esm-resolve-implementation.js');
+const { URL, fileURLToPath } = require('url');
+const { ERR_UNKNOWN_FILE_EXTENSION } = require('./node-errors').codes;
 
 const extensionFormatMap = {
   '__proto__': null,
