@@ -29,8 +29,12 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
     preferTsExts: tsNodeInstance.options.preferTsExts,
   });
 
-  // Resolve old (getFormat, transformSource) and new (load) hooks to have backward compatability
-  return { resolve, load, getFormat, transformSource };
+  // The hooks API changed in node version X so we need to check for backwards compatibility
+  // TODO: When the new API is released, change to the correct node version here
+  const newHooksAPI = parseInt(process.versions.node.split('.')[0], 10) >= 17;
+  return newHooksAPI
+    ? { resolve, load }
+    : { resolve, load, getFormat, transformSource };
 
   function isFileUrlOrNodeStyleSpecifier(parsed: UrlWithStringQuery) {
     // We only understand file:// URLs, but in node, the specifier can be a node-style `./foo` or `foo`
