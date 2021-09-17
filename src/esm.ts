@@ -34,7 +34,7 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
   const newHooksAPI = parseInt(process.versions.node.split('.')[0], 10) >= 17;
   return newHooksAPI
     ? { resolve, load }
-    : { resolve, load, getFormat, transformSource };
+    : { resolve, getFormat, transformSource };
 
   function isFileUrlOrNodeStyleSpecifier(parsed: UrlWithStringQuery) {
     // We only understand file:// URLs, but in node, the specifier can be a node-style `./foo` or `foo`
