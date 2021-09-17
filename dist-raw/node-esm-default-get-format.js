@@ -15,7 +15,7 @@ const experimentalJsonModules = getOptionValue('--experimental-json-modules');
 const experimentalSpeciferResolution =
   getOptionValue('--experimental-specifier-resolution');
 const experimentalWasmModules = getOptionValue('--experimental-wasm-modules');
-const { getPackageType } = require('./node-esm-resolve-implementation.js');
+const { getPackageType } = require('./node-esm-resolve-implementation.js').createResolve({tsExtensions: [], jsExtensions: []});
 const { URL, fileURLToPath } = require('url');
 const { ERR_UNKNOWN_FILE_EXTENSION } = require('./node-errors').codes;
 
