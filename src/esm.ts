@@ -87,11 +87,11 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
       defaultLoad
     );
 
-    const defaultTransformSource: typeof transformSource = (
-      _source,
-      context,
+    const defaultTransformSource: typeof transformSource = async (
+      source,
+      _context,
       _defaultTransformSource
-    ) => defaultLoad(url as string, context, defaultLoad);
+    ) => ({ source });
     const { source } = await transformSource(
       rawSource,
       { url, format },
