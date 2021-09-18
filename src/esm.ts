@@ -16,6 +16,20 @@ const { defaultGetFormat } = require('../dist-raw/node-esm-default-get-format');
 
 // Note: On Windows, URLs look like this: file:///D:/dev/@TypeStrong/ts-node-examples/foo.ts
 
+// NOTE ABOUT MULTIPLE EXPERIMENTAL LOADER APIS
+//
+// At the time of writing, this file implements 2x different loader APIs.
+// Node made a breaking change to the loader API in https://github.com/nodejs/node/pull/37468
+// 
+// We check the node version number and export either the *old* or the *new* API.
+// 
+// Today, we are implementing the *new* API on top of our implementation of the *old* API,
+// which relies on copy-pasted code from the *old* hooks implementation in node.
+//
+// In the future, we will likely invert this: we will copy-paste the *new* API implementation
+// from node, build our implementation of the *new* API on top of it, and implement the *old*
+// hooks API as a shim to the *new* API.
+
 export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
   // Automatically performs registration just like `-r ts-node/register`
   const tsNodeInstance = register({
@@ -30,8 +44,8 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
   });
 
   // The hooks API changed in node version X so we need to check for backwards compatibility
-  // TODO: When the new API is released, change to the correct node version here
-  const newHooksAPI = versionGte(process.versions.node, '17.0.0');
+  // TODO: When the new API is released, change to the correct node version here.  16.9.2 is a guess
+  const newHooksAPI = versionGte(process.versions.node, '16.9.2');
   return newHooksAPI
     ? { resolve, load }
     : { resolve, getFormat, transformSource };
@@ -78,10 +92,7 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
     );
   }
 
-  /**
-   * We are implementing the new load hook API on top of our implementation of the old hooks API,
-   * which relies on copy-pasted code from the old hooks implementation in node.
-   */
+  // `load` from new loader hook API (See description at the top of this file)
   async function load(
     url: string,
     context: { format: Format | null | undefined },
