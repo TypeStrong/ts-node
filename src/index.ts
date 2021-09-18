@@ -47,6 +47,7 @@ export type {
 const engineSupportsPackageTypeField =
   parseInt(process.versions.node.split('.')[0], 10) >= 12;
 
+/** @internal */
 export function versionGte(version: string, requirement: string) {
   const [major, minor, patch, extra] = version
     .split(/[\.-]/)
