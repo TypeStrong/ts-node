@@ -48,7 +48,7 @@ jobs:
       matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
         include:
           # Node 12.15
           # TODO Add comments about why we test 12.15; I think git blame says it's because of an ESM behavioral change that happened at 12.16
@@ -112,14 +112,40 @@ jobs:
             typescript: next
             typescriptFlag: next
             downgradeNpm: true
+          - flavor: 11
+            node: nightly
+            nodeFlag: nightly
+            typescript: next
+            typescriptFlag: next
+            downgradeNpm: true
+          - flavor: 12
+            node: nightly
+            nodeFlag: nightly
+            typescript: latest
+            typescriptFlag: latest
+            downgradeNpm: true
     steps:
       # checkout code
       - uses: actions/checkout@v2
       # install node
       - name: Use Node.js ${{ matrix.node }}
+        if: matrix.node != nightly
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node }}
+      - name: Use Node.js 16, will be subsequently overridden by download of nightly
+        if: matrix.node == nightly
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16
+      - name: Download Node.js nightly
+        if: matrix.node == nightly
+        run: |
+          export N_PREFIX=$(pwd)/n
+          npm install -g n
+          n nightly
+          sudo cp "${N_PREFIX}/bin/node" "$(which node)"
+          node --version
       # lint, build, test
         # Downgrade from npm 7 to 6 because 7 still seems buggy to me
       - if: ${{ matrix.downgradeNpm }}
