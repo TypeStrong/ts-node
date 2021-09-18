@@ -80,11 +80,14 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
 
   async function load(
     url: string,
-    context: {},
+    context: { format: Format | null | undefined },
     defaultLoad: typeof load
   ): Promise<{ format: Format; source: string | Buffer }> {
-    // Call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
-    const { format } = await getFormat(url, context, defaultGetFormat);
+    // If we get a format hint from resolve() on the context then use it
+    // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
+    const format =
+      context.format ??
+      (await getFormat(url, context, defaultGetFormat)).format;
 
     // Call the new defaultLoad() to get the source
     const { source: rawSource } = await defaultLoad(
