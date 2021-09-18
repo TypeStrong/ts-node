@@ -1,4 +1,4 @@
-import { register, getExtensions, RegisterOptions } from './index';
+import { register, getExtensions, RegisterOptions, versionGte } from './index';
 import {
   parse as parseUrl,
   format as formatUrl,
@@ -31,7 +31,8 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
 
   // The hooks API changed in node version X so we need to check for backwards compatibility
   // TODO: When the new API is released, change to the correct node version here
-  const newHooksAPI = parseInt(process.versions.node.split('.')[0], 10) >= 17;
+  console.log('version', process.versions.node);
+  const newHooksAPI = versionGte(process.versions.node, '17.0.0');
   return newHooksAPI
     ? { resolve, load }
     : { resolve, getFormat, transformSource };
