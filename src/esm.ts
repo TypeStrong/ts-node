@@ -93,7 +93,7 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
       defaultLoad
     );
 
-    // Emulate node's built-in old defaultTransformSource() so we can re-use the old hook for transformSource()
+    // Emulate node's built-in old defaultTransformSource() so we can re-use the old transformSource() hook
     const defaultTransformSource: typeof transformSource = async (
       source,
       _context,
