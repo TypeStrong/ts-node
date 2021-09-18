@@ -48,7 +48,7 @@ jobs:
       matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
         include:
           # Node 12.15
           # TODO Add comments about why we test 12.15; I think git blame says it's because of an ESM behavioral change that happened at 12.16
@@ -112,13 +112,8 @@ jobs:
             typescript: next
             typescriptFlag: next
             downgradeNpm: true
+          # Node nightly
           - flavor: 11
-            node: nightly
-            nodeFlag: nightly
-            typescript: next
-            typescriptFlag: next
-            downgradeNpm: true
-          - flavor: 12
             node: nightly
             nodeFlag: nightly
             typescript: latest
@@ -139,12 +134,20 @@ jobs:
         with:
           node-version: 16
       - name: Download Node.js nightly
-        if: matrix.node == 'nightly'
+        if: matrix.node == 'nightly' && matrix.os == 'ubuntu'
         run: |
           export N_PREFIX=$(pwd)/n
           npm install -g n
           n nightly
           sudo cp "${N_PREFIX}/bin/node" "$(which node)"
+          node --version
+      - name: Download Node.js nightly
+        if: matrix.node == 'nightly' && matrix.os == 'windows'
+        run: |
+          $version = (Invoke-WebRequest https://nodejs.org/download/nightly/index.json | ConvertFrom-json)[0].version
+          $url = "https://nodejs.org/download/nightly/$version/win-x64/node.exe"
+          $targetPath = (Get-Command node.exe).Source
+          Invoke-WebRequest -Uri $url -OutFile $targetPath
           node --version
       # lint, build, test
         # Downgrade from npm 7 to 6 because 7 still seems buggy to me
