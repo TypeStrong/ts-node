@@ -78,6 +78,10 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
     );
   }
 
+  /**
+   * We are implementing the new load hook API on top of our implementation of the old hooks API,
+   * which relies on copy-pasted code from the old hooks implementation in node.
+   */
   async function load(
     url: string,
     context: { format: Format | null | undefined },
