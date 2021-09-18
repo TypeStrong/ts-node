@@ -83,28 +83,31 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
     context: {},
     defaultLoad: typeof load
   ): Promise<{ format: Format; source: string | Buffer }> {
+    // Call the old getFormat() hook using old defaultGetFormat() that ships with ts-node
     const { format } = await getFormat(url, context, defaultGetFormat);
 
+    // Call the new defaultLoad() to get the source
     const { source: rawSource } = await defaultLoad(
       url,
       { format },
       defaultLoad
     );
 
+    // Emulate old defaultTransformSource() so we can re-use our old impl of transformSource()
     const defaultTransformSource: typeof transformSource = async (
       source,
       _context,
       _defaultTransformSource
     ) => ({ source });
+
+    // Call the old hook
     const { source } = await transformSource(
       rawSource,
       { url, format },
       defaultTransformSource
     );
-    return {
-      format,
-      source,
-    };
+
+    return { format, source };
   }
 
   type Format = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
