@@ -129,17 +129,17 @@ jobs:
       - uses: actions/checkout@v2
       # install node
       - name: Use Node.js ${{ matrix.node }}
-        if: matrix.node != nightly
+        if: matrix.node != "nightly"
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node }}
       - name: Use Node.js 16, will be subsequently overridden by download of nightly
-        if: matrix.node == nightly
+        if: matrix.node == "nightly"
         uses: actions/setup-node@v1
         with:
           node-version: 16
       - name: Download Node.js nightly
-        if: matrix.node == nightly
+        if: matrix.node == "nightly"
         run: |
           export N_PREFIX=$(pwd)/n
           npm install -g n
