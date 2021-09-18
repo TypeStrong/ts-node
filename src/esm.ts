@@ -31,7 +31,6 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
 
   // The hooks API changed in node version X so we need to check for backwards compatibility
   // TODO: When the new API is released, change to the correct node version here
-  console.log('version', process.versions.node);
   const newHooksAPI = versionGte(process.versions.node, '17.0.0');
   return newHooksAPI
     ? { resolve, load }
