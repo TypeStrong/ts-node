@@ -20,9 +20,9 @@ const { defaultGetFormat } = require('../dist-raw/node-esm-default-get-format');
 //
 // At the time of writing, this file implements 2x different loader APIs.
 // Node made a breaking change to the loader API in https://github.com/nodejs/node/pull/37468
-// 
+//
 // We check the node version number and export either the *old* or the *new* API.
-// 
+//
 // Today, we are implementing the *new* API on top of our implementation of the *old* API,
 // which relies on copy-pasted code from the *old* hooks implementation in node.
 //
