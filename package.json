@@ -169,8 +169,5 @@
     "diff": "^4.0.1",
     "make-error": "^1.1.1",
     "yn": "3.1.1"
-  },
-  "prettier": {
-    "singleQuote": true
   }
 }
