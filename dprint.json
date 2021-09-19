@@ -1,0 +1,26 @@
+{
+  "incremental": true,
+  "typescript": {
+    "quoteStyle": "preferSingle"
+  },
+  "includes": [
+    "/src/**",
+    "/*.{js,mjs}",
+    "/esm",
+    "/register",
+    "/scripts",
+    "/src",
+    "/tests"
+  ],
+  "excludes": [
+    "/**/node_modules",
+    "/**/*-lock.json",
+    "/tests/main-realpath/symlink/tsconfig.json",
+    "/tests/throw error.ts",
+    "/tests/throw error react tsx.tsx",
+    "/tests/esm/throw error.ts"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/typescript-0.55.0.wasm"
+  ]
+}
