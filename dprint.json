@@ -1,7 +1,13 @@
 {
   "incremental": true,
   "typescript": {
-    "quoteStyle": "preferSingle"
+    "quoteStyle": "preferSingle",
+    "indentWidth": 2,
+    "lineWidth": 80,
+    "operatorPosition": "maintain",
+    "arguments.trailingCommas": "never",
+    "parameters.trailingCommas": "never",
+    "useBraces": "maintain"
   },
   "includes": [
     "/src/**",
@@ -13,6 +19,9 @@
     "/tests"
   ],
   "excludes": [
+    "/website",
+    "/raw",
+    "/dist-raw",
     "/**/node_modules",
     "/**/*-lock.json",
     "/tests/main-realpath/symlink/tsconfig.json",
