@@ -2,20 +2,22 @@
 title: Visual Studio Code
 ---
 
-Create a new node.js configuration, add `-r ts-node/register` to node args and move the `program` to the `args` list (so VS Code doesn't look for `outFiles`).
+Create a new Node.js debug configuration, add `-r ts-node/register` to node args and move the `program` to the `args` list (so VS Code doesn't look for `outFiles`).
 
-```json
+```json title=".vscode/launch.json"
 {
-    "type": "node",
-    "request": "launch",
-    "name": "Launch Program",
-    "runtimeArgs": [
-        "-r",
-        "ts-node/register"
-    ],
-    "args": [
-        "${workspaceFolder}/index.ts"
-    ]
+    "configurations": [{
+        "type": "node",
+        "request": "launch",
+        "name": "Launch Program",
+        "runtimeArgs": [
+            "-r",
+            "ts-node/register"
+        ],
+        "args": [
+            "${workspaceFolder}/src/index.ts"
+        ]
+    }],
 }
 ```
 
