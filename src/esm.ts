@@ -1,4 +1,9 @@
-import { register, getExtensions, RegisterOptions, versionGte } from './index';
+import {
+  register,
+  getExtensions,
+  RegisterOptions,
+  versionGteLt,
+} from './index';
 import {
   parse as parseUrl,
   format as formatUrl,
@@ -43,9 +48,13 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
     preferTsExts: tsNodeInstance.options.preferTsExts,
   });
 
-  // The hooks API changed in node version X so we need to check for backwards compatibility
-  // TODO: When the new API is released, change to the correct node version here.  16.9.2 is a guess
-  const newHooksAPI = versionGte(process.versions.node, '16.9.2');
+  // The hooks API changed in node version X so we need to check for backwards compatibility.
+  // TODO: When the new API is backported to v12, v14, v16, update these version checks accordingly.
+  const newHooksAPI =
+    versionGteLt(process.versions.node, '17.0.0') ||
+    versionGteLt(process.versions.node, '16.999.999', '17.0.0') ||
+    versionGteLt(process.versions.node, '14.999.999', '15.0.0') ||
+    versionGteLt(process.versions.node, '12.999.999', '13.0.0');
   return newHooksAPI
     ? { resolve, load }
     : { resolve, getFormat, transformSource };
