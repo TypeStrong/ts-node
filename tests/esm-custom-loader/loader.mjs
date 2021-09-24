@@ -9,7 +9,6 @@ const tsNodeInstance = register({
   compilerOptions: {
     noUnusedLocals: true,
   },
-  experimentalEsmLoader: true,
 });
 
 export const { resolve, getFormat, transformSource } = createEsmHooks(

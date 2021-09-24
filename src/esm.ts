@@ -18,15 +18,14 @@ const {
 /** @internal */
 export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
   // Automatically performs registration just like `-r ts-node/register`
-  const tsNodeInstance = register({
-    ...opts,
-    experimentalEsmLoader: true,
-  });
+  const tsNodeInstance = register(opts);
 
   return createEsmHooks(tsNodeInstance);
 }
 
 export function createEsmHooks(tsNodeService: Service) {
+  tsNodeService.enableExperimentalEsmLoaderInterop();
+
   // Custom implementation that considers additional file extensions and automatically adds file extensions
   const nodeResolveImplementation = createResolve({
     ...getExtensions(tsNodeService.config),

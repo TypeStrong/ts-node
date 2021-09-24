@@ -295,12 +295,6 @@ export interface CreateOptions {
     | _ts.CustomTransformers
     | ((p: _ts.Program) => _ts.CustomTransformers);
   /**
-   * True if require() hooks should interop with experimental ESM loader.
-   * Enabled explicitly via a flag since it is a breaking change.
-   * @internal
-   */
-  experimentalEsmLoader?: boolean;
-  /**
    * Allows the usage of top level await in REPL.
    *
    * Uses node's implementation which accomplishes this with an AST syntax transformation.
@@ -369,7 +363,6 @@ export interface TsConfigOptions
     | 'dir'
     | 'cwd'
     | 'projectSearchDir'
-    | 'experimentalEsmLoader'
     | 'optionBasePaths'
   > {}
 
@@ -405,7 +398,6 @@ export const DEFAULTS: RegisterOptions = {
   typeCheck: yn(env.TS_NODE_TYPE_CHECK),
   compilerHost: yn(env.TS_NODE_COMPILER_HOST),
   logError: yn(env.TS_NODE_LOG_ERROR),
-  experimentalEsmLoader: false,
   experimentalReplAwait: yn(env.TS_NODE_EXPERIMENTAL_REPL_AWAIT) ?? undefined,
 };
 
@@ -446,6 +438,8 @@ export interface Service {
   readonly shouldReplAwait: boolean;
   /** @internal */
   addDiagnosticFilter(filter: DiagnosticFilter): void;
+  /** @internal */
+  enableExperimentalEsmLoaderInterop(): void;
 }
 
 /**
@@ -667,7 +661,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
       // If it's a file URL, convert to local path
       // Note: fileURLToPath does not exist on early node v10
       // I could not find a way to handle non-URLs except to swallow an error
-      if (options.experimentalEsmLoader && path.startsWith('file://')) {
+      if (experimentalEsmLoader && path.startsWith('file://')) {
         try {
           path = fileURLToPath(path);
         } catch (e) {
@@ -1224,6 +1218,15 @@ export function create(rawOptions: CreateOptions = {}): Service {
     });
   }
 
+  /**
+   * True if require() hooks should interop with experimental ESM loader.
+   * Enabled explicitly via a flag since it is a breaking change.
+   */
+  let experimentalEsmLoader = false;
+  function enableExperimentalEsmLoaderInterop() {
+    experimentalEsmLoader = true;
+  }
+
   return {
     ts,
     config,
@@ -1236,6 +1239,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     moduleTypeClassifier,
     shouldReplAwait,
     addDiagnosticFilter,
+    enableExperimentalEsmLoaderInterop,
   };
 }
 
