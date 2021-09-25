@@ -106,39 +106,43 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
     url: string,
     context: { format: Format | null | undefined },
     defaultLoad: typeof load
-  ): Promise<{ format: Format; source: string | Buffer }> {
+  ): Promise<{ format: Format; source: string | Buffer | undefined }> {
     // If we get a format hint from resolve() on the context then use it
     // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
     const format =
       context.format ??
       (await getFormat(url, context, defaultGetFormat)).format;
 
-    // Call the new defaultLoad() to get the source
-    const { source: rawSource } = await defaultLoad(
-      url,
-      { format },
-      defaultLoad
-    );
-
-    if (rawSource === undefined || rawSource === null) {
-      throw new Error(
-        `Failed to load raw source: Format was '${format}' and url was '${url}''.`
+    let source = undefined;
+    if (format !== 'builtin' && format !== 'commonjs') {
+      // Call the new defaultLoad() to get the source
+      const { source: rawSource } = await defaultLoad(
+        url,
+        { format },
+        defaultLoad
       );
+
+      if (rawSource === undefined || rawSource === null) {
+        throw new Error(
+          `Failed to load raw source: Format was '${format}' and url was '${url}''.`
+        );
+      }
+
+      // Emulate node's built-in old defaultTransformSource() so we can re-use the old transformSource() hook
+      const defaultTransformSource: typeof transformSource = async (
+        source,
+        _context,
+        _defaultTransformSource
+      ) => ({ source });
+
+      // Call the old hook
+      const { source: transformedSource } = await transformSource(
+        rawSource,
+        { url, format },
+        defaultTransformSource
+      );
+      source = transformedSource;
     }
-
-    // Emulate node's built-in old defaultTransformSource() so we can re-use the old transformSource() hook
-    const defaultTransformSource: typeof transformSource = async (
-      source,
-      _context,
-      _defaultTransformSource
-    ) => ({ source });
-
-    // Call the old hook
-    const { source } = await transformSource(
-      rawSource,
-      { url, format },
-      defaultTransformSource
-    );
 
     return { format, source };
   }
