@@ -120,6 +120,10 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
       defaultLoad
     );
 
+    if (rawSource === undefined || rawSource === null) {
+      throw new Error('Failed to load raw source.');
+    }
+
     // Emulate node's built-in old defaultTransformSource() so we can re-use the old transformSource() hook
     const defaultTransformSource: typeof transformSource = async (
       source,
@@ -190,6 +194,10 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
     context: { url: string; format: Format },
     defaultTransformSource: typeof transformSource
   ): Promise<{ source: string | Buffer }> {
+    if (source === null || source === undefined) {
+      throw new Error('No source');
+    }
+
     const defer = () =>
       defaultTransformSource(source, context, defaultTransformSource);
 
