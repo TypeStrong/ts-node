@@ -11,7 +11,6 @@ import { dirname, join, resolve, sep as pathSep } from 'path';
 import { homedir, tmpdir } from 'os';
 import semver = require('semver');
 import ts = require('typescript');
-import proxyquire = require('proxyquire');
 import type * as tsNodeTypes from '../index';
 import * as fs from 'fs';
 import { unlinkSync, existsSync, lstatSync, mkdtempSync } from 'fs';
@@ -99,44 +98,28 @@ async function executeInRepl(
   };
 }
 
-const ROOT_DIR = resolve(__dirname, '../..');
-const DIST_DIR = resolve(__dirname, '..');
-const TEST_DIR = join(__dirname, '../../tests');
-const PROJECT = join(TEST_DIR, 'tsconfig.json');
-const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node');
-const BIN_SCRIPT_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-script');
-const BIN_CWD_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-cwd');
-
-const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/;
-
-// `createRequire` does not exist on older node versions
-const testsDirRequire = createRequire(join(TEST_DIR, 'index.js'));
-
-// Set after ts-node is installed locally
-let { register, create, VERSION, createRepl }: typeof tsNodeTypes = {} as any;
+import {
+  BIN_CWD_PATH,
+  BIN_PATH,
+  BIN_SCRIPT_PATH,
+  DIST_DIR,
+  PROJECT,
+  ROOT_DIR,
+  TEST_DIR,
+  installTsNode,
+  testsDirRequire,
+} from './before-all';
 
 const { exec, createExecMacro } = createMacrosAndHelpers({
   test,
   defaultCwd: TEST_DIR,
 });
 
-// Pack and install ts-node locally, necessary to test package "exports"
+// Set after ts-node is installed locally
+let { create, VERSION, createRepl }: typeof tsNodeTypes = {} as any;
 test.beforeAll(async () => {
-  const totalTries = process.platform === 'win32' ? 5 : 1;
-  let tries = 0;
-  while (true) {
-    try {
-      rimrafSync(join(TEST_DIR, 'node_modules'));
-      await promisify(childProcessExec)(`npm install`, { cwd: TEST_DIR });
-      const packageLockPath = join(TEST_DIR, 'package-lock.json');
-      existsSync(packageLockPath) && unlinkSync(packageLockPath);
-      break;
-    } catch (e) {
-      tries++;
-      if (tries >= totalTries) throw e;
-    }
-  }
-  ({ register, create, VERSION, createRepl } = testsDirRequire('ts-node'));
+  await installTsNode();
+  ({ create, VERSION, createRepl } = testsDirRequire('ts-node'));
 });
 
 test.suite('ts-node', (test) => {
@@ -1597,171 +1580,6 @@ test.suite('ts-node', (test) => {
       );
       expect(err).to.equal(null);
       expect(stdout).to.equal(`value\nFailures: 0\n`);
-    });
-  });
-
-  test.suite('register', (_test) => {
-    const test = _test.context(
-      once(async () => {
-        return {
-          registered: register({
-            project: PROJECT,
-            compilerOptions: {
-              jsx: 'preserve',
-            },
-          }),
-          moduleTestPath: require.resolve('../../tests/module'),
-        };
-      })
-    );
-    test.beforeEach(async ({ context: { registered } }) => {
-      // Re-enable project for every test.
-      registered.enabled(true);
-    });
-    test.runSerially();
-
-    test('should be able to require typescript', ({
-      context: { moduleTestPath },
-    }) => {
-      const m = require(moduleTestPath);
-
-      expect(m.example('foo')).to.equal('FOO');
-    });
-
-    test('should support dynamically disabling', ({
-      context: { registered, moduleTestPath },
-    }) => {
-      delete require.cache[moduleTestPath];
-
-      expect(registered.enabled(false)).to.equal(false);
-      expect(() => require(moduleTestPath)).to.throw(/Unexpected token/);
-
-      delete require.cache[moduleTestPath];
-
-      expect(registered.enabled()).to.equal(false);
-      expect(() => require(moduleTestPath)).to.throw(/Unexpected token/);
-
-      delete require.cache[moduleTestPath];
-
-      expect(registered.enabled(true)).to.equal(true);
-      expect(() => require(moduleTestPath)).to.not.throw();
-
-      delete require.cache[moduleTestPath];
-
-      expect(registered.enabled()).to.equal(true);
-      expect(() => require(moduleTestPath)).to.not.throw();
-    });
-
-    test('should support compiler scopes', ({
-      context: { registered, moduleTestPath },
-    }) => {
-      const calls: string[] = [];
-
-      registered.enabled(false);
-
-      const compilers = [
-        register({
-          projectSearchDir: join(TEST_DIR, 'scope/a'),
-          scopeDir: join(TEST_DIR, 'scope/a'),
-          scope: true,
-        }),
-        register({
-          projectSearchDir: join(TEST_DIR, 'scope/a'),
-          scopeDir: join(TEST_DIR, 'scope/b'),
-          scope: true,
-        }),
-      ];
-
-      compilers.forEach((c) => {
-        const old = c.compile;
-        c.compile = (code, fileName, lineOffset) => {
-          calls.push(fileName);
-
-          return old(code, fileName, lineOffset);
-        };
-      });
-
-      try {
-        expect(require('../../tests/scope/a').ext).to.equal('.ts');
-        expect(require('../../tests/scope/b').ext).to.equal('.ts');
-      } finally {
-        compilers.forEach((c) => c.enabled(false));
-      }
-
-      expect(calls).to.deep.equal([
-        join(TEST_DIR, 'scope/a/index.ts'),
-        join(TEST_DIR, 'scope/b/index.ts'),
-      ]);
-
-      delete require.cache[moduleTestPath];
-
-      expect(() => require(moduleTestPath)).to.throw();
-    });
-
-    test('should compile through js and ts', () => {
-      const m = require('../../tests/complex');
-
-      expect(m.example()).to.equal('example');
-    });
-
-    test('should work with proxyquire', () => {
-      const m = proxyquire('../../tests/complex', {
-        './example': 'hello',
-      });
-
-      expect(m.example()).to.equal('hello');
-    });
-
-    test('should work with `require.cache`', () => {
-      const { example1, example2 } = require('../../tests/require-cache');
-
-      expect(example1).to.not.equal(example2);
-    });
-
-    test('should use source maps', async () => {
-      try {
-        require('../../tests/throw error');
-      } catch (error) {
-        expect(error.stack).to.contain(
-          [
-            'Error: this is a demo',
-            `    at Foo.bar (${join(TEST_DIR, './throw error.ts')}:100:17)`,
-          ].join('\n')
-        );
-      }
-    });
-
-    test.suite('JSX preserve', (test) => {
-      let old: (m: Module, filename: string) => any;
-      let compiled: string;
-
-      test.runSerially();
-      test.beforeAll(async () => {
-        old = require.extensions['.tsx']!;
-        require.extensions['.tsx'] = (m: any, fileName) => {
-          const _compile = m._compile;
-
-          m._compile = function (code: string, fileName: string) {
-            compiled = code;
-            return _compile.call(this, code, fileName);
-          };
-
-          return old(m, fileName);
-        };
-      });
-
-      test('should use source maps', async (t) => {
-        t.teardown(() => {
-          require.extensions['.tsx'] = old;
-        });
-        try {
-          require('../../tests/with-jsx.tsx');
-        } catch (error) {
-          expect(error.stack).to.contain('SyntaxError: Unexpected token');
-        }
-
-        expect(compiled).to.match(SOURCE_MAP_REGEXP);
-      });
     });
   });
 
