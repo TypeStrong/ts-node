@@ -121,7 +121,9 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
     );
 
     if (rawSource === undefined || rawSource === null) {
-      throw new Error('Failed to load raw source.');
+      throw new Error(
+        `Failed to load raw source: Format was '${format}' and url was '${url}''.`
+      );
     }
 
     // Emulate node's built-in old defaultTransformSource() so we can re-use the old transformSource() hook
