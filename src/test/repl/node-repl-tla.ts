@@ -1,25 +1,23 @@
 import { expect } from 'chai';
 import type { Key } from 'readline';
 import { Stream } from 'stream';
-import type * as tsNodeTypes from '../index';
 import semver = require('semver');
 import ts = require('typescript');
+import type { ContextWithTsNodeUnderTest } from './helpers';
 
-interface SharedObjects
-  extends Pick<typeof tsNodeTypes, 'create' | 'createRepl'> {
+interface SharedObjects extends ContextWithTsNodeUnderTest {
   TEST_DIR: string;
 }
 
 // Based on https://github.com/nodejs/node/blob/88799930794045795e8abac874730f9eba7e2300/test/parallel/test-repl-top-level-await.js
 export async function upstreamTopLevelAwaitTests({
   TEST_DIR,
-  create,
-  createRepl,
+  tsNodeUnderTest,
 }: SharedObjects) {
   const PROMPT = 'await repl > ';
 
   const putIn = new REPLStream();
-  const replService = createRepl({
+  const replService = tsNodeUnderTest.createRepl({
     // @ts-ignore
     stdin: putIn,
     // @ts-ignore
@@ -27,7 +25,7 @@ export async function upstreamTopLevelAwaitTests({
     // @ts-ignore
     stderr: putIn,
   });
-  const service = create({
+  const service = tsNodeUnderTest.create({
     ...replService.evalAwarePartialHost,
     project: `${TEST_DIR}/tsconfig.json`,
     experimentalReplAwait: true,
