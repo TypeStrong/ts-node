@@ -3,18 +3,14 @@ import semver = require('semver');
 import * as exp from 'expect';
 import { expect } from 'chai';
 import {
-  BIN_PATH,
+  CMD_TS_NODE_WITH_PROJECT_FLAG,
   contextTsNodeUnderTest,
-  PROJECT,
   TEST_DIR,
 } from '../helpers';
 import { createExec, createExecTester } from '../exec-helpers';
 import { upstreamTopLevelAwaitTests } from './node-repl-tla';
 import { _test } from '../testlib';
 import { contextReplHelpers, contextReplApiTester } from './helpers';
-
-/** Default `ts-node --project` invocation */
-const cmd = `"${BIN_PATH}" --project "${PROJECT}"`;
 
 const test = _test
   .context(contextTsNodeUnderTest)
@@ -26,12 +22,12 @@ const exec = createExec({
 });
 
 const execTester = createExecTester({
-  cmd: cmd,
+  cmd: CMD_TS_NODE_WITH_PROJECT_FLAG,
   exec,
 });
 
 test('should run REPL when --interactive passed and stdin is not a TTY', async () => {
-  const execPromise = exec(`${cmd} --interactive`);
+  const execPromise = exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} --interactive`);
   execPromise.child.stdin!.end('console.log("123")\n');
   const { err, stdout } = await execPromise;
   expect(err).to.equal(null);
@@ -39,7 +35,7 @@ test('should run REPL when --interactive passed and stdin is not a TTY', async (
 });
 
 test('REPL has command to get type information', async () => {
-  const execPromise = exec(`${cmd} --interactive`);
+  const execPromise = exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} --interactive`);
   execPromise.child.stdin!.end('\nconst a = 123\n.type a');
   const { err, stdout } = await execPromise;
   expect(err).to.equal(null);

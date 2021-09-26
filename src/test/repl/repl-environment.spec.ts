@@ -9,9 +9,8 @@ import * as exp from 'expect';
 import * as promisify from 'util.promisify';
 import * as getStream from 'get-stream';
 import {
-  BIN_PATH,
+  CMD_TS_NODE_WITH_PROJECT_FLAG,
   contextTsNodeUnderTest,
-  PROJECT,
   ROOT_DIR,
   TEST_DIR,
 } from '../helpers';
@@ -22,14 +21,11 @@ import { contextReplHelpers } from './helpers';
 
 const test = _test.context(contextTsNodeUnderTest).context(contextReplHelpers);
 
-/** Default `ts-node --project` invocation */
-const cmd = `"${BIN_PATH}" --project "${PROJECT}"`;
-
 const exec = createExec({
   cwd: TEST_DIR,
 });
 const execTester = createExecTester({
-  cmd,
+  cmd: CMD_TS_NODE_WITH_PROJECT_FLAG,
   exec,
 });
 

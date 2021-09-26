@@ -3,7 +3,6 @@ import type { Key } from 'readline';
 import { Stream } from 'stream';
 import semver = require('semver');
 import ts = require('typescript');
-import type { tsNodeTypes } from '../helpers';
 import type { ContextWithTsNodeUnderTest } from './helpers';
 
 interface SharedObjects extends ContextWithTsNodeUnderTest {

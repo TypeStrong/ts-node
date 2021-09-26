@@ -12,6 +12,7 @@ import { lock } from 'proper-lockfile';
 import type * as tsNodeTypes from '../index';
 import type _createRequire from 'create-require';
 import { once } from 'lodash';
+import semver = require('semver');
 const createRequire: typeof _createRequire = require('create-require');
 export { tsNodeTypes };
 
@@ -25,6 +26,14 @@ export const BIN_SCRIPT_PATH = join(
   'node_modules/.bin/ts-node-script'
 );
 export const BIN_CWD_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-cwd');
+/** Default `ts-node --project` invocation */
+export const CMD_TS_NODE_WITH_PROJECT_FLAG = `"${BIN_PATH}" --project "${PROJECT}"`;
+/** Default `ts-node` invocation without `--project` */
+export const CMD_TS_NODE_WITHOUT_PROJECT_FLAG = `"${BIN_PATH}"`;
+export const EXPERIMENTAL_MODULES_FLAG = semver.gte(process.version, '12.17.0')
+  ? ''
+  : '--experimental-modules';
+export const CMD_ESM_LOADER_WITHOUT_PROJECT = `node ${EXPERIMENTAL_MODULES_FLAG} --loader ts-node/esm`;
 
 // `createRequire` does not exist on older node versions
 export const testsDirRequire = createRequire(join(TEST_DIR, 'index.js'));
