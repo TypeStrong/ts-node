@@ -1,11 +1,11 @@
 import { once } from 'lodash';
-import type * as tsNodeTypes from '../index';
 import {
   installTsNode,
   PROJECT,
   testsDirRequire,
   TEST_DIR,
-} from './before-all';
+  tsNodeTypes,
+} from './helpers';
 import { test } from './testlib';
 import { expect } from 'chai';
 import { join } from 'path';

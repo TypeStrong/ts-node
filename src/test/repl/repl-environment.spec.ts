@@ -1,0 +1,477 @@
+/*
+ * Tests that the REPL environment is setup correctly:
+ * globals, __filename, builtin module accessors.
+ */
+
+import { test as _test } from '../testlib';
+import { expect } from 'chai';
+import * as exp from 'expect';
+import * as promisify from 'util.promisify';
+import * as getStream from 'get-stream';
+import {
+  BIN_PATH,
+  contextTsNodeUnderTest,
+  PROJECT,
+  ROOT_DIR,
+  TEST_DIR,
+} from '../helpers';
+import { dirname, join } from 'path';
+import { createExec, createExecTester } from '../exec-helpers';
+import { homedir } from 'os';
+import { contextReplHelpers } from './helpers';
+
+const test = _test.context(contextTsNodeUnderTest).context(contextReplHelpers);
+
+/** Default `ts-node --project` invocation */
+const cmd = `"${BIN_PATH}" --project "${PROJECT}"`;
+
+const exec = createExec({
+  cwd: TEST_DIR,
+});
+const execTester = createExecTester({
+  cmd,
+  exec,
+});
+
+test.suite(
+  '[eval], <repl>, and [stdin] execute with correct globals',
+  (test) => {
+    interface GlobalInRepl extends NodeJS.Global {
+      testReport: any;
+      replReport: any;
+      stdinReport: any;
+      evalReport: any;
+      module: any;
+      exports: any;
+      fs: any;
+      __filename: any;
+      __dirname: any;
+    }
+    const globalInRepl = global as GlobalInRepl;
+    const programmaticTest = test.macro(
+      (
+        {
+          evalCodeBefore,
+          stdinCode,
+        }: {
+          evalCodeBefore: string | null;
+          stdinCode: string;
+        },
+        assertions: (stdout: string) => Promise<void> | void
+      ) => async (t) => {
+        delete globalInRepl.testReport;
+        delete globalInRepl.replReport;
+        delete globalInRepl.stdinReport;
+        delete globalInRepl.evalReport;
+        delete globalInRepl.module;
+        delete globalInRepl.exports;
+        delete globalInRepl.fs;
+        delete globalInRepl.__filename;
+        delete globalInRepl.__dirname;
+        const {
+          stdin,
+          stderr,
+          stdout,
+          replService,
+        } = t.context.createReplViaApi({ registerHooks: true });
+        if (typeof evalCodeBefore === 'string') {
+          replService.evalCode(evalCodeBefore);
+        }
+        replService.start();
+        stdin.write(stdinCode);
+        stdin.end();
+        await promisify(setTimeout)(1e3);
+        stdout.end();
+        stderr.end();
+        expect(await getStream(stderr)).to.equal('');
+        await assertions(await getStream(stdout));
+      }
+    );
+
+    const declareGlobals = `declare var replReport: any, stdinReport: any, evalReport: any, restReport: any, global: any, __filename: any, __dirname: any, module: any, exports: any, fs: any;`;
+    function setReportGlobal(type: 'repl' | 'stdin' | 'eval') {
+      return `
+            ${declareGlobals}
+            global.${type}Report = {
+              __filename: typeof __filename !== 'undefined' && __filename,
+              __dirname: typeof __dirname !== 'undefined' && __dirname,
+              moduleId: typeof module !== 'undefined' && module.id,
+              modulePath: typeof module !== 'undefined' && module.path,
+              moduleFilename: typeof module !== 'undefined' && module.filename,
+              modulePaths: typeof module !== 'undefined' && [...module.paths],
+              exportsTest: typeof exports !== 'undefined' ? module.exports === exports : null,
+              stackTest: new Error().stack!.split('\\n')[1],
+              moduleAccessorsTest: typeof fs === 'undefined' ? null : fs === require('fs'),
+              argv: [...process.argv]
+            };
+          `.replace(/\n/g, '');
+    }
+    const reportsObject = `
+          {
+            stdinReport: typeof stdinReport !== 'undefined' && stdinReport,
+            evalReport: typeof evalReport !== 'undefined' && evalReport,
+            replReport: typeof replReport !== 'undefined' && replReport
+          }
+        `;
+    const printReports = `
+          ${declareGlobals}
+          console.log(JSON.stringify(${reportsObject}));
+        `.replace(/\n/g, '');
+    const saveReportsAsGlobal = `
+          ${declareGlobals}
+          global.testReport = ${reportsObject};
+        `.replace(/\n/g, '');
+
+    function parseStdoutStripReplPrompt(stdout: string) {
+      // Strip node's welcome header, only uncomment if running these tests manually against vanilla node
+      // stdout = stdout.replace(/^Welcome to.*\nType "\.help" .*\n/, '');
+      expect(stdout.slice(0, 2)).to.equal('> ');
+      expect(stdout.slice(-12)).to.equal('undefined\n> ');
+      return parseStdout(stdout.slice(2, -12));
+    }
+    function parseStdout(stdout: string) {
+      return JSON.parse(stdout);
+    }
+
+    /** Every possible ./node_modules directory ascending upwards starting with ./tests/node_modules */
+    const modulePaths = createModulePaths(TEST_DIR);
+    const rootModulePaths = createModulePaths(ROOT_DIR);
+    function createModulePaths(dir: string) {
+      const modulePaths: string[] = [];
+      for (let path = dir; ; path = dirname(path)) {
+        modulePaths.push(join(path, 'node_modules'));
+        if (dirname(path) === path) break;
+      }
+      return modulePaths;
+    }
+
+    // Executable is `ts-node` on Posix, `bin.js` on Windows due to Windows shimming limitations (this is determined by package manager)
+    const tsNodeExe = exp.stringMatching(/\b(ts-node|bin.js)$/);
+
+    test('stdin', async (t) => {
+      const { stdout } = await execTester({
+        stdin: `${setReportGlobal('stdin')};${printReports}`,
+        flags: '',
+      });
+      const report = parseStdout(stdout);
+      exp(report).toMatchObject({
+        stdinReport: {
+          __filename: '[stdin]',
+          __dirname: '.',
+          moduleId: '[stdin]',
+          modulePath: '.',
+          // Note: vanilla node does does not have file extension
+          moduleFilename: join(TEST_DIR, `[stdin].ts`),
+          modulePaths,
+          exportsTest: true,
+          // Note: vanilla node uses different name. See #1360
+          stackTest: exp.stringContaining(
+            `    at ${join(TEST_DIR, `[stdin].ts`)}:1:`
+          ),
+          moduleAccessorsTest: null,
+          argv: [tsNodeExe],
+        },
+        evalReport: false,
+        replReport: false,
+      });
+    });
+    test('repl', async (t) => {
+      const { stdout } = await execTester({
+        stdin: `${setReportGlobal('repl')};${printReports}`,
+        flags: '-i',
+      });
+      const report = parseStdoutStripReplPrompt(stdout);
+      exp(report).toMatchObject({
+        stdinReport: false,
+        evalReport: false,
+        replReport: {
+          __filename: false,
+          __dirname: false,
+          moduleId: '<repl>',
+          modulePath: '.',
+          moduleFilename: null,
+          modulePaths: exp.objectContaining({
+            ...[join(TEST_DIR, `repl/node_modules`), ...modulePaths],
+          }),
+          // Note: vanilla node REPL does not set exports
+          exportsTest: true,
+          // Note: vanilla node uses different name. See #1360
+          stackTest: exp.stringContaining(
+            `    at ${join(TEST_DIR, '<repl>.ts')}:2:`
+          ),
+          moduleAccessorsTest: true,
+          argv: [tsNodeExe],
+        },
+      });
+      // Prior to these, nyc adds another entry on Windows; we need to ignore it
+      exp(report.replReport.modulePaths.slice(-3)).toMatchObject([
+        join(homedir(), `.node_modules`),
+        join(homedir(), `.node_libraries`),
+        // additional entry goes to node's install path
+        exp.any(String),
+      ]);
+    });
+
+    // Should ignore -i and run the entrypoint
+    test('-i w/entrypoint ignores -i', async (t) => {
+      const { stdout } = await execTester({
+        stdin: `${setReportGlobal('repl')};${printReports}`,
+        flags: '-i ./repl/script.js',
+      });
+      const report = parseStdout(stdout);
+      exp(report).toMatchObject({
+        stdinReport: false,
+        evalReport: false,
+        replReport: false,
+      });
+    });
+
+    // Should not execute stdin
+    // Should not interpret positional arg as an entrypoint script
+    test('-e', async (t) => {
+      const { stdout } = await execTester({
+        stdin: `throw new Error()`,
+        flags: `-e "${setReportGlobal('eval')};${printReports}"`,
+      });
+      const report = parseStdout(stdout);
+      exp(report).toMatchObject({
+        stdinReport: false,
+        evalReport: {
+          __filename: '[eval]',
+          __dirname: '.',
+          moduleId: '[eval]',
+          modulePath: '.',
+          // Note: vanilla node does does not have file extension
+          moduleFilename: join(TEST_DIR, `[eval].ts`),
+          modulePaths: [...modulePaths],
+          exportsTest: true,
+          // Note: vanilla node uses different name. See #1360
+          stackTest: exp.stringContaining(
+            `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
+          ),
+          moduleAccessorsTest: true,
+          argv: [tsNodeExe],
+        },
+        replReport: false,
+      });
+    });
+    test('-e w/entrypoint arg does not execute entrypoint', async (t) => {
+      const { stdout } = await execTester({
+        stdin: `throw new Error()`,
+        flags: `-e "${setReportGlobal(
+          'eval'
+        )};${printReports}" ./repl/script.js`,
+      });
+      const report = parseStdout(stdout);
+      exp(report).toMatchObject({
+        stdinReport: false,
+        evalReport: {
+          __filename: '[eval]',
+          __dirname: '.',
+          moduleId: '[eval]',
+          modulePath: '.',
+          // Note: vanilla node does does not have file extension
+          moduleFilename: join(TEST_DIR, `[eval].ts`),
+          modulePaths,
+          exportsTest: true,
+          // Note: vanilla node uses different name. See #1360
+          stackTest: exp.stringContaining(
+            `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
+          ),
+          moduleAccessorsTest: true,
+          argv: [tsNodeExe, './repl/script.js'],
+        },
+        replReport: false,
+      });
+    });
+    test('-e w/non-path arg', async (t) => {
+      const { stdout } = await execTester({
+        stdin: `throw new Error()`,
+        flags: `-e "${setReportGlobal(
+          'eval'
+        )};${printReports}" ./does-not-exist.js`,
+      });
+      const report = parseStdout(stdout);
+      exp(report).toMatchObject({
+        stdinReport: false,
+        evalReport: {
+          __filename: '[eval]',
+          __dirname: '.',
+          moduleId: '[eval]',
+          modulePath: '.',
+          // Note: vanilla node does does not have file extension
+          moduleFilename: join(TEST_DIR, `[eval].ts`),
+          modulePaths,
+          exportsTest: true,
+          // Note: vanilla node uses different name. See #1360
+          stackTest: exp.stringContaining(
+            `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
+          ),
+          moduleAccessorsTest: true,
+          argv: [tsNodeExe, './does-not-exist.js'],
+        },
+        replReport: false,
+      });
+    });
+    test('-e -i', async (t) => {
+      const { stdout } = await execTester({
+        stdin: `${setReportGlobal('repl')};${printReports}`,
+        flags: `-e "${setReportGlobal('eval')}" -i`,
+      });
+      const report = parseStdoutStripReplPrompt(stdout);
+      exp(report).toMatchObject({
+        stdinReport: false,
+        evalReport: {
+          __filename: '[eval]',
+          __dirname: '.',
+          moduleId: '[eval]',
+          modulePath: '.',
+          // Note: vanilla node does does not have file extension
+          moduleFilename: join(TEST_DIR, `[eval].ts`),
+          modulePaths,
+          exportsTest: true,
+          // Note: vanilla node uses different name. See #1360
+          stackTest: exp.stringContaining(
+            `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
+          ),
+          moduleAccessorsTest: true,
+          argv: [tsNodeExe],
+        },
+        replReport: {
+          __filename: '[eval]',
+          __dirname: '.',
+          moduleId: '<repl>',
+          modulePath: '.',
+          moduleFilename: null,
+          modulePaths: exp.objectContaining({
+            ...[join(TEST_DIR, `repl/node_modules`), ...modulePaths],
+          }),
+          // Note: vanilla node REPL does not set exports, so this would be false
+          exportsTest: true,
+          // Note: vanilla node uses different name. See #1360
+          stackTest: exp.stringContaining(
+            `    at ${join(TEST_DIR, '<repl>.ts')}:2:`
+          ),
+          moduleAccessorsTest: true,
+          argv: [tsNodeExe],
+        },
+      });
+      // Prior to these, nyc adds another entry on Windows; we need to ignore it
+      exp(report.replReport.modulePaths.slice(-3)).toMatchObject([
+        join(homedir(), `.node_modules`),
+        join(homedir(), `.node_libraries`),
+        // additional entry goes to node's install path
+        exp.any(String),
+      ]);
+    });
+
+    test('-e -i w/entrypoint ignores -e and -i, runs entrypoint', async (t) => {
+      const { stdout } = await execTester({
+        stdin: `throw new Error()`,
+        flags: '-e "throw new Error()" -i ./repl/script.js',
+      });
+      const report = parseStdout(stdout);
+      exp(report).toMatchObject({
+        stdinReport: false,
+        evalReport: false,
+        replReport: false,
+      });
+    });
+
+    test('-e -i when -e throws error, -i does not run', async (t) => {
+      const { stdout, stderr, err } = await execTester({
+        stdin: `console.log('hello')`,
+        flags: `-e "throw new Error('error from -e')" -i`,
+        expectError: true,
+      });
+      exp(err).toBeDefined();
+      exp(stdout).toBe('');
+      exp(stderr).toContain('error from -e');
+    });
+
+    // Serial because it's timing-sensitive
+    test.serial(
+      'programmatically, eval-ing before starting REPL',
+      programmaticTest,
+      {
+        evalCodeBefore: `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
+        stdinCode: '',
+      },
+      (stdout) => {
+        exp(globalInRepl.testReport).toMatchObject({
+          stdinReport: false,
+          evalReport: false,
+          replReport: {
+            __filename: false,
+            __dirname: false,
+
+            // Due to limitations in node's REPL API, we can't really expose
+            // the `module` prior to calling repl.start() which also sends
+            // output to stdout.
+            // For now, leaving this as unsupported / undefined behavior.
+
+            // moduleId: '<repl>',
+            // modulePath: '.',
+            // moduleFilename: null,
+            // modulePaths: [
+            //   join(ROOT_DIR, `repl/node_modules`),
+            //   ...rootModulePaths,
+            //   join(homedir(), `.node_modules`),
+            //   join(homedir(), `.node_libraries`),
+            //   // additional entry goes to node's install path
+            //   exp.any(String),
+            // ],
+            // // Note: vanilla node REPL does not set exports
+            // exportsTest: true,
+            // moduleAccessorsTest: true,
+
+            // Note: vanilla node uses different name. See #1360
+            stackTest: exp.stringContaining(
+              `    at ${join(ROOT_DIR, '<repl>.ts')}:1:`
+            ),
+          },
+        });
+      }
+    );
+    test.serial(
+      'programmatically, passing code to stdin after starting REPL',
+      programmaticTest,
+      {
+        evalCodeBefore: null,
+        stdinCode: `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
+      },
+      (stdout) => {
+        exp(globalInRepl.testReport).toMatchObject({
+          stdinReport: false,
+          evalReport: false,
+          replReport: {
+            __filename: false,
+            __dirname: false,
+            moduleId: '<repl>',
+            modulePath: '.',
+            moduleFilename: null,
+            modulePaths: exp.objectContaining({
+              ...[join(ROOT_DIR, `repl/node_modules`), ...rootModulePaths],
+            }),
+            // Note: vanilla node REPL does not set exports
+            exportsTest: true,
+            // Note: vanilla node uses different name. See #1360
+            stackTest: exp.stringContaining(
+              `    at ${join(ROOT_DIR, '<repl>.ts')}:1:`
+            ),
+            moduleAccessorsTest: true,
+          },
+        });
+        // Prior to these, nyc adds another entry on Windows; we need to ignore it
+        exp(
+          globalInRepl.testReport.replReport.modulePaths.slice(-3)
+        ).toMatchObject([
+          join(homedir(), `.node_modules`),
+          join(homedir(), `.node_libraries`),
+          // additional entry goes to node's install path
+          exp.any(String),
+        ]);
+      }
+    );
+  }
+);

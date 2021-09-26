@@ -11,6 +11,7 @@ import avaTest, {
 } from 'ava';
 import * as assert from 'assert';
 import throat from 'throat';
+export { ExecutionContext };
 
 const concurrencyLimiter = throat(8);
 
@@ -32,6 +33,9 @@ export const test = createTestInterface({
   separator: ' > ',
   titlePrefix: undefined,
 });
+// In case someone wants to `const test = _test.context()`
+export { test as _test };
+
 export interface TestInterface<
   Context
 > /*extends Omit<AvaTestInterface<Context>, 'before' | 'beforeEach' | 'after' | 'afterEach' | 'failing' | 'serial'>*/ {

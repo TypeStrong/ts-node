@@ -1,26 +1,19 @@
-import {
-  ChildProcess,
-  exec as childProcessExec,
-  ExecException,
-  ExecOptions,
-} from 'child_process';
+import { NodeFS } from '@yarnpkg/fslib';
+import { exec as childProcessExec } from 'child_process';
 import * as promisify from 'util.promisify';
 import { sync as rimrafSync } from 'rimraf';
-import {
-  existsSync,
-  fstat,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  unlinkSync,
-  writeFile,
-  writeFileSync,
-} from 'fs';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
-import { lock, lockSync } from 'proper-lockfile';
+import * as fs from 'fs';
+import { lock } from 'proper-lockfile';
+/**
+ * types from ts-node under test
+ */
 import type * as tsNodeTypes from '../index';
 import type _createRequire from 'create-require';
+import { once } from 'lodash';
 const createRequire: typeof _createRequire = require('create-require');
+export { tsNodeTypes };
 
 export const ROOT_DIR = resolve(__dirname, '../..');
 export const DIST_DIR = resolve(__dirname, '..');
@@ -35,6 +28,17 @@ export const BIN_CWD_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-cwd');
 
 // `createRequire` does not exist on older node versions
 export const testsDirRequire = createRequire(join(TEST_DIR, 'index.js'));
+
+export const xfs = new NodeFS(fs);
+
+/** Pass to `test.context()` to get access to the ts-node API under test */
+export const contextTsNodeUnderTest = once(async () => {
+  await installTsNode();
+  const tsNodeUnderTest = testsDirRequire('ts-node');
+  return {
+    tsNodeUnderTest,
+  };
+});
 
 const ts_node_install_lock = process.env.ts_node_install_lock as string;
 const lockPath = join(__dirname, ts_node_install_lock);
