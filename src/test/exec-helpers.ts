@@ -1,6 +1,6 @@
 import type { ChildProcess, ExecException, ExecOptions } from 'child_process';
 import { exec as childProcessExec } from 'child_process';
-import * as exp from 'expect';
+import * as expect from 'expect';
 
 export type ExecReturn = Promise<ExecResult> & { child: ChildProcess };
 export interface ExecResult {
@@ -88,9 +88,9 @@ export function createExecTester<T extends Partial<ExecTesterOptions>>(
     }
     const { err, stdout, stderr } = await execPromise;
     if (expectError) {
-      exp(err).toBeDefined();
+      expect(err).toBeDefined();
     } else {
-      exp(err).toBeNull();
+      expect(err).toBeNull();
     }
     return { stdout, stderr, err };
   };

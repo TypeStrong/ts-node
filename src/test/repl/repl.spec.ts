@@ -1,7 +1,6 @@
 import ts = require('typescript');
 import semver = require('semver');
-import * as exp from 'expect';
-import { expect } from 'chai';
+import * as expect from 'expect';
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
   contextTsNodeUnderTest,
@@ -30,16 +29,16 @@ test('should run REPL when --interactive passed and stdin is not a TTY', async (
   const execPromise = exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} --interactive`);
   execPromise.child.stdin!.end('console.log("123")\n');
   const { err, stdout } = await execPromise;
-  expect(err).to.equal(null);
-  expect(stdout).to.equal('> 123\n' + 'undefined\n' + '> ');
+  expect(err).toBe(null);
+  expect(stdout).toBe('> 123\n' + 'undefined\n' + '> ');
 });
 
 test('REPL has command to get type information', async () => {
   const execPromise = exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} --interactive`);
   execPromise.child.stdin!.end('\nconst a = 123\n.type a');
   const { err, stdout } = await execPromise;
-  expect(err).to.equal(null);
-  expect(stdout).to.equal(
+  expect(err).toBe(null);
+  expect(stdout).toBe(
     '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
   );
 });
@@ -56,8 +55,8 @@ test.serial('REPL can be configured on `start`', async (t) => {
     },
   });
 
-  expect(stderr).to.equal('');
-  expect(stdout).to.equal(`${prompt}${prompt}`);
+  expect(stderr).toBe('');
+  expect(stdout).toBe(`${prompt}${prompt}`);
 });
 
 // Serial because it's timing-sensitive
@@ -71,14 +70,15 @@ test.serial(
         'console.log(1)\n',
       {
         registerHooks: true,
+        waitPattern: `> undefined\n> 1\nundefined\n> `,
         startOptions: {
           useGlobal: false,
         },
       }
     );
 
-    expect(stderr).to.equal('');
-    expect(stdout).to.equal(`> undefined\n> 1\nundefined\n> `);
+    expect(stderr).toBe('');
+    expect(stdout).toBe(`> undefined\n> 1\nundefined\n> `);
   }
 );
 
@@ -87,8 +87,8 @@ test.serial('REPL can be created via API', async (t) => {
   const { stdout, stderr } = await t.context.replApiTester({
     input: '\nconst a = 123\n.type a\n',
   });
-  expect(stderr).to.equal('');
-  expect(stdout).to.equal(
+  expect(stderr).toBe('');
+  expect(stdout).toBe(
     '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
   );
 });
@@ -100,7 +100,7 @@ test.suite('top level await', (_test) => {
   const test = _test.context(async (t) => {
     return { executeInTlaRepl };
 
-    function executeInTlaRepl(input: string, waitMs = 1000) {
+    function executeInTlaRepl(input: string, waitPattern?: string | RegExp) {
       return t.context.executeInRepl(
         input
           .split('\n')
@@ -109,7 +109,7 @@ test.suite('top level await', (_test) => {
           .join(''),
         {
           registerHooks: true,
-          waitMs,
+          waitPattern,
           createServiceOpts: {
             experimentalReplAwait: true,
             compilerOptions,
@@ -134,9 +134,12 @@ test.suite('top level await', (_test) => {
         x + y + z;
       `;
 
-      const { stdout, stderr } = await t.context.executeInTlaRepl(script);
-      expect(stderr).to.equal('');
-      expect(stdout).to.equal('> 1\n2\n3\na\nb\n6\n> ');
+      const { stdout, stderr } = await t.context.executeInTlaRepl(
+        script,
+        '6\n> '
+      );
+      expect(stderr).toBe('');
+      expect(stdout).toBe('> 1\n2\n3\na\nb\n6\n> ');
     });
 
     // Serial because it's timing-sensitive
@@ -152,19 +155,19 @@ test.suite('top level await', (_test) => {
         `;
         const { stdout, stderr } = await t.context.executeInTlaRepl(
           script,
-          6000
+          /\d+\n/
         );
 
-        expect(stderr).to.equal('');
+        expect(stderr).toBe('');
 
         const elapsedTimeString = stdout
           .split('\n')[0]
           .replace('> ', '')
           .trim();
-        exp(elapsedTimeString).toMatch(/^\d+$/);
+        expect(elapsedTimeString).toMatch(/^\d+$/);
         const elapsedTime = Number(elapsedTimeString);
-        expect(elapsedTime).to.be.gte(awaitMs - 50);
-        expect(elapsedTime).to.be.lte(awaitMs + 100);
+        expect(elapsedTime).toBeGreaterThanOrEqual(awaitMs - 50);
+        expect(elapsedTime).toBeLessThanOrEqual(awaitMs + 100);
       }
     );
 
@@ -178,15 +181,18 @@ test.suite('top level await', (_test) => {
           const endTime = new Date().getTime();
           endTime - startTime;
         `;
-        const { stdout, stderr } = await t.context.executeInTlaRepl(script);
+        const { stdout, stderr } = await t.context.executeInTlaRepl(
+          script,
+          /\d+\n/
+        );
 
-        expect(stderr).to.equal('');
+        expect(stderr).toBe('');
 
         const ellapsedTime = Number(
           stdout.split('\n')[0].replace('> ', '').trim()
         );
-        expect(ellapsedTime).to.be.gte(0);
-        expect(ellapsedTime).to.be.lte(10);
+        expect(ellapsedTime).toBeGreaterThanOrEqual(0);
+        expect(ellapsedTime).toBeLessThanOrEqual(10);
       }
     );
 
@@ -195,11 +201,12 @@ test.suite('top level await', (_test) => {
       'should error with typing information when awaited result has type mismatch',
       async (t) => {
         const { stdout, stderr } = await t.context.executeInTlaRepl(
-          'const x: string = await 1'
+          'const x: string = await 1',
+          'error'
         );
 
-        expect(stdout).to.equal('> > ');
-        expect(stderr.replace(/\r\n/g, '\n')).to.equal(
+        expect(stdout).toBe('> > ');
+        expect(stderr.replace(/\r\n/g, '\n')).toBe(
           '<repl>.ts(2,7): error TS2322: ' +
             (semver.gte(ts.version, '4.0.0')
               ? `Type 'number' is not assignable to type 'string'.\n`
@@ -214,11 +221,12 @@ test.suite('top level await', (_test) => {
       'should error with typing information when importing a file with type errors',
       async (t) => {
         const { stdout, stderr } = await t.context.executeInTlaRepl(
-          `const {foo} = await import('./tests/repl/tla-import');`
+          `const {foo} = await import('./tests/repl/tla-import');`,
+          'error'
         );
 
-        expect(stdout).to.equal('> > ');
-        expect(stderr.replace(/\r\n/g, '\n')).to.equal(
+        expect(stdout).toBe('> > ');
+        expect(stderr.replace(/\r\n/g, '\n')).toBe(
           'tests/repl/tla-import.ts(1,14): error TS2322: ' +
             (semver.gte(ts.version, '4.0.0')
               ? `Type 'number' is not assignable to type 'string'.\n`
@@ -234,7 +242,7 @@ test.suite('top level await', (_test) => {
     });
   } else {
     test('should throw error when attempting to use top level await on TS < 3.8', async (t) => {
-      exp(t.context.executeInTlaRepl('', 1000)).rejects.toThrow(
+      expect(t.context.executeInTlaRepl('')).rejects.toThrow(
         'Experimental REPL await is not compatible with TypeScript versions older than 3.8'
       );
     });
@@ -251,28 +259,28 @@ test.suite(
         flags: '-i',
         stdin: code,
       });
-      exp(stdout).not.toContain(diagnosticMessage);
+      expect(stdout).not.toContain(diagnosticMessage);
     });
     test('interactive repl should not ignore them if they occur in other files', async (t) => {
       const { stdout, stderr } = await execTester({
         flags: '-i',
         stdin: `import './repl-ignored-diagnostics/index.ts';\n`,
       });
-      exp(stderr).toContain(diagnosticMessage);
+      expect(stderr).toContain(diagnosticMessage);
     });
     test('[stdin] should not ignore them', async (t) => {
       const { stdout, stderr } = await execTester({
         stdin: code,
         expectError: true,
       });
-      exp(stderr).toContain(diagnosticMessage);
+      expect(stderr).toContain(diagnosticMessage);
     });
     test('[eval] should not ignore them', async (t) => {
       const { stdout, stderr } = await execTester({
         flags: `-e "${code.replace(/\n/g, '')}"`,
         expectError: true,
       });
-      exp(stderr).toContain(diagnosticMessage);
+      expect(stderr).toContain(diagnosticMessage);
     });
   }
 );

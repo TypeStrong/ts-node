@@ -4,8 +4,7 @@
  */
 
 import { test as _test } from '../testlib';
-import { expect } from 'chai';
-import * as exp from 'expect';
+import * as expect from 'expect';
 import * as promisify from 'util.promisify';
 import * as getStream from 'get-stream';
 import {
@@ -79,7 +78,7 @@ test.suite(
         await promisify(setTimeout)(1e3);
         stdout.end();
         stderr.end();
-        expect(await getStream(stderr)).to.equal('');
+        expect(await getStream(stderr)).toBe('');
         await assertions(await getStream(stdout));
       }
     );
@@ -121,8 +120,8 @@ test.suite(
     function parseStdoutStripReplPrompt(stdout: string) {
       // Strip node's welcome header, only uncomment if running these tests manually against vanilla node
       // stdout = stdout.replace(/^Welcome to.*\nType "\.help" .*\n/, '');
-      expect(stdout.slice(0, 2)).to.equal('> ');
-      expect(stdout.slice(-12)).to.equal('undefined\n> ');
+      expect(stdout.slice(0, 2)).toBe('> ');
+      expect(stdout.slice(-12)).toBe('undefined\n> ');
       return parseStdout(stdout.slice(2, -12));
     }
     function parseStdout(stdout: string) {
@@ -142,7 +141,7 @@ test.suite(
     }
 
     // Executable is `ts-node` on Posix, `bin.js` on Windows due to Windows shimming limitations (this is determined by package manager)
-    const tsNodeExe = exp.stringMatching(/\b(ts-node|bin.js)$/);
+    const tsNodeExe = expect.stringMatching(/\b(ts-node|bin.js)$/);
 
     test('stdin', async (t) => {
       const { stdout } = await execTester({
@@ -150,7 +149,7 @@ test.suite(
         flags: '',
       });
       const report = parseStdout(stdout);
-      exp(report).toMatchObject({
+      expect(report).toMatchObject({
         stdinReport: {
           __filename: '[stdin]',
           __dirname: '.',
@@ -161,7 +160,7 @@ test.suite(
           modulePaths,
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
-          stackTest: exp.stringContaining(
+          stackTest: expect.stringContaining(
             `    at ${join(TEST_DIR, `[stdin].ts`)}:1:`
           ),
           moduleAccessorsTest: null,
@@ -177,7 +176,7 @@ test.suite(
         flags: '-i',
       });
       const report = parseStdoutStripReplPrompt(stdout);
-      exp(report).toMatchObject({
+      expect(report).toMatchObject({
         stdinReport: false,
         evalReport: false,
         replReport: {
@@ -186,13 +185,13 @@ test.suite(
           moduleId: '<repl>',
           modulePath: '.',
           moduleFilename: null,
-          modulePaths: exp.objectContaining({
+          modulePaths: expect.objectContaining({
             ...[join(TEST_DIR, `repl/node_modules`), ...modulePaths],
           }),
           // Note: vanilla node REPL does not set exports
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
-          stackTest: exp.stringContaining(
+          stackTest: expect.stringContaining(
             `    at ${join(TEST_DIR, '<repl>.ts')}:2:`
           ),
           moduleAccessorsTest: true,
@@ -200,11 +199,11 @@ test.suite(
         },
       });
       // Prior to these, nyc adds another entry on Windows; we need to ignore it
-      exp(report.replReport.modulePaths.slice(-3)).toMatchObject([
+      expect(report.replReport.modulePaths.slice(-3)).toMatchObject([
         join(homedir(), `.node_modules`),
         join(homedir(), `.node_libraries`),
         // additional entry goes to node's install path
-        exp.any(String),
+        expect.any(String),
       ]);
     });
 
@@ -215,7 +214,7 @@ test.suite(
         flags: '-i ./repl/script.js',
       });
       const report = parseStdout(stdout);
-      exp(report).toMatchObject({
+      expect(report).toMatchObject({
         stdinReport: false,
         evalReport: false,
         replReport: false,
@@ -230,7 +229,7 @@ test.suite(
         flags: `-e "${setReportGlobal('eval')};${printReports}"`,
       });
       const report = parseStdout(stdout);
-      exp(report).toMatchObject({
+      expect(report).toMatchObject({
         stdinReport: false,
         evalReport: {
           __filename: '[eval]',
@@ -242,7 +241,7 @@ test.suite(
           modulePaths: [...modulePaths],
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
-          stackTest: exp.stringContaining(
+          stackTest: expect.stringContaining(
             `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
           ),
           moduleAccessorsTest: true,
@@ -259,7 +258,7 @@ test.suite(
         )};${printReports}" ./repl/script.js`,
       });
       const report = parseStdout(stdout);
-      exp(report).toMatchObject({
+      expect(report).toMatchObject({
         stdinReport: false,
         evalReport: {
           __filename: '[eval]',
@@ -271,7 +270,7 @@ test.suite(
           modulePaths,
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
-          stackTest: exp.stringContaining(
+          stackTest: expect.stringContaining(
             `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
           ),
           moduleAccessorsTest: true,
@@ -288,7 +287,7 @@ test.suite(
         )};${printReports}" ./does-not-exist.js`,
       });
       const report = parseStdout(stdout);
-      exp(report).toMatchObject({
+      expect(report).toMatchObject({
         stdinReport: false,
         evalReport: {
           __filename: '[eval]',
@@ -300,7 +299,7 @@ test.suite(
           modulePaths,
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
-          stackTest: exp.stringContaining(
+          stackTest: expect.stringContaining(
             `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
           ),
           moduleAccessorsTest: true,
@@ -315,7 +314,7 @@ test.suite(
         flags: `-e "${setReportGlobal('eval')}" -i`,
       });
       const report = parseStdoutStripReplPrompt(stdout);
-      exp(report).toMatchObject({
+      expect(report).toMatchObject({
         stdinReport: false,
         evalReport: {
           __filename: '[eval]',
@@ -327,7 +326,7 @@ test.suite(
           modulePaths,
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
-          stackTest: exp.stringContaining(
+          stackTest: expect.stringContaining(
             `    at ${join(TEST_DIR, `[eval].ts`)}:1:`
           ),
           moduleAccessorsTest: true,
@@ -339,13 +338,13 @@ test.suite(
           moduleId: '<repl>',
           modulePath: '.',
           moduleFilename: null,
-          modulePaths: exp.objectContaining({
+          modulePaths: expect.objectContaining({
             ...[join(TEST_DIR, `repl/node_modules`), ...modulePaths],
           }),
           // Note: vanilla node REPL does not set exports, so this would be false
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
-          stackTest: exp.stringContaining(
+          stackTest: expect.stringContaining(
             `    at ${join(TEST_DIR, '<repl>.ts')}:2:`
           ),
           moduleAccessorsTest: true,
@@ -353,11 +352,11 @@ test.suite(
         },
       });
       // Prior to these, nyc adds another entry on Windows; we need to ignore it
-      exp(report.replReport.modulePaths.slice(-3)).toMatchObject([
+      expect(report.replReport.modulePaths.slice(-3)).toMatchObject([
         join(homedir(), `.node_modules`),
         join(homedir(), `.node_libraries`),
         // additional entry goes to node's install path
-        exp.any(String),
+        expect.any(String),
       ]);
     });
 
@@ -367,7 +366,7 @@ test.suite(
         flags: '-e "throw new Error()" -i ./repl/script.js',
       });
       const report = parseStdout(stdout);
-      exp(report).toMatchObject({
+      expect(report).toMatchObject({
         stdinReport: false,
         evalReport: false,
         replReport: false,
@@ -380,9 +379,9 @@ test.suite(
         flags: `-e "throw new Error('error from -e')" -i`,
         expectError: true,
       });
-      exp(err).toBeDefined();
-      exp(stdout).toBe('');
-      exp(stderr).toContain('error from -e');
+      expect(err).toBeDefined();
+      expect(stdout).toBe('');
+      expect(stderr).toContain('error from -e');
     });
 
     // Serial because it's timing-sensitive
@@ -394,7 +393,7 @@ test.suite(
         stdinCode: '',
       },
       (stdout) => {
-        exp(globalInRepl.testReport).toMatchObject({
+        expect(globalInRepl.testReport).toMatchObject({
           stdinReport: false,
           evalReport: false,
           replReport: {
@@ -422,7 +421,7 @@ test.suite(
             // moduleAccessorsTest: true,
 
             // Note: vanilla node uses different name. See #1360
-            stackTest: exp.stringContaining(
+            stackTest: expect.stringContaining(
               `    at ${join(ROOT_DIR, '<repl>.ts')}:1:`
             ),
           },
@@ -437,7 +436,7 @@ test.suite(
         stdinCode: `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
       },
       (stdout) => {
-        exp(globalInRepl.testReport).toMatchObject({
+        expect(globalInRepl.testReport).toMatchObject({
           stdinReport: false,
           evalReport: false,
           replReport: {
@@ -446,26 +445,26 @@ test.suite(
             moduleId: '<repl>',
             modulePath: '.',
             moduleFilename: null,
-            modulePaths: exp.objectContaining({
+            modulePaths: expect.objectContaining({
               ...[join(ROOT_DIR, `repl/node_modules`), ...rootModulePaths],
             }),
             // Note: vanilla node REPL does not set exports
             exportsTest: true,
             // Note: vanilla node uses different name. See #1360
-            stackTest: exp.stringContaining(
+            stackTest: expect.stringContaining(
               `    at ${join(ROOT_DIR, '<repl>.ts')}:1:`
             ),
             moduleAccessorsTest: true,
           },
         });
         // Prior to these, nyc adds another entry on Windows; we need to ignore it
-        exp(
+        expect(
           globalInRepl.testReport.replReport.modulePaths.slice(-3)
         ).toMatchObject([
           join(homedir(), `.node_modules`),
           join(homedir(), `.node_libraries`),
           // additional entry goes to node's install path
-          exp.any(String),
+          expect.any(String),
         ]);
       }
     );

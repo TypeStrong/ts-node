@@ -1,7 +1,6 @@
 import * as promisify from 'util.promisify';
-import * as getStream from 'get-stream';
 import { PassThrough } from 'stream';
-import { TEST_DIR, tsNodeTypes } from '../helpers';
+import { getStream, TEST_DIR, tsNodeTypes } from '../helpers';
 import type { ExecutionContext } from 'ava';
 
 export interface ContextWithTsNodeUnderTest {
@@ -58,29 +57,38 @@ export async function contextReplHelpers(
   // Todo combine with replApiMacro
   async function executeInRepl(
     input: string,
-    {
-      waitMs = 1e3,
-      startOptions,
-      ...rest
-    }: CreateReplViaApiOptions & {
+    options: CreateReplViaApiOptions & {
       waitMs?: number;
+      waitPattern?: string | RegExp;
       startOptions?: Parameters<tsNodeTypes.ReplService['startInternal']>[0];
     }
   ) {
+    const {
+      waitPattern,
+      // Wait longer if there's a signal to end it early
+      waitMs = waitPattern != null ? 20e3 : 1e3,
+      startOptions,
+      ...rest
+    } = options;
     const { stdin, stdout, stderr, replService } = createReplViaApi(rest);
 
     replService.startInternal(startOptions);
 
     stdin.write(input);
     stdin.end();
-    await promisify(setTimeout)(waitMs);
+    const stdoutPromise = getStream(stdout, waitPattern);
+    const stderrPromise = getStream(stderr, waitPattern);
+    await Promise.race([
+      promisify(setTimeout)(waitMs),
+      Promise.all([stdoutPromise, stderrPromise]),
+    ]);
     stdout.end();
     stderr.end();
 
     return {
       stdin,
-      stdout: await getStream(stdout),
-      stderr: await getStream(stderr),
+      stdout: await stdoutPromise,
+      stderr: await stderrPromise,
     };
   }
 }

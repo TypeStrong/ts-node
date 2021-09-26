@@ -6,6 +6,7 @@ import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
 import * as fs from 'fs';
 import { lock } from 'proper-lockfile';
+import type { Readable } from 'stream';
 /**
  * types from ts-node under test
  */
@@ -13,6 +14,7 @@ import type * as tsNodeTypes from '../index';
 import type _createRequire from 'create-require';
 import { once } from 'lodash';
 import semver = require('semver');
+import { isConstructSignatureDeclaration } from 'typescript';
 const createRequire: typeof _createRequire = require('create-require');
 export { tsNodeTypes };
 
@@ -115,5 +117,41 @@ async function lockedMemoizedOperation(
     }
   } finally {
     releaseLock();
+  }
+}
+
+/**
+ * Get a stream into a string.
+ * Will resolve early if
+ */
+export function getStream(stream: Readable, waitForPattern?: string | RegExp) {
+  let resolve: (value: string) => void;
+  const promise = new Promise<string>((res) => {
+    resolve = res;
+  });
+  const received: Buffer[] = [];
+  let combinedBuffer: Buffer = Buffer.concat([]);
+  let combinedString: string = '';
+
+  stream.on('data', (data) => {
+    received.push(data);
+    combine();
+    if (
+      (typeof waitForPattern === 'string' &&
+        combinedString.indexOf(waitForPattern) >= 0) ||
+      (waitForPattern instanceof RegExp && combinedString.match(waitForPattern))
+    )
+      resolve(combinedString);
+    combinedBuffer = Buffer.concat(received);
+  });
+  stream.on('end', () => {
+    resolve(combinedString);
+  });
+
+  return promise;
+
+  function combine() {
+    combinedBuffer = Buffer.concat(received);
+    combinedString = combinedBuffer.toString('utf8');
   }
 }

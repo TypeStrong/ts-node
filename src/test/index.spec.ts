@@ -1,5 +1,5 @@
 import { _test } from './testlib';
-import { expect } from 'chai';
+import * as expect from 'expect';
 import { join, resolve, sep as pathSep } from 'path';
 import { tmpdir } from 'os';
 import semver = require('semver');
@@ -14,7 +14,6 @@ import {
   BIN_PATH,
   BIN_SCRIPT_PATH,
   DIST_DIR,
-  PROJECT,
   ROOT_DIR,
   TEST_DIR,
   testsDirRequire,
@@ -35,7 +34,7 @@ const test = _test.context(contextTsNodeUnderTest);
 
 test.suite('ts-node', (test) => {
   test('should export the correct version', (t) => {
-    expect(t.context.tsNodeUnderTest.VERSION).to.equal(
+    expect(t.context.tsNodeUnderTest.VERSION).toBe(
       require('../../package.json').version
     );
   });
@@ -84,23 +83,23 @@ test.suite('ts-node', (test) => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} hello-world`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('Hello, world!\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('Hello, world!\n');
     });
 
     test('shows usage via --help', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --help`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.match(/Usage: ts-node /);
+      expect(err).toBe(null);
+      expect(stdout).toMatch(/Usage: ts-node /);
     });
     test('shows version via -v', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} -v`
       );
-      expect(err).to.equal(null);
-      expect(stdout.trim()).to.equal(
+      expect(err).toBe(null);
+      expect(stdout.trim()).toBe(
         'v' + testsDirRequire('ts-node/package').version
       );
     });
@@ -108,8 +107,8 @@ test.suite('ts-node', (test) => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} -vv`
       );
-      expect(err).to.equal(null);
-      expect(stdout.trim()).to.equal(
+      expect(err).toBe(null);
+      expect(stdout.trim()).toBe(
         `ts-node v${testsDirRequire('ts-node/package').version}\n` +
           `node ${process.version}\n` +
           `compiler v${testsDirRequire('typescript/package').version}`
@@ -123,40 +122,40 @@ test.suite('ts-node', (test) => {
           cwd: TEST_DIR,
         }
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('Hello, world!\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('Hello, world!\n');
     });
 
     test('should execute cli with absolute path', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} "${join(TEST_DIR, 'hello-world')}"`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('Hello, world!\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('Hello, world!\n');
     });
 
     test('should print scripts', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} -pe "import { example } from './complex/index';example()"`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('example\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('example\n');
     });
 
     test('should provide registered information globally', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} env`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('object\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('object\n');
     });
 
     test('should provide registered information on register', async () => {
       const { err, stdout } = await exec(`node -r ts-node/register env.ts`, {
         cwd: TEST_DIR,
       });
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('object\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('object\n');
     });
 
     if (semver.gte(ts.version, '1.8.0')) {
@@ -168,8 +167,8 @@ test.suite('ts-node', (test) => {
             '-pe "import { main } from \'./allow-js/run\';main()"',
           ].join(' ')
         );
-        expect(err).to.equal(null);
-        expect(stdout).to.equal('hello world\n');
+        expect(err).toBe(null);
+        expect(stdout).toBe('hello world\n');
       });
 
       test('should include jsx when `allow-js` true', async () => {
@@ -180,8 +179,8 @@ test.suite('ts-node', (test) => {
             '-pe "import { Foo2 } from \'./allow-js/with-jsx\'; Foo2.sayHi()"',
           ].join(' ')
         );
-        expect(err).to.equal(null);
-        expect(stdout).to.equal('hello world\n');
+        expect(err).toBe(null);
+        expect(stdout).toBe('hello world\n');
       });
     }
 
@@ -189,16 +188,16 @@ test.suite('ts-node', (test) => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} -e "import * as m from './module';console.log(m.example('test'))"`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('TEST\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('TEST\n');
     });
 
     test('should import empty files', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} -e "import './empty'"`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('');
+      expect(err).toBe(null);
+      expect(stdout).toBe('');
     });
 
     test('should throw errors', async () => {
@@ -209,7 +208,7 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect(err.message).to.match(
+      expect(err.message).toMatch(
         new RegExp(
           "TS2345: Argument of type '(?:number|123)' " +
             "is not assignable to parameter of type 'string'\\."
@@ -225,7 +224,7 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect(err.message).to.match(
+      expect(err.message).toMatch(
         /TypeError: (?:(?:undefined|foo\.toUpperCase) is not a function|.*has no method \'toUpperCase\')/
       );
     });
@@ -238,7 +237,7 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect(err.message).to.contain(
+      expect(err.message).toMatch(
         [
           `${join(TEST_DIR, 'throw error.ts')}:100`,
           "  bar() { throw new Error('this is a demo'); }",
@@ -256,7 +255,7 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect(err.message).to.contain(
+      expect(err.message).toMatch(
         [
           `${join(TEST_DIR, 'throw error.ts')}:100`,
           "  bar() { throw new Error('this is a demo'); }",
@@ -274,7 +273,7 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect(err.message).to.contain(
+      expect(err.message).toMatch(
         [
           `${join(TEST_DIR, 'throw error.ts')}:100`,
           "  bar() { throw new Error('this is a demo'); }",
@@ -291,7 +290,7 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect(err.message).to.contain('ReferenceError: x is not defined');
+      expect(err.message).toMatch('ReferenceError: x is not defined');
     });
 
     test('should throw error even in transpileOnly mode', async () => {
@@ -302,23 +301,23 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect(err.message).to.contain('error TS1003: Identifier expected');
+      expect(err.message).toMatch('error TS1003: Identifier expected');
     });
 
     test('should support third-party transpilers via --transpiler', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --transpiler ts-node/transpilers/swc-experimental transpile-only-swc`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.contain('Hello World!');
+      expect(err).toBe(null);
+      expect(stdout).toMatch('Hello World!');
     });
 
     test('should support third-party transpilers via tsconfig', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} transpile-only-swc-via-tsconfig`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.contain('Hello World!');
+      expect(err).toBe(null);
+      expect(stdout).toMatch('Hello World!');
     });
 
     if (semver.gte(process.version, '12.16.0')) {
@@ -329,8 +328,8 @@ test.suite('ts-node', (test) => {
             cwd: resolve(TEST_DIR, 'transpile-only-swc-native-esm'),
           }
         );
-        expect(err).to.equal(null);
-        expect(stdout).to.contain('Hello file://');
+        expect(err).toBe(null);
+        expect(stdout).toMatch('Hello file://');
       });
     }
 
@@ -338,16 +337,16 @@ test.suite('ts-node', (test) => {
       const execPromise = exec(CMD_TS_NODE_WITH_PROJECT_FLAG);
       execPromise.child.stdin!.end("console.log('hello')");
       const { err, stdout } = await execPromise;
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('hello\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('hello\n');
     });
 
     test('should pipe into `ts-node`', async () => {
       const execPromise = exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} -p`);
       execPromise.child.stdin!.end('true');
       const { err, stdout } = await execPromise;
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('true\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('true\n');
     });
 
     test('should pipe into an eval script', async () => {
@@ -356,32 +355,32 @@ test.suite('ts-node', (test) => {
       );
       execPromise.child.stdin!.end('true');
       const { err, stdout } = await execPromise;
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('undefined\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('undefined\n');
     });
 
     test('should support require flags', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} -r ./hello-world -pe "console.log('success')"`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('Hello, world!\nsuccess\nundefined\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('Hello, world!\nsuccess\nundefined\n');
     });
 
     test('should support require from node modules', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} -r typescript -e "console.log('success')"`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('success\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('success\n');
     });
 
     test('should use source maps with react tsx', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} "throw error react tsx.tsx"`
       );
-      expect(err).not.to.equal(null);
-      expect(err!.message).to.contain(
+      expect(err).not.toBe(null);
+      expect(err!.message).toMatch(
         [
           `${join(TEST_DIR, './throw error react tsx.tsx')}:100`,
           "  bar() { throw new Error('this is a demo'); }",
@@ -395,8 +394,8 @@ test.suite('ts-node', (test) => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} --transpile-only "throw error react tsx.tsx"`
       );
-      expect(err).not.to.equal(null);
-      expect(err!.message).to.contain(
+      expect(err).not.toBe(null);
+      expect(err!.message).toMatch(
         [
           `${join(TEST_DIR, './throw error react tsx.tsx')}:100`,
           "  bar() { throw new Error('this is a demo'); }",
@@ -410,23 +409,26 @@ test.suite('ts-node', (test) => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} custom-types`
       );
-      expect(err).to.match(/Error: Cannot find module 'does-not-exist'/);
+      // This error comes from *node*, meaning TypeScript respected the custom types (good) but *node* could not find the non-existent module (expected)
+      expect(err?.message).toMatch(
+        /Error: Cannot find module 'does-not-exist'/
+      );
     });
 
     test('should preserve `ts-node` context with child process', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} child-process`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('Hello, world!\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('Hello, world!\n');
     });
 
     test('should import js before ts by default', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} import-order/compiled`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('Hello, JavaScript!\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('Hello, JavaScript!\n');
     });
 
     const preferTsExtsEntrypoint = semver.gte(process.version, '12.0.0')
@@ -436,8 +438,8 @@ test.suite('ts-node', (test) => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} --prefer-ts-exts ${preferTsExtsEntrypoint}`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('Hello, TypeScript!\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('Hello, TypeScript!\n');
     });
 
     test('should import ts before js when TS_NODE_PREFER_TS_EXTS env is present', async () => {
@@ -447,16 +449,16 @@ test.suite('ts-node', (test) => {
           env: { ...process.env, TS_NODE_PREFER_TS_EXTS: 'true' },
         }
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('Hello, TypeScript!\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('Hello, TypeScript!\n');
     });
 
     test('should ignore .d.ts files', async () => {
       const { err, stdout } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} import-order/importer`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal('Hello, World!\n');
+      expect(err).toBe(null);
+      expect(stdout).toBe('Hello, World!\n');
     });
 
     test.suite('issue #884', (test) => {
@@ -472,8 +474,8 @@ test.suite('ts-node', (test) => {
           const { err, stdout } = await exec(
             `"${BIN_PATH}" --project issue-884/tsconfig.json issue-884`
           );
-          expect(err).to.equal(null);
-          expect(stdout).to.equal('');
+          expect(err).toBe(null);
+          expect(stdout).toBe('');
         }
       });
     });
@@ -483,18 +485,18 @@ test.suite('ts-node', (test) => {
         const { err, stdout, stderr } = await exec(
           `"${BIN_PATH}" --project issue-986/tsconfig.json issue-986`
         );
-        expect(err).not.to.equal(null);
-        expect(stderr).to.contain("Cannot find name 'TEST'"); // TypeScript error.
-        expect(stdout).to.equal('');
+        expect(err).not.toBe(null);
+        expect(stderr).toMatch("Cannot find name 'TEST'"); // TypeScript error.
+        expect(stdout).toBe('');
       });
 
       test('should compile with `--files`', async () => {
         const { err, stdout, stderr } = await exec(
           `"${BIN_PATH}" --files --project issue-986/tsconfig.json issue-986`
         );
-        expect(err).not.to.equal(null);
-        expect(stderr).to.contain('ReferenceError: TEST is not defined'); // Runtime error.
-        expect(stdout).to.equal('');
+        expect(err).not.toBe(null);
+        expect(stderr).toMatch('ReferenceError: TEST is not defined'); // Runtime error.
+        expect(stdout).toBe('');
       });
     });
 
@@ -503,15 +505,15 @@ test.suite('ts-node', (test) => {
         const { err, stdout } = await exec(`${BIN_PATH} ../a/index`, {
           cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
         });
-        expect(err).to.equal(null);
-        expect(stdout).to.match(/plugin-a/);
+        expect(err).toBe(null);
+        expect(stdout).toMatch(/plugin-a/);
       });
       test('should locate tsconfig relative to entry-point via ts-node-script', async () => {
         const { err, stdout } = await exec(`${BIN_SCRIPT_PATH} ../a/index`, {
           cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
         });
-        expect(err).to.equal(null);
-        expect(stdout).to.match(/plugin-a/);
+        expect(err).toBe(null);
+        expect(stdout).toMatch(/plugin-a/);
       });
       test('should locate tsconfig relative to entry-point with --script-mode', async () => {
         const { err, stdout } = await exec(
@@ -520,23 +522,23 @@ test.suite('ts-node', (test) => {
             cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
           }
         );
-        expect(err).to.equal(null);
-        expect(stdout).to.match(/plugin-a/);
+        expect(err).toBe(null);
+        expect(stdout).toMatch(/plugin-a/);
       });
       test('should locate tsconfig relative to cwd via ts-node-cwd', async () => {
         const { err, stdout } = await exec(`${BIN_CWD_PATH} ../a/index`, {
           cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
         });
-        expect(err).to.equal(null);
-        expect(stdout).to.match(/plugin-b/);
+        expect(err).toBe(null);
+        expect(stdout).toMatch(/plugin-b/);
       });
       test('should locate tsconfig relative to cwd in --cwd-mode', async () => {
         const { err, stdout } = await exec(
           `${BIN_PATH} --cwd-mode ../a/index`,
           { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }
         );
-        expect(err).to.equal(null);
-        expect(stdout).to.match(/plugin-b/);
+        expect(err).toBe(null);
+        expect(stdout).toMatch(/plugin-b/);
       });
       test('should locate tsconfig relative to realpath, not symlink, when entrypoint is a symlink', async (t) => {
         if (
@@ -547,8 +549,8 @@ test.suite('ts-node', (test) => {
           const { err, stdout } = await exec(
             `${BIN_PATH} main-realpath/symlink/symlink.tsx`
           );
-          expect(err).to.equal(null);
-          expect(stdout).to.equal('');
+          expect(err).toBe(null);
+          expect(stdout).toBe('');
         } else {
           t.log('Skipping');
           return;
@@ -569,9 +571,9 @@ test.suite('ts-node', (test) => {
             },
           }
         );
-        expect(err).to.equal(null);
+        expect(err).toBe(null);
         const { config } = JSON.parse(stdout);
-        expect(config.options.typeRoots).to.deep.equal([
+        expect(config.options.typeRoots).toEqual([
           join(TEST_DIR, './tsconfig-options/env-typeroots').replace(
             /\\/g,
             '/'
@@ -583,19 +585,19 @@ test.suite('ts-node', (test) => {
         const { err, stdout } = await exec(
           `${BIN_EXEC} tsconfig-options/log-options1.js`
         );
-        expect(err).to.equal(null);
+        expect(err).toBe(null);
         const { options, config } = JSON.parse(stdout);
-        expect(config.options.typeRoots).to.deep.equal([
+        expect(config.options.typeRoots).toEqual([
           join(TEST_DIR, './tsconfig-options/tsconfig-typeroots').replace(
             /\\/g,
             '/'
           ),
         ]);
-        expect(config.options.types).to.deep.equal(['tsconfig-tsnode-types']);
-        expect(options.pretty).to.equal(undefined);
-        expect(options.skipIgnore).to.equal(false);
-        expect(options.transpileOnly).to.equal(true);
-        expect(options.require).to.deep.equal([
+        expect(config.options.types).toEqual(['tsconfig-tsnode-types']);
+        expect(options.pretty).toBe(undefined);
+        expect(options.skipIgnore).toBe(false);
+        expect(options.transpileOnly).toBe(true);
+        expect(options.require).toEqual([
           join(TEST_DIR, './tsconfig-options/required1.js'),
         ]);
       });
@@ -604,19 +606,19 @@ test.suite('ts-node', (test) => {
         const { err, stdout } = await exec(
           `${BIN_EXEC} --skip-ignore --compiler-options "{\\"types\\":[\\"flags-types\\"]}" --require ./tsconfig-options/required2.js tsconfig-options/log-options2.js`
         );
-        expect(err).to.equal(null);
+        expect(err).toBe(null);
         const { options, config } = JSON.parse(stdout);
-        expect(config.options.typeRoots).to.deep.equal([
+        expect(config.options.typeRoots).toEqual([
           join(TEST_DIR, './tsconfig-options/tsconfig-typeroots').replace(
             /\\/g,
             '/'
           ),
         ]);
-        expect(config.options.types).to.deep.equal(['flags-types']);
-        expect(options.pretty).to.equal(undefined);
-        expect(options.skipIgnore).to.equal(true);
-        expect(options.transpileOnly).to.equal(true);
-        expect(options.require).to.deep.equal([
+        expect(config.options.types).toEqual(['flags-types']);
+        expect(options.pretty).toBe(undefined);
+        expect(options.skipIgnore).toBe(true);
+        expect(options.transpileOnly).toBe(true);
+        expect(options.require).toEqual([
           join(TEST_DIR, './tsconfig-options/required1.js'),
           './tsconfig-options/required2.js',
         ]);
@@ -633,19 +635,19 @@ test.suite('ts-node', (test) => {
             },
           }
         );
-        expect(err).to.equal(null);
+        expect(err).toBe(null);
         const { options, config } = JSON.parse(stdout);
-        expect(config.options.typeRoots).to.deep.equal([
+        expect(config.options.typeRoots).toEqual([
           join(TEST_DIR, './tsconfig-options/tsconfig-typeroots').replace(
             /\\/g,
             '/'
           ),
         ]);
-        expect(config.options.types).to.deep.equal(['tsconfig-tsnode-types']);
-        expect(options.pretty).to.equal(true);
-        expect(options.skipIgnore).to.equal(false);
-        expect(options.transpileOnly).to.equal(true);
-        expect(options.require).to.deep.equal([
+        expect(config.options.types).toEqual(['tsconfig-tsnode-types']);
+        expect(options.pretty).toBe(true);
+        expect(options.skipIgnore).toBe(false);
+        expect(options.transpileOnly).toBe(true);
+        expect(options.require).toEqual([
           join(TEST_DIR, './tsconfig-options/required1.js'),
         ]);
       });
@@ -655,15 +657,15 @@ test.suite('ts-node', (test) => {
           const { err, stdout } = await exec(
             `${BIN_PATH} --show-config --project ./tsconfig-extends/tsconfig.json`
           );
-          expect(err).to.equal(null);
+          expect(err).toBe(null);
           const config = JSON.parse(stdout);
-          expect(config['ts-node'].require).to.deep.equal([
+          expect(config['ts-node'].require).toEqual([
             resolve(TEST_DIR, 'tsconfig-extends/other/require-hook.js'),
           ]);
-          expect(config['ts-node'].scopeDir).to.equal(
+          expect(config['ts-node'].scopeDir).toBe(
             resolve(TEST_DIR, 'tsconfig-extends/other/scopedir')
           );
-          expect(config['ts-node'].preferTsExts).to.equal(true);
+          expect(config['ts-node'].preferTsExts).toBe(true);
         });
       }
     });
@@ -691,7 +693,7 @@ test.suite('ts-node', (test) => {
               stdout: stdout1,
               stderr: stderr1,
             } = await exec(`${BIN_PATH} --showConfig`, { cwd: tempDir });
-            expect(err1).to.equal(null);
+            expect(err1).toBe(null);
             t.like(JSON.parse(stdout1), {
               compilerOptions: {
                 target: libAndTarget,
@@ -703,8 +705,8 @@ test.suite('ts-node', (test) => {
               stdout: stdout2,
               stderr: stderr2,
             } = await exec(`${BIN_PATH} -pe 10n`, { cwd: tempDir });
-            expect(err2).to.equal(null);
-            expect(stdout2).to.equal('10n\n');
+            expect(err2).toBe(null);
+            expect(stdout2).toBe('10n\n');
           });
         } else {
           test('implicitly uses @tsconfig/* lower than node14 (node12) when either TS or node versions do not support @tsconfig/node14', async ({
@@ -713,8 +715,8 @@ test.suite('ts-node', (test) => {
             const { err, stdout, stderr } = await exec(`${BIN_PATH} -pe 10n`, {
               cwd: tempDir,
             });
-            expect(err).to.not.equal(null);
-            expect(stderr).to.match(
+            expect(err).not.toBe(null);
+            expect(stderr).toMatch(
               /BigInt literals are not available when targeting lower than|error TS2304: Cannot find name 'n'/
             );
           });
@@ -729,8 +731,8 @@ test.suite('ts-node', (test) => {
               env: { ...process.env, foo: 'hello world' },
             }
           );
-          expect(err).to.equal(null);
-          expect(stdout).to.equal('hello world\n');
+          expect(err).toBe(null);
+          expect(stdout).toBe('hello world\n');
         });
         test('implicitly loads local @types/node', async ({
           context: { tempDir },
@@ -746,8 +748,8 @@ test.suite('ts-node', (test) => {
               env: { ...process.env, foo: 'hello world' },
             }
           );
-          expect(err).to.not.equal(null);
-          expect(stderr).to.contain(
+          expect(err).not.toBe(null);
+          expect(stderr).toMatch(
             "Property 'env' does not exist on type 'LocalNodeTypes_Process'"
           );
         });
@@ -766,7 +768,7 @@ test.suite('ts-node', (test) => {
                 cwd: join(TEST_DIR, 'tsconfig-bases', nodeVersion),
               }
             );
-            expect(err).to.equal(null);
+            expect(err).toBe(null);
             t.like(JSON.parse(stdout), {
               compilerOptions: {
                 target: config.compilerOptions.target,
@@ -787,8 +789,8 @@ test.suite('ts-node', (test) => {
         const { err, stdout } = await exec(
           `${CMD_TS_NODE_WITH_PROJECT_FLAG} --compiler-host hello-world`
         );
-        expect(err).to.equal(null);
-        expect(stdout).to.equal('Hello, world!\n');
+        expect(err).toBe(null);
+        expect(stdout).toBe('Hello, world!\n');
       });
     });
 
@@ -800,7 +802,7 @@ test.suite('ts-node', (test) => {
         throw new Error(
           `Unexpected error: ${err}\nstdout:\n${stdout}\nstderr:\n${stderr}`
         );
-      expect(JSON.parse(stdout)).to.deep.equal({
+      expect(JSON.parse(stdout)).toEqual({
         external: {
           tsmri: { name: 'typescript-module-required-internally' },
           jsmri: { name: 'javascript-module-required-internally' },
@@ -819,8 +821,8 @@ test.suite('ts-node', (test) => {
         const { err, stdout, stderr } = await exec(
           `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} maxnodemodulesjsdepth`
         );
-        expect(err).to.not.equal(null);
-        expect(stderr.replace(/\r\n/g, '\n')).to.contain(
+        expect(err).not.toBe(null);
+        expect(stderr.replace(/\r\n/g, '\n')).toMatch(
           'TSError: ⨯ Unable to compile TypeScript:\n' +
             "maxnodemodulesjsdepth/other.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
             '\n'
@@ -831,8 +833,8 @@ test.suite('ts-node', (test) => {
         const { err, stdout, stderr } = await exec(
           `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} maxnodemodulesjsdepth-scoped`
         );
-        expect(err).to.not.equal(null);
-        expect(stderr.replace(/\r\n/g, '\n')).to.contain(
+        expect(err).not.toBe(null);
+        expect(stderr.replace(/\r\n/g, '\n')).toMatch(
           'TSError: ⨯ Unable to compile TypeScript:\n' +
             "maxnodemodulesjsdepth-scoped/other.ts(7,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
             '\n'
@@ -851,7 +853,7 @@ test.suite('ts-node', (test) => {
         const { err, stdout } = await exec(
           `${CMD_TS_NODE_WITH_PROJECT_FLAG} --showConfig`
         );
-        expect(err).to.equal(null);
+        expect(err).toBe(null);
         t.is(
           stdout,
           JSON.stringify(
@@ -889,8 +891,8 @@ test.suite('ts-node', (test) => {
         const { err, stderr } = await exec(
           `${CMD_TS_NODE_WITH_PROJECT_FLAG} --showConfig`
         );
-        expect(err).to.not.equal(null);
-        expect(stderr).to.contain('Error: --show-config requires');
+        expect(err).not.toBe(null);
+        expect(stderr).toMatch('Error: --show-config requires');
       });
     }
 
@@ -898,8 +900,8 @@ test.suite('ts-node', (test) => {
       const { err, stderr, stdout } = await exec(
         `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --project ./scope/c/config/tsconfig.json ./scope/c/index.js`
       );
-      expect(err).to.equal(null);
-      expect(stdout).to.equal(`value\nFailures: 0\n`);
+      expect(err).toBe(null);
+      expect(stdout).toBe(`value\nFailures: 0\n`);
     });
   });
 
@@ -917,14 +919,14 @@ test.suite('ts-node', (test) => {
       context: { service },
     }) => {
       const output = service.compile('const x = 10', 'test.ts');
-      expect(output).to.contain('var x = 10;');
+      expect(output).toMatch('var x = 10;');
     });
 
     test.suite('should get type information', (test) => {
       test('given position of identifier', ({ context: { service } }) => {
         expect(
           service.getTypeInfo('/**jsdoc here*/const x = 10', 'test.ts', 21)
-        ).to.deep.equal({
+        ).toEqual({
           comment: 'jsdoc here',
           name: 'const x: 10',
         });
@@ -934,7 +936,7 @@ test.suite('ts-node', (test) => {
       }) => {
         expect(
           service.getTypeInfo('/**jsdoc here*/const x = 10', 'test.ts', 0)
-        ).to.deep.equal({
+        ).toEqual({
           comment: '',
           name: '',
         });
@@ -949,16 +951,12 @@ test.suite('ts-node', (test) => {
       disallowed: string[]
     ) {
       for (const ext of allowed) {
-        expect(ignored(join(DIST_DIR, `index${ext}`))).equal(
-          false,
-          `should accept ${ext} files`
-        );
+        // should accept ${ext} files
+        expect(ignored(join(DIST_DIR, `index${ext}`))).toBe(false);
       }
       for (const ext of disallowed) {
-        expect(ignored(join(DIST_DIR, `index${ext}`))).equal(
-          true,
-          `should ignore ${ext} files`
-        );
+        // should ignore ${ext} files
+        expect(ignored(join(DIST_DIR, `index${ext}`))).toBe(true);
       }
     }
 
@@ -1017,8 +1015,8 @@ test.suite('ts-node', (test) => {
             cwd: join(TEST_DIR, './esm'),
           }
         );
-        expect(err).to.equal(null);
-        expect(stdout).to.equal('foo bar baz biff libfoo\n');
+        expect(err).toBe(null);
+        expect(stdout).toBe('foo bar baz biff libfoo\n');
       });
       test('should use source maps', async () => {
         const { err, stdout } = await exec(
@@ -1027,8 +1025,8 @@ test.suite('ts-node', (test) => {
             cwd: join(TEST_DIR, './esm'),
           }
         );
-        expect(err).not.to.equal(null);
-        expect(err!.message).to.contain(
+        expect(err).not.toBe(null);
+        expect(err!.message).toMatch(
           [
             `${pathToFileURL(join(TEST_DIR, './esm/throw error.ts'))
               .toString()
@@ -1049,8 +1047,8 @@ test.suite('ts-node', (test) => {
             `${CMD_ESM_LOADER_WITHOUT_PROJECT} --experimental-specifier-resolution=node index.ts`,
             { cwd: join(TEST_DIR, './esm-node-resolver') }
           );
-          expect(err).to.equal(null);
-          expect(stdout).to.equal('foo bar baz biff libfoo\n');
+          expect(err).toBe(null);
+          expect(stdout).toBe('foo bar baz biff libfoo\n');
         });
         test('via --es-module-specifier-resolution alias', async () => {
           const {
@@ -1060,8 +1058,8 @@ test.suite('ts-node', (test) => {
             `${CMD_ESM_LOADER_WITHOUT_PROJECT} ${EXPERIMENTAL_MODULES_FLAG} --es-module-specifier-resolution=node index.ts`,
             { cwd: join(TEST_DIR, './esm-node-resolver') }
           );
-          expect(err).to.equal(null);
-          expect(stdout).to.equal('foo bar baz biff libfoo\n');
+          expect(err).toBe(null);
+          expect(stdout).toBe('foo bar baz biff libfoo\n');
         });
         test('via NODE_OPTIONS', async () => {
           const { err, stdout } = await exec(
@@ -1074,8 +1072,8 @@ test.suite('ts-node', (test) => {
               },
             }
           );
-          expect(err).to.equal(null);
-          expect(stdout).to.equal('foo bar baz biff libfoo\n');
+          expect(err).toBe(null);
+          expect(stdout).toBe('foo bar baz biff libfoo\n');
         });
       });
 
@@ -1086,8 +1084,8 @@ test.suite('ts-node', (test) => {
             cwd: join(TEST_DIR, './esm-err-require-esm'),
           }
         );
-        expect(err).to.not.equal(null);
-        expect(stderr).to.contain(
+        expect(err).not.toBe(null);
+        expect(stderr).toMatch(
           'Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:'
         );
       });
@@ -1099,9 +1097,9 @@ test.suite('ts-node', (test) => {
             cwd: join(TEST_DIR, './esm-import-http-url'),
           }
         );
-        expect(err).to.not.equal(null);
+        expect(err).not.toBe(null);
         // expect error from node's default resolver
-        expect(stderr).to.match(
+        expect(stderr).toMatch(
           /Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,1}\n *at defaultResolve/
         );
       });
@@ -1113,8 +1111,8 @@ test.suite('ts-node', (test) => {
             cwd: join(TEST_DIR, './esm-import-cache'),
           }
         );
-        expect(err).to.equal(null);
-        expect(stdout).to.equal('log1\nlog2\nlog2\n');
+        expect(err).toBe(null);
+        expect(stdout).toBe('log1\nlog2\nlog2\n');
       });
 
       test('should support transpile only mode via dedicated loader entrypoint', async () => {
@@ -1124,8 +1122,8 @@ test.suite('ts-node', (test) => {
             cwd: join(TEST_DIR, './esm-transpile-only'),
           }
         );
-        expect(err).to.equal(null);
-        expect(stdout).to.equal('');
+        expect(err).toBe(null);
+        expect(stdout).toBe('');
       });
       test('should throw type errors without transpile-only enabled', async () => {
         const { err, stdout } = await exec(
@@ -1138,18 +1136,18 @@ test.suite('ts-node', (test) => {
           throw new Error('Command was expected to fail, but it succeeded.');
         }
 
-        expect(err.message).to.contain('Unable to compile TypeScript');
-        expect(err.message).to.match(
+        expect(err.message).toMatch('Unable to compile TypeScript');
+        expect(err.message).toMatch(
           new RegExp(
             "TS2345: Argument of type '(?:number|1101)' is not assignable to parameter of type 'string'\\."
           )
         );
-        expect(err.message).to.match(
+        expect(err.message).toMatch(
           new RegExp(
             "TS2322: Type '(?:\"hello world\"|string)' is not assignable to type 'number'\\."
           )
         );
-        expect(stdout).to.equal('');
+        expect(stdout).toBe('');
       });
 
       async function runModuleTypeTest(project: string, ext: string) {
@@ -1162,8 +1160,8 @@ test.suite('ts-node', (test) => {
             },
           }
         );
-        expect(err).to.equal(null);
-        expect(stdout).to.equal(`Failures: 0\n`);
+        expect(err).toBe(null);
+        expect(stdout).toBe(`Failures: 0\n`);
       }
 
       test('moduleTypes should allow importing CJS in an otherwise ESM project', async (t) => {
@@ -1172,8 +1170,8 @@ test.suite('ts-node', (test) => {
         const { err, stderr, stdout } = await exec(
           `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --project ./module-types/override-to-cjs/tsconfig.json ./module-types/override-to-cjs/test-webpack-config.cjs`
         );
-        expect(err).to.equal(null);
-        expect(stdout).to.equal(``);
+        expect(err).toBe(null);
+        expect(stdout).toBe(``);
 
         await runModuleTypeTest('override-to-cjs', 'cjs');
         if (semver.gte(process.version, '14.13.1'))
@@ -1194,8 +1192,8 @@ test.suite('ts-node', (test) => {
         const { err, stderr } = await exec(`${BIN_PATH} ./index.js`, {
           cwd: join(TEST_DIR, './esm-err-require-esm'),
         });
-        expect(err).to.not.equal(null);
-        expect(stderr).to.contain(
+        expect(err).not.toBe(null);
+        expect(stderr).toMatch(
           'Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:'
         );
       });
@@ -1205,8 +1203,8 @@ test.suite('ts-node', (test) => {
         const { err, stdout } = await exec(`${BIN_PATH} ./index.js`, {
           cwd: join(TEST_DIR, './esm-err-require-esm'),
         });
-        expect(err).to.equal(null);
-        expect(stdout).to.contain('CommonJS');
+        expect(err).toBe(null);
+        expect(stdout).toMatch('CommonJS');
       });
     }
   });
