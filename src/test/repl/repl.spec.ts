@@ -168,7 +168,10 @@ test.suite('top level await', (_test) => {
         expect(elapsedTimeString).toMatch(/^\d+$/);
         const elapsedTime = Number(elapsedTimeString);
         expect(elapsedTime).toBeGreaterThanOrEqual(awaitMs - 50);
-        expect(elapsedTime).toBeLessThanOrEqual(awaitMs + 100);
+        // When CI is taxed, the time may be *much* greater than expected.
+        // I can't think of a case where the time being *too high* is a bug
+        // that this test can catch.  So I've made this check very loose.
+        expect(elapsedTime).toBeLessThanOrEqual(awaitMs + 10e3);
       }
     );
 
