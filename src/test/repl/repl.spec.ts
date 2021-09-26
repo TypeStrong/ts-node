@@ -157,9 +157,9 @@ test.suite('top level await', (_test) => {
 
         expect(stderr).to.equal('');
 
-        const elapsedTime = Number(
-          stdout.split('\n')[0].replace('> ', '').trim()
-        );
+        const elapsedTimeString = stdout.split('\n')[0].replace('> ', '').trim();
+        exp(elapsedTimeString).toMatch(/^\d+$/);
+        const elapsedTime = Number(elapsedTimeString);
         expect(elapsedTime).to.be.gte(awaitMs - 50);
         expect(elapsedTime).to.be.lte(awaitMs + 100);
       }
