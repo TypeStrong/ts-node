@@ -11,8 +11,11 @@ import avaTest, {
 } from 'ava';
 import * as assert from 'assert';
 import throat from 'throat';
+export { ExecutionContext };
 
-const concurrencyLimiter = throat(8);
+// NOTE: this limits concurrency within a single process, but AVA launches
+// each .spec file in its own process, so actual concurrency is higher.
+const concurrencyLimiter = throat(16);
 
 function once<T extends Function>(func: T): T {
   let run = false;
@@ -32,6 +35,9 @@ export const test = createTestInterface({
   separator: ' > ',
   titlePrefix: undefined,
 });
+// In case someone wants to `const test = _test.context()`
+export { test as _test };
+
 export interface TestInterface<
   Context
 > /*extends Omit<AvaTestInterface<Context>, 'before' | 'beforeEach' | 'after' | 'afterEach' | 'failing' | 'serial'>*/ {
