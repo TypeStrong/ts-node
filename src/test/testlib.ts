@@ -13,7 +13,9 @@ import * as assert from 'assert';
 import throat from 'throat';
 export { ExecutionContext };
 
-const concurrencyLimiter = throat(8);
+// NOTE: this limits concurrency within a single process, but AVA launches
+// each .spec file in its own process, so actual concurrency is higher.
+const concurrencyLimiter = throat(16);
 
 function once<T extends Function>(func: T): T {
   let run = false;

@@ -85,9 +85,11 @@ export async function contextReplHelpers(
     stdin.end();
     const stdoutPromise = getStream(stdout, waitPattern);
     const stderrPromise = getStream(stderr, waitPattern);
+    // Wait for expected output pattern or timeout, whichever comes first
     await Promise.race([
       promisify(setTimeout)(waitMs),
-      Promise.all([stdoutPromise, stderrPromise]),
+      stdoutPromise,
+      stderrPromise,
     ]);
     stdout.end();
     stderr.end();
