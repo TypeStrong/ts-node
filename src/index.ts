@@ -427,10 +427,14 @@ export class TSError extends BaseError {
   }
 }
 
+const TS_NODE_SERVICE_BRAND = Symbol('TS_NODE_SERVICE_BRAND');
+
 /**
  * Primary ts-node service, which wraps the TypeScript API and can compile TypeScript to JavaScript
  */
 export interface Service {
+  /** @internal */
+  [TS_NODE_SERVICE_BRAND]: true;
   ts: TSCommon;
   config: _ts.ParsedCommandLine;
   options: RegisterOptions;
@@ -478,11 +482,24 @@ export function getExtensions(config: _ts.ParsedCommandLine) {
 }
 
 /**
+ * Create a new TypeScript compiler instance and register it onto node.js
+ */
+export function register(opts?: RegisterOptions): Service;
+/**
  * Register TypeScript compiler instance onto node.js
  */
-export function register(opts: RegisterOptions = {}): Service {
+export function register(service: Service): Service;
+export function register(
+  serviceOrOpts: Service | RegisterOptions | undefined
+): Service {
+  // Is this a Service or a RegisterOptions?
+  let service = serviceOrOpts as Service;
+  if (!(serviceOrOpts as Service)?.[TS_NODE_SERVICE_BRAND]) {
+    // Not a service; is options
+    service = create((serviceOrOpts ?? {}) as RegisterOptions);
+  }
+
   const originalJsHandler = require.extensions['.js'];
-  const service = create(opts);
   const { tsExtensions, jsExtensions } = getExtensions(service.config);
   const extensions = [...tsExtensions, ...jsExtensions];
 
@@ -1225,6 +1242,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
   }
 
   return {
+    [TS_NODE_SERVICE_BRAND]: true,
     ts,
     config,
     compile,
