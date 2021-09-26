@@ -60,19 +60,26 @@ export async function contextReplHelpers(
     options: CreateReplViaApiOptions & {
       waitMs?: number;
       waitPattern?: string | RegExp;
-      startOptions?: Parameters<tsNodeTypes.ReplService['startInternal']>[0];
+      /** When specified, calls `startInternal` instead of `start` and passes options */
+      startInternalOptions?: Parameters<
+        tsNodeTypes.ReplService['startInternal']
+      >[0];
     }
   ) {
     const {
       waitPattern,
       // Wait longer if there's a signal to end it early
       waitMs = waitPattern != null ? 20e3 : 1e3,
-      startOptions,
+      startInternalOptions,
       ...rest
     } = options;
     const { stdin, stdout, stderr, replService } = createReplViaApi(rest);
 
-    replService.startInternal(startOptions);
+    if (startInternalOptions) {
+      replService.startInternal(startInternalOptions);
+    } else {
+      replService.start();
+    }
 
     stdin.write(input);
     stdin.end();
@@ -90,28 +97,5 @@ export async function contextReplHelpers(
       stdout: await stdoutPromise,
       stderr: await stderrPromise,
     };
-  }
-}
-
-export async function contextReplApiTester(
-  t: ExecutionContext<ContextWithTsNodeUnderTest>
-) {
-  const { createReplViaApi } = await contextReplHelpers(t);
-  return { replApiTester };
-
-  async function replApiTester(opts: { input: string }) {
-    const { input } = opts;
-    const { stdin, stdout, stderr, replService } = createReplViaApi({
-      registerHooks: true,
-    });
-    replService.start();
-    stdin.write(input);
-    stdin.end();
-    await promisify(setTimeout)(1e3);
-    stdout.end();
-    stderr.end();
-    const stderrString = await getStream(stderr);
-    const stdoutString = await getStream(stdout);
-    return { stdout: stdoutString, stderr: stderrString };
   }
 }

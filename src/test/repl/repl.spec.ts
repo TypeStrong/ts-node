@@ -9,12 +9,9 @@ import {
 import { createExec, createExecTester } from '../exec-helpers';
 import { upstreamTopLevelAwaitTests } from './node-repl-tla';
 import { _test } from '../testlib';
-import { contextReplHelpers, contextReplApiTester } from './helpers';
+import { contextReplHelpers } from './helpers';
 
-const test = _test
-  .context(contextTsNodeUnderTest)
-  .context(contextReplHelpers)
-  .context(contextReplApiTester);
+const test = _test.context(contextTsNodeUnderTest).context(contextReplHelpers);
 
 const exec = createExec({
   cwd: TEST_DIR,
@@ -49,7 +46,7 @@ test.serial('REPL can be configured on `start`', async (t) => {
 
   const { stdout, stderr } = await t.context.executeInRepl('const x = 3', {
     registerHooks: true,
-    startOptions: {
+    startInternalOptions: {
       prompt,
       ignoreUndefined: true,
     },
@@ -71,7 +68,7 @@ test.serial(
       {
         registerHooks: true,
         waitPattern: `> undefined\n> 1\nundefined\n> `,
-        startOptions: {
+        startInternalOptions: {
           useGlobal: false,
         },
       }
@@ -84,9 +81,13 @@ test.serial(
 
 // Serial because it's timing-sensitive
 test.serial('REPL can be created via API', async (t) => {
-  const { stdout, stderr } = await t.context.replApiTester({
-    input: '\nconst a = 123\n.type a\n',
-  });
+  const { stdout, stderr } = await t.context.executeInRepl(
+    `\nconst a = 123\n.type a\n`,
+    {
+      registerHooks: true,
+      waitPattern: '123\n> ',
+    }
+  );
   expect(stderr).toBe('');
   expect(stdout).toBe(
     '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
@@ -114,7 +115,7 @@ test.suite('top level await', (_test) => {
             experimentalReplAwait: true,
             compilerOptions,
           },
-          startOptions: { useGlobal: false },
+          startInternalOptions: { useGlobal: false },
         }
       );
     }
