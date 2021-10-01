@@ -4,7 +4,7 @@ title: Third-party transpilers
 
 In transpile-only mode, we skip typechecking to speed up execution time.  You can go a step further and use a
 third-party transpiler to transform TypeScript into JavaScript even faster.  You will still benefit from
-`ts-node`'s automatic `tsconfig.json` discovery, sourcemap support, and global `ts-node` CLI.  Integrations
+ts-node's automatic `tsconfig.json` discovery, sourcemap support, and global ts-node CLI.  Integrations
 can automatically derive an appropriate configuration from your existing `tsconfig.json` which simplifies project
 boilerplate.
 

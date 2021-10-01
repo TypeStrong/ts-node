@@ -2,13 +2,13 @@
 title: Configuration
 ---
 
-`ts-node` supports a variety of options which can be specified via `tsconfig.json`, as CLI flags, as environment variables, or programmatically.
+ts-node supports a variety of options which can be specified via `tsconfig.json`, as CLI flags, as environment variables, or programmatically.
 
 For a complete list, see [Options](./options.md).
 
 ## CLI flags
 
-`ts-node` CLI flags must come *before* the entrypoint script. For example:
+ts-node CLI flags must come *before* the entrypoint script. For example:
 
 ```shell
 $ ts-node --project tsconfig-dev.json say-hello.ts Ronald
@@ -17,7 +17,7 @@ Hello, Ronald!
 
 ## Via tsconfig.json (recommended)
 
-`ts-node` automatically finds and loads `tsconfig.json`.  Most `ts-node` options can be specified in a `"ts-node"` object using their programmatic, camelCase names. We recommend this because it works even when you cannot pass CLI flags, such as `node --require ts-node/register` and when using shebangs.
+ts-node automatically finds and loads `tsconfig.json`.  Most ts-node options can be specified in a "ts-node" object using their programmatic, camelCase names. We recommend this because it works even when you cannot pass CLI flags, such as `node --require ts-node/register` and when using shebangs.
 
 Use `--skip-project` to skip loading the `tsconfig.json`.  Use `--project` to explicitly specify the path to a `tsconfig.json`.
 
@@ -55,7 +55,7 @@ Our bundled [JSON schema](https://unpkg.com/browse/ts-node@latest/tsconfig.schem
 ### @tsconfig/bases
 
 [@tsconfig/bases](https://github.com/tsconfig/bases) maintains recommended configurations for several node versions.
-As a convenience, these are bundled with `ts-node`.
+As a convenience, these are bundled with ts-node.
 
 ```json title="tsconfig.json"
 {
@@ -68,7 +68,7 @@ As a convenience, these are bundled with `ts-node`.
 
 ### Default config
 
-If no `tsconfig.json` is loaded from disk, `ts-node` will use the newest recommended defaults from
+If no `tsconfig.json` is loaded from disk, ts-node will use the newest recommended defaults from
 [@tsconfig/bases](https://github.com/tsconfig/bases/) compatible with your `node` and `typescript` versions.
 With the latest `node` and `typescript`, this is [`@tsconfig/node16`](https://github.com/tsconfig/bases/blob/master/bases/node16.json).
 
@@ -78,7 +78,7 @@ When in doubt, `ts-node --show-config` will log the configuration being used, an
 
 ## `node` flags
 
-[`node` flags](https://nodejs.org/api/cli.html) must be passed directly to `node`; they cannot be passed to the `ts-node` binary nor can they be specified in `tsconfig.json`
+[`node` flags](https://nodejs.org/api/cli.html) must be passed directly to `node`; they cannot be passed to the ts-node binary nor can they be specified in `tsconfig.json`
 
 We recommend using the [`NODE_OPTIONS`](https://nodejs.org/api/cli.html#cli_node_options_options) environment variable to pass options to `node`.
 
@@ -86,7 +86,7 @@ We recommend using the [`NODE_OPTIONS`](https://nodejs.org/api/cli.html#cli_node
 NODE_OPTIONS='--trace-deprecation --abort-on-uncaught-exception' ts-node ./index.ts
 ```
 
-Alternatively, you can invoke `node` directly and install `ts-node` via `--require`/`-r`
+Alternatively, you can invoke `node` directly and install ts-node via `--require`/`-r`
 
 ```shell
 node --trace-deprecation --abort-on-uncaught-exception -r ts-node/register ./index.ts
