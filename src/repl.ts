@@ -208,13 +208,24 @@ export function createRepl(options: CreateReplOptions = {}) {
     context: Context;
   }) {
     const { code, enableTopLevelAwait, context } = options;
-    return appendCompileAndEvalInput({
+    const result = appendCompileAndEvalInput({
       service: service!,
       state,
       input: code,
       enableTopLevelAwait,
       context,
     });
+    // A semicolon is added to make sure that the code doesn't interact with the next line,
+    // for example to prevent `2\n+ 2` from producing 4.
+    // We don't care about the result so we just toss it.
+    appendCompileAndEvalInput({
+      service: service!,
+      state,
+      input: ';\n',
+      enableTopLevelAwait,
+      context,
+    });
+    return result;
   }
 
   function nodeEval(
