@@ -221,8 +221,8 @@ export function createRepl(options: CreateReplOptions = {}) {
     // and adding a semicolon to the end of a successful input won't ever change the output.
     // We check to make sure the previous line ends in a newline just in case, even though it should
     // always be the case.
-    if (/\n$/.test(state.input)) {
-      state.input = state.input.slice(0, state.input.length - 1) + ';\n';
+    if (state.input.charAt(state.input.length - 1) === '\n') {
+      state.input = `${state.input.slice(0, -1)};\n`;
     }
     return result;
   }
@@ -595,15 +595,6 @@ function appendToEvalState(state: EvalState, input: string) {
   const undoVersion = state.version;
   const undoOutput = state.output;
   const undoLines = state.lines;
-
-  // Handle ASI issues with TypeScript re-evaluation.
-  if (
-    undoInput.charAt(undoInput.length - 1) === '\n' &&
-    /^\s*[\/\[(`-]/.test(input) &&
-    !/;\s*$/.test(undoInput)
-  ) {
-    state.input = `${state.input.slice(0, -1)};\n`;
-  }
 
   state.input += input;
   state.lines += lineCount(input);
