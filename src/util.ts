@@ -39,7 +39,8 @@ export function assign<T extends object>(
 }
 
 /**
- * Split a string array of values.
+ * Split a string array of values
+ * and remove empty strings from the resulting array.
  * @internal
  */
 export function split(value: string | undefined) {
