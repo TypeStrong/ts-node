@@ -43,7 +43,9 @@ export function assign<T extends object>(
  * @internal
  */
 export function split(value: string | undefined) {
-  return typeof value === 'string' ? value.split(/ *, */g) : undefined;
+  return typeof value === 'string'
+    ? value.split(/ *, */g).filter((v) => v !== '')
+    : undefined;
 }
 
 /**
