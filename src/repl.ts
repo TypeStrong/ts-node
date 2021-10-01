@@ -217,14 +217,13 @@ export function createRepl(options: CreateReplOptions = {}) {
     });
     // A semicolon is added to make sure that the code doesn't interact with the next line,
     // for example to prevent `2\n+ 2` from producing 4.
-    // We don't care about the result so we just toss it.
-    appendCompileAndEvalInput({
-      service: service!,
-      state,
-      input: ';\n',
-      enableTopLevelAwait,
-      context,
-    });
+    // This is safe since the output will not change since we can only get here with successful inputs,
+    // and adding a semicolon to the end of a successful input won't ever change the output.
+    // We check to make sure the previous line ends in a newline just in case, even though it should
+    // always be the case.
+    if (/\n$/.test(state.input)) {
+      state.input = state.input.slice(0, state.input.length - 1) + ';\n';
+    }
     return result;
   }
 
