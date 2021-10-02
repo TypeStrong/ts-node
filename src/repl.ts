@@ -208,23 +208,13 @@ export function createRepl(options: CreateReplOptions = {}) {
     context: Context;
   }) {
     const { code, enableTopLevelAwait, context } = options;
-    const result = appendCompileAndEvalInput({
+    return appendCompileAndEvalInput({
       service: service!,
       state,
       input: code,
       enableTopLevelAwait,
       context,
     });
-    // A semicolon is added to make sure that the code doesn't interact with the next line,
-    // for example to prevent `2\n+ 2` from producing 4.
-    // This is safe since the output will not change since we can only get here with successful inputs,
-    // and adding a semicolon to the end of a successful input won't ever change the output.
-    // We check to make sure the previous line ends in a newline just in case, even though it should
-    // always be the case.
-    if (state.input.charAt(state.input.length - 1) === '\n') {
-      state.input = `${state.input.slice(0, -1)};\n`;
-    }
-    return result;
   }
 
   function nodeEval(
@@ -520,6 +510,12 @@ function appendCompileAndEvalInput(options: {
     undo();
   } else {
     state.output = output;
+
+    // Insert a semicolon to make sure that the code doesn't interact with the next line,
+    // for example to prevent `2\n+ 2` from producing 4.
+    // This is safe since the output will not change since we can only get here with successful inputs,
+    // and adding a semicolon to the end of a successful input won't ever change the output.
+    state.input = `${state.input.slice(0, -1)};\n`;
   }
 
   let commands: Array<{ mustAwait?: true; execCommand: () => any }> = [];

@@ -304,6 +304,8 @@ test.suite(
         * 7\n.break
         100
         / 2\n.break
+        5
+        ** 2\n.break
         console.log('done!')
         `,
         { registerHooks: true, waitPattern: 'done!\nundefined\n>' }
@@ -312,6 +314,7 @@ test.suite(
       expect(stdout).not.toContain('4');
       expect(stdout).not.toContain('21');
       expect(stdout).not.toContain('50');
+      expect(stdout).not.toContain('25');
       expect(stdout).toContain('3');
       expect(stdout).toContain('-3');
     });
