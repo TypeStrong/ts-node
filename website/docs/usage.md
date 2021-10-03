@@ -42,14 +42,14 @@ Passing CLI arguments via shebang is allowed on Mac but not Linux.  For example,
 // This shebang is not portable.  It only works on Mac
 ```
 
-Instead, specify all `ts-node` options in your `tsconfig.json`.
+Instead, specify all ts-node options in your `tsconfig.json`.
 
 ## Programmatic
 
-You can require `ts-node` and register the loader for future requires by using `require('ts-node').register({ /* options */ })`. You can also use file shortcuts - `node -r ts-node/register` or `node -r ts-node/register/transpile-only` - depending on your preferences.
+You can require ts-node and register the loader for future requires by using `require('ts-node').register({ /* options */ })`. You can also use file shortcuts - `node -r ts-node/register` or `node -r ts-node/register/transpile-only` - depending on your preferences.
 
-**Note:** If you need to use advanced node.js CLI arguments (e.g. `--inspect`), use them with `node -r ts-node/register` instead of the `ts-node` CLI.
+**Note:** If you need to use advanced node.js CLI arguments (e.g. `--inspect`), use them with `node -r ts-node/register` instead of ts-node's CLI.
 
 ### Developers
 
-`ts-node` exports a `create()` function that can be used to initialize a TypeScript compiler that isn't registered to `require.extensions`, and it uses the same code as `register`.
+ts-node exports a `create()` function that can be used to initialize a TypeScript compiler that isn't registered to `require.extensions`, and it uses the same code as `register`.
