@@ -6,7 +6,7 @@ title: Troubleshooting
 
 ts-node uses sensible default configurations to reduce boilerplate while still respecting `tsconfig.json` if you
 have one.  If you are unsure which configuration is used, you can log it with `ts-node --show-config`.  This is similar to
-`tsc --showConfig` but includes "ts-node" options as well.
+`tsc --showConfig` but includes `"ts-node"` options as well.
 
 ts-node also respects your locally-installed `typescript` version, but global installations fallback to the globally-installed
 `typescript`.  If you are unsure which versions are used, `ts-node -vv` will log them.
