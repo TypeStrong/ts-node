@@ -181,7 +181,7 @@ test.suite('top level await', (_test) => {
       async (t) => {
         const script = `
           const startTime = new Date().getTime();
-          (async () => await new Promise((r) => setTimeout(() => r(1), ${1000})))();
+          (async () => await new Promise((r) => setTimeout(() => r(1), ${5000})))();
           const endTime = new Date().getTime();
           endTime - startTime;
         `;
@@ -196,7 +196,8 @@ test.suite('top level await', (_test) => {
           stdout.split('\n')[0].replace('> ', '').trim()
         );
         expect(ellapsedTime).toBeGreaterThanOrEqual(0);
-        expect(ellapsedTime).toBeLessThanOrEqual(10);
+        // Should ideally be instantaneous; leave wiggle-room for slow CI
+        expect(ellapsedTime).toBeLessThanOrEqual(100);
       }
     );
 
