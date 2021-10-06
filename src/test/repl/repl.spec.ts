@@ -298,18 +298,22 @@ test.suite(
       async (t) => {
         const { stdout, stderr } = await t.context.executeInRepl(
           `9
-        + 3
-        7
-        - 3
-        3
-        * 7\n.break
-        100
-        / 2\n.break
-        5
-        ** 2\n.break
-        console.log('done!')
-        `,
-          { registerHooks: true, waitPattern: 'done!\nundefined\n>' }
+          + 3
+          7
+          - 3
+          3
+          * 7\n.break
+          100
+          / 2\n.break
+          5
+          ** 2\n.break
+          console.log('done!')
+          `,
+          {
+            registerHooks: true,
+            startInternalOptions: { useGlobal: false },
+            waitPattern: 'done!\nundefined\n>',
+          }
         );
         expect(stdout).not.toContain('12');
         expect(stdout).not.toContain('4');
@@ -329,7 +333,11 @@ test.suite(
           `(
           a
           console.log('done!')`,
-          { registerHooks: true, waitPattern: 'done!\nundefined\n>' }
+          {
+            registerHooks: true,
+            startInternalOptions: { useGlobal: false },
+            waitPattern: 'done!\nundefined\n>',
+          }
         );
         expect(stderr).toContain("error TS1005: ')' expected.");
         expect(stderr).not.toContain(';');
@@ -342,8 +350,12 @@ test.suite(
       async (t) => {
         const { stdout, stderr } = await t.context.executeInRepl(
           `)
-        console.log('done!')`,
-          { registerHooks: true, waitPattern: 'done!\nundefined\n>' }
+          console.log('done!')`,
+          {
+            registerHooks: true,
+            startInternalOptions: { useGlobal: false },
+            waitPattern: 'done!\nundefined\n>',
+          }
         );
         expect(stderr).toContain(
           'error TS1128: Declaration or statement expected.'
@@ -359,15 +371,41 @@ test.suite(
       async (t) => {
         const { stdout, stderr } = await t.context.executeInRepl(
           `function foo(a: number) {
-          return a + 1;
-      }
-      foo(
-        1
-      )`,
-          { registerHooks: true, waitPattern: '2\n>' }
+              return a + 1;
+          }
+          foo(
+            1
+          )`,
+          {
+            registerHooks: true,
+            startInternalOptions: { useGlobal: false },
+            waitPattern: '2\n>',
+          }
         );
         expect(stderr).toBe('');
         expect(stdout).toContain('2');
+      }
+    );
+
+    // Serial because it's timing-sensitive
+    test.serial(
+      'automatically inserted semicolons do not affect subsequent line numbers',
+      async (t) => {
+        // If first line of input ends in a semicolon, should not add a second semicolon.
+        // That will cause an extra blank line in the compiled output which will
+        // offset the stack line number.
+        const { stdout, stderr } = await t.context.executeInRepl(
+          `1;
+          new Error().stack!.split('\\n')[1]
+          console.log('done!')`,
+          {
+            registerHooks: true,
+            startInternalOptions: { useGlobal: false },
+            waitPattern: 'done!',
+          }
+        );
+        expect(stderr).toBe('');
+        expect(stdout).toContain(":1:1'\n");
       }
     );
   }
