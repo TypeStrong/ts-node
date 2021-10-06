@@ -602,6 +602,21 @@ test.suite('ts-node', (test) => {
         ]);
       });
 
+      test('should ignore empty strings in the array options', async () => {
+        const { err, stdout } = await exec(
+          `${BIN_EXEC} tsconfig-options/log-options1.js`,
+          {
+            env: {
+              ...process.env,
+              TS_NODE_IGNORE: '',
+            },
+          }
+        );
+        expect(err).toBe(null);
+        const { options } = JSON.parse(stdout);
+        expect(options.ignore).toEqual([]);
+      });
+
       test('should have flags override / merge with `tsconfig.json`', async () => {
         const { err, stdout } = await exec(
           `${BIN_EXEC} --skip-ignore --compiler-options "{\\"types\\":[\\"flags-types\\"]}" --require ./tsconfig-options/required2.js tsconfig-options/log-options2.js`
