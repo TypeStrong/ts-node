@@ -288,3 +288,125 @@ test.suite(
     });
   }
 );
+
+test.suite(
+  'REPL inputs are syntactically independent of each other',
+  (test) => {
+    // Serial because it's timing-sensitive
+    test.serial(
+      'arithmetic operators are independent of previous values',
+      async (t) => {
+        const { stdout, stderr } = await t.context.executeInRepl(
+          `9
+          + 3
+          7
+          - 3
+          3
+          * 7\n.break
+          100
+          / 2\n.break
+          5
+          ** 2\n.break
+          console.log('done!')
+          `,
+          {
+            registerHooks: true,
+            startInternalOptions: { useGlobal: false },
+            waitPattern: 'done!\nundefined\n>',
+          }
+        );
+        expect(stdout).not.toContain('12');
+        expect(stdout).not.toContain('4');
+        expect(stdout).not.toContain('21');
+        expect(stdout).not.toContain('50');
+        expect(stdout).not.toContain('25');
+        expect(stdout).toContain('3');
+        expect(stdout).toContain('-3');
+      }
+    );
+
+    // Serial because it's timing-sensitive
+    test.serial(
+      'automatically inserted semicolons do not appear in error messages at the end',
+      async (t) => {
+        const { stdout, stderr } = await t.context.executeInRepl(
+          `(
+          a
+          console.log('done!')`,
+          {
+            registerHooks: true,
+            startInternalOptions: { useGlobal: false },
+            waitPattern: 'done!\nundefined\n>',
+          }
+        );
+        expect(stderr).toContain("error TS1005: ')' expected.");
+        expect(stderr).not.toContain(';');
+      }
+    );
+
+    // Serial because it's timing-sensitive
+    test.serial(
+      'automatically inserted semicolons do not appear in error messages at the start',
+      async (t) => {
+        const { stdout, stderr } = await t.context.executeInRepl(
+          `)
+          console.log('done!')`,
+          {
+            registerHooks: true,
+            startInternalOptions: { useGlobal: false },
+            waitPattern: 'done!\nundefined\n>',
+          }
+        );
+        expect(stderr).toContain(
+          'error TS1128: Declaration or statement expected.'
+        );
+        expect(stderr).toContain(')');
+        expect(stderr).not.toContain(';');
+      }
+    );
+
+    // Serial because it's timing-sensitive
+    test.serial(
+      'automatically inserted semicolons do not break function calls',
+      async (t) => {
+        const { stdout, stderr } = await t.context.executeInRepl(
+          `function foo(a: number) {
+              return a + 1;
+          }
+          foo(
+            1
+          )`,
+          {
+            registerHooks: true,
+            startInternalOptions: { useGlobal: false },
+            waitPattern: '2\n>',
+          }
+        );
+        expect(stderr).toBe('');
+        expect(stdout).toContain('2');
+      }
+    );
+
+    // Serial because it's timing-sensitive
+    test.serial(
+      'automatically inserted semicolons do not affect subsequent line numbers',
+      async (t) => {
+        // If first line of input ends in a semicolon, should not add a second semicolon.
+        // That will cause an extra blank line in the compiled output which will
+        // offset the stack line number.
+        const { stdout, stderr } = await t.context.executeInRepl(
+          `1;
+          new Error().stack!.split('\\n')[1]
+          console.log('done!')`,
+          {
+            registerHooks: true,
+            startInternalOptions: { useGlobal: false },
+            waitPattern: 'done!',
+          }
+        );
+        expect(stderr).toBe('');
+        expect(stdout).toContain(":1:1'\n");
+      }
+    );
+  }
+);

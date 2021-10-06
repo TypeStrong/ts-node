@@ -510,6 +510,18 @@ function appendCompileAndEvalInput(options: {
     undo();
   } else {
     state.output = output;
+
+    // Insert a semicolon to make sure that the code doesn't interact with the next line,
+    // for example to prevent `2\n+ 2` from producing 4.
+    // This is safe since the output will not change since we can only get here with successful inputs,
+    // and adding a semicolon to the end of a successful input won't ever change the output.
+    state.input = state.input.replace(
+      /([^\n\s])([\n\s]*)$/,
+      (all, lastChar, whitespace) => {
+        if (lastChar !== ';') return `${lastChar};${whitespace}`;
+        return all;
+      }
+    );
   }
 
   let commands: Array<{ mustAwait?: true; execCommand: () => any }> = [];
@@ -585,15 +597,6 @@ function appendToEvalState(state: EvalState, input: string) {
   const undoVersion = state.version;
   const undoOutput = state.output;
   const undoLines = state.lines;
-
-  // Handle ASI issues with TypeScript re-evaluation.
-  if (
-    undoInput.charAt(undoInput.length - 1) === '\n' &&
-    /^\s*[\/\[(`-]/.test(input) &&
-    !/;\s*$/.test(undoInput)
-  ) {
-    state.input = `${state.input.slice(0, -1)};\n`;
-  }
 
   state.input += input;
   state.lines += lineCount(input);
