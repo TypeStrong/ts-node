@@ -81,7 +81,7 @@ test.suite(
         await Promise.race([
           promisify(setTimeout)(20e3),
           (async () => {
-            while (!done && waitFor?.()) {
+            while (!done && !waitFor?.()) {
               await promisify(setTimeout)(1e3);
             }
           })(),
