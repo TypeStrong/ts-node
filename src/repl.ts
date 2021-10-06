@@ -515,7 +515,10 @@ function appendCompileAndEvalInput(options: {
     // for example to prevent `2\n+ 2` from producing 4.
     // This is safe since the output will not change since we can only get here with successful inputs,
     // and adding a semicolon to the end of a successful input won't ever change the output.
-    state.input = `${state.input.slice(0, -1)};\n`;
+    state.input = state.input.replace(/([^\n\s])([\n\s]*)$/, (all, lastChar, whitespace) => {
+      if(lastChar !== ';') return `${lastChar};${whitespace}`;
+      return all;
+    });
   }
 
   let commands: Array<{ mustAwait?: true; execCommand: () => any }> = [];
