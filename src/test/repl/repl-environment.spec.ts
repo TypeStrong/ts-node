@@ -48,11 +48,11 @@ test.suite(
         {
           evalCodeBefore,
           stdinCode,
-          waitFor = () => false
+          waitFor,
         }: {
           evalCodeBefore: string | null;
           stdinCode: string;
-          waitFor?: () => boolean
+          waitFor?: () => boolean;
         },
         assertions: (stdout: string) => Promise<void> | void
       ) => async (t) => {
@@ -81,10 +81,10 @@ test.suite(
         await Promise.race([
           promisify(setTimeout)(20e3),
           (async () => {
-            while(!waitFor() && !done) {
-              await promisify(setTimeout)(1e3)
+            while (!done && waitFor?.()) {
+              await promisify(setTimeout)(1e3);
             }
-          })()
+          })(),
         ]);
         done = true;
         stdout.end();
@@ -402,7 +402,7 @@ test.suite(
       {
         evalCodeBefore: `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
         stdinCode: '',
-        waitFor: () => !!globalInRepl.testReport
+        waitFor: () => !!globalInRepl.testReport,
       },
       (stdout) => {
         expect(globalInRepl.testReport).toMatchObject({
@@ -446,7 +446,7 @@ test.suite(
       {
         evalCodeBefore: null,
         stdinCode: `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
-        waitFor: () => !!globalInRepl.testReport
+        waitFor: () => !!globalInRepl.testReport,
       },
       (stdout) => {
         expect(globalInRepl.testReport).toMatchObject({
