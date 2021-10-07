@@ -320,6 +320,15 @@ test.suite('ts-node', (test) => {
       expect(stdout).toMatch('Hello World!');
     });
 
+    test('should support `traceResolution` compiler option', async () => {
+      const { err, stdout } = await exec(
+        `${BIN_PATH} --compiler-options="{ \\"traceResolution\\": true }" -e "console.log('ok')"`,
+      );
+      expect(err).toBeNull();
+      expect(stdout).toContain('======== Resolving module');
+      expect(stdout.endsWith('ok\n')).toBe(true);
+    });
+
     if (semver.gte(process.version, '12.16.0')) {
       test('swc transpiler supports native ESM emit', async () => {
         const { err, stdout } = await exec(

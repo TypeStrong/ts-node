@@ -334,6 +334,12 @@ export interface CreateOptions {
    * the configuration loader, so it is *not* necessary for their source to be set here.
    */
   optionBasePaths?: OptionBasePaths;
+  /**
+   * A function to collect trace messages, for example when `traceResolution` is enabled.
+   * 
+   * @default console.log.bind(console)
+   */
+  trace?: (str: string) => void;
 }
 
 /** @internal */
@@ -407,6 +413,7 @@ export const DEFAULTS: RegisterOptions = {
   logError: yn(env.TS_NODE_LOG_ERROR),
   experimentalEsmLoader: false,
   experimentalReplAwait: yn(env.TS_NODE_EXPERIMENTAL_REPL_AWAIT) ?? undefined,
+  trace: console.log.bind(console),
 };
 
 /**
@@ -799,6 +806,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         getCompilationSettings: () => config.options,
         getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
         getCustomTransformers: getCustomTransformers,
+        trace: options.trace,
       };
       const {
         resolveModuleNames,

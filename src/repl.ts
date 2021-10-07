@@ -329,6 +329,20 @@ export function createRepl(options: CreateReplOptions = {}) {
       }
     }
 
+    // If traceResolution is enabled, it should print the traces before
+    // any user input. However, if no code has been entered yet, typescript
+    // hasn't compiled anything and so it won't print out the traces until
+    // after the first line of user input. This forces it to warm up and
+    // print out the trace before any user input.
+    if (service?.options.compilerOptions) {
+      const compilerOptions = service.options.compilerOptions as {
+        traceResolution?: boolean;
+      };
+      if (compilerOptions.traceResolution) {
+        service.compile('', state.path);
+      }
+    }
+
     const repl = nodeReplStart({
       prompt: '> ',
       input: replService.stdin,

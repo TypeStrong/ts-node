@@ -10,7 +10,7 @@ import {
 import type { TSInternal } from './ts-compiler-types';
 import { createTsInternals } from './ts-internals';
 import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs';
-import { assign, createRequire, trace } from './util';
+import { assign, createRequire } from './util';
 
 /**
  * TypeScript compiler option values required by `ts-node` which cannot be overridden.
@@ -137,7 +137,7 @@ export function readConfig(
             readDirectory: ts.sys.readDirectory,
             readFile,
             useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
-            trace,
+            trace: rawApiOptions.trace,
           },
           bp,
           errors,
@@ -273,6 +273,7 @@ function filterRecognizedTsConfigTsNodeOptions(
     scopeDir,
     moduleTypes,
     experimentalReplAwait,
+    trace,
     ...unrecognized
   } = jsonObject as TsConfigOptions;
   const filteredTsConfigOptions = {
@@ -295,6 +296,7 @@ function filterRecognizedTsConfigTsNodeOptions(
     scope,
     scopeDir,
     moduleTypes,
+    trace
   };
   // Use the typechecker to make sure this implementation has the correct set of properties
   const catchExtraneousProps: keyof TsConfigOptions = (null as any) as keyof typeof filteredTsConfigOptions;
