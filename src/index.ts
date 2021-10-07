@@ -336,7 +336,7 @@ export interface CreateOptions {
   optionBasePaths?: OptionBasePaths;
   /**
    * A function to collect trace messages, for example when `traceResolution` is enabled.
-   * 
+   *
    * @default console.log.bind(console)
    */
   trace?: (str: string) => void;

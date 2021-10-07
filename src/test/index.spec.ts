@@ -322,7 +322,7 @@ test.suite('ts-node', (test) => {
 
     test('should support `traceResolution` compiler option', async () => {
       const { err, stdout } = await exec(
-        `${BIN_PATH} --compiler-options="{ \\"traceResolution\\": true }" -e "console.log('ok')"`,
+        `${BIN_PATH} --compiler-options="{ \\"traceResolution\\": true }" -e "console.log('ok')"`
       );
       expect(err).toBeNull();
       expect(stdout).toContain('======== Resolving module');

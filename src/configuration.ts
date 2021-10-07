@@ -296,7 +296,7 @@ function filterRecognizedTsConfigTsNodeOptions(
     scope,
     scopeDir,
     moduleTypes,
-    trace
+    trace,
   };
   // Use the typechecker to make sure this implementation has the correct set of properties
   const catchExtraneousProps: keyof TsConfigOptions = (null as any) as keyof typeof filteredTsConfigOptions;
