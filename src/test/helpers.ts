@@ -12,9 +12,9 @@ import type { Readable } from 'stream';
  */
 import type * as tsNodeTypes from '../index';
 import type _createRequire from 'create-require';
-import { once } from 'lodash';
+import { has, once } from 'lodash';
 import semver = require('semver');
-import { isConstructSignatureDeclaration } from 'typescript';
+import * as expect from 'expect';
 const createRequire: typeof _createRequire = require('create-require');
 export { tsNodeTypes };
 
@@ -45,7 +45,7 @@ export const xfs = new NodeFS(fs);
 /** Pass to `test.context()` to get access to the ts-node API under test */
 export const contextTsNodeUnderTest = once(async () => {
   await installTsNode();
-  const tsNodeUnderTest = testsDirRequire('ts-node');
+  const tsNodeUnderTest: typeof tsNodeTypes = testsDirRequire('ts-node');
   return {
     tsNodeUnderTest,
   };
@@ -154,4 +154,48 @@ export function getStream(stream: Readable, waitForPattern?: string | RegExp) {
     combinedBuffer = Buffer.concat(received);
     combinedString = combinedBuffer.toString('utf8');
   }
+}
+
+const defaultRequireExtensions = Object.getOwnPropertyDescriptors(
+  require.extensions
+);
+const defaultProcess = Object.getOwnPropertyDescriptors(process);
+const defaultModule = Object.getOwnPropertyDescriptors(require('module'));
+const defaultError = Object.getOwnPropertyDescriptors(Error);
+const defaultGlobal = Object.getOwnPropertyDescriptors(global);
+
+/**
+ * Undo all of ts-node & co's installed hooks, resetting the node environment to default
+ * so we can run multiple test cases which `.register()` ts-node.
+ */
+export function resetNodeEnvironment() {
+  // Modified by ts-node hooks
+  resetObjectToDescriptors(require.extensions, defaultRequireExtensions);
+
+  // ts-node attaches a property when it registers an instance
+  // source-map-support monkey-patches the emit function
+  resetObjectToDescriptors(process, defaultProcess);
+
+  // source-map-support swaps out the prepareStackTrace function
+  resetObjectToDescriptors(Error, defaultError);
+
+  // _resolveFilename is modified by tsconfig-paths, future versions of source-map-support, and maybe future versions of ts-node
+  resetObjectToDescriptors(require('module'), defaultModule);
+
+  // May be modified by REPL tests, since the REPL sets globals.
+  resetObjectToDescriptors(global, defaultGlobal);
+}
+
+// Redefine all property descriptors and delete any new properties
+function resetObjectToDescriptors(
+  object: any,
+  descriptors: PropertyDescriptorMap
+) {
+  const currentDescriptors = Object.getOwnPropertyDescriptors(object);
+  for (const key of Object.keys(currentDescriptors)) {
+    if (!has(descriptors, key)) {
+      delete object[key];
+    }
+  }
+  Object.defineProperties(object, descriptors);
 }
