@@ -169,6 +169,9 @@ const defaultGlobal = Object.getOwnPropertyDescriptors(global);
  * so we can run multiple test cases which `.register()` ts-node.
  */
 export function resetNodeEnvironment() {
+  // We must uninstall so that it resets its internal state; otherwise it won't know it needs to reinstall in the next test.
+  require('@cspotcode/source-map-support').uninstall();
+
   // Modified by ts-node hooks
   resetObjectToDescriptors(require.extensions, defaultRequireExtensions);
 
