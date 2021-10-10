@@ -2,6 +2,7 @@ import {
   register,
   getExtensions,
   RegisterOptions,
+  Service,
   versionGteLt,
 } from './index';
 import {
@@ -35,17 +36,21 @@ const { defaultGetFormat } = require('../dist-raw/node-esm-default-get-format');
 // from node, build our implementation of the *new* API on top of it, and implement the *old*
 // hooks API as a shim to the *new* API.
 
+/** @internal */
 export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
   // Automatically performs registration just like `-r ts-node/register`
-  const tsNodeInstance = register({
-    ...opts,
-    experimentalEsmLoader: true,
-  });
+  const tsNodeInstance = register(opts);
+
+  return createEsmHooks(tsNodeInstance);
+}
+
+export function createEsmHooks(tsNodeService: Service) {
+  tsNodeService.enableExperimentalEsmLoaderInterop();
 
   // Custom implementation that considers additional file extensions and automatically adds file extensions
   const nodeResolveImplementation = createResolve({
-    ...getExtensions(tsNodeInstance.config),
-    preferTsExts: tsNodeInstance.options.preferTsExts,
+    ...getExtensions(tsNodeService.config),
+    preferTsExts: tsNodeService.options.preferTsExts,
   });
 
   // The hooks API changed in node version X so we need to check for backwards compatibility.
@@ -173,17 +178,17 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
     // If file has .ts, .tsx, or .jsx extension, then ask node how it would treat this file if it were .js
     const ext = extname(nativePath);
     let nodeSays: { format: Format };
-    if (ext !== '.js' && !tsNodeInstance.ignored(nativePath)) {
+    if (ext !== '.js' && !tsNodeService.ignored(nativePath)) {
       nodeSays = await defer(formatUrl(pathToFileURL(nativePath + '.js')));
     } else {
       nodeSays = await defer();
     }
     // For files compiled by ts-node that node believes are either CJS or ESM, check if we should override that classification
     if (
-      !tsNodeInstance.ignored(nativePath) &&
+      !tsNodeService.ignored(nativePath) &&
       (nodeSays.format === 'commonjs' || nodeSays.format === 'module')
     ) {
-      const { moduleType } = tsNodeInstance.moduleTypeClassifier.classifyModule(
+      const { moduleType } = tsNodeService.moduleTypeClassifier.classifyModule(
         normalizeSlashes(nativePath)
       );
       if (moduleType === 'cjs') {
@@ -218,11 +223,11 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
     }
     const nativePath = fileURLToPath(url);
 
-    if (tsNodeInstance.ignored(nativePath)) {
+    if (tsNodeService.ignored(nativePath)) {
       return defer();
     }
 
-    const emittedJs = tsNodeInstance.compile(sourceAsString, nativePath);
+    const emittedJs = tsNodeService.compile(sourceAsString, nativePath);
 
     return { source: emittedJs };
   }

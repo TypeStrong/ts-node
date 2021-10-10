@@ -1,0 +1,16 @@
+{
+  "configurations": [
+    {
+      "name": "Debug AVA test file",
+      "type": "node",
+      "request": "launch",
+      "preLaunchTask": "npm: pre-debug",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/ava",
+      "program": "${file}",
+      "outputCapture": "std",
+      "skipFiles": [
+        "<node_internals>/**/*.js"
+      ],
+    }
+  ],
+}
