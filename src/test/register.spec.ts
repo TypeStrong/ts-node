@@ -33,13 +33,17 @@ test.beforeEach(async (t) => {
   // Un-install all hook and remove our test module from cache
   resetNodeEnvironment();
   delete require.cache[t.context.moduleTestPath];
+  // Paranoid check that we are truly uninstalled
+  exp(() => require(t.context.moduleTestPath)).toThrow(
+    "Unexpected token 'export'"
+  );
 });
 test.runSerially();
 
 test('create() does not register()', async (t) => {
   // nyc sets its own `require.extensions` hooks; to truly detect if we're
   // installed we must attempt to load a TS file
-  const created = t.context.tsNodeUnderTest.create(createOptions);
+  t.context.tsNodeUnderTest.create(createOptions);
   // This error indicates node attempted to run the code as .js
   exp(() => require(t.context.moduleTestPath)).toThrow(
     "Unexpected token 'export'"
@@ -47,16 +51,12 @@ test('create() does not register()', async (t) => {
 });
 
 test('register(options) is shorthand for register(create(options))', (t) => {
-  exp(require.extensions['.ts']).toBe(undefined);
   t.context.tsNodeUnderTest.register(createOptions);
-  exp(typeof require.extensions['.ts']).toBe('function');
   require(t.context.moduleTestPath);
 });
 
 test('register(service) registers a previously-created service', (t) => {
-  exp(require.extensions['.ts']).toBe(undefined);
   t.context.tsNodeUnderTest.register(t.context.service);
-  exp(typeof require.extensions['.ts']).toBe('function');
   require(t.context.moduleTestPath);
 });
 
