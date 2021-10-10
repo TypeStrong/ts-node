@@ -2115,15 +2115,15 @@ test.suite('ts-node', (test) => {
       // Serial because it's timing-sensitive
       test.serial('should allow evaluating top level await', async () => {
         const script = `
-        const x: number = await new Promise((r) => r(1));
-        for await (const x of [1,2,3]) { console.log(x) };
-        for (const x of ['a', 'b']) { await x; console.log(x) };
-        class Foo {}; await 1;
-        function Bar() {}; await 2;
-        const {y} = await ({y: 2});
-        const [z] = await [3];
-        x + y + z;
-      `;
+          const x: number = await new Promise((r) => r(1));
+          for await (const x of [1,2,3]) { console.log(x) };
+          for (const x of ['a', 'b']) { await x; console.log(x) };
+          class Foo {}; await 1;
+          function Bar() {}; await 2;
+          const {y} = await ({y: 2});
+          const [z] = await [3];
+          x + y + z;
+        `;
 
         const { stdout, stderr } = await executeInTlaRepl(script);
         expect(stderr).to.equal('');
@@ -2136,18 +2136,18 @@ test.suite('ts-node', (test) => {
         async () => {
           const awaitMs = 500;
           const script = `
-          const startTime = new Date().getTime();
-          await new Promise((r) => setTimeout(() => r(1), ${awaitMs}));
-          const endTime = new Date().getTime();
-          endTime - startTime;
-        `;
+            const startTime = new Date().getTime();
+            await new Promise((r) => setTimeout(() => r(1), ${awaitMs}));
+            const endTime = new Date().getTime();
+            endTime - startTime;
+          `;
           const { stdout, stderr } = await executeInTlaRepl(script, 6000);
 
           expect(stderr).to.equal('');
 
-          const elapsedTime = Number(
-            stdout.split('\n')[0].replace('> ', '').trim()
-          );
+          const elapsedTimeString = stdout.split('\n')[0].replace('> ', '').trim();
+          exp(elapsedTimeString).toMatch(/^\d+$/);
+          const elapsedTime = Number(elapsedTimeString);
           expect(elapsedTime).to.be.gte(awaitMs - 50);
           expect(elapsedTime).to.be.lte(awaitMs + 100);
         }
@@ -2158,11 +2158,11 @@ test.suite('ts-node', (test) => {
         'should not wait until promise is settled when not using await at top level',
         async () => {
           const script = `
-          const startTime = new Date().getTime();
-          (async () => await new Promise((r) => setTimeout(() => r(1), ${1000})))();
-          const endTime = new Date().getTime();
-          endTime - startTime;
-        `;
+            const startTime = new Date().getTime();
+            (async () => await new Promise((r) => setTimeout(() => r(1), ${1000})))();
+            const endTime = new Date().getTime();
+            endTime - startTime;
+          `;
           const { stdout, stderr } = await executeInTlaRepl(script);
 
           expect(stderr).to.equal('');
