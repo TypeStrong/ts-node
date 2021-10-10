@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@swc/core": "latest",
-    "ts-node": "file:ts-node-packed.tgz"
+    "ts-node": "file:ts-node-packed.tgz",
+    "tslog": "3.2.2"
   }
 }

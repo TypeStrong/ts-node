@@ -39,11 +39,14 @@ export function assign<T extends object>(
 }
 
 /**
- * Split a string array of values.
+ * Split a string array of values
+ * and remove empty strings from the resulting array.
  * @internal
  */
 export function split(value: string | undefined) {
-  return typeof value === 'string' ? value.split(/ *, */g) : undefined;
+  return typeof value === 'string'
+    ? value.split(/ *, */g).filter((v) => v !== '')
+    : undefined;
 }
 
 /**

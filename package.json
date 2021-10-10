@@ -153,7 +153,7 @@
     }
   },
   "dependencies": {
-    "@cspotcode/source-map-support": "0.6.1",
+    "@cspotcode/source-map-support": "github:cspotcode/node-source-map-support",
     "@tsconfig/node10": "^1.0.7",
     "@tsconfig/node12": "^1.0.7",
     "@tsconfig/node14": "^1.0.0",

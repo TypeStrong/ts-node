@@ -5,6 +5,7 @@ const { SafeMap } = require('./node-primordials');
 const { internalModuleReadJSON } = require('./node-internal-fs');
 const { pathToFileURL } = require('url');
 const { toNamespacedPath } = require('path');
+// const { getOptionValue } = require('./node-options');
 
 const cache = new SafeMap();
 
@@ -23,7 +24,6 @@ function read(jsonPath) {
     toNamespacedPath(jsonPath)
   );
   const result = { string, containsKeys };
-  const { getOptionValue } = require('./node-options');
   if (string !== undefined) {
     if (manifest === undefined) {
       // manifest = getOptionValue('--experimental-policy') ?
