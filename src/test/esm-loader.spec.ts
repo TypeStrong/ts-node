@@ -7,7 +7,6 @@ import semver = require('semver');
 import {
   contextTsNodeUnderTest,
   EXPERIMENTAL_MODULES_FLAG,
-  installTsNode,
   TEST_DIR,
 } from './helpers';
 import { createExec } from './exec-helpers';
@@ -21,7 +20,7 @@ const exec = createExec({
 });
 
 test.suite('createEsmHooks', (test) => {
-  if (semver.gte(process.version, '12.0.0')) {
+  if (semver.gte(process.version, '12.16.0')) {
     test('should create proper hooks with provided instance', async () => {
       const { err } = await exec(
         `node ${EXPERIMENTAL_MODULES_FLAG} --loader ./loader.mjs index.ts`,
