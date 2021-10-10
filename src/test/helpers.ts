@@ -156,49 +156,62 @@ export function getStream(stream: Readable, waitForPattern?: string | RegExp) {
   }
 }
 
-const defaultRequireExtensions = Object.getOwnPropertyDescriptors(
+const defaultRequireExtensions = captureObjectState(
   require.extensions
 );
-const defaultProcess = Object.getOwnPropertyDescriptors(process);
-const defaultModule = Object.getOwnPropertyDescriptors(require('module'));
-const defaultError = Object.getOwnPropertyDescriptors(Error);
-const defaultGlobal = Object.getOwnPropertyDescriptors(global);
+const defaultProcess = captureObjectState(process);
+const defaultModule = captureObjectState(require('module'));
+const defaultError = captureObjectState(Error);
+const defaultGlobal = captureObjectState(global);
 
 /**
  * Undo all of ts-node & co's installed hooks, resetting the node environment to default
  * so we can run multiple test cases which `.register()` ts-node.
+ *
+ * Must also play nice with `nyc`'s environmental mutations.
  */
 export function resetNodeEnvironment() {
   // We must uninstall so that it resets its internal state; otherwise it won't know it needs to reinstall in the next test.
   require('@cspotcode/source-map-support').uninstall();
 
   // Modified by ts-node hooks
-  resetObjectToDescriptors(require.extensions, defaultRequireExtensions);
+  resetObject(require.extensions, defaultRequireExtensions);
 
   // ts-node attaches a property when it registers an instance
   // source-map-support monkey-patches the emit function
-  resetObjectToDescriptors(process, defaultProcess);
+  resetObject(process, defaultProcess);
 
   // source-map-support swaps out the prepareStackTrace function
-  resetObjectToDescriptors(Error, defaultError);
+  resetObject(Error, defaultError);
 
   // _resolveFilename is modified by tsconfig-paths, future versions of source-map-support, and maybe future versions of ts-node
-  resetObjectToDescriptors(require('module'), defaultModule);
+  resetObject(require('module'), defaultModule);
 
   // May be modified by REPL tests, since the REPL sets globals.
-  resetObjectToDescriptors(global, defaultGlobal);
+  resetObject(global, defaultGlobal);
 }
 
+function captureObjectState(object: any) {
+  return {
+    descriptors: Object.getOwnPropertyDescriptors(object),
+    values: {...object}
+  };
+}
 // Redefine all property descriptors and delete any new properties
-function resetObjectToDescriptors(
+function resetObject(
   object: any,
-  descriptors: PropertyDescriptorMap
+  state: ReturnType<typeof captureObjectState>
 ) {
   const currentDescriptors = Object.getOwnPropertyDescriptors(object);
   for (const key of Object.keys(currentDescriptors)) {
-    if (!has(descriptors, key)) {
+    if (!has(state.descriptors, key)) {
       delete object[key];
     }
   }
-  Object.defineProperties(object, descriptors);
+  // Trigger nyc's setter functions
+  for(const [key, value] of Object.entries(state.values)) {
+    try { object[key] = value; } catch {}
+  }
+  // Reset descriptors
+  Object.defineProperties(object, state.descriptors);
 }
