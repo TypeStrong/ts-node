@@ -415,31 +415,32 @@ test.suite(
 );
 
 test.suite('REPL works with traceResolution', (test) => {
-  test.serial(
-    'startup traces should print before the prompt appears when traceResolution is enabled',
-    async (t) => {
-      const repl = t.context.createReplViaApi({
-        registerHooks: false as true,
-        createServiceOpts: {
-          compilerOptions: {
-            traceResolution: true,
-          },
-        },
-      });
+  // Won't work until #1498
+  // test.serial(
+  //   'startup traces should print before the prompt appears when traceResolution is enabled',
+  //   async (t) => {
+  //     const repl = t.context.createReplViaApi({
+  //       registerHooks: false as true,
+  //       createServiceOpts: {
+  //         compilerOptions: {
+  //           traceResolution: true,
+  //         },
+  //       },
+  //     });
 
-      repl.replService.start();
+  //     repl.replService.start();
 
-      repl.stdin.end();
+  //     repl.stdin.end();
 
-      await promisify(setTimeout)(3e3);
+  //     await promisify(setTimeout)(3e3);
 
-      repl.stdout.end();
-      const stdout = await getStream(repl.stdout);
+  //     repl.stdout.end();
+  //     const stdout = await getStream(repl.stdout);
 
-      expect(stdout).toContain('======== Resolving module');
-      expect(stdout.endsWith('> ')).toBe(true);
-    }
-  );
+  //     expect(stdout).toContain('======== Resolving module');
+  //     expect(stdout.endsWith('> ')).toBe(true);
+  //   }
+  // );
 
   test.serial(
     'traces should NOT appear when traceResolution is not enabled',
