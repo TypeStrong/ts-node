@@ -419,10 +419,14 @@ export class TSError extends BaseError {
   }
 }
 
+const TS_NODE_SERVICE_BRAND = Symbol('TS_NODE_SERVICE_BRAND');
+
 /**
  * Primary ts-node service, which wraps the TypeScript API and can compile TypeScript to JavaScript
  */
 export interface Service {
+  /** @internal */
+  [TS_NODE_SERVICE_BRAND]: true;
   ts: TSCommon;
   config: _ts.ParsedCommandLine;
   options: RegisterOptions;
@@ -438,6 +442,8 @@ export interface Service {
   readonly shouldReplAwait: boolean;
   /** @internal */
   addDiagnosticFilter(filter: DiagnosticFilter): void;
+  /** @internal */
+  installSourceMapSupport(): void;
   /** @internal */
   enableExperimentalEsmLoaderInterop(): void;
 }
@@ -472,11 +478,24 @@ export function getExtensions(config: _ts.ParsedCommandLine) {
 }
 
 /**
+ * Create a new TypeScript compiler instance and register it onto node.js
+ */
+export function register(opts?: RegisterOptions): Service;
+/**
  * Register TypeScript compiler instance onto node.js
  */
-export function register(opts: RegisterOptions = {}): Service {
+export function register(service: Service): Service;
+export function register(
+  serviceOrOpts: Service | RegisterOptions | undefined
+): Service {
+  // Is this a Service or a RegisterOptions?
+  let service = serviceOrOpts as Service;
+  if (!(serviceOrOpts as Service)?.[TS_NODE_SERVICE_BRAND]) {
+    // Not a service; is options
+    service = create((serviceOrOpts ?? {}) as RegisterOptions);
+  }
+
   const originalJsHandler = require.extensions['.js'];
-  const service = create(opts);
   const { tsExtensions, jsExtensions } = getExtensions(service.config);
   const extensions = [...tsExtensions, ...jsExtensions];
 
@@ -654,24 +673,41 @@ export function create(rawOptions: CreateOptions = {}): Service {
   }
 
   // Install source map support and read from memory cache.
-  sourceMapSupport.install({
-    environment: 'node',
-    retrieveFile(pathOrUrl: string) {
-      let path = pathOrUrl;
-      // If it's a file URL, convert to local path
-      // Note: fileURLToPath does not exist on early node v10
-      // I could not find a way to handle non-URLs except to swallow an error
-      if (experimentalEsmLoader && path.startsWith('file://')) {
-        try {
-          path = fileURLToPath(path);
-        } catch (e) {
-          /* swallow error */
+  installSourceMapSupport();
+  function installSourceMapSupport() {
+    sourceMapSupport.install({
+      environment: 'node',
+      retrieveFile(pathOrUrl: string) {
+        let path = pathOrUrl;
+        // If it's a file URL, convert to local path
+        // Note: fileURLToPath does not exist on early node v10
+        // I could not find a way to handle non-URLs except to swallow an error
+        if (experimentalEsmLoader && path.startsWith('file://')) {
+          try {
+            path = fileURLToPath(path);
+          } catch (e) {
+            /* swallow error */
+          }
         }
-      }
-      path = normalizeSlashes(path);
-      return outputCache.get(path)?.content || '';
-    },
-  });
+        path = normalizeSlashes(path);
+        return outputCache.get(path)?.content || '';
+      },
+      redirectConflictingLibrary: true,
+      onConflictingLibraryRedirect(
+        request,
+        parent,
+        isMain,
+        options,
+        redirectedRequest
+      ) {
+        debug(
+          `Redirected an attempt to require source-map-support to instead receive @cspotcode/source-map-support.  "${
+            (parent as NodeJS.Module).filename
+          }" attempted to require or resolve "${request}" and was redirected to "${redirectedRequest}".`
+        );
+      },
+    });
+  }
 
   const shouldHavePrettyErrors =
     options.pretty === undefined ? process.stdout.isTTY : options.pretty;
@@ -1228,6 +1264,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
   }
 
   return {
+    [TS_NODE_SERVICE_BRAND]: true,
     ts,
     config,
     compile,
@@ -1239,6 +1276,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     moduleTypeClassifier,
     shouldReplAwait,
     addDiagnosticFilter,
+    installSourceMapSupport,
     enableExperimentalEsmLoaderInterop,
   };
 }
