@@ -60,9 +60,17 @@ export function createEsmHooks(tsNodeService: Service) {
     versionGteLt(process.versions.node, '16.999.999', '17.0.0') ||
     versionGteLt(process.versions.node, '14.999.999', '15.0.0') ||
     versionGteLt(process.versions.node, '12.999.999', '13.0.0');
-  return newHooksAPI
-    ? { resolve, load }
-    : { resolve, getFormat, transformSource };
+
+  // Explicit return type to avoid TS's non-ideal inferred type
+  const hooksAPI: {
+    resolve: typeof resolve;
+    getFormat: typeof getFormat | undefined;
+    transformSource: typeof transformSource | undefined;
+    load: typeof load | undefined;
+  } = newHooksAPI
+    ? { resolve, load, getFormat: undefined, transformSource: undefined }
+    : { resolve, getFormat, transformSource, load: undefined };
+  return hooksAPI;
 
   function isFileUrlOrNodeStyleSpecifier(parsed: UrlWithStringQuery) {
     // We only understand file:// URLs, but in node, the specifier can be a node-style `./foo` or `foo`
