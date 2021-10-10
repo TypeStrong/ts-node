@@ -677,6 +677,20 @@ export function create(rawOptions: CreateOptions = {}): Service {
       path = normalizeSlashes(path);
       return outputCache.get(path)?.content || '';
     },
+    redirectConflictingLibrary: true,
+    onConflictingLibraryRedirect(
+      request,
+      parent,
+      isMain,
+      options,
+      redirectedRequest
+    ) {
+      debug(
+        `Redirected an attempt to require source-map-support to instead receive @cspotcode/source-map-support.  "${
+          (parent as NodeJS.Module).filename
+        }" attempted to require or resolve "${request}" and was redirected to "${redirectedRequest}".`
+      );
+    },
   });
 
   const shouldHavePrettyErrors =

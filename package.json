@@ -152,7 +152,7 @@
     }
   },
   "dependencies": {
-    "@cspotcode/source-map-support": "0.6.1",
+    "@cspotcode/source-map-support": "0.7.0",
     "@tsconfig/node10": "^1.0.7",
     "@tsconfig/node12": "^1.0.7",
     "@tsconfig/node14": "^1.0.0",
