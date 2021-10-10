@@ -156,9 +156,7 @@ export function getStream(stream: Readable, waitForPattern?: string | RegExp) {
   }
 }
 
-const defaultRequireExtensions = captureObjectState(
-  require.extensions
-);
+const defaultRequireExtensions = captureObjectState(require.extensions);
 const defaultProcess = captureObjectState(process);
 const defaultModule = captureObjectState(require('module'));
 const defaultError = captureObjectState(Error);
@@ -194,7 +192,7 @@ export function resetNodeEnvironment() {
 function captureObjectState(object: any) {
   return {
     descriptors: Object.getOwnPropertyDescriptors(object),
-    values: {...object}
+    values: { ...object },
   };
 }
 // Redefine all property descriptors and delete any new properties
@@ -209,8 +207,10 @@ function resetObject(
     }
   }
   // Trigger nyc's setter functions
-  for(const [key, value] of Object.entries(state.values)) {
-    try { object[key] = value; } catch {}
+  for (const [key, value] of Object.entries(state.values)) {
+    try {
+      object[key] = value;
+    } catch {}
   }
   // Reset descriptors
   Object.defineProperties(object, state.descriptors);
