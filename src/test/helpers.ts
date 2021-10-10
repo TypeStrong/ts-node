@@ -40,6 +40,8 @@ export const CMD_ESM_LOADER_WITHOUT_PROJECT = `node ${EXPERIMENTAL_MODULES_FLAG}
 // `createRequire` does not exist on older node versions
 export const testsDirRequire = createRequire(join(TEST_DIR, 'index.js'));
 
+export const ts = testsDirRequire('typescript');
+
 export const xfs = new NodeFS(fs);
 
 /** Pass to `test.context()` to get access to the ts-node API under test */

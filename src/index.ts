@@ -672,6 +672,15 @@ export function create(rawOptions: CreateOptions = {}): Service {
     });
   }
 
+  /**
+   * True if require() hooks should interop with experimental ESM loader.
+   * Enabled explicitly via a flag since it is a breaking change.
+   */
+  let experimentalEsmLoader = false;
+  function enableExperimentalEsmLoaderInterop() {
+    experimentalEsmLoader = true;
+  }
+
   // Install source map support and read from memory cache.
   installSourceMapSupport();
   function installSourceMapSupport() {
@@ -1252,15 +1261,6 @@ export function create(rawOptions: CreateOptions = {}): Service {
         normalizeSlashes(f)
       ),
     });
-  }
-
-  /**
-   * True if require() hooks should interop with experimental ESM loader.
-   * Enabled explicitly via a flag since it is a breaking change.
-   */
-  let experimentalEsmLoader = false;
-  function enableExperimentalEsmLoaderInterop() {
-    experimentalEsmLoader = true;
   }
 
   return {

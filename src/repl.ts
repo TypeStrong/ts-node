@@ -371,10 +371,7 @@ export function createRepl(options: CreateReplOptions = {}) {
             !name.includes('/') &&
             !['console', 'module', 'process'].includes(name)
         )
-        .map(
-          (name) =>
-            `declare const ${name}: typeof import('${name}');declare import ${name} = require('${name}')`
-        )
+        .map((name) => `declare import ${name} = require('${name}')`)
         .join(';')}\n`;
     }
 

@@ -1,4 +1,4 @@
-import ts = require('typescript');
+import { ts } from '../helpers';
 import semver = require('semver');
 import * as expect from 'expect';
 import {
@@ -414,7 +414,7 @@ test.suite(
 
 test.serial('REPL declares types for node built-ins within REPL', async (t) => {
   const { stdout, stderr } = await t.context.executeInRepl(
-    `util.promisify(setTimeout)("should not be a string")
+    `util.promisify(setTimeout)("should not be a string" as string)
     type Duplex = stream.Duplex
     const s = stream
     'done'`,
