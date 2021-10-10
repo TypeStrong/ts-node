@@ -37,6 +37,8 @@ export const test = createTestInterface({
 });
 // In case someone wants to `const test = _test.context()`
 export { test as _test };
+// Or import `context`
+export const context = test.context;
 
 export interface TestInterface<
   Context
@@ -85,7 +87,7 @@ export interface TestInterface<
 
   beforeAll(cb: (t: ExecutionContext<Context>) => Promise<void>): void;
   beforeEach(cb: (t: ExecutionContext<Context>) => Promise<void>): void;
-  context<T extends object>(
+  context<T extends object | void>(
     cb: (t: ExecutionContext<Context>) => Promise<T>
   ): TestInterface<Context & T>;
   suite(title: string, cb: (test: TestInterface<Context>) => void): void;

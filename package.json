@@ -67,6 +67,7 @@
     "test-cov": "nyc ava",
     "test": "npm run build && npm run lint && npm run test-cov --",
     "test-local": "npm run lint-fix && npm run build-tsc && npm run build-pack && npm run test-spec --",
+    "pre-debug": "npm run build-tsc && npm run build-pack",
     "coverage-report": "nyc report --reporter=lcov",
     "prepare": "npm run clean && npm run build-nopack",
     "api-extractor": "api-extractor run --local --verbose"
