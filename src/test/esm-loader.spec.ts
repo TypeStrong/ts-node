@@ -2,12 +2,19 @@
 // TODO: at the time of writing, other ESM loader hook tests have not been moved into this file.
 // Should consolidate them here.
 
-import { test } from './testlib';
+import { context } from './testlib';
 import semver = require('semver');
-import { EXPERIMENTAL_MODULES_FLAG, TEST_DIR } from './helpers';
+import {
+  contextTsNodeUnderTest,
+  EXPERIMENTAL_MODULES_FLAG,
+  installTsNode,
+  TEST_DIR,
+} from './helpers';
 import { createExec } from './exec-helpers';
 import { join } from 'path';
 import * as expect from 'expect';
+
+const test = context(contextTsNodeUnderTest);
 
 const exec = createExec({
   cwd: TEST_DIR,
