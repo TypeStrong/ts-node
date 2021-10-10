@@ -37,9 +37,11 @@ test.beforeEach(async (t) => {
 test.runSerially();
 
 test('create() does not register()', async (t) => {
-  exp(require.extensions['.ts']).toBe(undefined);
+  // nyc sets its own `require.extensions` hooks; to truly detect if we're
+  // installed we must attempt to load a TS file
   const created = t.context.tsNodeUnderTest.create(createOptions);
-  exp(require.extensions['.ts']).toBe(undefined);
+  // This error indicates node attempted to run the code as .js
+  exp(() => {require(t.context.moduleTestPath)}).toThrow("Unexpected token 'export'");
 });
 
 test('register(options) is shorthand for register(create(options))', (t) => {
