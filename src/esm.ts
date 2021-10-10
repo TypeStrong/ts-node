@@ -1,4 +1,10 @@
-import { getExtensions, register, RegisterOptions, Service } from './index';
+import {
+  register,
+  getExtensions,
+  RegisterOptions,
+  Service,
+  versionGteLt,
+} from './index';
 import {
   parse as parseUrl,
   format as formatUrl,
@@ -12,8 +18,23 @@ import { normalizeSlashes } from './util';
 const {
   createResolve,
 } = require('../dist-raw/node-esm-resolve-implementation');
+const { defaultGetFormat } = require('../dist-raw/node-esm-default-get-format');
 
 // Note: On Windows, URLs look like this: file:///D:/dev/@TypeStrong/ts-node-examples/foo.ts
+
+// NOTE ABOUT MULTIPLE EXPERIMENTAL LOADER APIS
+//
+// At the time of writing, this file implements 2x different loader APIs.
+// Node made a breaking change to the loader API in https://github.com/nodejs/node/pull/37468
+//
+// We check the node version number and export either the *old* or the *new* API.
+//
+// Today, we are implementing the *new* API on top of our implementation of the *old* API,
+// which relies on copy-pasted code from the *old* hooks implementation in node.
+//
+// In the future, we will likely invert this: we will copy-paste the *new* API implementation
+// from node, build our implementation of the *new* API on top of it, and implement the *old*
+// hooks API as a shim to the *new* API.
 
 /** @internal */
 export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
@@ -32,7 +53,24 @@ export function createEsmHooks(tsNodeService: Service) {
     preferTsExts: tsNodeService.options.preferTsExts,
   });
 
-  return { resolve, getFormat, transformSource };
+  // The hooks API changed in node version X so we need to check for backwards compatibility.
+  // TODO: When the new API is backported to v12, v14, v16, update these version checks accordingly.
+  const newHooksAPI =
+    versionGteLt(process.versions.node, '17.0.0') ||
+    versionGteLt(process.versions.node, '16.999.999', '17.0.0') ||
+    versionGteLt(process.versions.node, '14.999.999', '15.0.0') ||
+    versionGteLt(process.versions.node, '12.999.999', '13.0.0');
+
+  // Explicit return type to avoid TS's non-ideal inferred type
+  const hooksAPI: {
+    resolve: typeof resolve;
+    getFormat: typeof getFormat | undefined;
+    transformSource: typeof transformSource | undefined;
+    load: typeof load | undefined;
+  } = newHooksAPI
+    ? { resolve, load, getFormat: undefined, transformSource: undefined }
+    : { resolve, getFormat, transformSource, load: undefined };
+  return hooksAPI;
 
   function isFileUrlOrNodeStyleSpecifier(parsed: UrlWithStringQuery) {
     // We only understand file:// URLs, but in node, the specifier can be a node-style `./foo` or `foo`
@@ -74,6 +112,52 @@ export function createEsmHooks(tsNodeService: Service) {
       context,
       defaultResolve
     );
+  }
+
+  // `load` from new loader hook API (See description at the top of this file)
+  async function load(
+    url: string,
+    context: { format: Format | null | undefined },
+    defaultLoad: typeof load
+  ): Promise<{ format: Format; source: string | Buffer | undefined }> {
+    // If we get a format hint from resolve() on the context then use it
+    // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
+    const format =
+      context.format ??
+      (await getFormat(url, context, defaultGetFormat)).format;
+
+    let source = undefined;
+    if (format !== 'builtin' && format !== 'commonjs') {
+      // Call the new defaultLoad() to get the source
+      const { source: rawSource } = await defaultLoad(
+        url,
+        { format },
+        defaultLoad
+      );
+
+      if (rawSource === undefined || rawSource === null) {
+        throw new Error(
+          `Failed to load raw source: Format was '${format}' and url was '${url}''.`
+        );
+      }
+
+      // Emulate node's built-in old defaultTransformSource() so we can re-use the old transformSource() hook
+      const defaultTransformSource: typeof transformSource = async (
+        source,
+        _context,
+        _defaultTransformSource
+      ) => ({ source });
+
+      // Call the old hook
+      const { source: transformedSource } = await transformSource(
+        rawSource,
+        { url, format },
+        defaultTransformSource
+      );
+      source = transformedSource;
+    }
+
+    return { format, source };
   }
 
   type Format = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
@@ -129,6 +213,10 @@ export function createEsmHooks(tsNodeService: Service) {
     context: { url: string; format: Format },
     defaultTransformSource: typeof transformSource
   ): Promise<{ source: string | Buffer }> {
+    if (source === null || source === undefined) {
+      throw new Error('No source');
+    }
+
     const defer = () =>
       defaultTransformSource(source, context, defaultTransformSource);
 

@@ -6,6 +6,7 @@ const require = createRequire(fileURLToPath(import.meta.url));
 const esm = require('./dist/esm');
 export const {
   resolve,
+  load,
   getFormat,
   transformSource,
 } = esm.registerAndCreateEsmHooks();

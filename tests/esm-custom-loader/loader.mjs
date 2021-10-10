@@ -11,6 +11,6 @@ const tsNodeInstance = register({
   },
 });
 
-export const { resolve, getFormat, transformSource } = createEsmHooks(
+export const { resolve, getFormat, transformSource, load } = createEsmHooks(
   tsNodeInstance
 );

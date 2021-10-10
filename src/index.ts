@@ -47,18 +47,31 @@ export type {
 const engineSupportsPackageTypeField =
   parseInt(process.versions.node.split('.')[0], 10) >= 12;
 
-function versionGte(version: string, requirement: string) {
-  const [major, minor, patch, extra] = version
-    .split(/[\.-]/)
-    .map((s) => parseInt(s, 10));
-  const [reqMajor, reqMinor, reqPatch] = requirement
-    .split('.')
-    .map((s) => parseInt(s, 10));
-  return (
-    major > reqMajor ||
-    (major === reqMajor &&
-      (minor > reqMinor || (minor === reqMinor && patch >= reqPatch)))
-  );
+/** @internal */
+export function versionGteLt(
+  version: string,
+  gteRequirement: string,
+  ltRequirement?: string
+) {
+  const [major, minor, patch, extra] = parse(version);
+  const [gteMajor, gteMinor, gtePatch] = parse(gteRequirement);
+  const isGte =
+    major > gteMajor ||
+    (major === gteMajor &&
+      (minor > gteMinor || (minor === gteMinor && patch >= gtePatch)));
+  let isLt = true;
+  if (ltRequirement) {
+    const [ltMajor, ltMinor, ltPatch] = parse(ltRequirement);
+    isLt =
+      major < ltMajor ||
+      (major === ltMajor &&
+        (minor < ltMinor || (minor === ltMinor && patch < ltPatch)));
+  }
+  return isGte && isLt;
+
+  function parse(requirement: string) {
+    return requirement.split(/[\.-]/).map((s) => parseInt(s, 10));
+  }
 }
 
 /**
@@ -570,7 +583,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     );
   }
   // Top-level await was added in TS 3.8
-  const tsVersionSupportsTla = versionGte(ts.version, '3.8.0');
+  const tsVersionSupportsTla = versionGteLt(ts.version, '3.8.0');
   if (options.experimentalReplAwait === true && !tsVersionSupportsTla) {
     throw new Error(
       'Experimental REPL await is not compatible with TypeScript versions older than 3.8'

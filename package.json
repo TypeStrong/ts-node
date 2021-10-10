@@ -70,10 +70,9 @@
     "pre-debug": "npm run build-tsc && npm run build-pack",
     "coverage-report": "nyc report --reporter=lcov",
     "prepare": "npm run clean && npm run build-nopack",
-    "api-extractor": "api-extractor run --local --verbose"
-  },
-  "engines": {
-    "node": ">=12.0.0"
+    "api-extractor": "api-extractor run --local --verbose",
+    "esm-usage-example": "npm run build-tsc && cd esm-usage-example && node --experimental-specifier-resolution node --loader ../esm.mjs ./index",
+    "esm-usage-example2": "npm run build-tsc && cd tests && TS_NODE_PROJECT=./module-types/override-to-cjs/tsconfig.json node --loader ../esm.mjs ./module-types/override-to-cjs/test.cjs"
   },
   "repository": {
     "type": "git",
