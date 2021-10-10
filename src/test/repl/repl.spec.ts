@@ -212,7 +212,7 @@ test.suite('top level await', (_test) => {
 
         expect(stdout).toBe('> > ');
         expect(stderr.replace(/\r\n/g, '\n')).toBe(
-          '<repl>.ts(2,7): error TS2322: ' +
+          '<repl>.ts(4,7): error TS2322: ' +
             (semver.gte(ts.version, '4.0.0')
               ? `Type 'number' is not assignable to type 'string'.\n`
               : `Type '1' is not assignable to type 'string'.\n`) +
@@ -411,3 +411,30 @@ test.suite(
     );
   }
 );
+
+test.serial('REPL declares types for node built-ins within REPL', async (t) => {
+  const { stdout, stderr } = await t.context.executeInRepl(
+    `util.promisify(setTimeout)("should not be a string")
+    type Duplex = stream.Duplex
+    const s = stream
+    'done'`,
+    {
+      registerHooks: true,
+      waitPattern: `done`,
+      startInternalOptions: {
+        useGlobal: false,
+      },
+    }
+  );
+
+  // Assert that we receive a typechecking error about improperly using
+  // `util.promisify` but *not* an error about the absence of `util`
+  expect(stderr).not.toMatch("Cannot find name 'util'");
+  expect(stderr).toMatch(
+    "Argument of type 'string' is not assignable to parameter of type 'number'"
+  );
+  // Assert that both types and values can be used without error
+  expect(stderr).not.toMatch("Cannot find namespace 'stream'");
+  expect(stderr).not.toMatch("Cannot find name 'stream'");
+  expect(stdout).toMatch(`done`);
+});
