@@ -122,7 +122,7 @@ test.suite('register(create(options))', (test) => {
     try {
       require('../../tests/throw error');
     } catch (error: any) {
-      expect(error.stack).to.contain(
+      exp(error.stack).toMatch(
         [
           'Error: this is a demo',
           `    at Foo.bar (${join(TEST_DIR, './throw error.ts')}:100:17)`,
