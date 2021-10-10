@@ -3,7 +3,7 @@ import * as expect from 'expect';
 import { join, resolve, sep as pathSep } from 'path';
 import { tmpdir } from 'os';
 import semver = require('semver');
-import ts = require('typescript');
+import { ts } from './helpers';
 import { lstatSync, mkdtempSync } from 'fs';
 import { npath } from '@yarnpkg/fslib';
 import type _createRequire from 'create-require';

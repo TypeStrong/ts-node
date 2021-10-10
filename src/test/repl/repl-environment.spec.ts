@@ -94,7 +94,7 @@ test.suite(
       }
     );
 
-    const declareGlobals = `declare var replReport: any, stdinReport: any, evalReport: any, restReport: any, global: any, __filename: any, __dirname: any, module: any, exports: any, fs: any;`;
+    const declareGlobals = `declare var replReport: any, stdinReport: any, evalReport: any, restReport: any, global: any, __filename: any, __dirname: any, module: any, exports: any;`;
     function setReportGlobal(type: 'repl' | 'stdin' | 'eval') {
       return `
             ${declareGlobals}
@@ -107,7 +107,7 @@ test.suite(
               modulePaths: typeof module !== 'undefined' && [...module.paths],
               exportsTest: typeof exports !== 'undefined' ? module.exports === exports : null,
               stackTest: new Error().stack!.split('\\n')[1],
-              moduleAccessorsTest: typeof fs === 'undefined' ? null : fs === require('fs'),
+              moduleAccessorsTest: eval('typeof fs') === 'undefined' ? null : eval('fs') === require('fs'),
               argv: [...process.argv]
             };
           `.replace(/\n/g, '');
@@ -203,7 +203,7 @@ test.suite(
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
           stackTest: expect.stringContaining(
-            `    at ${join(TEST_DIR, '<repl>.ts')}:2:`
+            `    at ${join(TEST_DIR, '<repl>.ts')}:4:`
           ),
           moduleAccessorsTest: true,
           argv: [tsNodeExe],
@@ -356,7 +356,7 @@ test.suite(
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
           stackTest: expect.stringContaining(
-            `    at ${join(TEST_DIR, '<repl>.ts')}:2:`
+            `    at ${join(TEST_DIR, '<repl>.ts')}:4:`
           ),
           moduleAccessorsTest: true,
           argv: [tsNodeExe],
