@@ -251,7 +251,10 @@ export function readConfig(
  */
 function filterRecognizedTsConfigTsNodeOptions(
   jsonObject: any
-): { recognized: TsConfigOptions; unrecognized: any } {
+): {
+  recognized: TsConfigOptions;
+  unrecognized: any;
+} {
   if (jsonObject == null) return { recognized: {}, unrecognized: {} };
   const {
     compiler,
