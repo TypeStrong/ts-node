@@ -41,7 +41,9 @@ test('create() does not register()', async (t) => {
   // installed we must attempt to load a TS file
   const created = t.context.tsNodeUnderTest.create(createOptions);
   // This error indicates node attempted to run the code as .js
-  exp(() => {require(t.context.moduleTestPath)}).toThrow("Unexpected token 'export'");
+  exp(() => require(t.context.moduleTestPath)).toThrow(
+    "Unexpected token 'export'"
+  );
 });
 
 test('register(options) is shorthand for register(create(options))', (t) => {
