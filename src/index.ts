@@ -450,6 +450,8 @@ export interface Service {
   readonly shouldReplAwait: boolean;
   /** @internal */
   addDiagnosticFilter(filter: DiagnosticFilter): void;
+  /** @internal */
+  installSourceMapSupport(): void;
 }
 
 /**
@@ -677,38 +679,41 @@ export function create(rawOptions: CreateOptions = {}): Service {
   }
 
   // Install source map support and read from memory cache.
-  sourceMapSupport.install({
-    environment: 'node',
-    retrieveFile(pathOrUrl: string) {
-      let path = pathOrUrl;
-      // If it's a file URL, convert to local path
-      // Note: fileURLToPath does not exist on early node v10
-      // I could not find a way to handle non-URLs except to swallow an error
-      if (options.experimentalEsmLoader && path.startsWith('file://')) {
-        try {
-          path = fileURLToPath(path);
-        } catch (e) {
-          /* swallow error */
+  installSourceMapSupport();
+  function installSourceMapSupport() {
+    sourceMapSupport.install({
+      environment: 'node',
+      retrieveFile(pathOrUrl: string) {
+        let path = pathOrUrl;
+        // If it's a file URL, convert to local path
+        // Note: fileURLToPath does not exist on early node v10
+        // I could not find a way to handle non-URLs except to swallow an error
+        if (options.experimentalEsmLoader && path.startsWith('file://')) {
+          try {
+            path = fileURLToPath(path);
+          } catch (e) {
+            /* swallow error */
+          }
         }
-      }
-      path = normalizeSlashes(path);
-      return outputCache.get(path)?.content || '';
-    },
-    redirectConflictingLibrary: true,
-    onConflictingLibraryRedirect(
-      request,
-      parent,
-      isMain,
-      options,
-      redirectedRequest
-    ) {
-      debug(
-        `Redirected an attempt to require source-map-support to instead receive @cspotcode/source-map-support.  "${
-          (parent as NodeJS.Module).filename
-        }" attempted to require or resolve "${request}" and was redirected to "${redirectedRequest}".`
-      );
-    },
-  });
+        path = normalizeSlashes(path);
+        return outputCache.get(path)?.content || '';
+      },
+      redirectConflictingLibrary: true,
+      onConflictingLibraryRedirect(
+        request,
+        parent,
+        isMain,
+        options,
+        redirectedRequest
+      ) {
+        debug(
+          `Redirected an attempt to require source-map-support to instead receive @cspotcode/source-map-support.  "${
+            (parent as NodeJS.Module).filename
+          }" attempted to require or resolve "${request}" and was redirected to "${redirectedRequest}".`
+        );
+      },
+    });
+  }
 
   const shouldHavePrettyErrors =
     options.pretty === undefined ? process.stdout.isTTY : options.pretty;
@@ -1268,6 +1273,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     moduleTypeClassifier,
     shouldReplAwait,
     addDiagnosticFilter,
+    installSourceMapSupport,
   };
 }
 

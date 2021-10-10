@@ -61,6 +61,7 @@ test.suite('register(create(options))', (test) => {
     // Re-enable project for every test.
     t.context.service.enabled(true);
     t.context.tsNodeUnderTest.register(t.context.service);
+    t.context.service.installSourceMapSupport();
   });
 
   test('should be able to require typescript', ({
