@@ -2,7 +2,7 @@
 title: "CommonJS vs native ECMAScript modules"
 ---
 
-TypeScript is almost always written using modern `import` syntax, but you can choose to either transform to CommonJS or use node's native ESM support.  Configuration is different for each.
+TypeScript is almost always written using modern `import` syntax, but it is also transformed before being executed by the underlying runtime.  You can choose to either transform to CommonJS or to preserve the native `import` syntax, using node's native ESM support.  Configuration is different for each.
 
 Here is a brief comparison of the two.
 
@@ -11,7 +11,7 @@ Here is a brief comparison of the two.
 | Write native `import` syntax | Write native `import` syntax |
 | Transforms `import` into `require()` | Does not transform `import` |
 | Node executes scripts using the classic [CommonJS loader](https://nodejs.org/dist/latest-v16.x/docs/api/modules.html) | Node executes scripts using the new [ESM loader](https://nodejs.org/dist/latest-v16.x/docs/api/esm.html) |
-| Use any of:<br/>`ts-node` CLI<br/>`node -r ts-node/register`<br/>`NODE_OPTIONS="ts-node/register" node`<br/>`require('ts-node').register({/* options */})` | Must use the ESM loader via:<br/>`node --loader ts-node/esm`<br/>`NODE_OPTIONS="--loader ts-node/esm" node` |
+| Use any of:<br/>ts-node CLI<br/>`node -r ts-node/register`<br/>`NODE_OPTIONS="ts-node/register" node`<br/>`require('ts-node').register({/* options */})` | Must use the ESM loader via:<br/>`node --loader ts-node/esm`<br/>`NODE_OPTIONS="--loader ts-node/esm" node` |
 
 ## CommonJS
 
@@ -32,7 +32,7 @@ Transforming to CommonJS is typically simpler and more widely supported because 
 }
 ```
 
-If you must keep `"module": "ESNext"` for `tsc`, webpack, or another build tool, you can set an override for `ts-node`.
+If you must keep `"module": "ESNext"` for `tsc`, webpack, or another build tool, you can set an override for ts-node.
 
 ```json title="tsconfig.json"
 {
@@ -49,8 +49,7 @@ If you must keep `"module": "ESNext"` for `tsc`, webpack, or another build tool,
 
 ## Native ECMAScript modules
 
-[Node's ESM loader hooks](https://nodejs.org/api/esm.html#esm_experimental_loaders) are [**experimental**](https://nodejs.org/api/documentation.html#documentation_stability_index) and subject to change. `ts-node`'s ESM support is also experimental. They may have
-breaking changes in minor and patch releases and are not recommended for production.
+[Node's ESM loader hooks](https://nodejs.org/api/esm.html#esm_experimental_loaders) are [**experimental**](https://nodejs.org/api/documentation.html#documentation_stability_index) and subject to change. ts-node's ESM support is as stable as possible, but it relies on APIs which node can *and will* break in new versions of node.  Thus it is not recommended for production.
 
 For complete usage, limitations, and to provide feedback, see [#1007](https://github.com/TypeStrong/ts-node/issues/1007).
 

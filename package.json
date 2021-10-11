@@ -167,5 +167,9 @@
   },
   "prettier": {
     "singleQuote": true
+  },
+  "volta": {
+    "node": "16.9.1",
+    "npm": "6.14.15"
   }
 }
