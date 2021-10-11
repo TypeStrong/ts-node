@@ -20,10 +20,10 @@ We have bundled an experimental `swc` integration.
 [`swc`](https://swc.rs) is a TypeScript-compatible transpiler implemented in Rust.  This makes it an order of magnitude faster
 than `transpileModule`.
 
-To use it, first install `@swc/core` or `@swc/wasm`.  If using `importHelpers`, also install `@swc/helpers`.
+To use it, first install `@swc/core` or `@swc/wasm`.  If using `importHelpers`, also install `@swc/helpers`, and if using `dynamicImports` also install `regenerator-runtime`.
 
 ```shell
-npm i -D @swc/core @swc/helpers
+npm i -D @swc/core @swc/helpers regenerator-runtime
 ```
 
 Then add the following to your `tsconfig.json`.
@@ -38,6 +38,7 @@ Then add the following to your `tsconfig.json`.
 ```
 
 > `swc` uses `@swc/helpers` instead of `tslib`.  If you have enabled `importHelpers`, you must also install `@swc/helpers`.
+> If you are using `dynamicImports`, you must install `regenerator-runtime`.
 
 ## Writing your own integration
 
