@@ -10,6 +10,11 @@ import type * as _ts from 'typescript';
 // @public
 export function create(rawOptions?: CreateOptions): Service;
 
+// Warning: (ae-forgotten-export) The symbol "createEsmHooks" needs to be exported by the entry point index.d.ts
+//
+// @public (undocumented)
+export const createEsmHooks: typeof createEsmHooks_2;
+
 // @public
 export interface CreateOptions {
     compiler?: string;
@@ -78,6 +83,9 @@ export type Register = Service;
 
 // @public
 export function register(opts?: RegisterOptions): Service;
+
+// @public
+export function register(service: Service): Service;
 
 // @public
 export const REGISTER_INSTANCE: unique symbol;
@@ -213,7 +221,7 @@ export interface TSCommon {
 }
 
 // @public
-export interface TsConfigOptions extends Omit<RegisterOptions, 'transformers' | 'readFile' | 'fileExists' | 'skipProject' | 'project' | 'dir' | 'cwd' | 'projectSearchDir' | 'experimentalEsmLoader' | 'optionBasePaths'> {
+export interface TsConfigOptions extends Omit<RegisterOptions, 'transformers' | 'readFile' | 'fileExists' | 'skipProject' | 'project' | 'dir' | 'cwd' | 'projectSearchDir' | 'optionBasePaths'> {
 }
 
 // @public
