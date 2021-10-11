@@ -14,6 +14,7 @@ import { Console } from 'console';
 import * as assert from 'assert';
 import type * as tty from 'tty';
 import type * as Module from 'module';
+import { builtinModules } from 'module';
 
 // Lazy-loaded.
 let _processTopLevelAwait: (src: string) => string | null;
@@ -356,6 +357,22 @@ export function createRepl(options: CreateReplOptions = {}) {
       if (forceToBeModule) {
         state.input += 'export {};void 0;\n';
       }
+
+      // Declare node builtins.
+      // Skip the same builtins as `addBuiltinLibsToObject`:
+      //   those starting with _
+      //   those containing /
+      //   those that already exist as globals
+      // Intentionally suppress type errors in case @types/node does not declare any of them.
+      state.input += `// @ts-ignore\n${builtinModules
+        .filter(
+          (name) =>
+            !name.startsWith('_') &&
+            !name.includes('/') &&
+            !['console', 'module', 'process'].includes(name)
+        )
+        .map((name) => `declare import ${name} = require('${name}')`)
+        .join(';')}\n`;
     }
 
     reset();
@@ -510,6 +527,18 @@ function appendCompileAndEvalInput(options: {
     undo();
   } else {
     state.output = output;
+
+    // Insert a semicolon to make sure that the code doesn't interact with the next line,
+    // for example to prevent `2\n+ 2` from producing 4.
+    // This is safe since the output will not change since we can only get here with successful inputs,
+    // and adding a semicolon to the end of a successful input won't ever change the output.
+    state.input = state.input.replace(
+      /([^\n\s])([\n\s]*)$/,
+      (all, lastChar, whitespace) => {
+        if (lastChar !== ';') return `${lastChar};${whitespace}`;
+        return all;
+      }
+    );
   }
 
   let commands: Array<{ mustAwait?: true; execCommand: () => any }> = [];
@@ -585,15 +614,6 @@ function appendToEvalState(state: EvalState, input: string) {
   const undoVersion = state.version;
   const undoOutput = state.output;
   const undoLines = state.lines;
-
-  // Handle ASI issues with TypeScript re-evaluation.
-  if (
-    undoInput.charAt(undoInput.length - 1) === '\n' &&
-    /^\s*[\/\[(`-]/.test(input) &&
-    !/;\s*$/.test(undoInput)
-  ) {
-    state.input = `${state.input.slice(0, -1)};\n`;
-  }
 
   state.input += input;
   state.lines += lineCount(input);
