@@ -17,13 +17,9 @@ You can build the readme with this command:
 [![Build status](https://img.shields.io/github/workflow/status/TypeStrong/ts-node/Continuous%20Integration)](https://github.com/TypeStrong/ts-node/actions?query=workflow%3A%22Continuous+Integration%22)
 [![Test coverage](https://codecov.io/gh/TypeStrong/ts-node/branch/main/graph/badge.svg)](https://codecov.io/gh/TypeStrong/ts-node)
 
-> TypeScript execution and REPL for node.js, with source map support. **Works with `typescript@>=2.7`**.
+> TypeScript execution and REPL for node.js, with source map and native ESM support.
 
 The latest documentation can also be found on our website: <https://typestrong.org/ts-node>
-
-### *Experimental ESM support*
-
-Native ESM support is currently experimental. For usage, limitations, and to provide feedback, see [#1007](https://github.com/TypeStrong/ts-node/issues/1007).
 
 # Table of Contents
 
@@ -66,7 +62,7 @@ Native ESM support is currently experimental. For usage, limitations, and to pro
         *   [Skipping `node_modules`](#skipping-node_modules)
     *   [paths and baseUrl
         ](#paths-and-baseurl)
-        *   [Why is this not built-in to `ts-node`?](#why-is-this-not-built-in-to-ts-node)
+        *   [Why is this not built-in to ts-node?](#why-is-this-not-built-in-to-ts-node)
     *   [Help! My Types Are Missing!](#help-my-types-are-missing)
     *   [Third-party compilers](#third-party-compilers)
     *   [Third-party transpilers](#third-party-transpilers)
@@ -91,7 +87,7 @@ Native ESM support is currently experimental. For usage, limitations, and to pro
 
 # Overview
 
-`ts-node` is a TypeScript execution engine and REPL for Node.js.
+ts-node is a TypeScript execution engine and REPL for Node.js.
 
 It JIT transforms TypeScript into JavaScript, enabling you to directly execute TypeScript on Node.js without precompiling.
 This is accomplished by hooking node's module loading APIs, enabling it to be used seamlessly alongside other Node.js
@@ -170,27 +166,27 @@ Passing CLI arguments via shebang is allowed on Mac but not Linux.  For example,
     #!/usr/bin/env ts-node --files
     // This shebang is not portable.  It only works on Mac
 
-Instead, specify all `ts-node` options in your `tsconfig.json`.
+Instead, specify all ts-node options in your `tsconfig.json`.
 
 ## Programmatic
 
-You can require `ts-node` and register the loader for future requires by using `require('ts-node').register({ /* options */ })`. You can also use file shortcuts - `node -r ts-node/register` or `node -r ts-node/register/transpile-only` - depending on your preferences.
+You can require ts-node and register the loader for future requires by using `require('ts-node').register({ /* options */ })`. You can also use file shortcuts - `node -r ts-node/register` or `node -r ts-node/register/transpile-only` - depending on your preferences.
 
-**Note:** If you need to use advanced node.js CLI arguments (e.g. `--inspect`), use them with `node -r ts-node/register` instead of the `ts-node` CLI.
+**Note:** If you need to use advanced node.js CLI arguments (e.g. `--inspect`), use them with `node -r ts-node/register` instead of ts-node's CLI.
 
 ### Developers
 
-`ts-node` exports a `create()` function that can be used to initialize a TypeScript compiler that isn't registered to `require.extensions`, and it uses the same code as `register`.
+ts-node exports a `create()` function that can be used to initialize a TypeScript compiler that isn't registered to `require.extensions`, and it uses the same code as `register`.
 
 # Configuration
 
-`ts-node` supports a variety of options which can be specified via `tsconfig.json`, as CLI flags, as environment variables, or programmatically.
+ts-node supports a variety of options which can be specified via `tsconfig.json`, as CLI flags, as environment variables, or programmatically.
 
 For a complete list, see [Options](#options).
 
 ## CLI flags
 
-`ts-node` CLI flags must come *before* the entrypoint script. For example:
+ts-node CLI flags must come *before* the entrypoint script. For example:
 
 ```shell
 $ ts-node --project tsconfig-dev.json say-hello.ts Ronald
@@ -199,7 +195,7 @@ Hello, Ronald!
 
 ## Via tsconfig.json (recommended)
 
-`ts-node` automatically finds and loads `tsconfig.json`.  Most `ts-node` options can be specified in a `"ts-node"` object using their programmatic, camelCase names. We recommend this because it works even when you cannot pass CLI flags, such as `node --require ts-node/register` and when using shebangs.
+ts-node automatically finds and loads `tsconfig.json`.  Most ts-node options can be specified in a `"ts-node"` object using their programmatic, camelCase names. We recommend this because it works even when you cannot pass CLI flags, such as `node --require ts-node/register` and when using shebangs.
 
 Use `--skip-project` to skip loading the `tsconfig.json`.  Use `--project` to explicitly specify the path to a `tsconfig.json`.
 
@@ -237,7 +233,7 @@ Our bundled [JSON schema](https://unpkg.com/browse/ts-node@latest/tsconfig.schem
 ### @tsconfig/bases
 
 [@tsconfig/bases](https://github.com/tsconfig/bases) maintains recommended configurations for several node versions.
-As a convenience, these are bundled with `ts-node`.
+As a convenience, these are bundled with ts-node.
 
 ```jsonc title="tsconfig.json"
 {
@@ -250,7 +246,7 @@ As a convenience, these are bundled with `ts-node`.
 
 ### Default config
 
-If no `tsconfig.json` is loaded from disk, `ts-node` will use the newest recommended defaults from
+If no `tsconfig.json` is loaded from disk, ts-node will use the newest recommended defaults from
 [@tsconfig/bases](https://github.com/tsconfig/bases/) compatible with your `node` and `typescript` versions.
 With the latest `node` and `typescript`, this is [`@tsconfig/node16`](https://github.com/tsconfig/bases/blob/master/bases/node16.json).
 
@@ -260,7 +256,7 @@ When in doubt, `ts-node --show-config` will log the configuration being used, an
 
 ## `node` flags
 
-[`node` flags](https://nodejs.org/api/cli.html) must be passed directly to `node`; they cannot be passed to the `ts-node` binary nor can they be specified in `tsconfig.json`
+[`node` flags](https://nodejs.org/api/cli.html) must be passed directly to `node`; they cannot be passed to the ts-node binary nor can they be specified in `tsconfig.json`
 
 We recommend using the [`NODE_OPTIONS`](https://nodejs.org/api/cli.html#cli_node_options_options) environment variable to pass options to `node`.
 
@@ -268,7 +264,7 @@ We recommend using the [`NODE_OPTIONS`](https://nodejs.org/api/cli.html#cli_node
 NODE_OPTIONS='--trace-deprecation --abort-on-uncaught-exception' ts-node ./index.ts
 ```
 
-Alternatively, you can invoke `node` directly and install `ts-node` via `--require`/`-r`
+Alternatively, you can invoke `node` directly and install ts-node via `--require`/`-r`
 
 ```shell
 node --trace-deprecation --abort-on-uncaught-exception -r ts-node/register ./index.ts
@@ -335,7 +331,7 @@ The API includes [additional options](https://typestrong.org/ts-node/api/interfa
 
 # CommonJS vs native ECMAScript modules
 
-TypeScript is almost always written using modern `import` syntax, but you can choose to either transform to CommonJS or use node's native ESM support.  Configuration is different for each.
+TypeScript is almost always written using modern `import` syntax, but it is also transformed before being executed by the underlying runtime.  You can choose to either transform to CommonJS or to preserve the native `import` syntax, using node's native ESM support.  Configuration is different for each.
 
 Here is a brief comparison of the two.
 
@@ -344,7 +340,7 @@ Here is a brief comparison of the two.
 | Write native `import` syntax | Write native `import` syntax |
 | Transforms `import` into `require()` | Does not transform `import` |
 | Node executes scripts using the classic [CommonJS loader](https://nodejs.org/dist/latest-v16.x/docs/api/modules.html) | Node executes scripts using the new [ESM loader](https://nodejs.org/dist/latest-v16.x/docs/api/esm.html) |
-| Use any of:<br/>`ts-node` CLI<br/>`node -r ts-node/register`<br/>`NODE_OPTIONS="ts-node/register" node`<br/>`require('ts-node').register({/* options */})` | Must use the ESM loader via:<br/>`node --loader ts-node/esm`<br/>`NODE_OPTIONS="--loader ts-node/esm" node` |
+| Use any of:<br/>ts-node CLI<br/>`node -r ts-node/register`<br/>`NODE_OPTIONS="ts-node/register" node`<br/>`require('ts-node').register({/* options */})` | Must use the ESM loader via:<br/>`node --loader ts-node/esm`<br/>`NODE_OPTIONS="--loader ts-node/esm" node` |
 
 ## CommonJS
 
@@ -365,7 +361,7 @@ Transforming to CommonJS is typically simpler and more widely supported because 
 }
 ```
 
-If you must keep `"module": "ESNext"` for `tsc`, webpack, or another build tool, you can set an override for `ts-node`.
+If you must keep `"module": "ESNext"` for `tsc`, webpack, or another build tool, you can set an override for ts-node.
 
 ```jsonc title="tsconfig.json"
 {
@@ -382,8 +378,7 @@ If you must keep `"module": "ESNext"` for `tsc`, webpack, or another build tool,
 
 ## Native ECMAScript modules
 
-[Node's ESM loader hooks](https://nodejs.org/api/esm.html#esm_experimental_loaders) are [**experimental**](https://nodejs.org/api/documentation.html#documentation_stability_index) and subject to change. `ts-node`'s ESM support is also experimental. They may have
-breaking changes in minor and patch releases and are not recommended for production.
+[Node's ESM loader hooks](https://nodejs.org/api/esm.html#esm_experimental_loaders) are [**experimental**](https://nodejs.org/api/documentation.html#documentation_stability_index) and subject to change. ts-node's ESM support is as stable as possible, but it relies on APIs which node can *and will* break in new versions of node.  Thus it is not recommended for production.
 
 For complete usage, limitations, and to provide feedback, see [#1007](https://github.com/TypeStrong/ts-node/issues/1007).
 
@@ -407,11 +402,11 @@ You must set [`"type": "module"`](https://nodejs.org/api/packages.html#packages_
 
 ## Understanding configuration
 
-`ts-node` uses sensible default configurations to reduce boilerplate while still respecting `tsconfig.json` if you
+ts-node uses sensible default configurations to reduce boilerplate while still respecting `tsconfig.json` if you
 have one.  If you are unsure which configuration is used, you can log it with `ts-node --show-config`.  This is similar to
 `tsc --showConfig` but includes `"ts-node"` options as well.
 
-`ts-node` also respects your locally-installed `typescript` version, but global installations fallback to the globally-installed
+ts-node also respects your locally-installed `typescript` version, but global installations fallback to the globally-installed
 `typescript`.  If you are unsure which versions are used, `ts-node -vv` will log them.
 
 ```shell
@@ -457,7 +452,7 @@ $ ts-node --show-config
 
 ## Understanding Errors
 
-It is important to differentiate between errors from `ts-node`, errors from the TypeScript compiler, and errors from `node`.  It is also important to understand when errors are caused by a type error in your code, a bug in your code, or a flaw in your configuration.
+It is important to differentiate between errors from ts-node, errors from the TypeScript compiler, and errors from `node`.  It is also important to understand when errors are caused by a type error in your code, a bug in your code, or a flaw in your configuration.
 
 ### `TSError`
 
@@ -465,7 +460,7 @@ Type errors from the compiler are thrown as a `TSError`.  These are the same as 
 
 ### `SyntaxError`
 
-Any error that is not a `TSError` is from node.js (e.g. `SyntaxError`), and cannot be fixed by TypeScript or `ts-node`. These are bugs in your code or configuration.
+Any error that is not a `TSError` is from node.js (e.g. `SyntaxError`), and cannot be fixed by TypeScript or ts-node. These are bugs in your code or configuration.
 
 #### Unsupported JavaScript syntax
 
@@ -488,11 +483,11 @@ When you try to run this code, node 12 will throw a `SyntaxError`.  To fix this,
 
 # Make it fast
 
-These tricks will make `ts-node` faster.
+These tricks will make ts-node faster.
 
 ## Skip typechecking
 
-It is often better to use `tsc --noEmit` to typecheck once before your tests run or as a lint step. In these cases, `ts-node` can skip typechecking.
+It is often better to use `tsc --noEmit` to typecheck once before your tests run or as a lint step. In these cases, ts-node can skip typechecking.
 
 *   Enable [`transpileOnly`](#options) to skip typechecking
 *   Use our [`swc` integration](#bundled-swc-integration)
@@ -510,7 +505,7 @@ It is often better to use `tsc --noEmit` to typecheck once before your tests run
 
 ## How It Works
 
-`ts-node` works by registering hooks for `.ts`, `.tsx`, `.js`, and/or `.jsx` extensions.
+ts-node works by registering hooks for `.ts`, `.tsx`, `.js`, and/or `.jsx` extensions.
 
 Vanilla `node` loads `.js` by reading code from disk and executing it.  Our hook runs in the middle, transforming code from TypeScript to JavaScript and passing the result to `node` for execution.  This transformation will respect your `tsconfig.json` as if you had compiled via `tsc`.
 
@@ -520,7 +515,7 @@ Vanilla `node` loads `.js` by reading code from disk and executing it.  Our hook
 
 > **Warning:** if a file is ignored or its file extension is not registered, node will either fail to resolve the file or will attempt to execute it as JavaScript without any transformation.  This may cause syntax errors or other failures, because node does not understand TypeScript type syntax nor bleeding-edge ECMAScript features.
 
-> **Warning:** When `ts-node` is used with `allowJs`, all non-ignored JavaScript files are transformed using the TypeScript compiler.
+> **Warning:** When ts-node is used with `allowJs`, all non-ignored JavaScript files are transformed using the TypeScript compiler.
 
 ### Skipping `node_modules`
 
@@ -532,7 +527,7 @@ By default, **TypeScript Node** avoids compiling files in `/node_modules/` for t
 
 ## paths and baseUrl&#xA;
 
-You can use `ts-node` together with [tsconfig-paths](https://www.npmjs.com/package/tsconfig-paths) to load modules according to the `paths` section in `tsconfig.json`.
+You can use ts-node together with [tsconfig-paths](https://www.npmjs.com/package/tsconfig-paths) to load modules according to the `paths` section in `tsconfig.json`.
 
 ```jsonc title="tsconfig.json"
 {
@@ -543,7 +538,7 @@ You can use `ts-node` together with [tsconfig-paths](https://www.npmjs.com/packa
 }
 ```
 
-### Why is this not built-in to `ts-node`?
+### Why is this not built-in to ts-node?
 
 The official TypeScript Handbook explains the intended purpose for `"paths"` in ["Additional module resolution flags"](https://www.typescriptlang.org/docs/handbook/module-resolution.html#additional-module-resolution-flags).
 
@@ -552,11 +547,11 @@ The official TypeScript Handbook explains the intended purpose for `"paths"` in 
 > It is important to note that the compiler will not perform any of these transformations; it just uses these pieces of information to guide the process of resolving a module import to its definition file.
 
 This means `"paths"` are intended to describe mappings that the build tool or runtime *already* performs, not to tell the build tool or
-runtime how to resolve modules.  In other words, they intend us to write our imports in a way `node` already understands.  For this reason, `ts-node` does not modify `node`'s module resolution behavior to implement `"paths"` mappings.
+runtime how to resolve modules.  In other words, they intend us to write our imports in a way `node` already understands.  For this reason, ts-node does not modify `node`'s module resolution behavior to implement `"paths"` mappings.
 
 ## Help! My Types Are Missing!
 
-**TypeScript Node** does *not* use `files`, `include` or `exclude`, by default. This is because a large majority projects do not use all of the files in a project directory (e.g. `Gulpfile.ts`, runtime vs tests) and parsing every file for types slows startup time. Instead, `ts-node` starts with the script file (e.g. `ts-node index.ts`) and TypeScript resolves dependencies based on imports and references.
+ts-node does *not* use `files`, `include` or `exclude`, by default. This is because a large majority projects do not use all of the files in a project directory (e.g. `Gulpfile.ts`, runtime vs tests) and parsing every file for types slows startup time. Instead, ts-node starts with the script file (e.g. `ts-node index.ts`) and TypeScript resolves dependencies based on imports and references.
 
 For global definitions, you can use the `typeRoots` compiler option.  This requires that your type definitions be structured as type packages (not loose TypeScript definition files). More details on how this works can be found in the [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types).
 
@@ -637,7 +632,7 @@ For example, to use `ttypescript` and `ts-transformer-keys`, add this to your `t
 
 In transpile-only mode, we skip typechecking to speed up execution time.  You can go a step further and use a
 third-party transpiler to transform TypeScript into JavaScript even faster.  You will still benefit from
-`ts-node`'s automatic `tsconfig.json` discovery, sourcemap support, and global `ts-node` CLI.  Integrations
+ts-node's automatic `tsconfig.json` discovery, sourcemap support, and global ts-node CLI.  Integrations
 can automatically derive an appropriate configuration from your existing `tsconfig.json` which simplifies project
 boilerplate.
 
@@ -681,7 +676,7 @@ Integrations are `require()`d, so they can be published to npm.  The module must
 
 ## Module type overrides
 
-When deciding between CommonJS and native ECMAScript modules, `ts-node` defaults to matching vanilla `node` and `tsc`
+When deciding between CommonJS and native ECMAScript modules, ts-node defaults to matching vanilla `node` and `tsc`
 behavior.  This means TypeScript files are transformed according to your `tsconfig.json` `"module"` option and executed
 according to node's rules for the `package.json` `"type"` field.
 
@@ -694,7 +689,7 @@ In these situations, our `moduleTypes` option lets you override certain files, f
 CommonJS or ESM.  Node supports similar overriding via `.cjs` and `.mjs` file extensions, but `.ts` files cannot use them.
 `moduleTypes` achieves the same effect, and *also* overrides your `tsconfig.json` `"module"` config appropriately.
 
-The following example tells `ts-node` to execute a webpack config as CommonJS:
+The following example tells ts-node to execute a webpack config as CommonJS:
 
 ```jsonc title=tsconfig.json
 {
@@ -836,20 +831,22 @@ ts-node node_modules/tape/bin/tape [...args]
 
 ## Visual Studio Code
 
-Create a new node.js configuration, add `-r ts-node/register` to node args and move the `program` to the `args` list (so VS Code doesn't look for `outFiles`).
+Create a new Node.js debug configuration, add `-r ts-node/register` to node args and move the `program` to the `args` list (so VS Code doesn't look for `outFiles`).
 
-```jsonc
+```jsonc title=".vscode/launch.json"
 {
-    "type": "node",
-    "request": "launch",
-    "name": "Launch Program",
-    "runtimeArgs": [
-        "-r",
-        "ts-node/register"
-    ],
-    "args": [
-        "${workspaceFolder}/index.ts"
-    ]
+    "configurations": [{
+        "type": "node",
+        "request": "launch",
+        "name": "Launch Program",
+        "runtimeArgs": [
+            "-r",
+            "ts-node/register"
+        ],
+        "args": [
+            "${workspaceFolder}/src/index.ts"
+        ]
+    }],
 }
 ```
 
