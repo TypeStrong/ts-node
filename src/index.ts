@@ -8,7 +8,7 @@ import { BaseError } from 'make-error';
 import type * as _ts from 'typescript';
 
 import type { Transpiler, TranspilerFactory } from './transpilers/types';
-import { assign, normalizeSlashes, parse, split, yn } from './util';
+import { assign, env, normalizeSlashes, parse, split, yn } from './util';
 import { readConfig } from './configuration';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
 import {
@@ -102,8 +102,6 @@ declare global {
   }
 }
 
-/** @internal */
-export const env = process.env as ProcessEnv;
 /**
  * Declare all env vars, to aid discoverability.
  * If an env var affects ts-node's behavior, it should not be buried somewhere in our codebase.

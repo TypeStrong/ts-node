@@ -1,5 +1,4 @@
-import { env } from '.';
-import { yn } from './util';
+import { env, yn } from './util';
 
 /**
  * Debugging `ts-node`.
