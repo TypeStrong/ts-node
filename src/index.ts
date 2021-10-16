@@ -8,14 +8,7 @@ import { BaseError } from 'make-error';
 import type * as _ts from 'typescript';
 
 import type { Transpiler, TranspilerFactory } from './transpilers/types';
-import {
-  assign,
-  cachedLookup,
-  normalizeSlashes,
-  parse,
-  split,
-  yn,
-} from './util';
+import { assign, normalizeSlashes, parse, split, yn } from './util';
 import { readConfig } from './configuration';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
 import {
@@ -23,6 +16,9 @@ import {
   ModuleTypeClassifier,
 } from './module-type-classifier';
 import { createResolverFunctions } from './resolver-functions';
+import type { createEsmHooks as createEsmHooksFn } from './esm';
+import { createCachedFsReader } from './fs';
+import { debug } from './diagnostics';
 
 export { TSCommon };
 export {
@@ -145,25 +141,6 @@ export interface ProcessEnv {
  * @internal
  */
 export const INSPECT_CUSTOM = util.inspect.custom || 'inspect';
-
-/**
- * Debugging `ts-node`.
- */
-const shouldDebug = yn(env.TS_NODE_DEBUG);
-/** @internal */
-export const debug = shouldDebug
-  ? (...args: any) =>
-      console.log(`[ts-node ${new Date().toISOString()}]`, ...args)
-  : () => undefined;
-const debugFn = shouldDebug
-  ? <T, U>(key: string, fn: (arg: T) => U) => {
-      let i = 0;
-      return (x: T) => {
-        debug(key, x, ++i);
-        return fn(x);
-      };
-    }
-  : <T, U>(_: string, fn: (arg: T) => U) => fn;
 
 /**
  * Export the current version.
@@ -556,13 +533,24 @@ export function create(rawOptions: CreateOptions = {}): Service {
     rawOptions.projectSearchDir ?? rawOptions.project ?? cwd
   );
 
+  const cachedFsReader = createCachedFsReader({
+    directoryExists: ts.sys.directoryExists,
+    fileExists: rawOptions.fileExists ?? ts.sys.fileExists,
+    getDirectories: ts.sys.getDirectories,
+    readDirectory: ts.sys.readDirectory,
+    readFile: rawOptions.readFile ?? ts.sys.readFile,
+    resolvePath: ts.sys.resolvePath,
+    realpath: ts.sys.realpath,
+    useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
+  });
+
   // Read config file and merge new options between env and CLI options.
   const {
     configFilePath,
     config,
     tsNodeOptionsFromTsconfig,
     optionBasePaths,
-  } = readConfig(cwd, ts, rawOptions);
+  } = readConfig(cwd, ts, cachedFsReader, rawOptions);
   const options = assign<RegisterOptions>(
     {},
     DEFAULTS,
@@ -602,8 +590,6 @@ export function create(rawOptions: CreateOptions = {}): Service {
     ({ compiler, ts } = loadCompiler(options.compiler, configFilePath));
   }
 
-  const readFile = options.readFile || ts.sys.readFile;
-  const fileExists = options.fileExists || ts.sys.fileExists;
   // typeCheck can override transpileOnly, useful for CLI flag to override config file
   const transpileOnly =
     options.transpileOnly === true && options.typeCheck !== true;
@@ -651,7 +637,8 @@ export function create(rawOptions: CreateOptions = {}): Service {
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
     getNewLine: () => ts.sys.newLine,
     getCurrentDirectory: () => cwd,
-    getCanonicalFileName: ts.sys.useCaseSensitiveFileNames
+    // TODO replace with `ts.createGetCanonicalFileName`?
+    getCanonicalFileName: cachedFsReader.useCaseSensitiveFileNames
       ? (x) => x
       : (x) => x.toLowerCase(),
   };
@@ -778,7 +765,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
   ) => TypeInfo;
 
   const getCanonicalFileName = ((ts as unknown) as TSInternal).createGetCanonicalFileName(
-    ts.sys.useCaseSensitiveFileNames
+    cachedFsReader.useCaseSensitiveFileNames
   );
 
   const moduleTypeClassifier = createModuleTypeClassifier({
@@ -790,7 +777,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
   if (!transpileOnly) {
     const fileContents = new Map<string, string>();
     const rootFileNames = new Set(config.fileNames);
-    const cachedReadFile = cachedLookup(debugFn('readFile', readFile));
+    const cachedReadFile = cachedFsReader.readFile;
 
     // Use language services by default (TODO: invert next major version).
     if (!options.compilerHost) {
@@ -834,19 +821,14 @@ export function create(rawOptions: CreateOptions = {}): Service {
           return ts.ScriptSnapshot.fromString(contents);
         },
         readFile: cachedReadFile,
-        readDirectory: ts.sys.readDirectory,
-        getDirectories: cachedLookup(
-          debugFn('getDirectories', ts.sys.getDirectories)
-        ),
-        fileExists: cachedLookup(debugFn('fileExists', fileExists)),
-        directoryExists: cachedLookup(
-          debugFn('directoryExists', ts.sys.directoryExists)
-        ),
-        realpath: ts.sys.realpath
-          ? cachedLookup(debugFn('realpath', ts.sys.realpath))
-          : undefined,
+        readDirectory: cachedFsReader.readDirectory,
+        getDirectories: cachedFsReader.getDirectories,
+        fileExists: cachedFsReader.fileExists,
+        directoryExists: cachedFsReader.directoryExists,
+        realpath: cachedFsReader.realpath,
         getNewLine: () => ts.sys.newLine,
-        useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
+        useCaseSensitiveFileNames: () =>
+          cachedFsReader.useCaseSensitiveFileNames,
         getCurrentDirectory: () => cwd,
         getCompilationSettings: () => config.options,
         getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
@@ -871,7 +853,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
       serviceHost.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives;
 
       const registry = ts.createDocumentRegistry(
-        ts.sys.useCaseSensitiveFileNames,
+        cachedFsReader.useCaseSensitiveFileNames,
         cwd
       );
       const service = ts.createLanguageService(serviceHost, registry);
@@ -962,6 +944,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
       };
     } else {
       const sys: _ts.System & _ts.FormatDiagnosticsHost = {
+        // TODO splat all cachedFsReader methods into here
         ...ts.sys,
         ...diagnosticHost,
         readFile: (fileName: string) => {
@@ -971,18 +954,12 @@ export function create(rawOptions: CreateOptions = {}): Service {
           if (contents) fileContents.set(fileName, contents);
           return contents;
         },
-        readDirectory: ts.sys.readDirectory,
-        getDirectories: cachedLookup(
-          debugFn('getDirectories', ts.sys.getDirectories)
-        ),
-        fileExists: cachedLookup(debugFn('fileExists', fileExists)),
-        directoryExists: cachedLookup(
-          debugFn('directoryExists', ts.sys.directoryExists)
-        ),
-        resolvePath: cachedLookup(debugFn('resolvePath', ts.sys.resolvePath)),
-        realpath: ts.sys.realpath
-          ? cachedLookup(debugFn('realpath', ts.sys.realpath))
-          : undefined,
+        readDirectory: cachedFsReader.readDirectory,
+        getDirectories: cachedFsReader.getDirectories,
+        fileExists: cachedFsReader.fileExists,
+        directoryExists: cachedFsReader.directoryExists,
+        resolvePath: cachedFsReader.resolvePath,
+        realpath: cachedFsReader.realpath,
       };
 
       const host: _ts.CompilerHost = ts.createIncrementalCompilerHost
@@ -1486,7 +1463,6 @@ function getTokenAtPosition(
   }
 }
 
-import type { createEsmHooks as createEsmHooksFn } from './esm';
 export const createEsmHooks: typeof createEsmHooksFn = (
   tsNodeService: Service
 ) => require('./esm').createEsmHooks(tsNodeService);

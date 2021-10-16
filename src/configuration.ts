@@ -1,5 +1,6 @@
 import { resolve, dirname } from 'path';
 import type * as _ts from 'typescript';
+import type { FsReader } from './fs';
 import {
   CreateOptions,
   DEFAULTS,
@@ -61,6 +62,7 @@ function fixConfig(ts: TSCommon, config: _ts.ParsedCommandLine) {
 export function readConfig(
   cwd: string,
   ts: TSCommon,
+  fsReader: FsReader,
   rawApiOptions: CreateOptions
 ): {
   /**
@@ -90,8 +92,6 @@ export function readConfig(
   const projectSearchDir = resolve(cwd, rawApiOptions.projectSearchDir ?? cwd);
 
   const {
-    fileExists = ts.sys.fileExists,
-    readFile = ts.sys.readFile,
     skipProject = DEFAULTS.skipProject,
     project = DEFAULTS.project,
   } = rawApiOptions;
@@ -100,7 +100,7 @@ export function readConfig(
   if (!skipProject) {
     configFilePath = project
       ? resolve(cwd, project)
-      : ts.findConfigFile(projectSearchDir, fileExists);
+      : ts.findConfigFile(projectSearchDir, fsReader.fileExists);
 
     if (configFilePath) {
       let pathToNextConfigInChain = configFilePath;
@@ -109,7 +109,10 @@ export function readConfig(
 
       // Follow chain of "extends"
       while (true) {
-        const result = ts.readConfigFile(pathToNextConfigInChain, readFile);
+        const result = ts.readConfigFile(
+          pathToNextConfigInChain,
+          fsReader.readFile
+        );
 
         // Return diagnostics.
         if (result.error) {
@@ -133,10 +136,10 @@ export function readConfig(
         const resolvedExtendedConfigPath = tsInternals.getExtendsConfigPath(
           c.extends,
           {
-            fileExists,
-            readDirectory: ts.sys.readDirectory,
-            readFile,
-            useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
+            fileExists: fsReader.fileExists,
+            readDirectory: fsReader.readDirectory,
+            readFile: fsReader.readFile,
+            useCaseSensitiveFileNames: fsReader.useCaseSensitiveFileNames,
             trace,
           },
           bp,
@@ -226,10 +229,10 @@ export function readConfig(
     ts.parseJsonConfigFileContent(
       config,
       {
-        fileExists,
-        readFile,
-        readDirectory: ts.sys.readDirectory,
-        useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
+        fileExists: fsReader.fileExists,
+        readFile: fsReader.readFile,
+        readDirectory: fsReader.readDirectory,
+        useCaseSensitiveFileNames: fsReader.useCaseSensitiveFileNames,
       },
       basePath,
       undefined,
