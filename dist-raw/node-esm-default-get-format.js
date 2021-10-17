@@ -15,7 +15,6 @@ const experimentalJsonModules = getOptionValue('--experimental-json-modules');
 const experimentalSpeciferResolution =
   getOptionValue('--experimental-specifier-resolution');
 const experimentalWasmModules = getOptionValue('--experimental-wasm-modules');
-const { getPackageType } = require('./node-esm-resolve-implementation.js').createResolve({tsExtensions: [], jsExtensions: []});
 const { URL, fileURLToPath } = require('url');
 const { ERR_UNKNOWN_FILE_EXTENSION } = require('./node-errors').codes;
 
@@ -41,6 +40,9 @@ if (experimentalWasmModules)
 if (experimentalJsonModules)
   extensionFormatMap['.json'] = legacyExtensionFormatMap['.json'] = 'json';
 
+function createDefaultGetFormat(getPackageType) {
+
+// Intentionally unindented to simplify the diff
 function defaultGetFormat(url, context, defaultGetFormatUnused) {
   if (StringPrototypeStartsWith(url, 'node:')) {
     return { format: 'builtin' };
@@ -80,4 +82,7 @@ function defaultGetFormat(url, context, defaultGetFormatUnused) {
   }
   return { format: null };
 }
-exports.defaultGetFormat = defaultGetFormat;
+return {defaultGetFormat};
+}
+
+exports.createDefaultGetFormat = createDefaultGetFormat;

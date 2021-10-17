@@ -1,10 +1,12 @@
 {
   "$schema": "./tsconfig.schemastore-schema.json",
   "compilerOptions": {
+    "allowJs": true,
+    "noEmit": true,
     "target": "es2015",
     "lib": ["es2015", "dom"],
-    "rootDir": "src",
-    "outDir": "dist",
+    "rootDir": ".",
+    "tsBuildInfoFile": ".tmp/tsconfig.tsbuildinfo",
     "module": "commonjs",
     "moduleResolution": "node",
     "strict": true,

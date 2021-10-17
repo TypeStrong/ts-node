@@ -18,7 +18,6 @@ import { normalizeSlashes } from './util';
 const {
   createResolve,
 } = require('../dist-raw/node-esm-resolve-implementation');
-const { defaultGetFormat } = require('../dist-raw/node-esm-default-get-format');
 
 // Note: On Windows, URLs look like this: file:///D:/dev/@TypeStrong/ts-node-examples/foo.ts
 
@@ -124,7 +123,13 @@ export function createEsmHooks(tsNodeService: Service) {
     // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
     const format =
       context.format ??
-      (await getFormat(url, context, defaultGetFormat)).format;
+      (
+        await getFormat(
+          url,
+          context,
+          nodeResolveImplementation.defaultGetFormat
+        )
+      ).format;
 
     let source = undefined;
     if (format !== 'builtin' && format !== 'commonjs') {

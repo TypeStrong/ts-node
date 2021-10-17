@@ -2,11 +2,13 @@
 'use strict';
 
 const { SafeMap } = require('./node-primordials');
-const { internalModuleReadJSON } = require('./node-internal-fs');
 const { pathToFileURL } = require('url');
 const { toNamespacedPath } = require('path');
 // const { getOptionValue } = require('./node-options');
 
+/** @param {ReturnType<typeof import('./node-internal-fs').createNodeInternalModuleReadJSON>} internalModuleReadJSON */
+function createNodePackageJsonReader(internalModuleReadJSON) {
+// Intentionally un-indented to keep diff small without needing to mess with whitespace-ignoring flags
 const cache = new SafeMap();
 
 let manifest;
@@ -41,4 +43,7 @@ function read(jsonPath) {
   return result;
 }
 
-module.exports = { read };
+return { read };
+}
+
+module.exports.createNodePackageJsonReader = createNodePackageJsonReader;

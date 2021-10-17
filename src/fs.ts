@@ -1,4 +1,5 @@
 import type * as _ts from 'typescript';
+import * as fs from 'fs';
 import { debugFn } from './diagnostics';
 import { cachedLookup } from './util';
 
@@ -24,11 +25,17 @@ preferTsExts=false we should resolve to ./dist/bar.js
 
 */
 
+/** @internal */
+export type NodeFsReader = {
+  readFileSync(path: string, encoding: 'utf8'): string;
+  statSync(path: string): fs.Stats;
+};
+
 /**
  * @internal
  * Since `useCaseSensitiveFileNames` is required to know how to cache, we expose it on the interface
  */
-export type FsReader = Pick<
+export type TsSysFsReader = Pick<
   _ts.System,
   | 'directoryExists'
   | 'fileExists'
@@ -40,17 +47,20 @@ export type FsReader = Pick<
   | 'useCaseSensitiveFileNames'
 >;
 /** since I've never hit code that needs these functions implemented */
-type FullFsReader = FsReader &
+type TsSysFullFsReader = TsSysFsReader &
   Pick<_ts.System, 'getFileSize' | 'getModifiedTime'>;
-type FsWriter = Pick<
+type TsSysFsWriter = Pick<
   _ts.System,
   'createDirectory' | 'deleteFile' | 'setModifiedTime' | 'writeFile'
 >;
-type FsWatcher = Pick<_ts.System, 'watchDirectory' | 'watchFile'>;
+type TsSysFsWatcher = Pick<_ts.System, 'watchDirectory' | 'watchFile'>;
+
+/** @internal */
+export type CachedFsReader = ReturnType<typeof createCachedFsReader>;
 
 // Start with no caching; then add it bit by bit
 /** @internal */
-export function createCachedFsReader(reader: FsReader) {
+export function createCachedFsReader(reader: TsSysFsReader) {
   // TODO if useCaseSensitive is false, then lowercase all cache keys?
 
   const fileContentsCache = new Map<string, string>();
@@ -61,7 +71,7 @@ export function createCachedFsReader(reader: FsReader) {
   function invalidateFileContents() {}
   function invalidateFileExistence() {}
 
-  return {
+  const sys: TsSysFsReader = {
     ...reader,
     directoryExists: cachedLookup(
       debugFn('directoryExists', reader.directoryExists)
@@ -75,6 +85,25 @@ export function createCachedFsReader(reader: FsReader) {
       ? cachedLookup(debugFn('realpath', reader.realpath))
       : undefined,
     resolvePath: cachedLookup(debugFn('resolvePath', reader.resolvePath)),
+  };
+  const enoentError = new Error() as Error & { code: 'ENOENT' };
+  enoentError.code = 'ENOENT';
+  const nodeFs: NodeFsReader = {
+    readFileSync(path: string, encoding: 'utf8') {
+      // TODO It is unnecessarily messy to implement node's `readFileSync` on top of TS's `readFile`.  Refactor this.
+      const ret = sys.readFile(path);
+      if (typeof ret !== 'string') {
+        throw enoentError;
+      }
+      return ret;
+    },
+    statSync: cachedLookup(
+      debugFn('statSync', fs.statSync)
+    ) as NodeFsReader['statSync'],
+  };
+  return {
+    sys,
+    nodeFs,
     invalidateFileContents,
     invalidateFileExistence,
   };

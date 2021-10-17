@@ -1,6 +1,6 @@
 import { resolve, dirname } from 'path';
 import type * as _ts from 'typescript';
-import type { FsReader } from './fs';
+import type { TsSysFsReader } from './fs';
 import {
   CreateOptions,
   DEFAULTS,
@@ -62,7 +62,7 @@ function fixConfig(ts: TSCommon, config: _ts.ParsedCommandLine) {
 export function readConfig(
   cwd: string,
   ts: TSCommon,
-  fsReader: FsReader,
+  fsReader: TsSysFsReader,
   rawApiOptions: CreateOptions
 ): {
   /**

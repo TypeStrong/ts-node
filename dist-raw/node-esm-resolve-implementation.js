@@ -95,16 +95,26 @@ const {
 const CJSModule = Module;
 
 // const packageJsonReader = require('internal/modules/package_json_reader');
-const packageJsonReader = require('./node-package-json-reader');
+
+const { createDefaultGetFormat } = require('./node-esm-default-get-format');
+
 const userConditions = getOptionValue('--conditions');
 const DEFAULT_CONDITIONS = ObjectFreeze(['node', 'import', ...userConditions]);
 const DEFAULT_CONDITIONS_SET = new SafeSet(DEFAULT_CONDITIONS);
 
 const pendingDeprecation = getOptionValue('--pending-deprecation');
 
+/**
+ * @param {{
+ *   tsExtensions: string[];
+ *   jsExtensions: string[];
+ *   preferTsExts: boolean;
+ *   packageJsonReader: ReturnType<import('./node-package-json-reader').createNodePackageJsonReader>;
+ * }} opts
+ */
 function createResolve(opts) {
-// TODO receive cached fs implementations here
-const {tsExtensions, jsExtensions, preferTsExts} = opts;
+const {tsExtensions, jsExtensions, preferTsExts, packageJsonReader} = opts;
+const {defaultGetFormat} = createDefaultGetFormat(getPackageType);
 
 const emittedPackageWarnings = new SafeSet();
 function emitFolderMapDeprecation(match, pjsonUrl, isExports, base) {
@@ -971,7 +981,8 @@ return {
   encodedSepRegEx,
   getPackageType,
   packageExportsResolve,
-  packageImportsResolve
+  packageImportsResolve,
+  defaultGetFormat
 };
 }
 module.exports = {
