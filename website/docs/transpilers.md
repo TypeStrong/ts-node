@@ -20,7 +20,7 @@ We have bundled an experimental `swc` integration.
 [`swc`](https://swc.rs) is a TypeScript-compatible transpiler implemented in Rust.  This makes it an order of magnitude faster
 than `transpileModule`.
 
-To use it, first install `@swc/core` or `@swc/wasm`, and `regenerator-runtime` which `swc` requires for `async`/`await` support.  If using `importHelpers`, also install `@swc/helpers`
+To use it, first install `@swc/core` or `@swc/wasm`.  If using `importHelpers`, also install `@swc/helpers`.  If `target` is less than "es2015" and using either `async`/`await` or generator functions, also install `regenerator-runtime`.
 
 ```shell
 npm i -D @swc/core @swc/helpers regenerator-runtime
