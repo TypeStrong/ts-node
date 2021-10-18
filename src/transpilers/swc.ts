@@ -128,6 +128,7 @@ targetMapping.set(/* ts.ScriptTarget.ES2017 */ 4, 'es2017');
 targetMapping.set(/* ts.ScriptTarget.ES2018 */ 5, 'es2018');
 targetMapping.set(/* ts.ScriptTarget.ES2019 */ 6, 'es2019');
 targetMapping.set(/* ts.ScriptTarget.ES2020 */ 7, 'es2019');
+targetMapping.set(/* ts.ScriptTarget.ES2021 */ 8, 'es2019');
 targetMapping.set(/* ts.ScriptTarget.ESNext */ 99, 'es2019');
 
 const ModuleKind = {
