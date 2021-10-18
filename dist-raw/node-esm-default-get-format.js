@@ -82,7 +82,9 @@ function defaultGetFormat(url, context, defaultGetFormatUnused) {
   }
   return { format: null };
 }
-return {defaultGetFormat};
+return {
+  defaultGetFormat: /** @type {import('../src/esm').GetFormatHook} */(defaultGetFormat)
+};
 }
 
 exports.createDefaultGetFormat = createDefaultGetFormat;

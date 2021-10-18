@@ -108,12 +108,12 @@ const pendingDeprecation = getOptionValue('--pending-deprecation');
  * @param {{
  *   tsExtensions: string[];
  *   jsExtensions: string[];
- *   preferTsExts: boolean;
- *   packageJsonReader: ReturnType<import('./node-package-json-reader').createNodePackageJsonReader>;
+ *   preferTsExts: boolean | undefined;
+ *   nodePackageJsonReader: ReturnType<import('./node-package-json-reader').createNodePackageJsonReader>;
  * }} opts
  */
 function createResolve(opts) {
-const {tsExtensions, jsExtensions, preferTsExts, packageJsonReader} = opts;
+const {tsExtensions, jsExtensions, preferTsExts, nodePackageJsonReader: packageJsonReader} = opts;
 const {defaultGetFormat} = createDefaultGetFormat(getPackageType);
 
 const emittedPackageWarnings = new SafeSet();
@@ -985,6 +985,4 @@ return {
   defaultGetFormat
 };
 }
-module.exports = {
-  createResolve
-};
+module.exports.createResolve = createResolve;
