@@ -60,7 +60,7 @@
     "rebuild": "npm run clean && npm run build",
     "build": "npm run build-nopack && npm run build-pack",
     "build-nopack": "npm run build-tsc && npm run build-configSchema",
-    "build-tsc": "tsc --build ./tsconfig.build.json",
+    "build-tsc": "tsc --build ./tsconfig.declarations.json && ( rm -r .tmp/declarations/src 2> /dev/null || true) && tsc --build ./tsconfig.build.json",
     "build-configSchema": "typescript-json-schema --topRef --refs --validationKeywords allOf --out tsconfig.schema.json tsconfig.build-schema.json TsConfigSchema && node --require ./register ./scripts/create-merged-schema",
     "build-pack": "node ./scripts/build-pack.js",
     "test-spec": "ava",

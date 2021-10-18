@@ -7,13 +7,14 @@
   // so that `src`->`dist` paths map correctly.
 
   "extends": "./tsconfig.json",
-  "references": [{
-    "path": "./tsconfig.build-dist-raw.json"
-  }],
   "compilerOptions": {
     "noEmit": false,
     "allowJs": false,
     "rootDir": "src",
+    "rootDirs": [
+      ".",
+      ".tmp/declarations"
+    ],
     "outDir": "dist",
     "tsBuildInfoFile": ".tmp/tsconfig.build.tsbuildinfo",
   }

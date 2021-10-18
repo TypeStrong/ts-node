@@ -1,0 +1,18 @@
+{
+  // Purpose: to extract .d.ts declarations from dist-raw
+  "extends": "./tsconfig.json",
+  "include": [
+    "src",
+    "dist-raw"
+  ],
+  "compilerOptions": {
+    "incremental": true,
+    "allowJs": true,
+    "emitDeclarationOnly": true,
+    "stripInternal": false,
+    "noEmit": false,
+    "rootDir": ".",
+    "outDir": ".tmp/declarations",
+    "tsBuildInfoFile": ".tmp/tsconfig.declarations.tsbuildinfo",
+  }
+}

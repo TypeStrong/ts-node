@@ -1,4 +1,9 @@
 {
+  // Role: support editor code intelligence
+
+  // Note: this tsconfig is not used for compiling.
+  // See tsconfig.declarations.json and tsconfig.build.json
+
   "$schema": "./tsconfig.schemastore-schema.json",
   "compilerOptions": {
     "allowJs": true,
