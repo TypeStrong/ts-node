@@ -11,11 +11,11 @@
     "noEmit": false,
     "allowJs": false,
     "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": ".tmp/tsconfig.build.tsbuildinfo",
     "rootDirs": [
       ".",
       ".tmp/declarations"
     ],
-    "outDir": "dist",
-    "tsBuildInfoFile": ".tmp/tsconfig.build.tsbuildinfo",
   }
 }
