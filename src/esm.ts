@@ -57,7 +57,7 @@ export function createEsmHooks(tsNodeService: Service) {
   // TODO: When the new API is backported to v12, v14, update these version checks accordingly.
   const newHooksAPI =
     versionGteLt(process.versions.node, '17.0.0') ||
-    versionGteLt(process.versions.node, '16.20.0', '17.0.0') ||
+    versionGteLt(process.versions.node, '16.12.0', '17.0.0') ||
     versionGteLt(process.versions.node, '14.999.999', '15.0.0') ||
     versionGteLt(process.versions.node, '12.999.999', '13.0.0');
 
