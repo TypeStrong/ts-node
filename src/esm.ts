@@ -36,6 +36,39 @@ const { defaultGetFormat } = require('../dist-raw/node-esm-default-get-format');
 // from node, build our implementation of the *new* API on top of it, and implement the *old*
 // hooks API as a shim to the *new* API.
 
+export interface NodeHooksAPI1 {
+  resolve(
+    specifier: string,
+    context: { parentURL: string },
+    defaultResolve: NodeHooksAPI1['resolve']
+  ): Promise<{ url: string }>;
+  getFormat(
+    url: string,
+    context: {},
+    defaultGetFormat: NodeHooksAPI1['getFormat']
+  ): Promise<{ format: Format }>;
+  transformSource(
+    source: string | Buffer,
+    context: { url: string; format: Format },
+    defaultTransformSource: NodeHooksAPI1['transformSource']
+  ): Promise<{ source: string | Buffer }>;
+}
+
+export interface NodeHooksAPI2 {
+  resolve(
+    specifier: string,
+    context: { parentURL: string },
+    defaultResolve: NodeHooksAPI2['resolve']
+  ): Promise<{ url: string }>;
+  load(
+    url: string,
+    context: { format: Format | null | undefined },
+    defaultLoad: NodeHooksAPI2['load']
+  ): Promise<{ format: Format; source: string | Buffer | undefined }>;
+}
+
+type Format = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
+
 /** @internal */
 export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
   // Automatically performs registration just like `-r ts-node/register`
@@ -62,12 +95,7 @@ export function createEsmHooks(tsNodeService: Service) {
     versionGteLt(process.versions.node, '12.999.999', '13.0.0');
 
   // Explicit return type to avoid TS's non-ideal inferred type
-  const hooksAPI: {
-    resolve: typeof resolve;
-    getFormat: typeof getFormat | undefined;
-    transformSource: typeof transformSource | undefined;
-    load: typeof load | undefined;
-  } = newHooksAPI
+  const hooksAPI: NodeHooksAPI1 | NodeHooksAPI2 = newHooksAPI
     ? { resolve, load, getFormat: undefined, transformSource: undefined }
     : { resolve, getFormat, transformSource, load: undefined };
   return hooksAPI;
@@ -160,7 +188,6 @@ export function createEsmHooks(tsNodeService: Service) {
     return { format, source };
   }
 
-  type Format = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
   async function getFormat(
     url: string,
     context: {},
