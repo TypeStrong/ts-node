@@ -16,6 +16,7 @@ module.exports = {
   ObjectGetOwnPropertyNames: Object.getOwnPropertyNames,
   ObjectDefineProperty: Object.defineProperty,
   ObjectPrototypeHasOwnProperty: (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop),
+  RegExpPrototypeExec: (obj, string) => RegExp.prototype.exec.call(obj, string),
   RegExpPrototypeTest: (obj, string) => RegExp.prototype.test.call(obj, string),
   RegExpPrototypeSymbolReplace: (obj, ...rest) => RegExp.prototype[Symbol.replace].apply(obj, rest),
   SafeMap: Map,
