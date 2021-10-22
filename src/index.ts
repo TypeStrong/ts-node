@@ -23,6 +23,7 @@ import {
   ModuleTypeClassifier,
 } from './module-type-classifier';
 import { createResolverFunctions } from './resolver-functions';
+import type { createEsmHooks as createEsmHooksFn } from './esm';
 
 export { TSCommon };
 export {
@@ -39,6 +40,7 @@ export type {
   TranspileOptions,
   Transpiler,
 } from './transpilers/types';
+export type {NodeLoaderHooksAPI1, NodeLoaderHooksAPI2, NodeLoaderHooksFormat} from './esm';
 
 /**
  * Does this version of node obey the package.json "type" field
@@ -1486,7 +1488,6 @@ function getTokenAtPosition(
   }
 }
 
-import type { createEsmHooks as createEsmHooksFn } from './esm';
 export const createEsmHooks: typeof createEsmHooksFn = (
   tsNodeService: Service
 ) => require('./esm').createEsmHooks(tsNodeService);

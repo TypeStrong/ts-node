@@ -13,7 +13,7 @@ import {
 import { createExec } from './exec-helpers';
 import { join } from 'path';
 import * as expect from 'expect';
-import type { NodeHooksAPI2 } from '../esm';
+import type { NodeLoaderHooksAPI2 } from '../';
 
 const nodeUsesNewHooksApi = semver.gte(process.version, '16.12.0');
 
@@ -60,7 +60,7 @@ test.suite('hooks', (_test) => {
     test('Correctly determines format of data URIs', async (t) => {
       const { hooks } = t.context;
       const url = 'data:text/javascript,console.log("hello world");';
-      const result = await (hooks as NodeHooksAPI2).load(
+      const result = await (hooks as NodeLoaderHooksAPI2).load(
         url,
         { format: undefined },
         async (url, context, _ignored) => {
