@@ -37,34 +37,39 @@ const { defaultGetFormat } = require('../dist-raw/node-esm-default-get-format');
 // hooks API as a shim to the *new* API.
 
 export interface NodeLoaderHooksAPI1 {
-  resolve(
-    specifier: string,
-    context: { parentURL: string },
-    defaultResolve: NodeLoaderHooksAPI1['resolve']
-  ): Promise<{ url: string }>;
-  getFormat(
+  resolve: NodeLoaderHooksAPI1.ResolveHook;
+  getFormat: NodeLoaderHooksAPI1.GetFormatHook;
+  transformSource: NodeLoaderHooksAPI1.TransformSourceHook;
+}
+export namespace NodeLoaderHooksAPI1 {
+  export type ResolveHook = NodeLoaderHooksAPI2.ResolveHook;
+  export type GetFormatHook = (
     url: string,
     context: {},
-    defaultGetFormat: NodeLoaderHooksAPI1['getFormat']
-  ): Promise<{ format: NodeLoaderHooksFormat }>;
-  transformSource(
+    defaultGetFormat: GetFormatHook
+  ) => Promise<{ format: NodeLoaderHooksFormat }>;
+  export type TransformSourceHook = (
     source: string | Buffer,
     context: { url: string; format: NodeLoaderHooksFormat },
-    defaultTransformSource: NodeLoaderHooksAPI1['transformSource']
-  ): Promise<{ source: string | Buffer }>;
+    defaultTransformSource: NodeLoaderHooksAPI1.TransformSourceHook
+  ) => Promise<{ source: string | Buffer }>;
 }
 
 export interface NodeLoaderHooksAPI2 {
-  resolve(
+  resolve: NodeLoaderHooksAPI2.ResolveHook;
+  load: NodeLoaderHooksAPI2.LoadHook;
+}
+export namespace NodeLoaderHooksAPI2 {
+  export type ResolveHook = (
     specifier: string,
     context: { parentURL: string },
-    defaultResolve: NodeLoaderHooksAPI2['resolve']
-  ): Promise<{ url: string }>;
-  load(
+    defaultResolve: ResolveHook
+  ) => Promise<{ url: string }>;
+  export type LoadHook = (
     url: string,
     context: { format: NodeLoaderHooksFormat | null | undefined },
     defaultLoad: NodeLoaderHooksAPI2['load']
-  ): Promise<{ format: NodeLoaderHooksFormat; source: string | Buffer | undefined }>;
+  ) => Promise<{ format: NodeLoaderHooksFormat; source: string | Buffer | undefined }>;
 }
 
 export type NodeLoaderHooksFormat = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';

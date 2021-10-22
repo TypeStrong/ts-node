@@ -1488,6 +1488,16 @@ function getTokenAtPosition(
   }
 }
 
+/**
+ * Create an implementation of node's ESM loader hooks.
+ *
+ * This may be useful if you
+ * want to wrap or compose the loader hooks to add additional functionality or
+ * combine with another loader.
+ *
+ * Node changed the hooks API, so there are two possible APIs.  This function
+ * detects your node version and returns the appropriate API.
+ */
 export const createEsmHooks: typeof createEsmHooksFn = (
   tsNodeService: Service
-) => require('./esm').createEsmHooks(tsNodeService);
+) => (require('./esm') as typeof import('./esm')).createEsmHooks(tsNodeService);
