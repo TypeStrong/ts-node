@@ -36,6 +36,53 @@ const { defaultGetFormat } = require('../dist-raw/node-esm-default-get-format');
 // from node, build our implementation of the *new* API on top of it, and implement the *old*
 // hooks API as a shim to the *new* API.
 
+export interface NodeLoaderHooksAPI1 {
+  resolve: NodeLoaderHooksAPI1.ResolveHook;
+  getFormat: NodeLoaderHooksAPI1.GetFormatHook;
+  transformSource: NodeLoaderHooksAPI1.TransformSourceHook;
+}
+export namespace NodeLoaderHooksAPI1 {
+  export type ResolveHook = NodeLoaderHooksAPI2.ResolveHook;
+  export type GetFormatHook = (
+    url: string,
+    context: {},
+    defaultGetFormat: GetFormatHook
+  ) => Promise<{ format: NodeLoaderHooksFormat }>;
+  export type TransformSourceHook = (
+    source: string | Buffer,
+    context: { url: string; format: NodeLoaderHooksFormat },
+    defaultTransformSource: NodeLoaderHooksAPI1.TransformSourceHook
+  ) => Promise<{ source: string | Buffer }>;
+}
+
+export interface NodeLoaderHooksAPI2 {
+  resolve: NodeLoaderHooksAPI2.ResolveHook;
+  load: NodeLoaderHooksAPI2.LoadHook;
+}
+export namespace NodeLoaderHooksAPI2 {
+  export type ResolveHook = (
+    specifier: string,
+    context: { parentURL: string },
+    defaultResolve: ResolveHook
+  ) => Promise<{ url: string }>;
+  export type LoadHook = (
+    url: string,
+    context: { format: NodeLoaderHooksFormat | null | undefined },
+    defaultLoad: NodeLoaderHooksAPI2['load']
+  ) => Promise<{
+    format: NodeLoaderHooksFormat;
+    source: string | Buffer | undefined;
+  }>;
+}
+
+export type NodeLoaderHooksFormat =
+  | 'builtin'
+  | 'commonjs'
+  | 'dynamic'
+  | 'json'
+  | 'module'
+  | 'wasm';
+
 /** @internal */
 export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
   // Automatically performs registration just like `-r ts-node/register`
@@ -62,12 +109,7 @@ export function createEsmHooks(tsNodeService: Service) {
     versionGteLt(process.versions.node, '12.999.999', '13.0.0');
 
   // Explicit return type to avoid TS's non-ideal inferred type
-  const hooksAPI: {
-    resolve: typeof resolve;
-    getFormat: typeof getFormat | undefined;
-    transformSource: typeof transformSource | undefined;
-    load: typeof load | undefined;
-  } = newHooksAPI
+  const hooksAPI: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 = newHooksAPI
     ? { resolve, load, getFormat: undefined, transformSource: undefined }
     : { resolve, getFormat, transformSource, load: undefined };
   return hooksAPI;
@@ -117,9 +159,12 @@ export function createEsmHooks(tsNodeService: Service) {
   // `load` from new loader hook API (See description at the top of this file)
   async function load(
     url: string,
-    context: { format: Format | null | undefined },
+    context: { format: NodeLoaderHooksFormat | null | undefined },
     defaultLoad: typeof load
-  ): Promise<{ format: Format; source: string | Buffer | undefined }> {
+  ): Promise<{
+    format: NodeLoaderHooksFormat;
+    source: string | Buffer | undefined;
+  }> {
     // If we get a format hint from resolve() on the context then use it
     // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
     const format =
@@ -160,12 +205,11 @@ export function createEsmHooks(tsNodeService: Service) {
     return { format, source };
   }
 
-  type Format = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
   async function getFormat(
     url: string,
     context: {},
     defaultGetFormat: typeof getFormat
-  ): Promise<{ format: Format }> {
+  ): Promise<{ format: NodeLoaderHooksFormat }> {
     const defer = (overrideUrl: string = url) =>
       defaultGetFormat(overrideUrl, context, defaultGetFormat);
 
@@ -185,7 +229,7 @@ export function createEsmHooks(tsNodeService: Service) {
 
     // If file has .ts, .tsx, or .jsx extension, then ask node how it would treat this file if it were .js
     const ext = extname(nativePath);
-    let nodeSays: { format: Format };
+    let nodeSays: { format: NodeLoaderHooksFormat };
     if (ext !== '.js' && !tsNodeService.ignored(nativePath)) {
       nodeSays = await defer(formatUrl(pathToFileURL(nativePath + '.js')));
     } else {
@@ -210,7 +254,7 @@ export function createEsmHooks(tsNodeService: Service) {
 
   async function transformSource(
     source: string | Buffer,
-    context: { url: string; format: Format },
+    context: { url: string; format: NodeLoaderHooksFormat },
     defaultTransformSource: typeof transformSource
   ): Promise<{ source: string | Buffer }> {
     if (source === null || source === undefined) {
