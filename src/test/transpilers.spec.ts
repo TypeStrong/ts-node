@@ -3,24 +3,25 @@
 // Should consolidate them here.
 
 import { context } from './testlib';
-import {
-  contextTsNodeUnderTest,
-  testsDirRequire,
-} from './helpers';
+import { contextTsNodeUnderTest, testsDirRequire } from './helpers';
 import * as expect from 'expect';
 
 const test = context(contextTsNodeUnderTest);
 
 test.suite('swc', (test) => {
   test('verify that TS->SWC target mappings suppport all possible values from both TS and SWC', async (t) => {
-    const swcTranspiler = testsDirRequire('ts-node/transpilers/swc-experimental') as typeof import('../transpilers/swc');
+    const swcTranspiler = testsDirRequire(
+      'ts-node/transpilers/swc-experimental'
+    ) as typeof import('../transpilers/swc');
 
     // Detect when mapping is missing any ts.ScriptTargets
     const ts = testsDirRequire('typescript') as typeof import('typescript');
-    for(const key of Object.keys(ts.ScriptTarget)) {
-      if(/^\d+$/.test(key)) continue;
-      if(key === 'JSON') continue;
-      expect(swcTranspiler.targetMapping.has(ts.ScriptTarget[key as any] as any)).toBe(true);
+    for (const key of Object.keys(ts.ScriptTarget)) {
+      if (/^\d+$/.test(key)) continue;
+      if (key === 'JSON') continue;
+      expect(
+        swcTranspiler.targetMapping.has(ts.ScriptTarget[key as any] as any)
+      ).toBe(true);
     }
 
     // Detect when mapping is missing any swc targets
@@ -28,8 +29,8 @@ test.suite('swc', (test) => {
     const swc = testsDirRequire('@swc/core');
     let msg: string | undefined = undefined;
     try {
-      swc.transformSync('', {jsc: {target: 'invalid'}});
-    } catch(e) {
+      swc.transformSync('', { jsc: { target: 'invalid' } });
+    } catch (e) {
       msg = (e as Error).message;
     }
     expect(msg).toBeDefined();
@@ -39,7 +40,7 @@ test.suite('swc', (test) => {
     expect(match).toBeDefined();
     const targets = match![1].split(', ').map((v: string) => v.slice(1, -1));
 
-    for(const target of targets) {
+    for (const target of targets) {
       expect([...swcTranspiler.targetMapping.values()]).toContain(target);
     }
   });

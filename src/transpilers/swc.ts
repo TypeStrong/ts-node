@@ -61,11 +61,13 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
     // Perhaps project has an older version of swc.
     // TODO cache the results of this; slightly faster
     let swcTargetIndex = swcTargets.indexOf(swcTarget);
-    for(; swcTargetIndex >= 0; swcTargetIndex--) {
+    for (; swcTargetIndex >= 0; swcTargetIndex--) {
       try {
-        swcInstance.transformSync('', {jsc: {target: swcTargets[swcTargetIndex]}});
+        swcInstance.transformSync('', {
+          jsc: { target: swcTargets[swcTargetIndex] },
+        });
         break;
-      } catch(e) {}
+      } catch (e) {}
     }
     swcTarget = swcTargets[swcTargetIndex];
     const keepClassNames = target! >= /* ts.ScriptTarget.ES2016 */ 3;
@@ -148,7 +150,17 @@ type SwcTarget = typeof swcTargets[number];
  * @internal
  * We use this list to downgrade to a prior target when we probe swc to detect if it supports a particular target
  */
-const swcTargets = ['es3', 'es5', 'es2015', 'es2016', 'es2017', 'es2018', 'es2019', 'es2020', 'es2021'] as const;
+const swcTargets = [
+  'es3',
+  'es5',
+  'es2015',
+  'es2016',
+  'es2017',
+  'es2018',
+  'es2019',
+  'es2020',
+  'es2021',
+] as const;
 
 const ModuleKind = {
   None: 0,
