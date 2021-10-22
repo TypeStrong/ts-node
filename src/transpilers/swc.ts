@@ -59,6 +59,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
     let swcTarget = targetMapping.get(target!) ?? 'es3';
     // Downgrade to lower target if swc does not support the selected target.
     // Perhaps project has an older version of swc.
+    // TODO cache the results of this; slightly faster
     let swcTargetIndex = swcTargets.indexOf(swcTarget);
     for(; swcTargetIndex >= 0; swcTargetIndex--) {
       try {
