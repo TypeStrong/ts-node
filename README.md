@@ -124,7 +124,7 @@ npm install -g ts-node
 npm install -D tslib @types/node
 ```
 
-**Tip:** Installing modules locally allows you to control and share the versions through `package.json`. TS Node will always resolve the compiler from `cwd` before checking relative to its own installation.
+**Tip:** Installing modules locally allows you to control and share the versions through `package.json`. ts-node will always resolve the compiler from `cwd` before checking relative to its own installation.
 
 # Usage
 
@@ -648,10 +648,10 @@ We have bundled an experimental `swc` integration.
 [`swc`](https://swc.rs) is a TypeScript-compatible transpiler implemented in Rust.  This makes it an order of magnitude faster
 than `transpileModule`.
 
-To use it, first install `@swc/core` or `@swc/wasm`.  If using `importHelpers`, also install `@swc/helpers`.
+To use it, first install `@swc/core` or `@swc/wasm`.  If using `importHelpers`, also install `@swc/helpers`.  If `target` is less than "es2015" and using either `async`/`await` or generator functions, also install `regenerator-runtime`.
 
 ```shell
-npm i -D @swc/core @swc/helpers
+npm i -D @swc/core @swc/helpers regenerator-runtime
 ```
 
 Then add the following to your `tsconfig.json`.
