@@ -40,7 +40,11 @@ export type {
   TranspileOptions,
   Transpiler,
 } from './transpilers/types';
-export type {NodeLoaderHooksAPI1, NodeLoaderHooksAPI2, NodeLoaderHooksFormat} from './esm';
+export type {
+  NodeLoaderHooksAPI1,
+  NodeLoaderHooksAPI2,
+  NodeLoaderHooksFormat,
+} from './esm';
 
 /**
  * Does this version of node obey the package.json "type" field

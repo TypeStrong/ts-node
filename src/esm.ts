@@ -69,10 +69,19 @@ export namespace NodeLoaderHooksAPI2 {
     url: string,
     context: { format: NodeLoaderHooksFormat | null | undefined },
     defaultLoad: NodeLoaderHooksAPI2['load']
-  ) => Promise<{ format: NodeLoaderHooksFormat; source: string | Buffer | undefined }>;
+  ) => Promise<{
+    format: NodeLoaderHooksFormat;
+    source: string | Buffer | undefined;
+  }>;
 }
 
-export type NodeLoaderHooksFormat = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
+export type NodeLoaderHooksFormat =
+  | 'builtin'
+  | 'commonjs'
+  | 'dynamic'
+  | 'json'
+  | 'module'
+  | 'wasm';
 
 /** @internal */
 export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
@@ -152,7 +161,10 @@ export function createEsmHooks(tsNodeService: Service) {
     url: string,
     context: { format: NodeLoaderHooksFormat | null | undefined },
     defaultLoad: typeof load
-  ): Promise<{ format: NodeLoaderHooksFormat; source: string | Buffer | undefined }> {
+  ): Promise<{
+    format: NodeLoaderHooksFormat;
+    source: string | Buffer | undefined;
+  }> {
     // If we get a format hint from resolve() on the context then use it
     // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
     const format =

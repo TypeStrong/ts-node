@@ -45,7 +45,7 @@ test.suite('createEsmHooks', (test) => {
 test.suite('hooks', (_test) => {
   const test = _test.context(async (t) => {
     const service = t.context.tsNodeUnderTest.create({
-       cwd: TEST_DIR
+      cwd: TEST_DIR,
     });
     t.teardown(() => {
       resetNodeEnvironment();
