@@ -12,7 +12,7 @@ export function create(rawOptions?: CreateOptions): Service;
 
 // Warning: (ae-forgotten-export) The symbol "createEsmHooks" needs to be exported by the entry point index.d.ts
 //
-// @public (undocumented)
+// @public
 export const createEsmHooks: typeof createEsmHooks_2;
 
 // @public
@@ -77,6 +77,61 @@ export interface CreateTranspilerOptions {
 
 // @public
 export type EvalAwarePartialHost = Pick<CreateOptions, 'readFile' | 'fileExists'>;
+
+// @public (undocumented)
+export interface NodeLoaderHooksAPI1 {
+    // (undocumented)
+    getFormat: NodeLoaderHooksAPI1.GetFormatHook;
+    // (undocumented)
+    resolve: NodeLoaderHooksAPI1.ResolveHook;
+    // (undocumented)
+    transformSource: NodeLoaderHooksAPI1.TransformSourceHook;
+}
+
+// @public (undocumented)
+export namespace NodeLoaderHooksAPI1 {
+    // (undocumented)
+    export type GetFormatHook = (url: string, context: {}, defaultGetFormat: GetFormatHook) => Promise<{
+        format: NodeLoaderHooksFormat;
+    }>;
+    // (undocumented)
+    export type ResolveHook = NodeLoaderHooksAPI2.ResolveHook;
+    // (undocumented)
+    export type TransformSourceHook = (source: string | Buffer, context: {
+        url: string;
+        format: NodeLoaderHooksFormat;
+    }, defaultTransformSource: NodeLoaderHooksAPI1.TransformSourceHook) => Promise<{
+        source: string | Buffer;
+    }>;
+}
+
+// @public (undocumented)
+export interface NodeLoaderHooksAPI2 {
+    // (undocumented)
+    load: NodeLoaderHooksAPI2.LoadHook;
+    // (undocumented)
+    resolve: NodeLoaderHooksAPI2.ResolveHook;
+}
+
+// @public (undocumented)
+export namespace NodeLoaderHooksAPI2 {
+    // (undocumented)
+    export type LoadHook = (url: string, context: {
+        format: NodeLoaderHooksFormat | null | undefined;
+    }, defaultLoad: NodeLoaderHooksAPI2['load']) => Promise<{
+        format: NodeLoaderHooksFormat;
+        source: string | Buffer | undefined;
+    }>;
+    // (undocumented)
+    export type ResolveHook = (specifier: string, context: {
+        parentURL: string;
+    }, defaultResolve: ResolveHook) => Promise<{
+        url: string;
+    }>;
+}
+
+// @public (undocumented)
+export type NodeLoaderHooksFormat = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
 
 // @public @deprecated
 export type Register = Service;

@@ -56,7 +56,20 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   const nonTsxOptions = createSwcOptions(false);
   const tsxOptions = createSwcOptions(true);
   function createSwcOptions(isTsx: boolean): swcTypes.Options {
-    const swcTarget = targetMapping.get(target!) ?? 'es3';
+    let swcTarget = targetMapping.get(target!) ?? 'es3';
+    // Downgrade to lower target if swc does not support the selected target.
+    // Perhaps project has an older version of swc.
+    // TODO cache the results of this; slightly faster
+    let swcTargetIndex = swcTargets.indexOf(swcTarget);
+    for (; swcTargetIndex >= 0; swcTargetIndex--) {
+      try {
+        swcInstance.transformSync('', {
+          jsc: { target: swcTargets[swcTargetIndex] },
+        });
+        break;
+      } catch (e) {}
+    }
+    swcTarget = swcTargets[swcTargetIndex];
     const keepClassNames = target! >= /* ts.ScriptTarget.ES2016 */ 3;
     const moduleType =
       module === ModuleKind.CommonJS
@@ -119,7 +132,8 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   };
 }
 
-const targetMapping = new Map<ts.ScriptTarget, swcTypes.JscTarget>();
+/** @internal */
+export const targetMapping = new Map<ts.ScriptTarget, SwcTarget>();
 targetMapping.set(/* ts.ScriptTarget.ES3 */ 0, 'es3');
 targetMapping.set(/* ts.ScriptTarget.ES5 */ 1, 'es5');
 targetMapping.set(/* ts.ScriptTarget.ES2015 */ 2, 'es2015');
@@ -127,8 +141,26 @@ targetMapping.set(/* ts.ScriptTarget.ES2016 */ 3, 'es2016');
 targetMapping.set(/* ts.ScriptTarget.ES2017 */ 4, 'es2017');
 targetMapping.set(/* ts.ScriptTarget.ES2018 */ 5, 'es2018');
 targetMapping.set(/* ts.ScriptTarget.ES2019 */ 6, 'es2019');
-targetMapping.set(/* ts.ScriptTarget.ES2020 */ 7, 'es2019');
-targetMapping.set(/* ts.ScriptTarget.ESNext */ 99, 'es2019');
+targetMapping.set(/* ts.ScriptTarget.ES2020 */ 7, 'es2020');
+targetMapping.set(/* ts.ScriptTarget.ES2021 */ 8, 'es2021');
+targetMapping.set(/* ts.ScriptTarget.ESNext */ 99, 'es2021');
+
+type SwcTarget = typeof swcTargets[number];
+/**
+ * @internal
+ * We use this list to downgrade to a prior target when we probe swc to detect if it supports a particular target
+ */
+const swcTargets = [
+  'es3',
+  'es5',
+  'es2015',
+  'es2016',
+  'es2017',
+  'es2018',
+  'es2019',
+  'es2020',
+  'es2021',
+] as const;
 
 const ModuleKind = {
   None: 0,

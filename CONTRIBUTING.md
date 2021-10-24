@@ -19,6 +19,32 @@ compiled code in `dist`.
 
 `dist-raw` is for larger chunks of code which are not compiled nor linted because they have been copy-pasted from `node`'s source code.
 
+## Tests
+
+Test cases are declared in `src/test/*.spec.ts`, and test fixtures live in `./tests`.  They can be run with `npm run test-local`.
+
+Tests are run with AVA, but using a custom wrapper API to enable some TS-friendly features and grouped test suites.
+
+The tests `npm pack` ts-node into a tarball and `npm install` it into `./tests/node_modules`.  This makes `./tests` a better testing environment
+because it more closely matches the end-user's environment.  Complex `require()` / `import` / `--require` / `--loader` invocations behave
+the way they would in a users's project.
+
+Historically, it has been difficult to test ts-node in-process because it mutates the node environment: installing require hooks, stack trace formatters, etc.
+`nyc`, `ava`, and `ts-node` all mutate the node environment, so it is tricky to setup and teardown individual tests in isolation, because ts-node's hooks need to be
+reset without disturbing `nyc` or `ava` hooks.  For this reason, many tests are integration style, spawning ts-node's CLI in an external process, asking it to
+execute one of the fixture projects in `./tests`.
+
+Over time, I've gradually added setup and teardown logic so that more components can be tested in-process.
+
+We have a debug configuration for VSCode.
+
+1. Open a `*.spec.ts` so it is the active/focused file.
+2. (optional) set breakpoints.
+3. Invoke debugger with F5.
+
+Note that some tests might misbehave in the debugger.  REPL tests in particular.  I'm not sure why, but I think it is related to how `console` does not write to
+stdout when in a debug session.
+
 ## Documentation
 
 Documentation is written in markdown in `website/docs` and rendered into a website by Docusaurus.  The README is also generated from these markdown files.
