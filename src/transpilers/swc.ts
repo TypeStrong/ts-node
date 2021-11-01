@@ -160,7 +160,7 @@ const swcTargets = [
   'es2019',
   'es2020',
   'es2021',
-  'es2022'
+  'es2022',
 ] as const;
 
 const ModuleKind = {
