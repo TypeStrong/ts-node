@@ -15,10 +15,7 @@ import {
 import { extname } from 'path';
 import * as assert from 'assert';
 import { normalizeSlashes } from './util';
-const {
-  createResolve,
-} = require('../dist-raw/node-esm-resolve-implementation');
-const { defaultGetFormat } = require('../dist-raw/node-esm-default-get-format');
+import { createResolve } from '../dist-raw/node-esm-resolve-implementation';
 
 // Note: On Windows, URLs look like this: file:///D:/dev/@TypeStrong/ts-node-examples/foo.ts
 
@@ -84,6 +81,11 @@ export type NodeLoaderHooksFormat =
   | 'wasm';
 
 /** @internal */
+export type GetFormatHook = NonNullable<
+  ReturnType<typeof createEsmHooks>['getFormat']
+>;
+
+/** @internal */
 export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
   // Automatically performs registration just like `-r ts-node/register`
   const tsNodeInstance = register(opts);
@@ -98,6 +100,7 @@ export function createEsmHooks(tsNodeService: Service) {
   const nodeResolveImplementation = createResolve({
     ...getExtensions(tsNodeService.config),
     preferTsExts: tsNodeService.options.preferTsExts,
+    nodePackageJsonReader: tsNodeService.nodePackageJsonReader,
   });
 
   // The hooks API changed in node version X so we need to check for backwards compatibility.
@@ -169,7 +172,13 @@ export function createEsmHooks(tsNodeService: Service) {
     // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
     const format =
       context.format ??
-      (await getFormat(url, context, defaultGetFormat)).format;
+      (
+        await getFormat(
+          url,
+          context,
+          nodeResolveImplementation.defaultGetFormat
+        )
+      ).format;
 
     let source = undefined;
     if (format !== 'builtin' && format !== 'commonjs') {

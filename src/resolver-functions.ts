@@ -65,6 +65,7 @@ export function createResolverFunctions(kwargs: {
     // .js is switched on-demand
     if (
       resolvedModule.isExternalLibraryImport &&
+      // TODO should include tsx, mts, and cts?
       ((resolvedFileName.endsWith('.ts') &&
         !resolvedFileName.endsWith('.d.ts')) ||
         isFileKnownToBeInternal(resolvedFileName) ||

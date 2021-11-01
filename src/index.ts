@@ -8,14 +8,7 @@ import { BaseError } from 'make-error';
 import type * as _ts from 'typescript';
 
 import type { Transpiler, TranspilerFactory } from './transpilers/types';
-import {
-  assign,
-  cachedLookup,
-  normalizeSlashes,
-  parse,
-  split,
-  yn,
-} from './util';
+import { assign, env, normalizeSlashes, parse, split, yn } from './util';
 import { readConfig } from './configuration';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
 import {
@@ -24,6 +17,11 @@ import {
 } from './module-type-classifier';
 import { createResolverFunctions } from './resolver-functions';
 import type { createEsmHooks as createEsmHooksFn } from './esm';
+import { CachedFsReader, createCachedFsReader } from './fs';
+import { debug } from './diagnostics';
+import type { createNodeCjsLoaderUtils as _createNodeCjsLoaderUtils } from '../dist-raw/node-cjs-loader-utils';
+import { createNodePackageJsonReader } from '../dist-raw/node-package-json-reader';
+import { createNodeInternalModuleReadJSON as createNodeInternalModuleReadJSON } from '../dist-raw/node-internal-fs';
 
 export { TSCommon };
 export {
@@ -50,8 +48,14 @@ export type {
  * Does this version of node obey the package.json "type" field
  * and throw ERR_REQUIRE_ESM when attempting to require() an ESM modules.
  */
+// TODO remove this; today we only support node >=12
 const engineSupportsPackageTypeField =
   parseInt(process.versions.node.split('.')[0], 10) >= 12;
+
+const createNodeCjsLoaderUtils = engineSupportsPackageTypeField
+  ? (require('../dist-raw/node-cjs-loader-utils')
+      .createNodeCjsLoaderUtils as typeof _createNodeCjsLoaderUtils)
+  : undefined;
 
 /** @internal */
 export function versionGteLt(
@@ -81,22 +85,6 @@ export function versionGteLt(
 }
 
 /**
- * Assert that script can be loaded as CommonJS when we attempt to require it.
- * If it should be loaded as ESM, throw ERR_REQUIRE_ESM like node does.
- *
- * Loaded conditionally so we don't need to support older node versions
- */
-let assertScriptCanLoadAsCJS: (
-  service: Service,
-  module: NodeJS.Module,
-  filename: string
-) => void = engineSupportsPackageTypeField
-  ? require('../dist-raw/node-cjs-loader-utils').assertScriptCanLoadAsCJSImpl
-  : () => {
-      /* noop */
-    };
-
-/**
  * Registered `ts-node` instance information.
  */
 export const REGISTER_INSTANCE = Symbol.for('ts-node.register.instance');
@@ -112,8 +100,6 @@ declare global {
   }
 }
 
-/** @internal */
-export const env = process.env as ProcessEnv;
 /**
  * Declare all env vars, to aid discoverability.
  * If an env var affects ts-node's behavior, it should not be buried somewhere in our codebase.
@@ -151,25 +137,6 @@ export interface ProcessEnv {
  * @internal
  */
 export const INSPECT_CUSTOM = util.inspect.custom || 'inspect';
-
-/**
- * Debugging `ts-node`.
- */
-const shouldDebug = yn(env.TS_NODE_DEBUG);
-/** @internal */
-export const debug = shouldDebug
-  ? (...args: any) =>
-      console.log(`[ts-node ${new Date().toISOString()}]`, ...args)
-  : () => undefined;
-const debugFn = shouldDebug
-  ? <T, U>(key: string, fn: (arg: T) => U) => {
-      let i = 0;
-      return (x: T) => {
-        debug(key, x, ++i);
-        return fn(x);
-      };
-    }
-  : <T, U>(_: string, fn: (arg: T) => U) => fn;
 
 /**
  * Export the current version.
@@ -465,6 +432,22 @@ export interface Service {
   installSourceMapSupport(): void;
   /** @internal */
   enableExperimentalEsmLoaderInterop(): void;
+  /** @internal */
+  cachedFsReader: CachedFsReader;
+  /** @internal */
+  nodeInternalModuleReadJson: ReturnType<
+    typeof import('../dist-raw/node-internal-fs').createNodeInternalModuleReadJSON
+  >;
+  /** @internal */
+  nodePackageJsonReader: ReturnType<
+    typeof import('../dist-raw/node-package-json-reader').createNodePackageJsonReader
+  >;
+  /** @internal */
+  nodeCjsLoaderUtils:
+    | ReturnType<
+        typeof import('../dist-raw/node-cjs-loader-utils').createNodeCjsLoaderUtils
+      >
+    | undefined;
 }
 
 /**
@@ -562,13 +545,29 @@ export function create(rawOptions: CreateOptions = {}): Service {
     rawOptions.projectSearchDir ?? rawOptions.project ?? cwd
   );
 
+  const cachedFsReader = createCachedFsReader({
+    directoryExists: ts.sys.directoryExists,
+    fileExists: rawOptions.fileExists ?? ts.sys.fileExists,
+    getDirectories: ts.sys.getDirectories,
+    readDirectory: ts.sys.readDirectory,
+    readFile: rawOptions.readFile ?? ts.sys.readFile,
+    resolvePath: ts.sys.resolvePath,
+    realpath: ts.sys.realpath,
+    useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
+  });
+  const nodeInternalModuleReadJson = createNodeInternalModuleReadJSON();
+  const nodePackageJsonReader = createNodePackageJsonReader(
+    nodeInternalModuleReadJson
+  );
+  const nodeCjsLoaderUtils = createNodeCjsLoaderUtils?.(nodePackageJsonReader);
+
   // Read config file and merge new options between env and CLI options.
   const {
     configFilePath,
     config,
     tsNodeOptionsFromTsconfig,
     optionBasePaths,
-  } = readConfig(cwd, ts, rawOptions);
+  } = readConfig(cwd, ts, cachedFsReader.sys, rawOptions);
   const options = assign<RegisterOptions>(
     {},
     DEFAULTS,
@@ -608,8 +607,6 @@ export function create(rawOptions: CreateOptions = {}): Service {
     ({ compiler, ts } = loadCompiler(options.compiler, configFilePath));
   }
 
-  const readFile = options.readFile || ts.sys.readFile;
-  const fileExists = options.fileExists || ts.sys.fileExists;
   // typeCheck can override transpileOnly, useful for CLI flag to override config file
   const transpileOnly =
     options.transpileOnly === true && options.typeCheck !== true;
@@ -657,7 +654,8 @@ export function create(rawOptions: CreateOptions = {}): Service {
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
     getNewLine: () => ts.sys.newLine,
     getCurrentDirectory: () => cwd,
-    getCanonicalFileName: ts.sys.useCaseSensitiveFileNames
+    // TODO replace with `ts.createGetCanonicalFileName`?
+    getCanonicalFileName: cachedFsReader.sys.useCaseSensitiveFileNames
       ? (x) => x
       : (x) => x.toLowerCase(),
   };
@@ -718,7 +716,11 @@ export function create(rawOptions: CreateOptions = {}): Service {
           }
         }
         path = normalizeSlashes(path);
-        return outputCache.get(path)?.content || '';
+        return (
+          outputCache.get(path)?.content ||
+          cachedFsReader.sys.readFile(path) ||
+          ''
+        );
       },
       redirectConflictingLibrary: true,
       onConflictingLibraryRedirect(
@@ -784,7 +786,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
   ) => TypeInfo;
 
   const getCanonicalFileName = ((ts as unknown) as TSInternal).createGetCanonicalFileName(
-    ts.sys.useCaseSensitiveFileNames
+    cachedFsReader.sys.useCaseSensitiveFileNames
   );
 
   const moduleTypeClassifier = createModuleTypeClassifier({
@@ -796,7 +798,6 @@ export function create(rawOptions: CreateOptions = {}): Service {
   if (!transpileOnly) {
     const fileContents = new Map<string, string>();
     const rootFileNames = new Set(config.fileNames);
-    const cachedReadFile = cachedLookup(debugFn('readFile', readFile));
 
     // Use language services by default (TODO: invert next major version).
     if (!options.compilerHost) {
@@ -829,7 +830,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
 
           // Read contents into TypeScript memory cache.
           if (contents === undefined) {
-            contents = cachedReadFile(fileName);
+            contents = cachedFsReader.sys.readFile(fileName);
             if (contents === undefined) return;
 
             fileVersions.set(fileName, 1);
@@ -839,20 +840,15 @@ export function create(rawOptions: CreateOptions = {}): Service {
 
           return ts.ScriptSnapshot.fromString(contents);
         },
-        readFile: cachedReadFile,
-        readDirectory: ts.sys.readDirectory,
-        getDirectories: cachedLookup(
-          debugFn('getDirectories', ts.sys.getDirectories)
-        ),
-        fileExists: cachedLookup(debugFn('fileExists', fileExists)),
-        directoryExists: cachedLookup(
-          debugFn('directoryExists', ts.sys.directoryExists)
-        ),
-        realpath: ts.sys.realpath
-          ? cachedLookup(debugFn('realpath', ts.sys.realpath))
-          : undefined,
+        readFile: cachedFsReader.sys.readFile,
+        readDirectory: cachedFsReader.sys.readDirectory,
+        getDirectories: cachedFsReader.sys.getDirectories,
+        fileExists: cachedFsReader.sys.fileExists,
+        directoryExists: cachedFsReader.sys.directoryExists,
+        realpath: cachedFsReader.sys.realpath,
         getNewLine: () => ts.sys.newLine,
-        useCaseSensitiveFileNames: () => ts.sys.useCaseSensitiveFileNames,
+        useCaseSensitiveFileNames: () =>
+          cachedFsReader.sys.useCaseSensitiveFileNames,
         getCurrentDirectory: () => cwd,
         getCompilationSettings: () => config.options,
         getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
@@ -877,7 +873,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
       serviceHost.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives;
 
       const registry = ts.createDocumentRegistry(
-        ts.sys.useCaseSensitiveFileNames,
+        cachedFsReader.sys.useCaseSensitiveFileNames,
         cwd
       );
       const service = ts.createLanguageService(serviceHost, registry);
@@ -968,27 +964,22 @@ export function create(rawOptions: CreateOptions = {}): Service {
       };
     } else {
       const sys: _ts.System & _ts.FormatDiagnosticsHost = {
+        // TODO splat all cachedFsReader methods into here
         ...ts.sys,
         ...diagnosticHost,
         readFile: (fileName: string) => {
           const cacheContents = fileContents.get(fileName);
           if (cacheContents !== undefined) return cacheContents;
-          const contents = cachedReadFile(fileName);
+          const contents = cachedFsReader.sys.readFile(fileName);
           if (contents) fileContents.set(fileName, contents);
           return contents;
         },
-        readDirectory: ts.sys.readDirectory,
-        getDirectories: cachedLookup(
-          debugFn('getDirectories', ts.sys.getDirectories)
-        ),
-        fileExists: cachedLookup(debugFn('fileExists', fileExists)),
-        directoryExists: cachedLookup(
-          debugFn('directoryExists', ts.sys.directoryExists)
-        ),
-        resolvePath: cachedLookup(debugFn('resolvePath', ts.sys.resolvePath)),
-        realpath: ts.sys.realpath
-          ? cachedLookup(debugFn('realpath', ts.sys.realpath))
-          : undefined,
+        readDirectory: cachedFsReader.sys.readDirectory,
+        getDirectories: cachedFsReader.sys.getDirectories,
+        fileExists: cachedFsReader.sys.fileExists,
+        directoryExists: cachedFsReader.sys.directoryExists,
+        resolvePath: cachedFsReader.sys.resolvePath,
+        realpath: cachedFsReader.sys.realpath,
       };
 
       const host: _ts.CompilerHost = ts.createIncrementalCompilerHost
@@ -1297,6 +1288,10 @@ export function create(rawOptions: CreateOptions = {}): Service {
     addDiagnosticFilter,
     installSourceMapSupport,
     enableExperimentalEsmLoaderInterop,
+    cachedFsReader,
+    nodeInternalModuleReadJson,
+    nodePackageJsonReader,
+    nodeCjsLoaderUtils,
   };
 }
 
@@ -1360,7 +1355,14 @@ function registerExtension(
   require.extensions[ext] = function (m: any, filename) {
     if (service.ignored(filename)) return old(m, filename);
 
-    assertScriptCanLoadAsCJS(service, m, filename);
+    // Assert that script can be loaded as CommonJS when we attempt to require it.
+    // If it should be loaded as ESM, throw ERR_REQUIRE_ESM like node does.
+    if (engineSupportsPackageTypeField)
+      service.nodeCjsLoaderUtils!.assertScriptCanLoadAsCJSImpl(
+        service,
+        module,
+        filename
+      );
 
     const _compile = m._compile;
 

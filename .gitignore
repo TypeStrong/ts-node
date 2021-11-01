@@ -12,3 +12,4 @@ tsconfig.schemastore-schema.json
 /website/static/api
 /tsconfig.tsbuildinfo
 /temp
+/.tmp

@@ -1,4 +1,3 @@
-import { dirname } from 'path';
 import { getPatternFromSpec } from './ts-internals';
 import { cachedLookup, normalizeSlashes } from './util';
 

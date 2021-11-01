@@ -1,0 +1,21 @@
+{
+  // In our primary tsconfig.json,
+  // We set rootDir to `.` to encompass both `src` and `dist-raw`, allowing
+  // us to typecheck against JSDoc annotations in `dist-raw`
+
+  // When building, however, we must set `rootDir` to `src` and disable `allowJs`
+  // so that `src`->`dist` paths map correctly.
+
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "allowJs": false,
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": ".tmp/tsconfig.build.tsbuildinfo",
+    "rootDirs": [
+      ".",
+      ".tmp/declarations"
+    ],
+  }
+}

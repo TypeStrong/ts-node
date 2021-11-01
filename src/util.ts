@@ -4,6 +4,10 @@ import {
 } from 'module';
 import type _createRequire from 'create-require';
 import * as ynModule from 'yn';
+import type { ProcessEnv } from '.';
+
+/** @internal */
+export const env = process.env as ProcessEnv;
 
 /** @internal */
 export const createRequire =
