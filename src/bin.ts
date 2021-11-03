@@ -55,6 +55,7 @@ export function main(
         '--ignore': [String],
         '--transpile-only': Boolean,
         '--transpiler': String,
+        '--swc': Boolean,
         '--type-check': Boolean,
         '--compiler-host': Boolean,
         '--pretty': Boolean,
@@ -116,6 +117,7 @@ export function main(
     '--transpile-only': transpileOnly,
     '--type-check': typeCheck,
     '--transpiler': transpiler,
+    '--swc': swc,
     '--compiler-host': compilerHost,
     '--pretty': pretty,
     '--skip-project': skipProject,
@@ -145,6 +147,7 @@ export function main(
     --show-config                   Print resolved configuration and exit
 
     -T, --transpile-only            Use TypeScript's faster \`transpileModule\` or a third-party transpiler
+    --swc                           Use the swc transpiler
     -H, --compiler-host             Use TypeScript's compiler host API
     -I, --ignore [pattern]          Override the path patterns to skip compilation
     -P, --project [path]            Path to TypeScript JSON project file
@@ -256,6 +259,7 @@ export function main(
     experimentalReplAwait: noExperimentalReplAwait ? false : undefined,
     typeCheck,
     transpiler,
+    swc,
     compilerHost,
     ignore,
     preferTsExts,

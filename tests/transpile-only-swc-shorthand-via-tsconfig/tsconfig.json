@@ -1,7 +1,6 @@
 {
   "ts-node": {
-    "transpileOnly": true,
-    "transpiler": "ts-node/transpilers/swc"
+    "swc": true
   },
   "compilerOptions": {
     "target": "ES2018",

@@ -23,6 +23,7 @@
     "./esm.mjs": "./esm.mjs",
     "./esm/transpile-only": "./esm/transpile-only.mjs",
     "./esm/transpile-only.mjs": "./esm/transpile-only.mjs",
+    "./transpilers/swc": "./transpilers/swc.js",
     "./transpilers/swc-experimental": "./transpilers/swc-experimental.js",
     "./node10/tsconfig.json": "./node10/tsconfig.json",
     "./node12/tsconfig.json": "./node12/tsconfig.json",

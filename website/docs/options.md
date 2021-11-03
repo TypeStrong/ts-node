@@ -35,6 +35,7 @@ _Environment variables, where available, are in `ALL_CAPS`_
 -  `-I, --ignore [pattern]`   Override the path patterns to skip compilation <br/>*Default:* `/node_modules/` <br/>*Environment:* `TS_NODE_IGNORE`
 -  `--skip-ignore`   Skip ignore checks <br/>*Default:* `false` <br/>*Environment:* `TS_NODE_SKIP_IGNORE`
 -  `-C, --compiler [name]`   Specify a custom TypeScript compiler <br/>*Default:* `typescript` <br/>*Environment:* `TS_NODE_COMPILER`
+-  `--swc`   Transpile with [swc](./transpilers.md#swc).  Implies `--transpile-only` <br/>*Default:* `false`
 -  `--transpiler [name]`   Specify a third-party, non-typechecking transpiler
 -  `--prefer-ts-exts`   Re-order file extensions so that TypeScript imports are preferred <br/>*Default:* `false` <br/>*Environment:* `TS_NODE_PREFER_TS_EXTS`
 
