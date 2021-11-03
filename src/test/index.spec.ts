@@ -318,12 +318,16 @@ test.suite('ts-node', (test) => {
           {
             env: {
               ...process.env,
-              NODE_OPTIONS: `${ process.env.NODE_OPTIONS || '' } --require ${ require.resolve('../../tests/spy-swc-transpiler') }`
-            }
+              NODE_OPTIONS: `${
+                process.env.NODE_OPTIONS || ''
+              } --require ${require.resolve('../../tests/spy-swc-transpiler')}`,
+            },
           }
         );
         expect(err).toBe(null);
-        expect(stdout).toMatch('Hello World! swc transpiler invocation count: 1\n');
+        expect(stdout).toMatch(
+          'Hello World! swc transpiler invocation count: 1\n'
+        );
       });
     }
 
