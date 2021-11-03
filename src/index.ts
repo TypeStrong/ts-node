@@ -619,10 +619,14 @@ export function create(rawOptions: CreateOptions = {}): Service {
   // So we should allow using typeCheck to override swc
   if (options.swc && !options.typeCheck) {
     if (options.transpileOnly === false) {
-      throw new Error("Cannot enable 'swc' option with 'transpileOnly: false'.  'swc' implies 'transpileOnly'.");
+      throw new Error(
+        "Cannot enable 'swc' option with 'transpileOnly: false'.  'swc' implies 'transpileOnly'."
+      );
     }
     if (options.transpiler) {
-      throw new Error("Cannot specify both 'swc' and 'transpiler' options.  'swc' uses the built-in swc transpiler.");
+      throw new Error(
+        "Cannot specify both 'swc' and 'transpiler' options.  'swc' uses the built-in swc transpiler."
+      );
     }
   }
 
@@ -630,9 +634,13 @@ export function create(rawOptions: CreateOptions = {}): Service {
   const fileExists = options.fileExists || ts.sys.fileExists;
   // typeCheck can override transpileOnly, useful for CLI flag to override config file
   const transpileOnly =
-    (options.transpileOnly === true || options.swc === true) && options.typeCheck !== true;
-  const transpiler =
-    options.transpiler ? options.transpiler : options.swc ? require.resolve('./transpilers/swc.js') : undefined;
+    (options.transpileOnly === true || options.swc === true) &&
+    options.typeCheck !== true;
+  const transpiler = options.transpiler
+    ? options.transpiler
+    : options.swc
+    ? require.resolve('./transpilers/swc.js')
+    : undefined;
   const transformers = options.transformers || undefined;
   const diagnosticFilters: Array<DiagnosticFilter> = [
     {
@@ -694,9 +702,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         'Custom transpiler can only be used when transpileOnly is enabled.'
       );
     const transpilerName =
-      typeof transpiler === 'string'
-        ? transpiler
-        : transpiler[0];
+      typeof transpiler === 'string' ? transpiler : transpiler[0];
     const transpilerOptions =
       typeof transpiler === 'string' ? {} : transpiler[1] ?? {};
     // TODO mimic fixed resolution logic from loadCompiler main
