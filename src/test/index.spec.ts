@@ -70,6 +70,7 @@ test.suite('ts-node', (test) => {
     testsDirRequire.resolve('ts-node/esm/transpile-only');
     testsDirRequire.resolve('ts-node/esm/transpile-only.mjs');
 
+    testsDirRequire.resolve('ts-node/transpilers/swc');
     testsDirRequire.resolve('ts-node/transpilers/swc-experimental');
 
     testsDirRequire.resolve('ts-node/node10/tsconfig.json');
@@ -304,21 +305,21 @@ test.suite('ts-node', (test) => {
       expect(err.message).toMatch('error TS1003: Identifier expected');
     });
 
-    test('should support third-party transpilers via --transpiler', async () => {
-      const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --transpiler ts-node/transpilers/swc-experimental transpile-only-swc`
-      );
-      expect(err).toBe(null);
-      expect(stdout).toMatch('Hello World!');
-    });
-
-    test('should support third-party transpilers via tsconfig', async () => {
-      const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} transpile-only-swc-via-tsconfig`
-      );
-      expect(err).toBe(null);
-      expect(stdout).toMatch('Hello World!');
-    });
+    for (const flavor of [
+      '--transpiler ts-node/transpilers/swc transpile-only-swc',
+      '--transpiler ts-node/transpilers/swc-experimental transpile-only-swc',
+      '--swc transpile-only-swc',
+      'transpile-only-swc-via-tsconfig',
+      'transpile-only-swc-shorthand-via-tsconfig',
+    ]) {
+      test(`should support swc and third-party transpilers: ${flavor}`, async () => {
+        const { err, stdout } = await exec(
+          `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} ${flavor}`
+        );
+        expect(err).toBe(null);
+        expect(stdout).toMatch('Hello World!');
+      });
+    }
 
     if (semver.gte(process.version, '12.16.0')) {
       test('swc transpiler supports native ESM emit', async () => {
