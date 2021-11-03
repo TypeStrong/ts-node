@@ -314,10 +314,16 @@ test.suite('ts-node', (test) => {
     ]) {
       test(`should support swc and third-party transpilers: ${flavor}`, async () => {
         const { err, stdout } = await exec(
-          `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} ${flavor}`
+          `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} ${flavor}`,
+          {
+            env: {
+              ...process.env,
+              NODE_OPTIONS: `${ process.env.NODE_OPTIONS || '' } --require ${ require.resolve('../../tests/spy-swc-transpiler') }`
+            }
+          }
         );
         expect(err).toBe(null);
-        expect(stdout).toMatch('Hello World!');
+        expect(stdout).toMatch('Hello World! swc transpiler invocation count: 1\n');
       });
     }
 
