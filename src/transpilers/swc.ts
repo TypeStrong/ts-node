@@ -96,7 +96,9 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
       // if `alwaysStrict` is disabled, remembering that `strict` defaults `alwaysStrict` to true
       (alwaysStrict === false || (alwaysStrict !== true && strict !== true)) &&
       // if noImplicitUseStrict is enabled
-      noImplicitUseStrict === true ? false : true;
+      noImplicitUseStrict === true
+        ? false
+        : true;
     return {
       sourceMaps: sourceMap,
       // isModule: true,
