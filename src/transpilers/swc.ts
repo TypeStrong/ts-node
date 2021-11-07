@@ -164,6 +164,7 @@ targetMapping.set(/* ts.ScriptTarget.ES2018 */ 5, 'es2018');
 targetMapping.set(/* ts.ScriptTarget.ES2019 */ 6, 'es2019');
 targetMapping.set(/* ts.ScriptTarget.ES2020 */ 7, 'es2020');
 targetMapping.set(/* ts.ScriptTarget.ES2021 */ 8, 'es2021');
+targetMapping.set(/* ts.ScriptTarget.ES2022 */ 9, 'es2022');
 targetMapping.set(/* ts.ScriptTarget.ESNext */ 99, 'es2022');
 
 type SwcTarget = typeof swcTargets[number];
