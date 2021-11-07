@@ -251,7 +251,10 @@ export function readConfig(
  */
 function filterRecognizedTsConfigTsNodeOptions(
   jsonObject: any
-): { recognized: TsConfigOptions; unrecognized: any } {
+): {
+  recognized: TsConfigOptions;
+  unrecognized: any;
+} {
   if (jsonObject == null) return { recognized: {}, unrecognized: {} };
   const {
     compiler,
@@ -274,6 +277,7 @@ function filterRecognizedTsConfigTsNodeOptions(
     moduleTypes,
     experimentalReplAwait,
     trace,
+    swc,
     ...unrecognized
   } = jsonObject as TsConfigOptions;
   const filteredTsConfigOptions = {
@@ -297,6 +301,7 @@ function filterRecognizedTsConfigTsNodeOptions(
     scopeDir,
     moduleTypes,
     trace,
+    swc,
   };
   // Use the typechecker to make sure this implementation has the correct set of properties
   const catchExtraneousProps: keyof TsConfigOptions = (null as any) as keyof typeof filteredTsConfigOptions;

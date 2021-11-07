@@ -14,6 +14,7 @@ import { Console } from 'console';
 import * as assert from 'assert';
 import type * as tty from 'tty';
 import type * as Module from 'module';
+import { builtinModules } from 'module';
 
 // Lazy-loaded.
 let _processTopLevelAwait: (src: string) => string | null;
@@ -329,6 +330,11 @@ export function createRepl(options: CreateReplOptions = {}) {
       }
     }
 
+    // In case the typescript compiler hasn't compiled anything yet,
+    // make it run though compilation at least one time before
+    // the REPL starts for a snappier user experience on startup.
+    service?.compile('', state.path);
+
     const repl = nodeReplStart({
       prompt: '> ',
       input: replService.stdin,
@@ -356,6 +362,22 @@ export function createRepl(options: CreateReplOptions = {}) {
       if (forceToBeModule) {
         state.input += 'export {};void 0;\n';
       }
+
+      // Declare node builtins.
+      // Skip the same builtins as `addBuiltinLibsToObject`:
+      //   those starting with _
+      //   those containing /
+      //   those that already exist as globals
+      // Intentionally suppress type errors in case @types/node does not declare any of them.
+      state.input += `// @ts-ignore\n${builtinModules
+        .filter(
+          (name) =>
+            !name.startsWith('_') &&
+            !name.includes('/') &&
+            !['console', 'module', 'process'].includes(name)
+        )
+        .map((name) => `declare import ${name} = require('${name}')`)
+        .join(';')}\n`;
     }
 
     reset();

@@ -1,6 +1,6 @@
 {
   "name": "ts-node",
-  "version": "10.2.1",
+  "version": "10.4.0",
   "description": "TypeScript execution environment and REPL for node.js, with source map support",
   "main": "dist/index.js",
   "exports": {
@@ -23,6 +23,7 @@
     "./esm.mjs": "./esm.mjs",
     "./esm/transpile-only": "./esm/transpile-only.mjs",
     "./esm/transpile-only.mjs": "./esm/transpile-only.mjs",
+    "./transpilers/swc": "./transpilers/swc.js",
     "./transpilers/swc-experimental": "./transpilers/swc-experimental.js",
     "./node10/tsconfig.json": "./node10/tsconfig.json",
     "./node12/tsconfig.json": "./node12/tsconfig.json",
@@ -67,12 +68,12 @@
     "test-cov": "nyc ava",
     "test": "npm run build && npm run lint && npm run test-cov --",
     "test-local": "npm run lint-fix && npm run build-tsc && npm run build-pack && npm run test-spec --",
+    "pre-debug": "npm run build-tsc && npm run build-pack",
     "coverage-report": "nyc report --reporter=lcov",
     "prepare": "npm run clean && npm run build-nopack",
-    "api-extractor": "api-extractor run --local --verbose"
-  },
-  "engines": {
-    "node": ">=12.0.0"
+    "api-extractor": "api-extractor run --local --verbose",
+    "esm-usage-example": "npm run build-tsc && cd esm-usage-example && node --experimental-specifier-resolution node --loader ../esm.mjs ./index",
+    "esm-usage-example2": "npm run build-tsc && cd tests && TS_NODE_PROJECT=./module-types/override-to-cjs/tsconfig.json node --loader ../esm.mjs ./module-types/override-to-cjs/test.cjs"
   },
   "repository": {
     "type": "git",
@@ -152,7 +153,7 @@
     }
   },
   "dependencies": {
-    "@cspotcode/source-map-support": "0.6.1",
+    "@cspotcode/source-map-support": "0.7.0",
     "@tsconfig/node10": "^1.0.7",
     "@tsconfig/node12": "^1.0.7",
     "@tsconfig/node14": "^1.0.0",
@@ -167,5 +168,9 @@
   },
   "prettier": {
     "singleQuote": true
+  },
+  "volta": {
+    "node": "16.9.1",
+    "npm": "6.14.15"
   }
 }

@@ -4,11 +4,11 @@ title: Troubleshooting
 
 ## Understanding configuration
 
-`ts-node` uses sensible default configurations to reduce boilerplate while still respecting `tsconfig.json` if you
+ts-node uses sensible default configurations to reduce boilerplate while still respecting `tsconfig.json` if you
 have one.  If you are unsure which configuration is used, you can log it with `ts-node --show-config`.  This is similar to
 `tsc --showConfig` but includes `"ts-node"` options as well.
 
-`ts-node` also respects your locally-installed `typescript` version, but global installations fallback to the globally-installed
+ts-node also respects your locally-installed `typescript` version, but global installations fallback to the globally-installed
 `typescript`.  If you are unsure which versions are used, `ts-node -vv` will log them.
 
 ```shell
@@ -54,7 +54,7 @@ $ ts-node --show-config
 
 ## Understanding Errors
 
-It is important to differentiate between errors from `ts-node`, errors from the TypeScript compiler, and errors from `node`.  It is also important to understand when errors are caused by a type error in your code, a bug in your code, or a flaw in your configuration.
+It is important to differentiate between errors from ts-node, errors from the TypeScript compiler, and errors from `node`.  It is also important to understand when errors are caused by a type error in your code, a bug in your code, or a flaw in your configuration.
 
 ### `TSError`
 
@@ -62,7 +62,7 @@ Type errors from the compiler are thrown as a `TSError`.  These are the same as 
 
 ### `SyntaxError`
 
-Any error that is not a `TSError` is from node.js (e.g. `SyntaxError`), and cannot be fixed by TypeScript or `ts-node`. These are bugs in your code or configuration.
+Any error that is not a `TSError` is from node.js (e.g. `SyntaxError`), and cannot be fixed by TypeScript or ts-node. These are bugs in your code or configuration.
 
 #### Unsupported JavaScript syntax
 

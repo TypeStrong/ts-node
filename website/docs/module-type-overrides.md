@@ -2,7 +2,7 @@
 title: Module type overrides
 ---
 
-When deciding between CommonJS and native ECMAScript modules, `ts-node` defaults to matching vanilla `node` and `tsc`
+When deciding between CommonJS and native ECMAScript modules, ts-node defaults to matching vanilla `node` and `tsc`
 behavior.  This means TypeScript files are transformed according to your `tsconfig.json` `"module"` option and executed
 according to node's rules for the `package.json` `"type"` field.
 
@@ -15,7 +15,7 @@ In these situations, our `moduleTypes` option lets you override certain files, f
 CommonJS or ESM.  Node supports similar overriding via `.cjs` and `.mjs` file extensions, but `.ts` files cannot use them.
 `moduleTypes` achieves the same effect, and *also* overrides your `tsconfig.json` `"module"` config appropriately.
 
-The following example tells `ts-node` to execute a webpack config as CommonJS:
+The following example tells ts-node to execute a webpack config as CommonJS:
 
 ```json title=tsconfig.json
 {
