@@ -94,6 +94,7 @@ export function readConfig(
     readFile = ts.sys.readFile,
     skipProject = DEFAULTS.skipProject,
     project = DEFAULTS.project,
+    tsTrace = DEFAULTS.tsTrace,
   } = rawApiOptions;
 
   // Read project configuration when available.
@@ -137,7 +138,7 @@ export function readConfig(
             readDirectory: ts.sys.readDirectory,
             readFile,
             useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
-            trace: rawApiOptions.trace,
+            trace: tsTrace,
           },
           bp,
           errors,
@@ -276,7 +277,6 @@ function filterRecognizedTsConfigTsNodeOptions(
     scopeDir,
     moduleTypes,
     experimentalReplAwait,
-    trace,
     swc,
     ...unrecognized
   } = jsonObject as TsConfigOptions;
@@ -300,7 +300,6 @@ function filterRecognizedTsConfigTsNodeOptions(
     scope,
     scopeDir,
     moduleTypes,
-    trace,
     swc,
   };
   // Use the typechecker to make sure this implementation has the correct set of properties

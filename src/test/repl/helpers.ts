@@ -45,7 +45,7 @@ export async function contextReplHelpers(
       ...replService.evalAwarePartialHost,
       project: `${TEST_DIR}/tsconfig.json`,
       ...createServiceOpts,
-      trace: replService.console.log.bind(replService.console),
+      tsTrace: replService.console.log.bind(replService.console),
     });
     replService.setService(service);
     t.teardown(async () => {

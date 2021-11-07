@@ -7,14 +7,14 @@ import type * as _ts from 'typescript';
  */
 export function createResolverFunctions(kwargs: {
   ts: typeof _ts;
-  serviceHost: _ts.ModuleResolutionHost;
+  host: _ts.ModuleResolutionHost;
   cwd: string;
   getCanonicalFileName: (filename: string) => string;
   config: _ts.ParsedCommandLine;
   configFilePath: string | undefined;
 }) {
   const {
-    serviceHost,
+    host,
     ts,
     config,
     cwd,
@@ -93,7 +93,7 @@ export function createResolverFunctions(kwargs: {
         moduleName,
         containingFile,
         config.options,
-        serviceHost,
+        host,
         moduleResolutionCache,
         redirectedReference
       );
@@ -132,7 +132,7 @@ export function createResolverFunctions(kwargs: {
         typeDirectiveName,
         containingFile,
         config.options,
-        serviceHost,
+        host,
         redirectedReference
       );
       if (typeDirectiveName === 'node' && !resolvedTypeReferenceDirective) {
@@ -157,7 +157,7 @@ export function createResolverFunctions(kwargs: {
               ...config.options,
               typeRoots,
             },
-            serviceHost,
+            host,
             redirectedReference
           ));
         }
