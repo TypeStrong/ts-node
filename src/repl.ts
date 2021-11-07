@@ -330,6 +330,11 @@ export function createRepl(options: CreateReplOptions = {}) {
       }
     }
 
+    // In case the typescript compiler hasn't compiled anything yet,
+    // make it run though compilation at least one time before
+    // the REPL starts for a snappier user experience on startup.
+    service?.compile('', state.path);
+
     const repl = nodeReplStart({
       prompt: '> ',
       input: replService.stdin,
