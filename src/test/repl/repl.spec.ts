@@ -412,29 +412,54 @@ test.suite(
   }
 );
 
-test.serial('REPL declares types for node built-ins within REPL', async (t) => {
-  const { stdout, stderr } = await t.context.executeInRepl(
-    `util.promisify(setTimeout)("should not be a string" as string)
-    type Duplex = stream.Duplex
-    const s = stream
-    'done'`,
-    {
-      registerHooks: true,
-      waitPattern: `done`,
-      startInternalOptions: {
-        useGlobal: false,
-      },
-    }
-  );
+test.suite('REPL declares types for node built-ins within REPL', (test) => {
+  test.runSerially();
+  test('enabled when typechecking', async (t) => {
+    const { stdout, stderr } = await t.context.executeInRepl(
+      `util.promisify(setTimeout)("should not be a string" as string)
+      type Duplex = stream.Duplex
+      const s = stream
+      'done'`,
+      {
+        registerHooks: true,
+        waitPattern: `done`,
+        startInternalOptions: {
+          useGlobal: false,
+        },
+      }
+    );
 
-  // Assert that we receive a typechecking error about improperly using
-  // `util.promisify` but *not* an error about the absence of `util`
-  expect(stderr).not.toMatch("Cannot find name 'util'");
-  expect(stderr).toMatch(
-    "Argument of type 'string' is not assignable to parameter of type 'number'"
-  );
-  // Assert that both types and values can be used without error
-  expect(stderr).not.toMatch("Cannot find namespace 'stream'");
-  expect(stderr).not.toMatch("Cannot find name 'stream'");
-  expect(stdout).toMatch(`done`);
+    // Assert that we receive a typechecking error about improperly using
+    // `util.promisify` but *not* an error about the absence of `util`
+    expect(stderr).not.toMatch("Cannot find name 'util'");
+    expect(stderr).toMatch(
+      "Argument of type 'string' is not assignable to parameter of type 'number'"
+    );
+    // Assert that both types and values can be used without error
+    expect(stderr).not.toMatch("Cannot find namespace 'stream'");
+    expect(stderr).not.toMatch("Cannot find name 'stream'");
+    expect(stdout).toMatch(`done`);
+  });
+
+  test('disabled in transpile-only mode, to avoid breaking third-party SWC transpiler which rejects `declare import` syntax', async (t) => {
+    const { stdout, stderr } = await t.context.executeInRepl(
+      `type Duplex = stream.Duplex
+      const s = stream
+      'done'`,
+      {
+        createServiceOpts: {
+          swc: true,
+        },
+        registerHooks: true,
+        waitPattern: `done`,
+        startInternalOptions: {
+          useGlobal: false,
+        },
+      }
+    );
+
+    // Assert that we do not get errors about `declare import` syntax from swc
+    expect(stdout).toBe("> undefined\n> undefined\n> 'done'\n> ");
+    expect(stderr).toBe('');
+  });
 });
