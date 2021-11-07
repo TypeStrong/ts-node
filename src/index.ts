@@ -353,6 +353,12 @@ export interface CreateOptions {
    * the configuration loader, so it is *not* necessary for their source to be set here.
    */
   optionBasePaths?: OptionBasePaths;
+  /**
+   * A function to collect trace messages from the TypeScript compiler, for example when `traceResolution` is enabled.
+   *
+   * @default console.log
+   */
+  tsTrace?: (str: string) => void;
 }
 
 /** @internal */
@@ -389,6 +395,7 @@ export interface TsConfigOptions
     | 'cwd'
     | 'projectSearchDir'
     | 'optionBasePaths'
+    | 'tsTrace'
   > {}
 
 /**
@@ -424,6 +431,7 @@ export const DEFAULTS: RegisterOptions = {
   compilerHost: yn(env.TS_NODE_COMPILER_HOST),
   logError: yn(env.TS_NODE_LOG_ERROR),
   experimentalReplAwait: yn(env.TS_NODE_EXPERIMENTAL_REPL_AWAIT) ?? undefined,
+  tsTrace: console.log.bind(console),
 };
 
 /**
@@ -883,6 +891,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         getCompilationSettings: () => config.options,
         getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
         getCustomTransformers: getCustomTransformers,
+        trace: options.tsTrace,
       };
       const {
         resolveModuleNames,
@@ -891,7 +900,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         isFileKnownToBeInternal,
         markBucketOfFilenameInternal,
       } = createResolverFunctions({
-        serviceHost,
+        host: serviceHost,
         getCanonicalFileName,
         ts,
         cwd,
@@ -1036,13 +1045,14 @@ export function create(rawOptions: CreateOptions = {}): Service {
               ),
             useCaseSensitiveFileNames: () => sys.useCaseSensitiveFileNames,
           };
+      host.trace = options.tsTrace;
       const {
         resolveModuleNames,
         resolveTypeReferenceDirectives,
         isFileKnownToBeInternal,
         markBucketOfFilenameInternal,
       } = createResolverFunctions({
-        serviceHost: host,
+        host,
         cwd,
         configFilePath,
         config,
@@ -1057,7 +1067,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         ? ts.createIncrementalProgram({
             rootNames: Array.from(rootFileNames),
             options: config.options,
-            host: host,
+            host,
             configFileParsingDiagnostics: config.errors,
             projectReferences: config.projectReferences,
           })

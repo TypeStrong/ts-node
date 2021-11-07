@@ -331,6 +331,26 @@ test.suite('ts-node', (test) => {
       });
     }
 
+    test.suite('should support `traceResolution` compiler option', (test) => {
+      test('prints traces before running code when enabled', async () => {
+        const { err, stdout } = await exec(
+          `${BIN_PATH} --compiler-options="{ \\"traceResolution\\": true }" -e "console.log('ok')"`
+        );
+        expect(err).toBeNull();
+        expect(stdout).toContain('======== Resolving module');
+        expect(stdout.endsWith('ok\n')).toBe(true);
+      });
+
+      test('does NOT print traces when not enabled', async () => {
+        const { err, stdout } = await exec(
+          `${BIN_PATH} -e "console.log('ok')"`
+        );
+        expect(err).toBeNull();
+        expect(stdout).not.toContain('======== Resolving module');
+        expect(stdout.endsWith('ok\n')).toBe(true);
+      });
+    });
+
     if (semver.gte(process.version, '12.16.0')) {
       test('swc transpiler supports native ESM emit', async () => {
         const { err, stdout } = await exec(
