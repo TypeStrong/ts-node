@@ -257,6 +257,12 @@ export interface CreateOptions {
    */
   transpiler?: string | [string, object];
   /**
+   * Transpile with swc instead of the TypeScript compiler, and skip typechecking.
+   *
+   * Equivalent to setting both `transpileOnly: true` and `transpiler: 'ts-node/transpilers/swc'`
+   */
+  swc?: boolean;
+  /**
    * Paths which should not be compiled.
    *
    * Each string in the array is converted to a regular expression via `new RegExp()` and tested against source paths prior to compilation.
@@ -347,6 +353,12 @@ export interface CreateOptions {
    * the configuration loader, so it is *not* necessary for their source to be set here.
    */
   optionBasePaths?: OptionBasePaths;
+  /**
+   * A function to collect trace messages from the TypeScript compiler, for example when `traceResolution` is enabled.
+   *
+   * @default console.log
+   */
+  tsTrace?: (str: string) => void;
 }
 
 /** @internal */
@@ -383,6 +395,7 @@ export interface TsConfigOptions
     | 'cwd'
     | 'projectSearchDir'
     | 'optionBasePaths'
+    | 'tsTrace'
   > {}
 
 /**
@@ -418,6 +431,7 @@ export const DEFAULTS: RegisterOptions = {
   compilerHost: yn(env.TS_NODE_COMPILER_HOST),
   logError: yn(env.TS_NODE_LOG_ERROR),
   experimentalReplAwait: yn(env.TS_NODE_EXPERIMENTAL_REPL_AWAIT) ?? undefined,
+  tsTrace: console.log.bind(console),
 };
 
 /**
@@ -608,11 +622,33 @@ export function create(rawOptions: CreateOptions = {}): Service {
     ({ compiler, ts } = loadCompiler(options.compiler, configFilePath));
   }
 
+  // swc implies two other options
+  // typeCheck option was implemented specifically to allow overriding tsconfig transpileOnly from the command-line
+  // So we should allow using typeCheck to override swc
+  if (options.swc && !options.typeCheck) {
+    if (options.transpileOnly === false) {
+      throw new Error(
+        "Cannot enable 'swc' option with 'transpileOnly: false'.  'swc' implies 'transpileOnly'."
+      );
+    }
+    if (options.transpiler) {
+      throw new Error(
+        "Cannot specify both 'swc' and 'transpiler' options.  'swc' uses the built-in swc transpiler."
+      );
+    }
+  }
+
   const readFile = options.readFile || ts.sys.readFile;
   const fileExists = options.fileExists || ts.sys.fileExists;
   // typeCheck can override transpileOnly, useful for CLI flag to override config file
   const transpileOnly =
-    options.transpileOnly === true && options.typeCheck !== true;
+    (options.transpileOnly === true || options.swc === true) &&
+    options.typeCheck !== true;
+  const transpiler = options.transpiler
+    ? options.transpiler
+    : options.swc
+    ? require.resolve('./transpilers/swc.js')
+    : undefined;
   const transformers = options.transformers || undefined;
   const diagnosticFilters: Array<DiagnosticFilter> = [
     {
@@ -668,17 +704,15 @@ export function create(rawOptions: CreateOptions = {}): Service {
     );
   }
   let customTranspiler: Transpiler | undefined = undefined;
-  if (options.transpiler) {
+  if (transpiler) {
     if (!transpileOnly)
       throw new Error(
         'Custom transpiler can only be used when transpileOnly is enabled.'
       );
     const transpilerName =
-      typeof options.transpiler === 'string'
-        ? options.transpiler
-        : options.transpiler[0];
+      typeof transpiler === 'string' ? transpiler : transpiler[0];
     const transpilerOptions =
-      typeof options.transpiler === 'string' ? {} : options.transpiler[1] ?? {};
+      typeof transpiler === 'string' ? {} : transpiler[1] ?? {};
     // TODO mimic fixed resolution logic from loadCompiler main
     // TODO refactor into a more generic "resolve dep relative to project" helper
     const transpilerPath = require.resolve(transpilerName, {
@@ -857,6 +891,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         getCompilationSettings: () => config.options,
         getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
         getCustomTransformers: getCustomTransformers,
+        trace: options.tsTrace,
       };
       const {
         resolveModuleNames,
@@ -865,7 +900,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         isFileKnownToBeInternal,
         markBucketOfFilenameInternal,
       } = createResolverFunctions({
-        serviceHost,
+        host: serviceHost,
         getCanonicalFileName,
         ts,
         cwd,
@@ -1010,13 +1045,14 @@ export function create(rawOptions: CreateOptions = {}): Service {
               ),
             useCaseSensitiveFileNames: () => sys.useCaseSensitiveFileNames,
           };
+      host.trace = options.tsTrace;
       const {
         resolveModuleNames,
         resolveTypeReferenceDirectives,
         isFileKnownToBeInternal,
         markBucketOfFilenameInternal,
       } = createResolverFunctions({
-        serviceHost: host,
+        host,
         cwd,
         configFilePath,
         config,
@@ -1031,7 +1067,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         ? ts.createIncrementalProgram({
             rootNames: Array.from(rootFileNames),
             options: config.options,
-            host: host,
+            host,
             configFileParsingDiagnostics: config.errors,
             projectReferences: config.projectReferences,
           })

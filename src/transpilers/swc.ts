@@ -52,6 +52,9 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
     module,
     jsxFactory,
     jsxFragmentFactory,
+    strict,
+    alwaysStrict,
+    noImplicitUseStrict,
   } = compilerOptions;
   const nonTsxOptions = createSwcOptions(false);
   const tsxOptions = createSwcOptions(true);
@@ -71,6 +74,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
     }
     swcTarget = swcTargets[swcTargetIndex];
     const keepClassNames = target! >= /* ts.ScriptTarget.ES2016 */ 3;
+    // swc only supports these 4x module options
     const moduleType =
       module === ModuleKind.CommonJS
         ? 'commonjs'
@@ -78,7 +82,23 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
         ? 'amd'
         : module === ModuleKind.UMD
         ? 'umd'
-        : undefined;
+        : 'es6';
+    // In swc:
+    //   strictMode means `"use strict"` is *always* emitted for non-ES module, *never* for ES module where it is assumed it can be omitted.
+    //   (this assumption is invalid, but that's the way swc behaves)
+    // tsc is a bit more complex:
+    //   alwaysStrict will force emitting it always unless `import`/`export` syntax is emitted which implies it per the JS spec.
+    //   if not alwaysStrict, will emit implicitly whenever module target is non-ES *and* transformed module syntax is emitted.
+    // For node, best option is to assume that all scripts are modules (commonjs or esm) and thus should get tsc's implicit strict behavior.
+
+    // Always set strictMode, *unless* alwaysStrict is disabled and noImplicitUseStrict is enabled
+    const strictMode =
+      // if `alwaysStrict` is disabled, remembering that `strict` defaults `alwaysStrict` to true
+      (alwaysStrict === false || (alwaysStrict !== true && strict !== true)) &&
+      // if noImplicitUseStrict is enabled
+      noImplicitUseStrict === true
+        ? false
+        : true;
     return {
       sourceMaps: sourceMap,
       // isModule: true,
@@ -86,6 +106,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
         ? ({
             noInterop: !esModuleInterop,
             type: moduleType,
+            strictMode,
           } as swcTypes.ModuleConfig)
         : undefined,
       swcrc: false,
@@ -143,7 +164,8 @@ targetMapping.set(/* ts.ScriptTarget.ES2018 */ 5, 'es2018');
 targetMapping.set(/* ts.ScriptTarget.ES2019 */ 6, 'es2019');
 targetMapping.set(/* ts.ScriptTarget.ES2020 */ 7, 'es2020');
 targetMapping.set(/* ts.ScriptTarget.ES2021 */ 8, 'es2021');
-targetMapping.set(/* ts.ScriptTarget.ESNext */ 99, 'es2021');
+targetMapping.set(/* ts.ScriptTarget.ES2022 */ 9, 'es2022');
+targetMapping.set(/* ts.ScriptTarget.ESNext */ 99, 'es2022');
 
 type SwcTarget = typeof swcTargets[number];
 /**
@@ -160,6 +182,7 @@ const swcTargets = [
   'es2019',
   'es2020',
   'es2021',
+  'es2022',
 ] as const;
 
 const ModuleKind = {
