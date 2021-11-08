@@ -69,6 +69,9 @@ export interface TSInternal {
     redirectedReference?: _ts.ResolvedProjectReference,
     lookupConfig?: boolean
   ): _ts.ResolvedModuleWithFailedLookupLocations;
+  // TODO do we need these?  Which TS version adds them?
+  getPatternFromSpec(spec: string, basePath: string, usage: "files" | "directories" | "exclude"): string | undefined;
+  getRegularExpressionForWildcard(specs: readonly string[] | undefined, basePath: string, usage: "files" | "directories" | "exclude"): string | undefined;
 }
 /** @internal */
 export namespace TSInternal {

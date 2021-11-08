@@ -1,3 +1,4 @@
+// Copied from https://github.com/nodejs/node/blob/v15.3.0/lib/internal/modules/esm/resolve.js
 'use strict';
 
 const {

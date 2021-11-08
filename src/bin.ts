@@ -19,7 +19,7 @@ import {
 } from './repl';
 import { VERSION, TSError, register } from './index';
 import type { TSInternal } from './ts-compiler-types';
-import { addBuiltinLibsToObject } from '../dist-raw/node-cjs-helpers';
+import { addBuiltinLibsToObject } from '../dist-raw/node-internal-modules-cjs-helpers';
 
 /**
  * Main `bin` functionality.

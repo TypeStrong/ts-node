@@ -190,10 +190,6 @@ export function readConfig(
   // Remove resolution of "files".
   const files =
     rawApiOptions.files ?? tsNodeOptionsFromTsconfig.files ?? DEFAULTS.files;
-  if (!files) {
-    config.files = [];
-    config.include = [];
-  }
 
   // Only if a config file is *not* loaded, load an implicit configuration from @tsconfig/bases
   const skipDefaultCompilerOptions = configFilePath != null;
@@ -228,7 +224,9 @@ export function readConfig(
       {
         fileExists,
         readFile,
-        readDirectory: ts.sys.readDirectory,
+        // Only used for globbing "files", "include", "exclude"
+        // When `files` option disabled, we want to avoid the fs calls
+        readDirectory: files ? ts.sys.readDirectory : () => [],
         useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
       },
       basePath,
@@ -303,4 +301,34 @@ function filterRecognizedTsConfigTsNodeOptions(
   const catchExtraneousProps: keyof TsConfigOptions = (null as any) as keyof typeof filteredTsConfigOptions;
   const catchMissingProps: keyof typeof filteredTsConfigOptions = (null as any) as keyof TsConfigOptions;
   return { recognized: filteredTsConfigOptions, unrecognized };
+}
+
+/** @internal */
+export const ComputeAsCommonRootOfFiles = Symbol();
+
+/**
+ * Some TS compiler options have defaults which are not provided by TS's config parsing functions.
+ * This function centralizes the logic for computing those defaults.
+ * @internal
+ */
+export function getTsConfigDefaults(config: _ts.ParsedCommandLine, basePath: string, _files: string[] | undefined, _include: string[] | undefined, _exclude: string[] | undefined) {
+    const {composite = false} = config.options;
+    let rootDir: string | typeof ComputeAsCommonRootOfFiles = config.options.rootDir!;
+    if(rootDir == null) {
+      if(composite) rootDir = basePath;
+      // Return this symbol to avoid computing from `files`, which would require fs calls
+      else rootDir = ComputeAsCommonRootOfFiles;
+    }
+    const {outDir = rootDir} = config.options;
+    // Docs are wrong: https://www.typescriptlang.org/tsconfig#include
+    // Docs say **, but it's actually **/*; compiler throws error for **
+    const include = _files ? [] : ['**/*'];
+    const files = _files ?? [];
+    // Docs are misleading: https://www.typescriptlang.org/tsconfig#exclude
+    // Docs say it excludes node_modules, bower_components, jspm_packages, but actually those are excluded via behavior of "include"
+    const exclude = _exclude ?? [outDir]; // TODO technically, outDir is absolute path, but exclude should be relative glob pattern?
+
+    // TODO compute baseUrl
+
+    return {rootDir, outDir, include, files, exclude, composite};
 }

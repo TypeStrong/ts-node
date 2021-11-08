@@ -91,7 +91,7 @@ let assertScriptCanLoadAsCJS: (
   module: NodeJS.Module,
   filename: string
 ) => void = engineSupportsPackageTypeField
-  ? require('../dist-raw/node-cjs-loader-utils').assertScriptCanLoadAsCJSImpl
+  ? require('../dist-raw/node-internal-modules-cjs-loader-old').assertScriptCanLoadAsCJSImpl
   : () => {
       /* noop */
     };
