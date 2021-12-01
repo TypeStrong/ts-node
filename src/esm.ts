@@ -67,7 +67,10 @@ export namespace NodeLoaderHooksAPI2 {
   ) => Promise<{ url: string }>;
   export type LoadHook = (
     url: string,
-    context: { format: NodeLoaderHooksFormat | null | undefined },
+    context: {
+      format: NodeLoaderHooksFormat | null | undefined;
+      importAssertions?: NodeImportAssertions;
+    },
     defaultLoad: NodeLoaderHooksAPI2['load']
   ) => Promise<{
     format: NodeLoaderHooksFormat;
@@ -82,6 +85,10 @@ export type NodeLoaderHooksFormat =
   | 'json'
   | 'module'
   | 'wasm';
+
+export type NodeImportAssertions = {
+  type: 'json' | 'wasm';
+};
 
 /** @internal */
 export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
@@ -159,7 +166,10 @@ export function createEsmHooks(tsNodeService: Service) {
   // `load` from new loader hook API (See description at the top of this file)
   async function load(
     url: string,
-    context: { format: NodeLoaderHooksFormat | null | undefined },
+    context: {
+      format: NodeLoaderHooksFormat | null | undefined;
+      importAssertions?: NodeImportAssertions;
+    },
     defaultLoad: typeof load
   ): Promise<{
     format: NodeLoaderHooksFormat;
@@ -176,7 +186,10 @@ export function createEsmHooks(tsNodeService: Service) {
       // Call the new defaultLoad() to get the source
       const { source: rawSource } = await defaultLoad(
         url,
-        { format },
+        {
+          format,
+          importAssertions: context.importAssertions,
+        },
         defaultLoad
       );
 
