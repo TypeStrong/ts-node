@@ -37,8 +37,7 @@ async function main() {
                   .compilerOptions,
                 allOf: [
                   {
-                    $ref:
-                      '#/definitions/compilerOptionsDefinition/properties/compilerOptions',
+                    $ref: '#/definitions/compilerOptionsDefinition/properties/compilerOptions',
                   },
                 ],
               },
@@ -62,9 +61,7 @@ async function main() {
 }
 
 export async function getSchemastoreSchema() {
-  const {
-    data: schemastoreSchema,
-  } = await axios.get(
+  const { data: schemastoreSchema } = await axios.get(
     'https://schemastore.azurewebsites.net/schemas/json/tsconfig.json',
     { responseType: 'json' }
   );

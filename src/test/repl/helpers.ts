@@ -39,9 +39,9 @@ export async function contextReplHelpers(
       stderr,
       ...createReplOpts,
     });
-    const service = (registerHooks
-      ? tsNodeUnderTest.register
-      : tsNodeUnderTest.create)({
+    const service = (
+      registerHooks ? tsNodeUnderTest.register : tsNodeUnderTest.create
+    )({
       ...replService.evalAwarePartialHost,
       project: `${TEST_DIR}/tsconfig.json`,
       ...createServiceOpts,

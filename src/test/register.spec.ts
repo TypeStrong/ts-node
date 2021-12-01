@@ -12,7 +12,8 @@ import * as exp from 'expect';
 import { join, resolve } from 'path';
 import proxyquire = require('proxyquire');
 
-const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/;
+const SOURCE_MAP_REGEXP =
+  /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/;
 
 const createOptions: tsNodeTypes.CreateOptions = {
   project: PROJECT,
