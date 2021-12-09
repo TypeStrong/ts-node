@@ -183,6 +183,30 @@ test.suite('ts-node', (test) => {
         expect(err).toBe(null);
         expect(stdout).toBe('hello world\n');
       });
+
+      test('should support cts when module = CommonJS', async () => {
+        const { err, stdout } = await exec(
+          [
+            CMD_TS_NODE_WITH_PROJECT_FLAG,
+            '-O "{\\"module\\":"CommonJS"}"',
+            '-pe "import { main } from \'./ts45-ext/ext-cts/index\';main()"',
+          ].join(' ')
+        );
+        expect(err).toBe(null);
+        expect(stdout).toBe('hello world\n');
+      });
+
+      test('should support cts when module = ESNext', async () => {
+        const { err, stdout } = await exec(
+          [
+            CMD_TS_NODE_WITH_PROJECT_FLAG,
+            '-O "{\\"module\\":"ESNext"}"',
+            '-pe "import { main } from \'./ts45-ext/ext-mts/index\';main()"',
+          ].join(' ')
+        );
+        expect(err).toBe(null);
+        expect(stdout).toBe('hello world\n');
+      });
     }
 
     test('should eval code', async () => {

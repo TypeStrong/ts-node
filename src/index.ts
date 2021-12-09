@@ -24,6 +24,7 @@ import {
 } from './module-type-classifier';
 import { createResolverFunctions } from './resolver-functions';
 import type { createEsmHooks as createEsmHooksFn } from './esm';
+import { ModuleKind } from 'typescript';
 
 export { TSCommon };
 export {
@@ -502,11 +503,20 @@ export interface DiagnosticFilter {
 export function getExtensions(config: _ts.ParsedCommandLine) {
   const tsExtensions = ['.ts'];
   const jsExtensions = [];
+  const useESNext = [ModuleKind.ES2015, ModuleKind.ES2020, 7 as any, ModuleKind.ESNext, 199 as any].indexOf(config.options.module) !== -1;
+  const useCommonJS = [ModuleKind.CommonJS, 100 as any].indexOf(config.options.module) !== -1;
 
   // Enable additional extensions when JSX or `allowJs` is enabled.
   if (config.options.jsx) tsExtensions.push('.tsx');
-  if (config.options.allowJs) jsExtensions.push('.js');
-  if (config.options.jsx && config.options.allowJs) jsExtensions.push('.jsx');
+  // Support .mts .cts
+  if (useESNext) tsExtensions.push('.mts');
+  if (useCommonJS) tsExtensions.push('.cts');
+  if (config.options.allowJs) {
+    jsExtensions.push('.js');
+    if (config.options.jsx) jsExtensions.push('.jsx');
+    if (useESNext) tsExtensions.push('.mjs');
+    if (useCommonJS) tsExtensions.push('.cjs');
+  }
   return { tsExtensions, jsExtensions };
 }
 
