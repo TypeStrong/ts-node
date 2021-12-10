@@ -427,12 +427,13 @@ let guaranteedNonexistentDirectorySuffix = 0;
  * https://stackoverflow.com/questions/59865584/how-to-invalidate-cached-require-resolve-results
  */
 function requireResolveNonCached(absoluteModuleSpecifier: string) {
-  // node 10 and 11 fallback: The trick below triggers a node 10 & 11 bug
-  // On those node versions, pollute the require cache instead.  This is a deliberate
-  // ts-node limitation that will *rarely* manifest, and will not matter once node 10
-  // is end-of-life'd on 2021-04-30
-  const isSupportedNodeVersion =
-    parseInt(process.versions.node.split('.')[0], 10) >= 12;
+  // node 12.0.0 and 12.1.0 fallback: The trick below triggers a node bug.
+  // On those node versions, pollute the require cache instead. This is a deliberate
+  // ts-node limitation that will *rarely* manifest, and will not matter once node 12
+  // is end-of-life'd on 2022-04-30
+  const [major, minor] =
+    process.versions.node.split('.').map(v => parseInt(v, 10));
+  const isSupportedNodeVersion = major >= 13 || (major == 12 && minor > 1);
   if (!isSupportedNodeVersion) return require.resolve(absoluteModuleSpecifier);
 
   const { dir, base } = parsePath(absoluteModuleSpecifier);
