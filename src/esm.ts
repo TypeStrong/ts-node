@@ -62,17 +62,36 @@ export interface NodeLoaderHooksAPI2 {
 export namespace NodeLoaderHooksAPI2 {
   export type ResolveHook = (
     specifier: string,
-    context: { parentURL: string },
+    context: ResolveContext,
     defaultResolve: ResolveHook
   ) => Promise<{ url: string }>;
   export type LoadHook = (
     url: string,
-    context: { format: NodeLoaderHooksFormat | null | undefined },
+    context: LoadContext,
     defaultLoad: NodeLoaderHooksAPI2['load']
   ) => Promise<{
     format: NodeLoaderHooksFormat;
     source: string | Buffer | undefined;
   }>;
+}
+
+// Context passed to the `load()` Hook.
+//
+// https://nodejs.org/dist/latest-v17.x/docs/api/esm.html#loadurl-context-defaultload
+interface LoadContext {
+  format: NodeLoaderHooksFormat | null | undefined
+  // This field is only present on Node v17
+  importAssertions?: object
+}
+
+// Context passed to the `resolve()` hook.
+//
+// https://nodejs.org/dist/latest-v17.x/docs/api/esm.html#resolvespecifier-context-defaultresolve
+interface ResolveContext {
+  conditions: string[],
+  parentURL: string | undefined,
+  // This field is only present on Node v17
+  importAssertions?: object
 }
 
 export type NodeLoaderHooksFormat =
@@ -122,7 +141,7 @@ export function createEsmHooks(tsNodeService: Service) {
 
   async function resolve(
     specifier: string,
-    context: { parentURL: string },
+    context: ResolveContext,
     defaultResolve: typeof resolve
   ): Promise<{ url: string }> {
     const defer = async () => {
@@ -159,7 +178,7 @@ export function createEsmHooks(tsNodeService: Service) {
   // `load` from new loader hook API (See description at the top of this file)
   async function load(
     url: string,
-    context: { format: NodeLoaderHooksFormat | null | undefined },
+    context: LoadContext,
     defaultLoad: typeof load
   ): Promise<{
     format: NodeLoaderHooksFormat;
@@ -176,7 +195,7 @@ export function createEsmHooks(tsNodeService: Service) {
       // Call the new defaultLoad() to get the source
       const { source: rawSource } = await defaultLoad(
         url,
-        { format },
+        { ...context, format },
         defaultLoad
       );
 
