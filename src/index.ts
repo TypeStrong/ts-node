@@ -577,12 +577,8 @@ export function create(rawOptions: CreateOptions = {}): Service {
   );
 
   // Read config file and merge new options between env and CLI options.
-  const {
-    configFilePath,
-    config,
-    tsNodeOptionsFromTsconfig,
-    optionBasePaths,
-  } = readConfig(cwd, ts, rawOptions);
+  const { configFilePath, config, tsNodeOptionsFromTsconfig, optionBasePaths } =
+    readConfig(cwd, ts, rawOptions);
   const options = assign<RegisterOptions>(
     {},
     DEFAULTS,
@@ -817,9 +813,9 @@ export function create(rawOptions: CreateOptions = {}): Service {
     _position: number
   ) => TypeInfo;
 
-  const getCanonicalFileName = ((ts as unknown) as TSInternal).createGetCanonicalFileName(
-    ts.sys.useCaseSensitiveFileNames
-  );
+  const getCanonicalFileName = (
+    ts as unknown as TSInternal
+  ).createGetCanonicalFileName(ts.sys.useCaseSensitiveFileNames);
 
   const moduleTypeClassifier = createModuleTypeClassifier({
     basePath: options.optionBasePaths?.moduleTypes,
@@ -908,8 +904,10 @@ export function create(rawOptions: CreateOptions = {}): Service {
         configFilePath,
       });
       serviceHost.resolveModuleNames = resolveModuleNames;
-      serviceHost.getResolvedModuleWithFailedLookupLocationsFromCache = getResolvedModuleWithFailedLookupLocationsFromCache;
-      serviceHost.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives;
+      serviceHost.getResolvedModuleWithFailedLookupLocationsFromCache =
+        getResolvedModuleWithFailedLookupLocationsFromCache;
+      serviceHost.resolveTypeReferenceDirectives =
+        resolveTypeReferenceDirectives;
 
       const registry = ts.createDocumentRegistry(
         ts.sys.useCaseSensitiveFileNames,
@@ -1272,9 +1270,8 @@ export function create(rawOptions: CreateOptions = {}): Service {
   // Create a simple TypeScript compiler proxy.
   function compile(code: string, fileName: string, lineOffset = 0) {
     const normalizedFileName = normalizeSlashes(fileName);
-    const classification = moduleTypeClassifier.classifyModule(
-      normalizedFileName
-    );
+    const classification =
+      moduleTypeClassifier.classifyModule(normalizedFileName);
     // Must always call normal getOutput to throw typechecking errors
     let [value, sourceMap] = getOutput(code, normalizedFileName);
     // If module classification contradicts the above, call the relevant transpiler
