@@ -20,12 +20,12 @@ const concurrencyLimiter = throat(16);
 function once<T extends Function>(func: T): T {
   let run = false;
   let ret: any = undefined;
-  return (function (...args: any[]) {
+  return function (...args: any[]) {
     if (run) return ret;
     run = true;
     ret = func(...args);
     return ret;
-  } as any) as T;
+  } as any as T;
 }
 
 export const test = createTestInterface({

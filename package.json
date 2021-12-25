@@ -126,7 +126,7 @@
     "lodash": "^4.17.15",
     "ntypescript": "^1.201507091536.1",
     "nyc": "^15.0.1",
-    "prettier": "^2.2.1",
+    "prettier": "^2.5.1",
     "proper-lockfile": "^4.1.2",
     "proxyquire": "^2.0.0",
     "react": "^16.14.0",
