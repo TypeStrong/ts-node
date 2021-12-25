@@ -1146,7 +1146,7 @@ test.suite('ts-node', (test) => {
         expect(err).not.toBe(null);
         // expect error from node's default resolver
         expect(stderr).toMatch(
-          /Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,1}\n *at defaultResolve/
+          /Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,2}\n *at defaultResolve/
         );
       });
 
