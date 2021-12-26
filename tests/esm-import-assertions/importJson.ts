@@ -12,3 +12,16 @@ if (dynamicCarData.doors !== 'open')
 console.log(
   `A ${carData.color} car has ${carData.seats} seats and the doors are ${dynamicCarData.doors}.`
 );
+
+// Test that omitting the assertion causes node to throw an error
+await import('./car.json')
+  .then(() => {
+    throw new Error('should have thrown');
+  },
+  (error: Error) => {
+    if(!error.message.includes('foo bar')) {
+      throw error;
+    }
+    /* error is expected */
+  });
+console.log('Done!');

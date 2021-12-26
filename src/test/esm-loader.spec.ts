@@ -5,17 +5,19 @@
 import { context } from './testlib';
 import semver = require('semver');
 import {
+  CMD_ESM_LOADER_WITHOUT_PROJECT,
   contextTsNodeUnderTest,
   EXPERIMENTAL_MODULES_FLAG,
   resetNodeEnvironment,
   TEST_DIR,
 } from './helpers';
 import { createExec } from './exec-helpers';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import * as expect from 'expect';
 import type { NodeLoaderHooksAPI2 } from '../';
 
 const nodeUsesNewHooksApi = semver.gte(process.version, '16.12.0');
+const nodeSupportsImportAssertions = semver.gte(process.version, '17.1.0');
 
 const test = context(contextTsNodeUnderTest);
 
@@ -71,3 +73,55 @@ test.suite('hooks', (_test) => {
     });
   }
 });
+
+if (nodeSupportsImportAssertions) {
+  test.suite('Supports import assertions', (test) => {
+    test('Can import JSON using the appropriate flag and assertion', async (t) => {
+      const { err, stdout } = await exec(
+        `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./importJson.ts`,
+        {
+          cwd: resolve(TEST_DIR, 'esm-import-assertions'),
+        }
+      );
+      expect(err).toBe(null);
+      expect(stdout).toMatch(
+        'A fuchsia car has 2 seats and the doors are open.`\nDone!'
+      );
+    });
+  });
+
+  test.suite("Catch unexpected changes to node's loader context", (test) => {
+    /*
+     * This does not test ts-node.
+     * Rather, it is meant to alert us to potentially breaking changes in node's
+     * loader API.  If node starts returning more or less properties on `context`
+     * objects, we want to know, because it may indicate that our loader code
+     * should be updated to accomodate the new properties, either by proxying them,
+     * modifying them, or suppressing them.
+     */
+    test('Ensure context passed to loader by node has only expected properties', async (t) => {
+      const { stdout, stderr } = await exec(
+        `node --loader ./esm-loader-context/loader.mjs --experimental-json-modules ./esm-loader-context/index.mjs`
+      );
+      const rows = stdout.split('\n').filter((v) => v[0] === '{');
+      expect(rows.length).toBe(14);
+      rows.forEach((row) => {
+        const json = JSON.parse(row) as {
+          resolveContextKeys?: string[];
+          loadContextKeys?: string;
+        };
+        if (json.resolveContextKeys) {
+          expect(json.resolveContextKeys).toEqual([
+            'conditions',
+            'importAssertions',
+            'parentURL',
+          ]);
+        } else if (json.loadContextKeys) {
+          expect(json.loadContextKeys).toEqual(['format', 'importAssertions']);
+        } else {
+          throw new Error('Unexpected stdout in test.');
+        }
+      });
+    });
+  });
+}

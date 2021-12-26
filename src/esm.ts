@@ -62,7 +62,11 @@ export interface NodeLoaderHooksAPI2 {
 export namespace NodeLoaderHooksAPI2 {
   export type ResolveHook = (
     specifier: string,
-    context: { parentURL: string },
+    context: {
+      conditions?: NodeImportConditions;
+      importAssertions?: NodeImportAssertions;
+      parentURL: string;
+    },
     defaultResolve: ResolveHook
   ) => Promise<{ url: string }>;
   export type LoadHook = (
@@ -86,9 +90,10 @@ export type NodeLoaderHooksFormat =
   | 'module'
   | 'wasm';
 
-export type NodeImportAssertions = {
-  type: 'json' | 'wasm';
-};
+export type NodeImportConditions = unknown;
+export interface NodeImportAssertions {
+  type?: 'json';
+}
 
 /** @internal */
 export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
@@ -187,8 +192,8 @@ export function createEsmHooks(tsNodeService: Service) {
       const { source: rawSource } = await defaultLoad(
         url,
         {
+          ...context,
           format,
-          importAssertions: context.importAssertions,
         },
         defaultLoad
       );
