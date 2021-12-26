@@ -14,14 +14,15 @@ console.log(
 );
 
 // Test that omitting the assertion causes node to throw an error
-await import('./car.json')
-  .then(() => {
+await import('./car.json').then(
+  () => {
     throw new Error('should have thrown');
   },
   (error: Error) => {
-    if(!error.message.includes('foo bar')) {
+    if (!error.message.includes('foo bar')) {
       throw error;
     }
     /* error is expected */
-  });
+  }
+);
 console.log('Done!');
