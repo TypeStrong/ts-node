@@ -17,7 +17,7 @@ import {
   STDIN_NAME,
   REPL_FILENAME,
 } from './repl';
-import { VERSION, TSError, register } from './index';
+import { VERSION, TSError, register, versionGteLt } from './index';
 import type { TSInternal } from './ts-compiler-types';
 import { addBuiltinLibsToObject } from '../dist-raw/node-cjs-helpers';
 
@@ -431,10 +431,7 @@ function requireResolveNonCached(absoluteModuleSpecifier: string) {
   // On those node versions, pollute the require cache instead. This is a deliberate
   // ts-node limitation that will *rarely* manifest, and will not matter once node 12
   // is end-of-life'd on 2022-04-30
-  const [major, minor] = process.versions.node
-    .split('.')
-    .map((v) => parseInt(v, 10));
-  const isSupportedNodeVersion = major >= 13 || (major == 12 && minor > 1);
+  const isSupportedNodeVersion = versionGteLt(process.versions.node, '12.2.0');
   if (!isSupportedNodeVersion) return require.resolve(absoluteModuleSpecifier);
 
   const { dir, base } = parsePath(absoluteModuleSpecifier);
