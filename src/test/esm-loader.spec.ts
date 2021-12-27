@@ -78,14 +78,14 @@ if (nodeSupportsImportAssertions) {
   test.suite('Supports import assertions', (test) => {
     test('Can import JSON using the appropriate flag and assertion', async (t) => {
       const { err, stdout } = await exec(
-        `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./importJson.ts`,
+        `${CMD_ESM_LOADER_WITHOUT_PROJECT} --experimental-json-modules ./importJson.ts`,
         {
           cwd: resolve(TEST_DIR, 'esm-import-assertions'),
         }
       );
       expect(err).toBe(null);
-      expect(stdout).toMatch(
-        'A fuchsia car has 2 seats and the doors are open.`\nDone!'
+      expect(stdout.trim()).toBe(
+        'A fuchsia car has 2 seats and the doors are open.\nDone!'
       );
     });
   });

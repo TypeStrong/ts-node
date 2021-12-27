@@ -18,8 +18,8 @@ await import('./car.json').then(
   () => {
     throw new Error('should have thrown');
   },
-  (error: Error) => {
-    if (!error.message.includes('foo bar')) {
+  (error: any) => {
+    if (error.code !== 'ERR_IMPORT_ASSERTION_TYPE_MISSING') {
       throw error;
     }
     /* error is expected */
