@@ -540,7 +540,10 @@ function appendCompileAndEvalInput(options: {
   );
 
   // Use `diff` to check for new JavaScript to execute.
-  const changes = diffLines(oldOutputWithoutSourcemapComment, outputWithoutSourcemapComment);
+  const changes = diffLines(
+    oldOutputWithoutSourcemapComment,
+    outputWithoutSourcemapComment
+  );
 
   if (isCompletion) {
     undo();
