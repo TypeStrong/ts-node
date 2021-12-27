@@ -3,6 +3,7 @@ import { createExec, createExecTester } from './exec-helpers';
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
   contextTsNodeUnderTest,
+  HACK_EXPECT_UPGRADE,
   TEST_DIR,
 } from './helpers';
 import { test as _test } from './testlib';
@@ -26,5 +27,5 @@ test('Redirects source-map-support to @cspotcode/source-map-support so that thir
     expect.stringContaining('.ts:100:'),
     expect.stringContaining('.ts:101 '),
     '',
-  ]);
+  ] as HACK_EXPECT_UPGRADE);
 });

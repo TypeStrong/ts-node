@@ -217,3 +217,11 @@ function resetObject(
   // Reset descriptors
   Object.defineProperties(object, state.descriptors);
 }
+
+/**
+ * A type incompatibility manifested when I upgraded from expect 27.0.2 to 27.4.2
+ * To avoid wasting time and risking a breakage by trying to updating tests,
+ * I instead added type assertions which use this type.  Google uses the same
+ * trick in their codebase when they upgrade TypeScript.
+ */
+export type HACK_EXPECT_UPGRADE = any;

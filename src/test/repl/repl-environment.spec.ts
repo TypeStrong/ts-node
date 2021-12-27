@@ -10,6 +10,7 @@ import * as getStream from 'get-stream';
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
   contextTsNodeUnderTest,
+  HACK_EXPECT_UPGRADE,
   ROOT_DIR,
   TEST_DIR,
 } from '../helpers';
@@ -17,11 +18,6 @@ import { dirname, join } from 'path';
 import { createExec, createExecTester } from '../exec-helpers';
 import { homedir } from 'os';
 import { contextReplHelpers } from './helpers';
-
-/**
- * type incompatibility manifested when I upgraded from expect 27.0.2 to 27.4.2
- */
-type HACK_EXPECT_UPGRADE = any;
 
 const test = _test.context(contextTsNodeUnderTest).context(contextReplHelpers);
 
