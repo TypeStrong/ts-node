@@ -17,7 +17,7 @@ import {
   STDIN_NAME,
   REPL_FILENAME,
 } from './repl';
-import { VERSION, TSError, register } from './index';
+import { VERSION, TSError, register, versionGteLt } from './index';
 import type { TSInternal } from './ts-compiler-types';
 import { addBuiltinLibsToObject } from '../dist-raw/node-cjs-helpers';
 
@@ -427,12 +427,11 @@ let guaranteedNonexistentDirectorySuffix = 0;
  * https://stackoverflow.com/questions/59865584/how-to-invalidate-cached-require-resolve-results
  */
 function requireResolveNonCached(absoluteModuleSpecifier: string) {
-  // node 10 and 11 fallback: The trick below triggers a node 10 & 11 bug
-  // On those node versions, pollute the require cache instead.  This is a deliberate
-  // ts-node limitation that will *rarely* manifest, and will not matter once node 10
-  // is end-of-life'd on 2021-04-30
-  const isSupportedNodeVersion =
-    parseInt(process.versions.node.split('.')[0], 10) >= 12;
+  // node <= 12.1.x fallback: The trick below triggers a node bug on old versions.
+  // On these old versions, pollute the require cache instead. This is a deliberate
+  // ts-node limitation that will *rarely* manifest, and will not matter once node 12
+  // is end-of-life'd on 2022-04-30
+  const isSupportedNodeVersion = versionGteLt(process.versions.node, '12.2.0');
   if (!isSupportedNodeVersion) return require.resolve(absoluteModuleSpecifier);
 
   const { dir, base } = parsePath(absoluteModuleSpecifier);
