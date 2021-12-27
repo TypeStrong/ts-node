@@ -480,6 +480,8 @@ export function createEvalAwarePartialHost(
   return { readFile, fileExists };
 }
 
+const sourcemapCommentRe = /\/\/# ?sourceMappingURL=\S+[\s\r\n]*$/;
+
 type AppendCompileAndEvalInputResult =
   | { containsTopLevelAwait: true; valuePromise: Promise<any> }
   | { containsTopLevelAwait: false; value: any };
@@ -525,8 +527,14 @@ function appendCompileAndEvalInput(options: {
 
   output = adjustUseStrict(output);
 
+  const outputWithoutSourcemapComment = output.replace(sourcemapCommentRe, '');
+  const oldOutputWithoutSourcemapComment = state.output.replace(
+    sourcemapCommentRe,
+    ''
+  );
+
   // Use `diff` to check for new JavaScript to execute.
-  const changes = diffLines(state.output, output);
+  const changes = diffLines(oldOutputWithoutSourcemapComment, outputWithoutSourcemapComment);
 
   if (isCompletion) {
     undo();
