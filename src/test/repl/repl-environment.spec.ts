@@ -18,6 +18,11 @@ import { createExec, createExecTester } from '../exec-helpers';
 import { homedir } from 'os';
 import { contextReplHelpers } from './helpers';
 
+/**
+ * type incompatibility manifested when I upgraded from expect 27.0.2 to 27.4.2
+ */
+type HACK_EXPECT_UPGRADE = any;
+
 const test = _test.context(contextTsNodeUnderTest).context(contextReplHelpers);
 
 const exec = createExec({
@@ -212,7 +217,7 @@ test.suite(
         join(homedir(), `.node_libraries`),
         // additional entry goes to node's install path
         expect.any(String),
-      ]);
+      ] as HACK_EXPECT_UPGRADE);
     });
 
     // Should ignore -i and run the entrypoint
@@ -365,7 +370,7 @@ test.suite(
         join(homedir(), `.node_libraries`),
         // additional entry goes to node's install path
         expect.any(String),
-      ]);
+      ] as HACK_EXPECT_UPGRADE);
     });
 
     test('-e -i w/entrypoint ignores -e and -i, runs entrypoint', async (t) => {
@@ -475,7 +480,7 @@ test.suite(
           join(homedir(), `.node_libraries`),
           // additional entry goes to node's install path
           expect.any(String),
-        ]);
+        ] as HACK_EXPECT_UPGRADE);
       }
     );
   }
