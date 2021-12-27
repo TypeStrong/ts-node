@@ -292,7 +292,7 @@ export function main(
   }
 
   if (showConfig) {
-    const ts = (service.ts as any) as TSInternal;
+    const ts = service.ts as any as TSInternal;
     if (typeof ts.convertToTSConfig !== 'function') {
       console.error(
         'Error: --show-config requires a typescript versions >=3.2 that support --showConfig'

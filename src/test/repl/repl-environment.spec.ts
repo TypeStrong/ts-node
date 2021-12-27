@@ -45,53 +45,50 @@ test.suite(
     const globalInRepl = global as GlobalInRepl;
     const programmaticTest = test.macro(
       (
-        {
-          evalCodeBefore,
-          stdinCode,
-          waitFor,
-        }: {
-          evalCodeBefore: string | null;
-          stdinCode: string;
-          waitFor?: () => boolean;
-        },
-        assertions: (stdout: string) => Promise<void> | void
-      ) => async (t) => {
-        delete globalInRepl.testReport;
-        delete globalInRepl.replReport;
-        delete globalInRepl.stdinReport;
-        delete globalInRepl.evalReport;
-        delete globalInRepl.module;
-        delete globalInRepl.exports;
-        delete globalInRepl.fs;
-        delete globalInRepl.__filename;
-        delete globalInRepl.__dirname;
-        const {
-          stdin,
-          stderr,
-          stdout,
-          replService,
-        } = t.context.createReplViaApi({ registerHooks: true });
-        if (typeof evalCodeBefore === 'string') {
-          replService.evalCode(evalCodeBefore);
+          {
+            evalCodeBefore,
+            stdinCode,
+            waitFor,
+          }: {
+            evalCodeBefore: string | null;
+            stdinCode: string;
+            waitFor?: () => boolean;
+          },
+          assertions: (stdout: string) => Promise<void> | void
+        ) =>
+        async (t) => {
+          delete globalInRepl.testReport;
+          delete globalInRepl.replReport;
+          delete globalInRepl.stdinReport;
+          delete globalInRepl.evalReport;
+          delete globalInRepl.module;
+          delete globalInRepl.exports;
+          delete globalInRepl.fs;
+          delete globalInRepl.__filename;
+          delete globalInRepl.__dirname;
+          const { stdin, stderr, stdout, replService } =
+            t.context.createReplViaApi({ registerHooks: true });
+          if (typeof evalCodeBefore === 'string') {
+            replService.evalCode(evalCodeBefore);
+          }
+          replService.start();
+          stdin.write(stdinCode);
+          stdin.end();
+          let done = false;
+          await Promise.race([
+            promisify(setTimeout)(20e3),
+            (async () => {
+              while (!done && !waitFor?.()) {
+                await promisify(setTimeout)(1e3);
+              }
+            })(),
+          ]);
+          done = true;
+          stdout.end();
+          stderr.end();
+          expect(await getStream(stderr)).toBe('');
+          await assertions(await getStream(stdout));
         }
-        replService.start();
-        stdin.write(stdinCode);
-        stdin.end();
-        let done = false;
-        await Promise.race([
-          promisify(setTimeout)(20e3),
-          (async () => {
-            while (!done && !waitFor?.()) {
-              await promisify(setTimeout)(1e3);
-            }
-          })(),
-        ]);
-        done = true;
-        stdout.end();
-        stderr.end();
-        expect(await getStream(stderr)).toBe('');
-        await assertions(await getStream(stdout));
-      }
     );
 
     const declareGlobals = `declare var replReport: any, stdinReport: any, evalReport: any, restReport: any, global: any, __filename: any, __dirname: any, module: any, exports: any;`;
