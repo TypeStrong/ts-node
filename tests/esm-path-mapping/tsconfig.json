@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "allowJs": true,
+    "jsx": "react",
+    "baseUrl": "./mapped",
+    "paths": {
+      "map1/*": ["./1-*"],
+      "map2/*": ["./2-*", "./2a-*"],
+      "map2/specific/*": ["./2-specific-*"],
+      "static": ["./static.js"]
+    },
+    "moduleResolution": "node"
+  }
+}

@@ -1224,6 +1224,16 @@ test.suite('ts-node', (test) => {
         if (semver.gte(process.version, '14.13.1'))
           await runModuleTypeTest('override-to-esm', 'mjs');
       });
+
+      test('path mapping', async () => {
+        const { err } = await exec(
+          `${CMD_ESM_LOADER_WITHOUT_PROJECT} index.ts`,
+          {
+            cwd: join(TEST_DIR, './esm-path-mapping'),
+          }
+        );
+        expect(err).toBe(null);
+      });
     }
 
     if (semver.gte(process.version, '12.0.0')) {

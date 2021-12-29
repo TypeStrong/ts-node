@@ -15,6 +15,7 @@ import {
 import { extname } from 'path';
 import * as assert from 'assert';
 import { normalizeSlashes } from './util';
+import { createPathMapper } from './path-mapping';
 const {
   createResolve,
 } = require('../dist-raw/node-esm-resolve-implementation');
@@ -93,6 +94,7 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
 
 export function createEsmHooks(tsNodeService: Service) {
   tsNodeService.enableExperimentalEsmLoaderInterop();
+  const mapPath = createPathMapper(tsNodeService.config.options);
 
   // Custom implementation that considers additional file extensions and automatically adds file extensions
   const nodeResolveImplementation = createResolve({
@@ -147,12 +149,38 @@ export function createEsmHooks(tsNodeService: Service) {
       return defer();
     }
 
-    // pathname is the path to be resolved
+    let candidateSpecifiers: string[] = [specifier];
 
-    return nodeResolveImplementation.defaultResolve(
-      specifier,
-      context,
-      defaultResolve
+    if (context.parentURL) {
+      const parentUrl = parseUrl(context.parentURL);
+      if (parentUrl.pathname && extname(parentUrl.pathname) === '.ts') {
+        const mappedSpecifiers = mapPath(specifier);
+        if (mappedSpecifiers) {
+          candidateSpecifiers = mappedSpecifiers;
+        }
+      }
+    }
+
+    let candidateSpecifier: string | undefined;
+    while ((candidateSpecifier = candidateSpecifiers.shift())) {
+      try {
+        return nodeResolveImplementation.defaultResolve(
+          candidateSpecifier,
+          context,
+          defaultResolve
+        );
+      } catch (err) {
+        const isNotFoundError = (<any>err).code === 'ERR_MODULE_NOT_FOUND';
+        if (isNotFoundError && candidateSpecifiers.length > 0) {
+          continue;
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    throw new Error(
+      `Empty mapped paths for ${specifier} imported from ${context.parentURL}`
     );
   }
 
