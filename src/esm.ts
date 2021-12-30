@@ -156,7 +156,9 @@ export function createEsmHooks(tsNodeService: Service) {
       if (parentUrl.pathname && extname(parentUrl.pathname) === '.ts') {
         const mappedSpecifiers = mapPath(specifier);
         if (mappedSpecifiers) {
-          candidateSpecifiers = mappedSpecifiers.map((path) => pathToFileURL(path).toString());
+          candidateSpecifiers = mappedSpecifiers.map((path) =>
+            pathToFileURL(path).toString()
+          );
         }
       }
     }
