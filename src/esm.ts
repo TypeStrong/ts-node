@@ -152,7 +152,7 @@ export function createEsmHooks(tsNodeService: Service) {
     let candidateSpecifiers: string[] = [specifier];
 
     if (context.parentURL) {
-      const parentUrl = parseUrl(context.parentURL);
+      const parentUrl = new URL(context.parentURL);
       if (parentUrl.pathname && extname(parentUrl.pathname) === '.ts') {
         const mappedSpecifiers = mapPath(specifier);
         if (mappedSpecifiers) {
@@ -166,7 +166,7 @@ export function createEsmHooks(tsNodeService: Service) {
     let candidateSpecifier: string | undefined;
     while ((candidateSpecifier = candidateSpecifiers.shift())) {
       try {
-        return nodeResolveImplementation.defaultResolve(
+        return await nodeResolveImplementation.defaultResolve(
           candidateSpecifier,
           context,
           defaultResolve
