@@ -124,6 +124,7 @@ module.exports = {
       {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
+          showLastUpdateTime: true,
           editUrl:
             'https://github.com/TypeStrong/ts-node/edit/docs/website/',
         },
