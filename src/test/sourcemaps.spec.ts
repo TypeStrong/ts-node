@@ -1,11 +1,10 @@
-import * as expect from 'expect';
 import { createExec, createExecTester } from './exec-helpers';
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
   contextTsNodeUnderTest,
   TEST_DIR,
 } from './helpers';
-import { test as _test } from './testlib';
+import { test as _test, expect } from './testlib';
 const test = _test.context(contextTsNodeUnderTest);
 
 const exec = createExecTester({

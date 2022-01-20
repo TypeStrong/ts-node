@@ -6,9 +6,8 @@ import {
   TEST_DIR,
   tsNodeTypes,
 } from './helpers';
-import { context } from './testlib';
+import { context, expect as exp } from './testlib';
 import { expect } from 'chai';
-import * as exp from 'expect';
 import { join, resolve } from 'path';
 import proxyquire = require('proxyquire');
 

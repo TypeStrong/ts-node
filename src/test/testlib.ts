@@ -13,6 +13,12 @@ import * as assert from 'assert';
 import throat from 'throat';
 export { ExecutionContext };
 
+// Force jest expect() errors to generate colorized strings, makes output more readable.
+// Avoid passing FORCE_COLOR to child processes; affects code under test.
+process.env.FORCE_COLOR = '3';
+export const expect = require('expect') as typeof import('expect');
+delete process.env.FORCE_COLOR;
+
 // NOTE: this limits concurrency within a single process, but AVA launches
 // each .spec file in its own process, so actual concurrency is higher.
 const concurrencyLimiter = throat(16);

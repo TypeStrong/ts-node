@@ -1,5 +1,4 @@
-import { _test } from './testlib';
-import * as expect from 'expect';
+import { _test, expect } from './testlib';
 import { join, resolve, sep as pathSep } from 'path';
 import { tmpdir } from 'os';
 import semver = require('semver');

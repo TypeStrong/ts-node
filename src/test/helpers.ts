@@ -14,7 +14,6 @@ import type * as tsNodeTypes from '../index';
 import type _createRequire from 'create-require';
 import { has, once } from 'lodash';
 import semver = require('semver');
-import * as expect from 'expect';
 const createRequire: typeof _createRequire = require('create-require');
 export { tsNodeTypes };
 
