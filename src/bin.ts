@@ -132,42 +132,42 @@ export function main(
 
   if (help) {
     console.log(`
-  Usage: ts-node [options] [ -e script | script.ts ] [arguments]
+Usage: ts-node [options] [ -e script | script.ts ] [arguments]
 
-  Options:
+Options:
 
-    -e, --eval [code]               Evaluate code
-    -p, --print                     Print result of \`--eval\`
-    -r, --require [path]            Require a node module before execution
-    -i, --interactive               Opens the REPL even if stdin does not appear to be a terminal
+  -e, --eval [code]               Evaluate code
+  -p, --print                     Print result of \`--eval\`
+  -r, --require [path]            Require a node module before execution
+  -i, --interactive               Opens the REPL even if stdin does not appear to be a terminal
 
-    -h, --help                      Print CLI usage
-    -v, --version                   Print module version information
-    --cwd-mode                      Use current directory instead of <script.ts> for config resolution
-    --show-config                   Print resolved configuration and exit
+  -h, --help                      Print CLI usage
+  -v, --version                   Print module version information
+  --cwd-mode                      Use current directory instead of <script.ts> for config resolution
+  --show-config                   Print resolved configuration and exit
 
-    -T, --transpile-only            Use TypeScript's faster \`transpileModule\` or a third-party transpiler
-    --swc                           Use the swc transpiler
-    -H, --compiler-host             Use TypeScript's compiler host API
-    -I, --ignore [pattern]          Override the path patterns to skip compilation
-    -P, --project [path]            Path to TypeScript JSON project file
-    -C, --compiler [name]           Specify a custom TypeScript compiler
-    --transpiler [name]             Specify a third-party, non-typechecking transpiler
-    -D, --ignore-diagnostics [code] Ignore TypeScript warnings by diagnostic code
-    -O, --compiler-options [opts]   JSON object to merge with compiler options
+  -T, --transpile-only            Use TypeScript's faster \`transpileModule\` or a third-party transpiler
+  --swc                           Use the swc transpiler
+  -H, --compiler-host             Use TypeScript's compiler host API
+  -I, --ignore [pattern]          Override the path patterns to skip compilation
+  -P, --project [path]            Path to TypeScript JSON project file
+  -C, --compiler [name]           Specify a custom TypeScript compiler
+  --transpiler [name]             Specify a third-party, non-typechecking transpiler
+  -D, --ignore-diagnostics [code] Ignore TypeScript warnings by diagnostic code
+  -O, --compiler-options [opts]   JSON object to merge with compiler options
 
-    --cwd                           Behave as if invoked within this working directory.
-    --files                         Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
-    --pretty                        Use pretty diagnostic formatter (usually enabled by default)
-    --skip-project                  Skip reading \`tsconfig.json\`
-    --skip-ignore                   Skip \`--ignore\` checks
-    --emit                          Emit output files into \`.ts-node\` directory
-    --scope                         Scope compiler to files within \`scopeDir\`.  Anything outside this directory is ignored.
-    --scope-dir                     Directory for \`--scope\`
-    --prefer-ts-exts                Prefer importing TypeScript files over JavaScript files
-    --log-error                     Logs TypeScript errors to stderr instead of throwing exceptions
-    --no-experimental-repl-await    Disable top-level await in REPL.  Equivalent to node's --no-experimental-repl-await
-  `);
+  --cwd                           Behave as if invoked within this working directory.
+  --files                         Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
+  --pretty                        Use pretty diagnostic formatter (usually enabled by default)
+  --skip-project                  Skip reading \`tsconfig.json\`
+  --skip-ignore                   Skip \`--ignore\` checks
+  --emit                          Emit output files into \`.ts-node\` directory
+  --scope                         Scope compiler to files within \`scopeDir\`.  Anything outside this directory is ignored.
+  --scope-dir                     Directory for \`--scope\`
+  --prefer-ts-exts                Prefer importing TypeScript files over JavaScript files
+  --log-error                     Logs TypeScript errors to stderr instead of throwing exceptions
+  --no-experimental-repl-await    Disable top-level await in REPL.  Equivalent to node's --no-experimental-repl-await
+`);
 
     process.exit(0);
   }
