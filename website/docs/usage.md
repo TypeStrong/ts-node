@@ -20,10 +20,10 @@ ts-node -p -e '"Hello, world!"'
 # Pipe scripts to execute with TypeScript.
 echo 'console.log("Hello, world!")' | ts-node
 
-# Equivalent to ts-node --transpile-only
+# Equivalent to ts-node --transpileOnly
 ts-node-transpile-only script.ts
 
-# Equivalent to ts-node --cwd-mode
+# Equivalent to ts-node --cwdMode
 ts-node-cwd script.ts
 ```
 
