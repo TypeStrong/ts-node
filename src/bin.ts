@@ -99,7 +99,7 @@ export function main(
         '--prefer-ts-exts': '--preferTsExts',
         '--log-error': '--logError',
         '--scope-dir': '--scopeDir',
-        '--no-experimental-repl-await': '--noExperimentalReplAwait'
+        '--no-experimental-repl-await': '--noExperimentalReplAwait',
       },
       {
         argv,
