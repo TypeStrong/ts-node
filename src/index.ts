@@ -10,6 +10,7 @@ import type * as _ts from 'typescript';
 import type { Transpiler, TranspilerFactory } from './transpilers/types';
 import {
   assign,
+  attemptRequireWithV8CompileCache,
   cachedLookup,
   normalizeSlashes,
   parse,
@@ -568,7 +569,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     const compiler = require.resolve(name || 'typescript', {
       paths: [relativeToPath, __dirname],
     });
-    const ts: typeof _ts = require(compiler);
+    const ts: typeof _ts = attemptRequireWithV8CompileCache(require, compiler);
     return { compiler, ts };
   }
 
