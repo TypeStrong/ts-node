@@ -39,7 +39,7 @@ test('should echo a value when using the swc transpiler', async () => {
   execPromise.child.stdin!.end('400\n401\n');
   const { err, stdout } = await execPromise;
   expect(err).toBe(null);
-  expect(stdout).toBe('> 400\n>401\n > ');
+  expect(stdout).toBe('> 400\n> 401\n> ');
 });
 
 test('REPL has command to get type information', async () => {
