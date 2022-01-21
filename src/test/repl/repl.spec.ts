@@ -1,6 +1,6 @@
+import { _test, expect } from '../testlib';
 import { ts } from '../helpers';
 import semver = require('semver');
-import * as expect from 'expect';
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
   contextTsNodeUnderTest,
@@ -9,7 +9,6 @@ import {
 } from '../helpers';
 import { createExec, createExecTester } from '../exec-helpers';
 import { upstreamTopLevelAwaitTests } from './node-repl-tla';
-import { _test } from '../testlib';
 import { contextReplHelpers } from './helpers';
 import { promisify } from 'util';
 
