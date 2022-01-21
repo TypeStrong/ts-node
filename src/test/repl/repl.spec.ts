@@ -56,16 +56,20 @@ test('REPL has command to get type information', async () => {
 test.serial('REPL can be configured on `start`', async (t) => {
   const prompt = '#> ';
 
-  const { stdout, stderr } = await t.context.executeInRepl('const x = 3', {
-    registerHooks: true,
-    startInternalOptions: {
-      prompt,
-      ignoreUndefined: true,
-    },
-  });
+  const { stdout, stderr } = await t.context.executeInRepl(
+    `const x = 3\n'done'`,
+    {
+      waitPattern: "'done'",
+      registerHooks: true,
+      startInternalOptions: {
+        prompt,
+        ignoreUndefined: true,
+      },
+    }
+  );
 
   expect(stderr).toBe('');
-  expect(stdout).toBe(`${prompt}${prompt}`);
+  expect(stdout).toBe(`${prompt}${prompt}'done'\n`);
 });
 
 // Serial because it's timing-sensitive
