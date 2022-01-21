@@ -459,7 +459,7 @@ test.suite('REPL declares types for node built-ins within REPL', (test) => {
     );
 
     // Assert that we do not get errors about `declare import` syntax from swc
-    expect(stdout).toBe("> undefined\n> undefined\n> 'done'\n> ");
+    expect(stdout).toBe("> undefined\n> undefined\n> 'done'\n");
     expect(stderr).toBe('');
   });
 });
