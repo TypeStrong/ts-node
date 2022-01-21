@@ -32,6 +32,16 @@ test('should run REPL when --interactive passed and stdin is not a TTY', async (
   expect(stdout).toBe('> 123\n' + 'undefined\n' + '> ');
 });
 
+test('should echo a value when using the swc transpiler', async () => {
+  const execPromise = exec(
+    `${CMD_TS_NODE_WITH_PROJECT_FLAG} --interactive  --transpiler ts-node/transpilers/swc-experimental`
+  );
+  execPromise.child.stdin!.end('400\n401\n');
+  const { err, stdout } = await execPromise;
+  expect(err).toBe(null);
+  expect(stdout).toBe('> 400\n> 401\n> ');
+});
+
 test('REPL has command to get type information', async () => {
   const execPromise = exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} --interactive`);
   execPromise.child.stdin!.end('\nconst a = 123\n.type a');
