@@ -35,7 +35,7 @@ ts-node-cwd script.ts
 console.log("Hello, world!")
 ```
 
-Passing options via shebang requires the [`env -S` flag](https://manpages.debian.org/bullseye/coreutils/env.1.en.html#S), which is not available on old versions of `env`.
+Passing options via shebang requires the [`env -S` flag](https://manpages.debian.org/bullseye/coreutils/env.1.en.html#S), which is available on recent versions of `env`. ([compatibility](https://github.com/TypeStrong/ts-node/pull/1448#issuecomment-913895766))
 
 ```typescript
 #!/usr/bin/env -S ts-node --files
