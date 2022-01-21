@@ -368,16 +368,20 @@ export function createRepl(options: CreateReplOptions = {}) {
       //   those starting with _
       //   those containing /
       //   those that already exist as globals
-      // Intentionally suppress type errors in case @types/node does not declare any of them.
-      state.input += `// @ts-ignore\n${builtinModules
-        .filter(
-          (name) =>
-            !name.startsWith('_') &&
-            !name.includes('/') &&
-            !['console', 'module', 'process'].includes(name)
-        )
-        .map((name) => `declare import ${name} = require('${name}')`)
-        .join(';')}\n`;
+      // Intentionally suppress type errors in case @types/node does not declare any of them, and because
+      // `declare import` is technically invalid syntax.
+      // Avoid this when in transpileOnly, because third-party transpilers may not handle `declare import`.
+      if (!service?.transpileOnly) {
+        state.input += `// @ts-ignore\n${builtinModules
+          .filter(
+            (name) =>
+              !name.startsWith('_') &&
+              !name.includes('/') &&
+              !['console', 'module', 'process'].includes(name)
+          )
+          .map((name) => `declare import ${name} = require('${name}')`)
+          .join(';')}\n`;
+      }
     }
 
     reset();

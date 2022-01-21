@@ -479,6 +479,8 @@ export interface Service {
   installSourceMapSupport(): void;
   /** @internal */
   enableExperimentalEsmLoaderInterop(): void;
+  /** @internal */
+  transpileOnly: boolean;
 }
 
 /**
@@ -1330,6 +1332,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     addDiagnosticFilter,
     installSourceMapSupport,
     enableExperimentalEsmLoaderInterop,
+    transpileOnly,
   };
 }
 
