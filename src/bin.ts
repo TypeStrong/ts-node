@@ -28,6 +28,20 @@ export function main(
   argv: string[] = process.argv.slice(2),
   entrypointArgs: Record<string, any> = {}
 ) {
+  // HACK: technically, this function is not marked @internal so it's possible
+  // that libraries in the wild are doing `require('ts-node/dist/bin').main({'--transpile-only': true})`
+  // We can mark this function @internal in next major release.
+  // For now, rewrite args to avoid a breaking change.
+  entrypointArgs = { ...entrypointArgs };
+  for (const key of Object.keys(entrypointArgs)) {
+    entrypointArgs[
+      key.replace(
+        /([a-z])-([a-z])/g,
+        (_$0, $1, $2: string) => `${$1}${$2.toUpperCase()}`
+      )
+    ] = entrypointArgs[key];
+  }
+
   const args = {
     ...entrypointArgs,
     ...arg(

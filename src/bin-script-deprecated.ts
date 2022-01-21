@@ -7,4 +7,4 @@ console.warn(
   'Please use ts-node-script instead'
 );
 
-main(undefined, { '--script-mode': true });
+main(undefined, { '--scriptMode': true });
