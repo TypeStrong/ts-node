@@ -32,6 +32,16 @@ test('should run REPL when --interactive passed and stdin is not a TTY', async (
   expect(stdout).toBe('> 123\n' + 'undefined\n' + '> ');
 });
 
+test('should echo a value when using the swc transpiler', async () => {
+  const execPromise = exec(
+    `${CMD_TS_NODE_WITH_PROJECT_FLAG} --interactive  --transpiler ts-node/transpilers/swc-experimental`
+  );
+  execPromise.child.stdin!.end('400\n401\n');
+  const { err, stdout } = await execPromise;
+  expect(err).toBe(null);
+  expect(stdout).toBe('> 400\n> 401\n> ');
+});
+
 test('REPL has command to get type information', async () => {
   const execPromise = exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} --interactive`);
   execPromise.child.stdin!.end('\nconst a = 123\n.type a');
@@ -46,16 +56,20 @@ test('REPL has command to get type information', async () => {
 test.serial('REPL can be configured on `start`', async (t) => {
   const prompt = '#> ';
 
-  const { stdout, stderr } = await t.context.executeInRepl('const x = 3', {
-    registerHooks: true,
-    startInternalOptions: {
-      prompt,
-      ignoreUndefined: true,
-    },
-  });
+  const { stdout, stderr } = await t.context.executeInRepl(
+    `const x = 3\n'done'`,
+    {
+      waitPattern: "'done'",
+      registerHooks: true,
+      startInternalOptions: {
+        prompt,
+        ignoreUndefined: true,
+      },
+    }
+  );
 
   expect(stderr).toBe('');
-  expect(stdout).toBe(`${prompt}${prompt}`);
+  expect(stdout).toBe(`${prompt}${prompt}'done'\n`);
 });
 
 // Serial because it's timing-sensitive
@@ -455,29 +469,54 @@ test.suite('REPL works with traceResolution', (test) => {
   );
 });
 
-test.serial('REPL declares types for node built-ins within REPL', async (t) => {
-  const { stdout, stderr } = await t.context.executeInRepl(
-    `util.promisify(setTimeout)("should not be a string" as string)
-    type Duplex = stream.Duplex
-    const s = stream
-    'done'`,
-    {
-      registerHooks: true,
-      waitPattern: `done`,
-      startInternalOptions: {
-        useGlobal: false,
-      },
-    }
-  );
+test.suite('REPL declares types for node built-ins within REPL', (test) => {
+  test.runSerially();
+  test('enabled when typechecking', async (t) => {
+    const { stdout, stderr } = await t.context.executeInRepl(
+      `util.promisify(setTimeout)("should not be a string" as string)
+      type Duplex = stream.Duplex
+      const s = stream
+      'done'`,
+      {
+        registerHooks: true,
+        waitPattern: `done`,
+        startInternalOptions: {
+          useGlobal: false,
+        },
+      }
+    );
 
-  // Assert that we receive a typechecking error about improperly using
-  // `util.promisify` but *not* an error about the absence of `util`
-  expect(stderr).not.toMatch("Cannot find name 'util'");
-  expect(stderr).toMatch(
-    "Argument of type 'string' is not assignable to parameter of type 'number'"
-  );
-  // Assert that both types and values can be used without error
-  expect(stderr).not.toMatch("Cannot find namespace 'stream'");
-  expect(stderr).not.toMatch("Cannot find name 'stream'");
-  expect(stdout).toMatch(`done`);
+    // Assert that we receive a typechecking error about improperly using
+    // `util.promisify` but *not* an error about the absence of `util`
+    expect(stderr).not.toMatch("Cannot find name 'util'");
+    expect(stderr).toMatch(
+      "Argument of type 'string' is not assignable to parameter of type 'number'"
+    );
+    // Assert that both types and values can be used without error
+    expect(stderr).not.toMatch("Cannot find namespace 'stream'");
+    expect(stderr).not.toMatch("Cannot find name 'stream'");
+    expect(stdout).toMatch(`done`);
+  });
+
+  test('disabled in transpile-only mode, to avoid breaking third-party SWC transpiler which rejects `declare import` syntax', async (t) => {
+    const { stdout, stderr } = await t.context.executeInRepl(
+      `type Duplex = stream.Duplex
+      const s = stream
+      'done'`,
+      {
+        createServiceOpts: {
+          swc: true,
+        },
+        registerHooks: true,
+        waitPattern: `done`,
+        startInternalOptions: {
+          useGlobal: false,
+        },
+      }
+    );
+
+    // Assert that we do not get errors about `declare import` syntax from swc
+    expect(stdout).toBe("> undefined\n> undefined\n> 'done'\n");
+    expect(stderr).toBe('');
+  });
 });
