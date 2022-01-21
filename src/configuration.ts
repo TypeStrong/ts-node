@@ -10,7 +10,7 @@ import {
 import type { TSInternal } from './ts-compiler-types';
 import { createTsInternals } from './ts-internals';
 import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs';
-import { assign, createRequire, trace } from './util';
+import { assign, createRequire } from './util';
 
 /**
  * TypeScript compiler option values required by `ts-node` which cannot be overridden.
@@ -94,6 +94,7 @@ export function readConfig(
     readFile = ts.sys.readFile,
     skipProject = DEFAULTS.skipProject,
     project = DEFAULTS.project,
+    tsTrace = DEFAULTS.tsTrace,
   } = rawApiOptions;
 
   // Read project configuration when available.
@@ -137,11 +138,11 @@ export function readConfig(
             readDirectory: ts.sys.readDirectory,
             readFile,
             useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
-            trace,
+            trace: tsTrace,
           },
           bp,
           errors,
-          ((ts as unknown) as TSInternal).createCompilerDiagnostic
+          (ts as unknown as TSInternal).createCompilerDiagnostic
         );
         if (errors.length) {
           return {
@@ -164,8 +165,9 @@ export function readConfig(
   const optionBasePaths: OptionBasePaths = {};
   for (let i = configChain.length - 1; i >= 0; i--) {
     const { config, basePath, configPath } = configChain[i];
-    const options = filterRecognizedTsConfigTsNodeOptions(config['ts-node'])
-      .recognized;
+    const options = filterRecognizedTsConfigTsNodeOptions(
+      config['ts-node']
+    ).recognized;
 
     // Some options are relative to the config file, so must be converted to absolute paths here
     if (options.require) {
@@ -249,9 +251,7 @@ export function readConfig(
  * Given the raw "ts-node" sub-object from a tsconfig, return an object with only the properties
  * recognized by "ts-node"
  */
-function filterRecognizedTsConfigTsNodeOptions(
-  jsonObject: any
-): {
+function filterRecognizedTsConfigTsNodeOptions(jsonObject: any): {
   recognized: TsConfigOptions;
   unrecognized: any;
 } {
@@ -302,7 +302,9 @@ function filterRecognizedTsConfigTsNodeOptions(
     swc,
   };
   // Use the typechecker to make sure this implementation has the correct set of properties
-  const catchExtraneousProps: keyof TsConfigOptions = (null as any) as keyof typeof filteredTsConfigOptions;
-  const catchMissingProps: keyof typeof filteredTsConfigOptions = (null as any) as keyof TsConfigOptions;
+  const catchExtraneousProps: keyof TsConfigOptions =
+    null as any as keyof typeof filteredTsConfigOptions;
+  const catchMissingProps: keyof typeof filteredTsConfigOptions =
+    null as any as keyof TsConfigOptions;
   return { recognized: filteredTsConfigOptions, unrecognized };
 }

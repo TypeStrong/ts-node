@@ -4,12 +4,14 @@ import * as expect from 'expect';
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
   contextTsNodeUnderTest,
+  getStream,
   TEST_DIR,
 } from '../helpers';
 import { createExec, createExecTester } from '../exec-helpers';
 import { upstreamTopLevelAwaitTests } from './node-repl-tla';
 import { _test } from '../testlib';
 import { contextReplHelpers } from './helpers';
+import { promisify } from 'util';
 
 const test = _test.context(contextTsNodeUnderTest).context(contextReplHelpers);
 
@@ -411,6 +413,47 @@ test.suite(
     );
   }
 );
+
+test.suite('REPL works with traceResolution', (test) => {
+  test.serial(
+    'startup traces should print before the prompt appears when traceResolution is enabled',
+    async (t) => {
+      const repl = t.context.createReplViaApi({
+        registerHooks: false as true,
+        createServiceOpts: {
+          compilerOptions: {
+            traceResolution: true,
+          },
+        },
+      });
+
+      repl.replService.start();
+
+      repl.stdin.end();
+
+      await promisify(setTimeout)(3e3);
+
+      repl.stdout.end();
+      const stdout = await getStream(repl.stdout);
+
+      expect(stdout).toContain('======== Resolving module');
+      expect(stdout.endsWith('> ')).toBe(true);
+    }
+  );
+
+  test.serial(
+    'traces should NOT appear when traceResolution is not enabled',
+    async (t) => {
+      const { stdout, stderr } = await t.context.executeInRepl('1', {
+        registerHooks: true,
+        startInternalOptions: { useGlobal: false },
+        waitPattern: '1\n>',
+      });
+      expect(stderr).toBe('');
+      expect(stdout).not.toContain('======== Resolving module');
+    }
+  );
+});
 
 test.suite('REPL declares types for node built-ins within REPL', (test) => {
   test.runSerially();

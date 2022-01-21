@@ -7,20 +7,14 @@ import type * as _ts from 'typescript';
  */
 export function createResolverFunctions(kwargs: {
   ts: typeof _ts;
-  serviceHost: _ts.ModuleResolutionHost;
+  host: _ts.ModuleResolutionHost;
   cwd: string;
   getCanonicalFileName: (filename: string) => string;
   config: _ts.ParsedCommandLine;
   configFilePath: string | undefined;
 }) {
-  const {
-    serviceHost,
-    ts,
-    config,
-    cwd,
-    getCanonicalFileName,
-    configFilePath,
-  } = kwargs;
+  const { host, ts, config, cwd, getCanonicalFileName, configFilePath } =
+    kwargs;
   const moduleResolutionCache = ts.createModuleResolutionCache(
     cwd,
     getCanonicalFileName,
@@ -93,7 +87,7 @@ export function createResolverFunctions(kwargs: {
         moduleName,
         containingFile,
         config.options,
-        serviceHost,
+        host,
         moduleResolutionCache,
         redirectedReference
       );
@@ -105,69 +99,71 @@ export function createResolverFunctions(kwargs: {
   };
 
   // language service never calls this, but TS docs recommend that we implement it
-  const getResolvedModuleWithFailedLookupLocationsFromCache: _ts.LanguageServiceHost['getResolvedModuleWithFailedLookupLocationsFromCache'] = (
-    moduleName,
-    containingFile
-  ): _ts.ResolvedModuleWithFailedLookupLocations | undefined => {
-    const ret = ts.resolveModuleNameFromCache(
+  const getResolvedModuleWithFailedLookupLocationsFromCache: _ts.LanguageServiceHost['getResolvedModuleWithFailedLookupLocationsFromCache'] =
+    (
       moduleName,
-      containingFile,
-      moduleResolutionCache
-    );
-    if (ret && ret.resolvedModule) {
-      fixupResolvedModule(ret.resolvedModule);
-    }
-    return ret;
-  };
-
-  const resolveTypeReferenceDirectives: _ts.LanguageServiceHost['resolveTypeReferenceDirectives'] = (
-    typeDirectiveNames: string[],
-    containingFile: string,
-    redirectedReference: _ts.ResolvedProjectReference | undefined,
-    options: _ts.CompilerOptions
-  ): (_ts.ResolvedTypeReferenceDirective | undefined)[] => {
-    // Note: seems to be called with empty typeDirectiveNames array for all files.
-    return typeDirectiveNames.map((typeDirectiveName) => {
-      let { resolvedTypeReferenceDirective } = ts.resolveTypeReferenceDirective(
-        typeDirectiveName,
+      containingFile
+    ): _ts.ResolvedModuleWithFailedLookupLocations | undefined => {
+      const ret = ts.resolveModuleNameFromCache(
+        moduleName,
         containingFile,
-        config.options,
-        serviceHost,
-        redirectedReference
+        moduleResolutionCache
       );
-      if (typeDirectiveName === 'node' && !resolvedTypeReferenceDirective) {
-        // Resolve @types/node relative to project first, then __dirname (copy logic from elsewhere / refactor into reusable function)
-        let typesNodePackageJsonPath: string | undefined;
-        try {
-          typesNodePackageJsonPath = require.resolve(
-            '@types/node/package.json',
-            {
-              paths: [configFilePath ?? cwd, __dirname],
-            }
-          );
-        } catch {} // gracefully do nothing when @types/node is not installed for any reason
-        if (typesNodePackageJsonPath) {
-          const typeRoots = [resolve(typesNodePackageJsonPath, '../..')];
-          ({
-            resolvedTypeReferenceDirective,
-          } = ts.resolveTypeReferenceDirective(
+      if (ret && ret.resolvedModule) {
+        fixupResolvedModule(ret.resolvedModule);
+      }
+      return ret;
+    };
+
+  const resolveTypeReferenceDirectives: _ts.LanguageServiceHost['resolveTypeReferenceDirectives'] =
+    (
+      typeDirectiveNames: string[],
+      containingFile: string,
+      redirectedReference: _ts.ResolvedProjectReference | undefined,
+      options: _ts.CompilerOptions
+    ): (_ts.ResolvedTypeReferenceDirective | undefined)[] => {
+      // Note: seems to be called with empty typeDirectiveNames array for all files.
+      return typeDirectiveNames.map((typeDirectiveName) => {
+        let { resolvedTypeReferenceDirective } =
+          ts.resolveTypeReferenceDirective(
             typeDirectiveName,
             containingFile,
-            {
-              ...config.options,
-              typeRoots,
-            },
-            serviceHost,
+            config.options,
+            host,
             redirectedReference
-          ));
+          );
+        if (typeDirectiveName === 'node' && !resolvedTypeReferenceDirective) {
+          // Resolve @types/node relative to project first, then __dirname (copy logic from elsewhere / refactor into reusable function)
+          let typesNodePackageJsonPath: string | undefined;
+          try {
+            typesNodePackageJsonPath = require.resolve(
+              '@types/node/package.json',
+              {
+                paths: [configFilePath ?? cwd, __dirname],
+              }
+            );
+          } catch {} // gracefully do nothing when @types/node is not installed for any reason
+          if (typesNodePackageJsonPath) {
+            const typeRoots = [resolve(typesNodePackageJsonPath, '../..')];
+            ({ resolvedTypeReferenceDirective } =
+              ts.resolveTypeReferenceDirective(
+                typeDirectiveName,
+                containingFile,
+                {
+                  ...config.options,
+                  typeRoots,
+                },
+                host,
+                redirectedReference
+              ));
+          }
         }
-      }
-      if (resolvedTypeReferenceDirective) {
-        fixupResolvedModule(resolvedTypeReferenceDirective);
-      }
-      return resolvedTypeReferenceDirective;
-    });
-  };
+        if (resolvedTypeReferenceDirective) {
+          fixupResolvedModule(resolvedTypeReferenceDirective);
+        }
+        return resolvedTypeReferenceDirective;
+      });
+    };
 
   return {
     resolveModuleNames,

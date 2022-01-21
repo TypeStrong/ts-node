@@ -353,6 +353,12 @@ export interface CreateOptions {
    * the configuration loader, so it is *not* necessary for their source to be set here.
    */
   optionBasePaths?: OptionBasePaths;
+  /**
+   * A function to collect trace messages from the TypeScript compiler, for example when `traceResolution` is enabled.
+   *
+   * @default console.log
+   */
+  tsTrace?: (str: string) => void;
 }
 
 /** @internal */
@@ -389,6 +395,7 @@ export interface TsConfigOptions
     | 'cwd'
     | 'projectSearchDir'
     | 'optionBasePaths'
+    | 'tsTrace'
   > {}
 
 /**
@@ -424,6 +431,7 @@ export const DEFAULTS: RegisterOptions = {
   compilerHost: yn(env.TS_NODE_COMPILER_HOST),
   logError: yn(env.TS_NODE_LOG_ERROR),
   experimentalReplAwait: yn(env.TS_NODE_EXPERIMENTAL_REPL_AWAIT) ?? undefined,
+  tsTrace: console.log.bind(console),
 };
 
 /**
@@ -571,12 +579,8 @@ export function create(rawOptions: CreateOptions = {}): Service {
   );
 
   // Read config file and merge new options between env and CLI options.
-  const {
-    configFilePath,
-    config,
-    tsNodeOptionsFromTsconfig,
-    optionBasePaths,
-  } = readConfig(cwd, ts, rawOptions);
+  const { configFilePath, config, tsNodeOptionsFromTsconfig, optionBasePaths } =
+    readConfig(cwd, ts, rawOptions);
   const options = assign<RegisterOptions>(
     {},
     DEFAULTS,
@@ -811,9 +815,9 @@ export function create(rawOptions: CreateOptions = {}): Service {
     _position: number
   ) => TypeInfo;
 
-  const getCanonicalFileName = ((ts as unknown) as TSInternal).createGetCanonicalFileName(
-    ts.sys.useCaseSensitiveFileNames
-  );
+  const getCanonicalFileName = (
+    ts as unknown as TSInternal
+  ).createGetCanonicalFileName(ts.sys.useCaseSensitiveFileNames);
 
   const moduleTypeClassifier = createModuleTypeClassifier({
     basePath: options.optionBasePaths?.moduleTypes,
@@ -885,6 +889,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         getCompilationSettings: () => config.options,
         getDefaultLibFileName: () => ts.getDefaultLibFilePath(config.options),
         getCustomTransformers: getCustomTransformers,
+        trace: options.tsTrace,
       };
       const {
         resolveModuleNames,
@@ -893,7 +898,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         isFileKnownToBeInternal,
         markBucketOfFilenameInternal,
       } = createResolverFunctions({
-        serviceHost,
+        host: serviceHost,
         getCanonicalFileName,
         ts,
         cwd,
@@ -901,8 +906,10 @@ export function create(rawOptions: CreateOptions = {}): Service {
         configFilePath,
       });
       serviceHost.resolveModuleNames = resolveModuleNames;
-      serviceHost.getResolvedModuleWithFailedLookupLocationsFromCache = getResolvedModuleWithFailedLookupLocationsFromCache;
-      serviceHost.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives;
+      serviceHost.getResolvedModuleWithFailedLookupLocationsFromCache =
+        getResolvedModuleWithFailedLookupLocationsFromCache;
+      serviceHost.resolveTypeReferenceDirectives =
+        resolveTypeReferenceDirectives;
 
       const registry = ts.createDocumentRegistry(
         ts.sys.useCaseSensitiveFileNames,
@@ -1038,13 +1045,14 @@ export function create(rawOptions: CreateOptions = {}): Service {
               ),
             useCaseSensitiveFileNames: () => sys.useCaseSensitiveFileNames,
           };
+      host.trace = options.tsTrace;
       const {
         resolveModuleNames,
         resolveTypeReferenceDirectives,
         isFileKnownToBeInternal,
         markBucketOfFilenameInternal,
       } = createResolverFunctions({
-        serviceHost: host,
+        host,
         cwd,
         configFilePath,
         config,
@@ -1059,7 +1067,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         ? ts.createIncrementalProgram({
             rootNames: Array.from(rootFileNames),
             options: config.options,
-            host: host,
+            host,
             configFileParsingDiagnostics: config.errors,
             projectReferences: config.projectReferences,
           })
@@ -1264,9 +1272,8 @@ export function create(rawOptions: CreateOptions = {}): Service {
   // Create a simple TypeScript compiler proxy.
   function compile(code: string, fileName: string, lineOffset = 0) {
     const normalizedFileName = normalizeSlashes(fileName);
-    const classification = moduleTypeClassifier.classifyModule(
-      normalizedFileName
-    );
+    const classification =
+      moduleTypeClassifier.classifyModule(normalizedFileName);
     // Must always call normal getOutput to throw typechecking errors
     let [value, sourceMap] = getOutput(code, normalizedFileName);
     // If module classification contradicts the above, call the relevant transpiler

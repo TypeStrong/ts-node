@@ -7,7 +7,7 @@ const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
  * @internal
  */
 export function getDefaultTsconfigJsonForNodeVersion(ts: TSCommon): any {
-  const tsInternal = (ts as any) as TSInternal;
+  const tsInternal = ts as any as TSInternal;
   if (nodeMajor >= 16) {
     const config = require('@tsconfig/node16/tsconfig.json');
     if (configCompatible(config)) return config;
