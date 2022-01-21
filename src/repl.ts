@@ -368,16 +368,20 @@ export function createRepl(options: CreateReplOptions = {}) {
       //   those starting with _
       //   those containing /
       //   those that already exist as globals
-      // Intentionally suppress type errors in case @types/node does not declare any of them.
-      state.input += `// @ts-ignore\n${builtinModules
-        .filter(
-          (name) =>
-            !name.startsWith('_') &&
-            !name.includes('/') &&
-            !['console', 'module', 'process'].includes(name)
-        )
-        .map((name) => `declare import ${name} = require('${name}')`)
-        .join(';')}\n`;
+      // Intentionally suppress type errors in case @types/node does not declare any of them, and because
+      // `declare import` is technically invalid syntax.
+      // Avoid this when in transpileOnly, because third-party transpilers may not handle `declare import`.
+      if (!service?.transpileOnly) {
+        state.input += `// @ts-ignore\n${builtinModules
+          .filter(
+            (name) =>
+              !name.startsWith('_') &&
+              !name.includes('/') &&
+              !['console', 'module', 'process'].includes(name)
+          )
+          .map((name) => `declare import ${name} = require('${name}')`)
+          .join(';')}\n`;
+      }
     }
 
     reset();
@@ -480,6 +484,8 @@ export function createEvalAwarePartialHost(
   return { readFile, fileExists };
 }
 
+const sourcemapCommentRe = /\/\/# ?sourceMappingURL=\S+[\s\r\n]*$/;
+
 type AppendCompileAndEvalInputResult =
   | { containsTopLevelAwait: true; valuePromise: Promise<any> }
   | { containsTopLevelAwait: false; value: any };
@@ -525,8 +531,23 @@ function appendCompileAndEvalInput(options: {
 
   output = adjustUseStrict(output);
 
+  // Note: REPL does not respect sourcemaps!
+  // To properly do that, we'd need to prefix the code we eval -- which comes
+  // from `diffLines` -- with newlines so that it's at the proper line numbers.
+  // Then we'd need to ensure each bit of eval-ed code, if there are multiples,
+  // has the sourcemap appended to it.
+  // We might also need to integrate with our sourcemap hooks' cache; I'm not sure.
+  const outputWithoutSourcemapComment = output.replace(sourcemapCommentRe, '');
+  const oldOutputWithoutSourcemapComment = state.output.replace(
+    sourcemapCommentRe,
+    ''
+  );
+
   // Use `diff` to check for new JavaScript to execute.
-  const changes = diffLines(state.output, output);
+  const changes = diffLines(
+    oldOutputWithoutSourcemapComment,
+    outputWithoutSourcemapComment
+  );
 
   if (isCompletion) {
     undo();

@@ -2,4 +2,4 @@
 
 import { main } from './bin';
 
-main(undefined, { '--transpile-only': true });
+main(undefined, { '--transpileOnly': true });
