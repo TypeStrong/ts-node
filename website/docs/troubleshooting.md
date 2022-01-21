@@ -5,7 +5,7 @@ title: Troubleshooting
 ## Understanding configuration
 
 ts-node uses sensible default configurations to reduce boilerplate while still respecting `tsconfig.json` if you
-have one.  If you are unsure which configuration is used, you can log it with `ts-node --show-config`.  This is similar to
+have one.  If you are unsure which configuration is used, you can log it with `ts-node --showConfig`.  This is similar to
 `tsc --showConfig` but includes `"ts-node"` options as well.
 
 ts-node also respects your locally-installed `typescript` version, but global installations fallback to the globally-installed
@@ -17,7 +17,7 @@ ts-node v10.0.0
 node v16.1.0
 compiler v4.2.2
 
-$ ts-node --show-config
+$ ts-node --showConfig
 {
   "compilerOptions": {
     "target": "es6",

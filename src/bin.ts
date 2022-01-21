@@ -28,6 +28,20 @@ export function main(
   argv: string[] = process.argv.slice(2),
   entrypointArgs: Record<string, any> = {}
 ) {
+  // HACK: technically, this function is not marked @internal so it's possible
+  // that libraries in the wild are doing `require('ts-node/dist/bin').main({'--transpile-only': true})`
+  // We can mark this function @internal in next major release.
+  // For now, rewrite args to avoid a breaking change.
+  entrypointArgs = { ...entrypointArgs };
+  for (const key of Object.keys(entrypointArgs)) {
+    entrypointArgs[
+      key.replace(
+        /([a-z])-([a-z])/g,
+        (_$0, $1, $2: string) => `${$1}${$2.toUpperCase()}`
+      )
+    ] = entrypointArgs[key];
+  }
+
   const args = {
     ...entrypointArgs,
     ...arg(
@@ -40,33 +54,33 @@ export function main(
 
         // CLI options.
         '--help': Boolean,
-        '--cwd-mode': Boolean,
-        '--script-mode': Boolean,
+        '--cwdMode': Boolean,
+        '--scriptMode': Boolean,
         '--version': arg.COUNT,
-        '--show-config': Boolean,
+        '--showConfig': Boolean,
 
         // Project options.
         '--cwd': String,
         '--files': Boolean,
         '--compiler': String,
-        '--compiler-options': parse,
+        '--compilerOptions': parse,
         '--project': String,
-        '--ignore-diagnostics': [String],
+        '--ignoreDiagnostics': [String],
         '--ignore': [String],
-        '--transpile-only': Boolean,
+        '--transpileOnly': Boolean,
         '--transpiler': String,
         '--swc': Boolean,
-        '--type-check': Boolean,
-        '--compiler-host': Boolean,
+        '--typeCheck': Boolean,
+        '--compilerHost': Boolean,
         '--pretty': Boolean,
-        '--skip-project': Boolean,
-        '--skip-ignore': Boolean,
-        '--prefer-ts-exts': Boolean,
-        '--log-error': Boolean,
+        '--skipProject': Boolean,
+        '--skipIgnore': Boolean,
+        '--preferTsExts': Boolean,
+        '--logError': Boolean,
         '--emit': Boolean,
         '--scope': Boolean,
-        '--scope-dir': String,
-        '--no-experimental-repl-await': Boolean,
+        '--scopeDir': String,
+        '--noExperimentalReplAwait': Boolean,
 
         // Aliases.
         '-e': '--eval',
@@ -76,16 +90,30 @@ export function main(
         '-h': '--help',
         '-s': '--script-mode',
         '-v': '--version',
-        '-T': '--transpile-only',
-        '-H': '--compiler-host',
+        '-T': '--transpileOnly',
+        '-H': '--compilerHost',
         '-I': '--ignore',
         '-P': '--project',
         '-C': '--compiler',
-        '-D': '--ignore-diagnostics',
-        '-O': '--compiler-options',
+        '-D': '--ignoreDiagnostics',
+        '-O': '--compilerOptions',
         '--dir': '--cwd',
-        '--showConfig': '--show-config',
-        '--scopeDir': '--scope-dir',
+
+        // Support both tsc-style camelCase and node-style hypen-case for *all* flags
+        '--cwd-mode': '--cwdMode',
+        '--script-mode': '--scriptMode',
+        '--show-config': '--showConfig',
+        '--compiler-options': '--compilerOptions',
+        '--ignore-diagnostics': '--ignoreDiagnostics',
+        '--transpile-only': '--transpileOnly',
+        '--type-check': '--typeCheck',
+        '--compiler-host': '--compilerHost',
+        '--skip-project': '--skipProject',
+        '--skip-ignore': '--skipIgnore',
+        '--prefer-ts-exts': '--preferTsExts',
+        '--log-error': '--logError',
+        '--scope-dir': '--scopeDir',
+        '--no-experimental-repl-await': '--noExperimentalReplAwait',
       },
       {
         argv,
@@ -100,74 +128,74 @@ export function main(
   const {
     '--cwd': cwdArg,
     '--help': help = false,
-    '--script-mode': scriptMode,
-    '--cwd-mode': cwdMode,
+    '--scriptMode': scriptMode,
+    '--cwdMode': cwdMode,
     '--version': version = 0,
-    '--show-config': showConfig,
+    '--showConfig': showConfig,
     '--require': argsRequire = [],
     '--eval': code = undefined,
     '--print': print = false,
     '--interactive': interactive = false,
     '--files': files,
     '--compiler': compiler,
-    '--compiler-options': compilerOptions,
+    '--compilerOptions': compilerOptions,
     '--project': project,
-    '--ignore-diagnostics': ignoreDiagnostics,
+    '--ignoreDiagnostics': ignoreDiagnostics,
     '--ignore': ignore,
-    '--transpile-only': transpileOnly,
-    '--type-check': typeCheck,
+    '--transpileOnly': transpileOnly,
+    '--typeCheck': typeCheck,
     '--transpiler': transpiler,
     '--swc': swc,
-    '--compiler-host': compilerHost,
+    '--compilerHost': compilerHost,
     '--pretty': pretty,
-    '--skip-project': skipProject,
-    '--skip-ignore': skipIgnore,
-    '--prefer-ts-exts': preferTsExts,
-    '--log-error': logError,
+    '--skipProject': skipProject,
+    '--skipIgnore': skipIgnore,
+    '--preferTsExts': preferTsExts,
+    '--logError': logError,
     '--emit': emit,
     '--scope': scope = undefined,
-    '--scope-dir': scopeDir = undefined,
-    '--no-experimental-repl-await': noExperimentalReplAwait,
+    '--scopeDir': scopeDir = undefined,
+    '--noExperimentalReplAwait': noExperimentalReplAwait,
   } = args;
 
   if (help) {
     console.log(`
-  Usage: ts-node [options] [ -e script | script.ts ] [arguments]
+Usage: ts-node [options] [ -e script | script.ts ] [arguments]
 
-  Options:
+Options:
 
-    -e, --eval [code]               Evaluate code
-    -p, --print                     Print result of \`--eval\`
-    -r, --require [path]            Require a node module before execution
-    -i, --interactive               Opens the REPL even if stdin does not appear to be a terminal
+  -e, --eval [code]               Evaluate code
+  -p, --print                     Print result of \`--eval\`
+  -r, --require [path]            Require a node module before execution
+  -i, --interactive               Opens the REPL even if stdin does not appear to be a terminal
 
-    -h, --help                      Print CLI usage
-    -v, --version                   Print module version information
-    --cwd-mode                      Use current directory instead of <script.ts> for config resolution
-    --show-config                   Print resolved configuration and exit
+  -h, --help                      Print CLI usage
+  -v, --version                   Print module version information
+  --cwdMode                       Use current directory instead of <script.ts> for config resolution
+  --showConfig                    Print resolved configuration and exit
 
-    -T, --transpile-only            Use TypeScript's faster \`transpileModule\` or a third-party transpiler
-    --swc                           Use the swc transpiler
-    -H, --compiler-host             Use TypeScript's compiler host API
-    -I, --ignore [pattern]          Override the path patterns to skip compilation
-    -P, --project [path]            Path to TypeScript JSON project file
-    -C, --compiler [name]           Specify a custom TypeScript compiler
-    --transpiler [name]             Specify a third-party, non-typechecking transpiler
-    -D, --ignore-diagnostics [code] Ignore TypeScript warnings by diagnostic code
-    -O, --compiler-options [opts]   JSON object to merge with compiler options
+  -T, --transpileOnly             Use TypeScript's faster \`transpileModule\` or a third-party transpiler
+  --swc                           Use the swc transpiler
+  -H, --compilerHost              Use TypeScript's compiler host API
+  -I, --ignore [pattern]          Override the path patterns to skip compilation
+  -P, --project [path]            Path to TypeScript JSON project file
+  -C, --compiler [name]           Specify a custom TypeScript compiler
+  --transpiler [name]             Specify a third-party, non-typechecking transpiler
+  -D, --ignoreDiagnostics [code]  Ignore TypeScript warnings by diagnostic code
+  -O, --compilerOptions [opts]    JSON object to merge with compiler options
 
-    --cwd                           Behave as if invoked within this working directory.
-    --files                         Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
-    --pretty                        Use pretty diagnostic formatter (usually enabled by default)
-    --skip-project                  Skip reading \`tsconfig.json\`
-    --skip-ignore                   Skip \`--ignore\` checks
-    --emit                          Emit output files into \`.ts-node\` directory
-    --scope                         Scope compiler to files within \`scopeDir\`.  Anything outside this directory is ignored.
-    --scope-dir                     Directory for \`--scope\`
-    --prefer-ts-exts                Prefer importing TypeScript files over JavaScript files
-    --log-error                     Logs TypeScript errors to stderr instead of throwing exceptions
-    --no-experimental-repl-await    Disable top-level await in REPL.  Equivalent to node's --no-experimental-repl-await
-  `);
+  --cwd                           Behave as if invoked within this working directory.
+  --files                         Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
+  --pretty                        Use pretty diagnostic formatter (usually enabled by default)
+  --skipProject                   Skip reading \`tsconfig.json\`
+  --skipIgnore                    Skip \`--ignore\` checks
+  --emit                          Emit output files into \`.ts-node\` directory
+  --scope                         Scope compiler to files within \`scopeDir\`.  Anything outside this directory is ignored.
+  --scopeDir                      Directory for \`--scope\`
+  --preferTsExts                  Prefer importing TypeScript files over JavaScript files
+  --logError                      Logs TypeScript errors to stderr instead of throwing exceptions
+  --noExperimentalReplAwait       Disable top-level await in REPL.  Equivalent to node's --no-experimental-repl-await
+`);
 
     process.exit(0);
   }
