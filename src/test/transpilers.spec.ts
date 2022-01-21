@@ -2,8 +2,9 @@
 // TODO: at the time of writing, other transpiler tests have not been moved into this file.
 // Should consolidate them here.
 
-import { context, expect } from './testlib';
+import { context } from './testlib';
 import { contextTsNodeUnderTest, testsDirRequire } from './helpers';
+import * as expect from 'expect';
 
 const test = context(contextTsNodeUnderTest);
 

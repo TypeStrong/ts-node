@@ -1,5 +1,6 @@
 // Misc regression tests go here if they do not have a better home
 
+import * as exp from 'expect';
 import { join } from 'path';
 import { createExec, createExecTester } from './exec-helpers';
 import {
@@ -7,7 +8,7 @@ import {
   contextTsNodeUnderTest,
   TEST_DIR,
 } from './helpers';
-import { test as _test, expect as exp } from './testlib';
+import { test as _test } from './testlib';
 
 const test = _test.context(contextTsNodeUnderTest);
 const exec = createExecTester({

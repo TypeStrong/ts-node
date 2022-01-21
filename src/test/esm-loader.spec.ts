@@ -2,7 +2,7 @@
 // TODO: at the time of writing, other ESM loader hook tests have not been moved into this file.
 // Should consolidate them here.
 
-import { context, expect } from './testlib';
+import { context } from './testlib';
 import semver = require('semver');
 import {
   contextTsNodeUnderTest,
@@ -12,6 +12,7 @@ import {
 } from './helpers';
 import { createExec } from './exec-helpers';
 import { join } from 'path';
+import * as expect from 'expect';
 import type { NodeLoaderHooksAPI2 } from '../';
 
 const nodeUsesNewHooksApi = semver.gte(process.version, '16.12.0');
