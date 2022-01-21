@@ -96,15 +96,20 @@ export function cachedLookup<T, R>(fn: (arg: T) => R): (arg: T) => R {
  * Require something with v8-compile-cache, which should make subsequent requires faster.
  * Do lots of error-handling so that, worst case, we require without the cache, and users are not blocked.
  */
-export function attemptRequireWithV8CompileCache(requireFn: typeof require, specifier: string) {
+export function attemptRequireWithV8CompileCache(
+  requireFn: typeof require,
+  specifier: string
+) {
   try {
-    const v8CC = (require('v8-compile-cache-lib') as typeof import('v8-compile-cache-lib')).install();
+    const v8CC = (
+      require('v8-compile-cache-lib') as typeof import('v8-compile-cache-lib')
+    ).install();
     try {
       return requireFn(specifier);
     } finally {
       v8CC?.uninstall();
     }
-  } catch(e) {
+  } catch (e) {
     return requireFn(specifier);
   }
 }
