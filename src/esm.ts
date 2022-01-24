@@ -11,6 +11,7 @@ import {
   UrlWithStringQuery,
   fileURLToPath,
   pathToFileURL,
+  URL,
 } from 'url';
 import { extname } from 'path';
 import * as assert from 'assert';
@@ -163,7 +164,9 @@ export function createEsmHooks(tsNodeService: Service) {
 
     if (context.parentURL) {
       const parentUrl = new URL(context.parentURL);
-      if (parentUrl.pathname && extname(parentUrl.pathname) === '.ts') {
+      const parentPath =
+        parentUrl.protocol === 'file:' && fileURLToPath(parentUrl);
+      if (parentPath && !tsNodeService.ignored(parentPath)) {
         const mappedSpecifiers = tsNodeService.mapPath(specifier);
         if (mappedSpecifiers) {
           candidateSpecifiers = mappedSpecifiers.map((path) =>

@@ -23,6 +23,10 @@ import map2specific from 'map2/specific/foo.js';
 // Path is mapped when using no wildcard
 import mapStatic from 'static';
 
+// Test path mapping in `.tsx` and `.js` files.
+import './index-tsx.tsx';
+import './index-js.js';
+
 assert.equal(map1foo, 'mapped/1-foo');
 assert.equal(map1jsx, 'mapped/1-jsx');
 assert.equal(map2foo, 'mapped/2-foo');
