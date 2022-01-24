@@ -15,7 +15,6 @@ import {
 import { extname } from 'path';
 import * as assert from 'assert';
 import { normalizeSlashes } from './util';
-import { createPathMapper } from './path-mapping';
 const {
   createResolve,
 } = require('../dist-raw/node-esm-resolve-implementation');
@@ -106,7 +105,6 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
 
 export function createEsmHooks(tsNodeService: Service) {
   tsNodeService.enableExperimentalEsmLoaderInterop();
-  const mapPath = createPathMapper(tsNodeService.config.options);
 
   // Custom implementation that considers additional file extensions and automatically adds file extensions
   const nodeResolveImplementation = createResolve({
@@ -166,7 +164,7 @@ export function createEsmHooks(tsNodeService: Service) {
     if (context.parentURL) {
       const parentUrl = new URL(context.parentURL);
       if (parentUrl.pathname && extname(parentUrl.pathname) === '.ts') {
-        const mappedSpecifiers = mapPath(specifier);
+        const mappedSpecifiers = tsNodeService.mapPath(specifier);
         if (mappedSpecifiers) {
           candidateSpecifiers = mappedSpecifiers.map((path) =>
             pathToFileURL(path).toString()
@@ -175,17 +173,16 @@ export function createEsmHooks(tsNodeService: Service) {
       }
     }
 
-    let candidateSpecifier: string | undefined;
-    while ((candidateSpecifier = candidateSpecifiers.shift())) {
+    for (let i = 0; i < candidateSpecifiers.length; i++) {
       try {
         return await nodeResolveImplementation.defaultResolve(
-          candidateSpecifier,
+          candidateSpecifiers[i],
           context,
           defaultResolve
         );
       } catch (err) {
-        const isNotFoundError = (<any>err).code === 'ERR_MODULE_NOT_FOUND';
-        if (isNotFoundError && candidateSpecifiers.length > 0) {
+        const isNotFoundError = (err as any).code === 'ERR_MODULE_NOT_FOUND';
+        if (isNotFoundError && i < candidateSpecifiers.length - 1) {
           continue;
         } else {
           throw err;
@@ -193,8 +190,10 @@ export function createEsmHooks(tsNodeService: Service) {
       }
     }
 
+    // This code should be unreachable: The for-loop always returns or
+    // throws.
     throw new Error(
-      `Empty mapped paths for ${specifier} imported from ${context.parentURL}`
+      `Unreachable code mapping ${specifier} in ${context.parentURL}`
     );
   }
 

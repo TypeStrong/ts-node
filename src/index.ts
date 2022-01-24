@@ -25,6 +25,7 @@ import {
 } from './module-type-classifier';
 import { createResolverFunctions } from './resolver-functions';
 import type { createEsmHooks as createEsmHooksFn } from './esm';
+import { createPathMapper } from './path-mapping';
 
 export { TSCommon };
 export {
@@ -482,6 +483,14 @@ export interface Service {
   enableExperimentalEsmLoaderInterop(): void;
   /** @internal */
   transpileOnly: boolean;
+  /**
+   * @internal
+   *
+   * Map import paths to candidates according to the `paths` compiler
+   * option. Returns `null` if the specifier did not match and was not
+   * mapped.
+   */
+  mapPath(specifier: string): string[] | null;
 }
 
 /**
@@ -1318,6 +1327,8 @@ export function create(rawOptions: CreateOptions = {}): Service {
     });
   }
 
+  const mapPath = createPathMapper(config.options);
+
   return {
     [TS_NODE_SERVICE_BRAND]: true,
     ts,
@@ -1334,6 +1345,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     installSourceMapSupport,
     enableExperimentalEsmLoaderInterop,
     transpileOnly,
+    mapPath,
   };
 }
 
