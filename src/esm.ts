@@ -185,10 +185,16 @@ export function createEsmHooks(tsNodeService: Service) {
         );
       } catch (err) {
         const isNotFoundError = (err as any).code === 'ERR_MODULE_NOT_FOUND';
-        if (isNotFoundError && i < candidateSpecifiers.length - 1) {
-          continue;
-        } else {
+        if (!isNotFoundError) {
           throw err;
+        } else if (i == candidateSpecifiers.length - 1) {
+          throw new MappedModuleNotFound(
+            specifier,
+            context.parentURL,
+            candidateSpecifiers
+          );
+        } else {
+          continue;
         }
       }
     }
@@ -332,5 +338,21 @@ export function createEsmHooks(tsNodeService: Service) {
     const emittedJs = tsNodeService.compile(sourceAsString, nativePath);
 
     return { source: emittedJs };
+  }
+}
+
+class MappedModuleNotFound extends Error {
+  // Same code as other module not found errors.
+  static code = 'ERR_MODULE_NOT_FOUND';
+
+  constructor(specifier: string, base: string, candidates: string[]) {
+    super(
+      [
+        `Cannot find '${specifier}' imported from ${base} using TypeScript path mapping`,
+        'Candidates attempted:',
+        ...candidates.map((candidate) => `- ${candidate}`),
+      ].join('\n')
+    );
+    this.name = `Error [${MappedModuleNotFound.code}]`;
   }
 }

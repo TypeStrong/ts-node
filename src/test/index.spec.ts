@@ -1234,6 +1234,22 @@ test.suite('ts-node', (test) => {
         );
         expect(err).toBe(null);
       });
+
+      test('path mapping error candidates', async () => {
+        const { stderr, err } = await exec(
+          `${CMD_ESM_LOADER_WITHOUT_PROJECT} mapped-not-found.ts`,
+          {
+            cwd: join(TEST_DIR, './esm-path-mapping'),
+          }
+        );
+        expect(err).toBeTruthy();
+        expect(stderr).toMatch(
+          "[ERR_MODULE_NOT_FOUND]: Cannot find 'map2/does-not-exist.ts'"
+        );
+        // Expect tried candidates to be listed
+        expect(stderr).toMatch(/- file:\/\/.*mapped\/2-does-not-exist.ts/);
+        expect(stderr).toMatch(/- file:\/\/.*mapped\/2a-does-not-exist.ts/);
+      });
     }
 
     if (semver.gte(process.version, '12.0.0')) {
