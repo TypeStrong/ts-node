@@ -3,8 +3,7 @@
  * globals, __filename, builtin module accessors.
  */
 
-import { test as _test } from '../testlib';
-import * as expect from 'expect';
+import { test as _test, expect } from '../testlib';
 import * as promisify from 'util.promisify';
 import * as getStream from 'get-stream';
 import {

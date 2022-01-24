@@ -19,9 +19,9 @@ Hello, Ronald!
 
 ts-node automatically finds and loads `tsconfig.json`.  Most ts-node options can be specified in a `"ts-node"` object using their programmatic, camelCase names. We recommend this because it works even when you cannot pass CLI flags, such as `node --require ts-node/register` and when using shebangs.
 
-Use `--skip-project` to skip loading the `tsconfig.json`.  Use `--project` to explicitly specify the path to a `tsconfig.json`.
+Use `--skipProject` to skip loading the `tsconfig.json`.  Use `--project` to explicitly specify the path to a `tsconfig.json`.
 
-When searching, it is resolved using [the same search behavior as `tsc`](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html). By default, this search is performed relative to the entrypoint script. In `--cwd-mode` or if no entrypoint is specified -- for example when using the REPL -- the search is performed relative to `--cwd` / `process.cwd()`.
+When searching, it is resolved using [the same search behavior as `tsc`](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html). By default, this search is performed relative to the entrypoint script. In `--cwdMode` or if no entrypoint is specified -- for example when using the REPL -- the search is performed relative to `--cwd` / `process.cwd()`.
 
 You can use this sample configuration as a starting point:
 
@@ -74,7 +74,7 @@ With the latest `node` and `typescript`, this is [`@tsconfig/node16`](https://gi
 
 Older versions of `typescript` are incompatible with `@tsconfig/node16`.  In those cases we will use an older default configuration.
 
-When in doubt, `ts-node --show-config` will log the configuration being used, and `ts-node -vv` will log `node` and `typescript` versions.
+When in doubt, `ts-node --showConfig` will log the configuration being used, and `ts-node -vv` will log `node` and `typescript` versions.
 
 ## `node` flags
 

@@ -1,6 +1,6 @@
 import type { ChildProcess, ExecException, ExecOptions } from 'child_process';
 import { exec as childProcessExec } from 'child_process';
-import * as expect from 'expect';
+import { expect } from './testlib';
 
 export type ExecReturn = Promise<ExecResult> & { child: ChildProcess };
 export interface ExecResult {

@@ -2,4 +2,4 @@
 
 import { main } from './bin';
 
-main(undefined, { '--script-mode': true });
+main(undefined, { '--scriptMode': true });

@@ -48,7 +48,7 @@ jobs:
       matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
         include:
           # Node 12.15
           # TODO Add comments about why we test 12.15; I think git blame says it's because of an ESM behavioral change that happened at 12.16
@@ -119,8 +119,15 @@ jobs:
             typescript: next
             typescriptFlag: next
             downgradeNpm: true
-          # Node nightly
+          # Node 17
           - flavor: 12
+            node: 17
+            nodeFlag: 17
+            typescript: latest
+            typescriptFlag: latest
+            downgradeNpm: true
+          # Node nightly
+          - flavor: 13
             node: nightly
             nodeFlag: nightly
             typescript: latest
