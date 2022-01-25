@@ -1225,30 +1225,61 @@ test.suite('ts-node', (test) => {
           await runModuleTypeTest('override-to-esm', 'mjs');
       });
 
-      test('path mapping', async () => {
-        const { err } = await exec(
-          `${CMD_ESM_LOADER_WITHOUT_PROJECT} index.ts`,
-          {
-            cwd: join(TEST_DIR, './esm-path-mapping'),
-          }
-        );
-        expect(err).toBe(null);
-      });
+      test.suite('ESM path mapping', (test) => {
+        test('path mapping', async () => {
+          const { err } = await exec(
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} index.ts`,
+            {
+              cwd: join(TEST_DIR, './esm-path-mapping'),
+            }
+          );
+          expect(err).toBe(null);
+        });
 
-      test('path mapping error candidates', async () => {
-        const { stderr, err } = await exec(
-          `${CMD_ESM_LOADER_WITHOUT_PROJECT} mapped-not-found.ts`,
-          {
-            cwd: join(TEST_DIR, './esm-path-mapping'),
-          }
-        );
-        expect(err).toBeTruthy();
-        expect(stderr).toMatch(
-          "[ERR_MODULE_NOT_FOUND]: Cannot find 'map2/does-not-exist.ts'"
-        );
-        // Expect tried candidates to be listed
-        expect(stderr).toMatch(/- file:\/\/.*mapped\/2-does-not-exist.ts/);
-        expect(stderr).toMatch(/- file:\/\/.*mapped\/2a-does-not-exist.ts/);
+        test('path mapping error candidates', async () => {
+          const { stderr, err } = await exec(
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} mapped-not-found.ts`,
+            {
+              cwd: join(TEST_DIR, './esm-path-mapping'),
+            }
+          );
+          expect(err).toBeTruthy();
+          expect(stderr).toMatch(
+            `[ERR_MODULE_NOT_FOUND]: Cannot find 'map2/does-not-exist.ts'`
+          );
+          // Expect tried candidates to be listed
+          expect(stderr).toMatch(/- file:\/\/.*mapped\/2-does-not-exist.ts/);
+          expect(stderr).toMatch(/- file:\/\/.*mapped\/2a-does-not-exist.ts/);
+        });
+      });
+      // TODO ensure these tests run even when `--loader` is not supported
+      // Do so by moving these test cases elsewhere
+      test.suite('CJS path mapping', (test) => {
+        test('path mapping', async () => {
+          const { err } = await exec(
+            `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} index.ts`,
+            {
+              cwd: join(TEST_DIR, './cjs-path-mapping'),
+            }
+          );
+          expect(err).toBe(null);
+        });
+
+        test('path mapping error candidates', async () => {
+          const { stderr, err } = await exec(
+            `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} mapped-not-found.ts`,
+            {
+              cwd: join(TEST_DIR, './cjs-path-mapping'),
+            }
+          );
+          expect(err).toBeTruthy();
+          expect(stderr).toMatch(
+            `[MODULE_NOT_FOUND]: Cannot find 'map2/does-not-exist.ts'`
+          );
+          // Expect tried candidates to be listed
+          expect(stderr).toMatch(/- \/.*mapped\/2-does-not-exist.ts/);
+          expect(stderr).toMatch(/- \/.*mapped\/2a-does-not-exist.ts/);
+        });
       });
     }
 

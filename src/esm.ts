@@ -160,6 +160,7 @@ export function createEsmHooks(tsNodeService: Service) {
       return defer();
     }
 
+    // Note: [SYNC-PATH-MAPPING] keep this logic synced with the corresponding CJS implementation.
     let candidateSpecifiers: string[] = [specifier];
 
     if (context.parentURL) {
@@ -176,6 +177,9 @@ export function createEsmHooks(tsNodeService: Service) {
       }
     }
 
+    // Attempt all resolutions.  Collect resolution failures and throw an
+    // aggregated error if they all fail.
+    const moduleNotFoundErrors = [];
     for (let i = 0; i < candidateSpecifiers.length; i++) {
       try {
         return await nodeResolveImplementation.defaultResolve(
@@ -183,27 +187,25 @@ export function createEsmHooks(tsNodeService: Service) {
           context,
           defaultResolve
         );
-      } catch (err) {
-        const isNotFoundError = (err as any).code === 'ERR_MODULE_NOT_FOUND';
+      } catch (err: any) {
+        const isNotFoundError = err.code === 'ERR_MODULE_NOT_FOUND';
         if (!isNotFoundError) {
           throw err;
-        } else if (i == candidateSpecifiers.length - 1) {
-          throw new MappedModuleNotFound(
-            specifier,
-            context.parentURL,
-            candidateSpecifiers
-          );
-        } else {
-          continue;
         }
+        moduleNotFoundErrors.push(err);
       }
     }
-
-    // This code should be unreachable: The for-loop always returns or
-    // throws.
-    throw new Error(
-      `Unreachable code mapping ${specifier} in ${context.parentURL}`
-    );
+    // If only one candidate, no need to wrap it.
+    if (candidateSpecifiers.length === 1) {
+      throw moduleNotFoundErrors[0];
+    } else {
+      throw new MappedModuleNotFoundError(
+        specifier,
+        context.parentURL,
+        candidateSpecifiers,
+        moduleNotFoundErrors
+      );
+    }
   }
 
   // `load` from new loader hook API (See description at the top of this file)
@@ -341,11 +343,17 @@ export function createEsmHooks(tsNodeService: Service) {
   }
 }
 
-class MappedModuleNotFound extends Error {
+class MappedModuleNotFoundError extends Error {
   // Same code as other module not found errors.
-  static code = 'ERR_MODULE_NOT_FOUND';
+  readonly code = 'ERR_MODULE_NOT_FOUND' as const;
+  readonly errors!: ReadonlyArray<Error>;
 
-  constructor(specifier: string, base: string, candidates: string[]) {
+  constructor(
+    specifier: string,
+    base: string,
+    candidates: string[],
+    moduleNotFoundErrors: Error[]
+  ) {
     super(
       [
         `Cannot find '${specifier}' imported from ${base} using TypeScript path mapping`,
@@ -353,6 +361,13 @@ class MappedModuleNotFound extends Error {
         ...candidates.map((candidate) => `- ${candidate}`),
       ].join('\n')
     );
-    this.name = `Error [${MappedModuleNotFound.code}]`;
+    // TODO this differs slightly from nodejs errors; see if we can match them
+    this.name = `Error [${this.code}]`;
+    // Match shape of `AggregateError`
+    Object.defineProperty(this, 'errors', {
+      value: moduleNotFoundErrors,
+      configurable: true,
+      writable: true,
+    });
   }
 }

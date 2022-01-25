@@ -26,6 +26,7 @@ import {
 import { createResolverFunctions } from './resolver-functions';
 import type { createEsmHooks as createEsmHooksFn } from './esm';
 import { createPathMapper } from './path-mapping';
+import { installCommonjsResolveHook } from './cjs-resolve-filename-hook';
 
 export { TSCommon };
 export {
@@ -554,6 +555,8 @@ export function register(
     service,
     originalJsHandler
   );
+
+  installCommonjsResolveHook(service);
 
   // Require specified modules before start-up.
   (Module as any)._preloadModules(service.options.require);
