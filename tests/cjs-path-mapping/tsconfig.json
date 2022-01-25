@@ -12,5 +12,8 @@
       "static": ["./static.ts"]
     },
     "moduleResolution": "node"
+  },
+  "ts-node": {
+    "experimentalPathMapping": "both"
   }
 }

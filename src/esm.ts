@@ -163,7 +163,7 @@ export function createEsmHooks(tsNodeService: Service) {
     // Note: [SYNC-PATH-MAPPING] keep this logic synced with the corresponding CJS implementation.
     let candidateSpecifiers: string[] = [specifier];
 
-    if (context.parentURL) {
+    if (tsNodeService.esmPathMapping && context.parentURL) {
       const parentUrl = new URL(context.parentURL);
       const parentPath =
         parentUrl.protocol === 'file:' && fileURLToPath(parentUrl);
