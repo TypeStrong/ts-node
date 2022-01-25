@@ -1277,8 +1277,8 @@ test.suite('ts-node', (test) => {
             `[MODULE_NOT_FOUND]: Cannot find 'map2/does-not-exist.ts'`
           );
           // Expect tried candidates to be listed
-          expect(stderr).toMatch(/- \/.*mapped\/2-does-not-exist.ts/);
-          expect(stderr).toMatch(/- \/.*mapped\/2a-does-not-exist.ts/);
+          expect(stderr).toMatch(/- .*mapped\/2-does-not-exist.ts/);
+          expect(stderr).toMatch(/- .*mapped\/2a-does-not-exist.ts/);
         });
       });
     }
