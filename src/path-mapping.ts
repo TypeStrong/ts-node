@@ -1,5 +1,6 @@
 import type * as ts from 'typescript';
 import { join as joinPath } from 'path';
+import { normalizeSlashes } from './util';
 
 // Path mapper returns a list of mapped specifiers or `null` if the
 // given `specifier` was not mapped.
@@ -64,7 +65,9 @@ function mapPath(mappingConfig: MappingConfig, path: string): string[] | null {
   if (bestMatch) {
     const [mapping, match] = bestMatch;
     return mapping.outputs.map((output) =>
-      joinPath(mappingConfig.baseUrl, output.replace('*', match))
+      normalizeSlashes(
+        joinPath(mappingConfig.baseUrl, output.replace('*', match))
+      )
     );
   } else {
     return null;
