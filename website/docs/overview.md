@@ -19,6 +19,7 @@ tools and libraries.
 * Write standalone scripts
 * Native ESM loader
 * Use third-party transpilers
+* Automatic [TypeScript path mapping](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping)
 * Use custom transformers
 * Integrate with test runners, debuggers, and CLI tools
 * Compatible with pre-compilation for production
