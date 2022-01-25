@@ -29,7 +29,7 @@ export function installCommonjsResolveHook(tsNodeService: Service) {
     // Note: [SYNC-PATH-MAPPING] keep this logic synced with the corresponding ESM implementation.
     let candidateSpecifiers: string[] = [request];
     const attemptPathMapping =
-      parent && !tsNodeService.ignored(parent.filename);
+      parent?.filename && !tsNodeService.ignored(parent.filename);
     if (attemptPathMapping) {
       const mappedSpecifiers = tsNodeService.mapPath(request);
       if (mappedSpecifiers) {
