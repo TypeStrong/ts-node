@@ -23,6 +23,8 @@ function assertScriptCanLoadAsCJSImpl(service, module, filename) {
   const tsNodeClassification = service.moduleTypeClassifier.classifyModule(normalizeSlashes(filename));
   if(tsNodeClassification.moduleType === 'cjs') return;
 
+  // TODO modify to ignore package.json when file extension is ESM-only
+
   // Function require shouldn't be used in ES modules.
   if (tsNodeClassification.moduleType === 'esm' || (pkg && pkg.data && pkg.data.type === 'module')) {
     const parentPath = module.parent && module.parent.filename;

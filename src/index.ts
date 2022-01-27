@@ -1381,14 +1381,29 @@ function registerExtensions(
   service: Service,
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
+  const exts = new Set(extensions);
+  // Only way to transform .mts and .cts is via the .js extension.
+  // Can't register those extensions cuz would allow omitting file extension; node requires ext for .cjs and .mjs
+  if(exts.has('.mts') || exts.has('.cts')) exts.add('.js');
+  // Filter extensions which should not be added to `require.extensions`
+  // They may still be handled via the `.js` extension handler.
+  exts.delete('.mts');
+  exts.delete('.cts');
+  exts.delete('.mjs');
+  exts.delete('.cjs');
+
+  // TODO do we care about overriding moduleType for mjs?  No, I don't think so.
+  // Could conditionally register `.mjs` extension when moduleType overrides are configured,
+  // since that is the only situation where we want to avoid node throwing an error.
+
   // Register new extensions.
-  for (const ext of extensions) {
+  for (const ext of exts) {
     registerExtension(ext, service, originalJsHandler);
   }
 
   if (preferTsExts) {
     const preferredExtensions = new Set([
-      ...extensions,
+      ...exts,
       ...Object.keys(require.extensions),
     ]);
 

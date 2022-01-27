@@ -330,11 +330,19 @@ function resolveExtensions(search) {
  * TS's resolver can resolve foo.js to foo.ts, by replacing .js extension with several source extensions.
  * IMPORTANT: preserve ordering according to preferTsExts; this affects resolution behavior!
  */
-const replacementExtensions = extensions.filter(ext => ['.js', '.jsx', '.ts', '.tsx'].includes(ext));
+const replacementExtensionsForJs = extensions.filter(ext => ['.js', '.jsx', '.ts', '.tsx'].includes(ext));
+const replacementExtensionsForMjs = extensions.filter(ext => ['.mjs', '.mts'].includes(ext));
+const replacementExtensionsForCjs = extensions.filter(ext => ['.cjs', '.cts'].includes(ext));
 
 function resolveReplacementExtensions(search) {
-  if (search.pathname.match(/\.js$/)) {
-    const pathnameWithoutExtension = search.pathname.slice(0, search.pathname.length - 3);
+  const lastDotIndex = search.pathname.lastIndexOf('.');
+  const ext = search.pathname.slice(lastDotIndex);
+  if (ext === '.js' || ext === '.cjs' || ext === '.mjs') {
+    const pathnameWithoutExtension = search.pathname.slice(0, lastDotIndex);
+    const replacementExtensions =
+      ext === '.js' ? replacementExtensionsForJs
+      : ext === '.mjs' ? replacementExtensionsForMjs
+      : replacementExtensionsForCjs;
     for (let i = 0; i < replacementExtensions.length; i++) {
       const extension = replacementExtensions[i];
       const guess = new URL(search.toString());
