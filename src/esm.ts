@@ -96,7 +96,7 @@ export function createEsmHooks(tsNodeService: Service) {
 
   // Custom implementation that considers additional file extensions and automatically adds file extensions
   const nodeResolveImplementation = createResolve({
-    ...getExtensions(tsNodeService.config),
+    ...tsNodeService.extensions,
     preferTsExts: tsNodeService.options.preferTsExts,
   });
 
@@ -112,7 +112,6 @@ export function createEsmHooks(tsNodeService: Service) {
   const hooksAPI: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 = newHooksAPI
     ? { resolve, load, getFormat: undefined, transformSource: undefined }
     : { resolve, getFormat, transformSource, load: undefined };
-  return hooksAPI;
 
   function isFileUrlOrNodeStyleSpecifier(parsed: UrlWithStringQuery) {
     // We only understand file:// URLs, but in node, the specifier can be a node-style `./foo` or `foo`
@@ -205,6 +204,16 @@ export function createEsmHooks(tsNodeService: Service) {
     return { format, source };
   }
 
+  // Mapping from extensions understood by tsc to the equivalent for node,
+  // as far as getFormat is concerned.
+  const nodeEquivalentExtensions = new Map<string, string>([
+    ['.ts', '.js'],
+    ['.tsx', '.js'],
+    ['.jsx', '.js'],
+    ['.mts', '.mjs'],
+    ['.cts', '.cjs']
+  ]);
+
   async function getFormat(
     url: string,
     context: {},
@@ -227,11 +236,13 @@ export function createEsmHooks(tsNodeService: Service) {
 
     const nativePath = fileURLToPath(url);
 
-    // If file has .ts, .tsx, or .jsx extension, then ask node how it would treat this file if it were .js
+    // If file has extension not understood by node, then ask node how it would treat the emitted extension.
+    // E.g. .mts compiles to .mjs, so ask node how to classify an .mjs file.
     const ext = extname(nativePath);
     let nodeSays: { format: NodeLoaderHooksFormat };
-    if (ext !== '.js' && !tsNodeService.ignored(nativePath)) {
-      nodeSays = await defer(formatUrl(pathToFileURL(nativePath + '.js')));
+    const nodeEquivalentExt = nodeEquivalentExtensions.get(ext);
+    if (nodeEquivalentExt && !tsNodeService.ignored(nativePath)) {
+      nodeSays = await defer(formatUrl(pathToFileURL(nativePath + nodeEquivalentExt)));
     } else {
       nodeSays = await defer();
     }
@@ -283,4 +294,6 @@ export function createEsmHooks(tsNodeService: Service) {
 
     return { source: emittedJs };
   }
+
+  return hooksAPI;
 }

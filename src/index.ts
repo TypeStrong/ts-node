@@ -24,7 +24,6 @@ import {
 } from './module-type-classifier';
 import { createResolverFunctions } from './resolver-functions';
 import type { createEsmHooks as createEsmHooksFn } from './esm';
-import { ModuleKind } from 'typescript';
 
 export { TSCommon };
 export {
@@ -480,6 +479,8 @@ export interface Service {
   installSourceMapSupport(): void;
   /** @internal */
   enableExperimentalEsmLoaderInterop(): void;
+  /** @internal */
+  extensions: Extensions;
 }
 
 /**
@@ -500,22 +501,23 @@ export interface DiagnosticFilter {
 }
 
 /** @internal */
-export function getExtensions(config: _ts.ParsedCommandLine) {
+export type Extensions = ReturnType<typeof getExtensions>;
+
+/** @internal */
+export function getExtensions(config: _ts.ParsedCommandLine, tsVersion: string) {
+  // TS 4.5 is first version to understand .cts, .mts, .cjs, and .mjs extensions
+  const tsSupportsMtsCtsExts = versionGteLt(tsVersion, '4.5.0');
   const tsExtensions = ['.ts'];
   const jsExtensions = [];
-  const useESNext = [ModuleKind.ES2015, ModuleKind.ES2020, 7 as any, ModuleKind.ESNext, 199 as any].indexOf(config.options.module) !== -1;
-  const useCommonJS = [ModuleKind.CommonJS, 100 as any].indexOf(config.options.module) !== -1;
+
+  if(tsSupportsMtsCtsExts) tsExtensions.push('.mts', '.cts');
 
   // Enable additional extensions when JSX or `allowJs` is enabled.
   if (config.options.jsx) tsExtensions.push('.tsx');
-  // Support .mts .cts
-  if (useESNext) tsExtensions.push('.mts');
-  if (useCommonJS) tsExtensions.push('.cts');
   if (config.options.allowJs) {
-    jsExtensions.push('.js');
+    jsExtensions.push('.js', '.mjs', '.cjs');
     if (config.options.jsx) jsExtensions.push('.jsx');
-    if (useESNext) tsExtensions.push('.mjs');
-    if (useCommonJS) tsExtensions.push('.cjs');
+    if (tsSupportsMtsCtsExts) tsExtensions.push('.mjs', '.cjs');
   }
   return { tsExtensions, jsExtensions };
 }
@@ -539,7 +541,7 @@ export function register(
   }
 
   const originalJsHandler = require.extensions['.js'];
-  const { tsExtensions, jsExtensions } = getExtensions(service.config);
+  const { tsExtensions, jsExtensions } = service.extensions;
   const extensions = [...tsExtensions, ...jsExtensions];
 
   // Expose registered instance globally.
@@ -1306,7 +1308,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
   let active = true;
   const enabled = (enabled?: boolean) =>
     enabled === undefined ? active : (active = !!enabled);
-  const extensions = getExtensions(config);
+  const extensions = getExtensions(config, ts.version);
   const ignored = (fileName: string) => {
     if (!active) return true;
     const ext = extname(fileName);
@@ -1343,6 +1345,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     addDiagnosticFilter,
     installSourceMapSupport,
     enableExperimentalEsmLoaderInterop,
+    extensions,
   };
 }
 
