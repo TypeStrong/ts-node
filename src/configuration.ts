@@ -278,6 +278,7 @@ function filterRecognizedTsConfigTsNodeOptions(jsonObject: any): {
     experimentalReplAwait,
     swc,
     experimentalPathMapping,
+    experimentalResolverFeatures,
     ...unrecognized
   } = jsonObject as TsConfigOptions;
   const filteredTsConfigOptions = {
@@ -302,6 +303,7 @@ function filterRecognizedTsConfigTsNodeOptions(jsonObject: any): {
     moduleTypes,
     swc,
     experimentalPathMapping,
+    experimentalResolverFeatures,
   };
   // Use the typechecker to make sure this implementation has the correct set of properties
   const catchExtraneousProps: keyof TsConfigOptions =

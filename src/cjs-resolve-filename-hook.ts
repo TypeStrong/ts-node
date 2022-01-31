@@ -1,13 +1,16 @@
 import type Module = require('module');
 import type { Service } from '.';
 
-type ModuleConstructorWithInternals = typeof Module & {
+/** @internal */
+export type ModuleConstructorWithInternals = typeof Module & {
   _resolveFilename(
     request: string,
     parent?: Module,
     isMain?: boolean,
-    options?: ModuleResolveFilenameOptions
+    options?: ModuleResolveFilenameOptions,
+    ...rest: any[]
   ): string;
+  _preloadModules(requests?: string[]): void;
 };
 
 interface ModuleResolveFilenameOptions {
@@ -17,15 +20,32 @@ interface ModuleResolveFilenameOptions {
 /**
  * @internal
  */
-export function installCommonjsResolveHook(tsNodeService: Service) {
+export function installCommonjsResolveHookIfNecessary(tsNodeService: Service) {
   const Module = require('module') as ModuleConstructorWithInternals;
   const originalResolveFilename = Module._resolveFilename;
-  Module._resolveFilename = function (
+  const shouldInstallHook = tsNodeService.options.experimentalResolverFeatures;
+  if (shouldInstallHook) {
+    Module._resolveFilename = _resolveFilename;
+  }
+  function _resolveFilename(
+    this: any,
     request: string,
     parent?: Module,
     isMain?: boolean,
-    options?: ModuleResolveFilenameOptions
+    options?: ModuleResolveFilenameOptions,
+    ...rest: any[]
   ): string {
+    if (!tsNodeService.enabled())
+      return originalResolveFilename.call(
+        this,
+        request,
+        parent,
+        isMain,
+        options,
+        ...rest
+      );
+
+    // #region path-mapping
     // Note: [SYNC-PATH-MAPPING] keep this logic synced with the corresponding ESM implementation.
     let candidateSpecifiers: string[] = [request];
     const attemptPathMapping =
@@ -71,7 +91,19 @@ export function installCommonjsResolveHook(tsNodeService: Service) {
         moduleNotFoundErrors
       );
     }
-  };
+    // #endregion
+
+    // This is a stub to support other pull requests that will be merged in the near future
+    // Right now, it does nothing.
+    return originalResolveFilename.call(
+      this,
+      request,
+      parent,
+      isMain,
+      options,
+      ...rest
+    );
+  }
 }
 
 interface NodeCommonJSModuleNotFoundError extends Error {
