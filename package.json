@@ -21,7 +21,6 @@
     "./register/files": "./register/files.js",
     "./register/transpile-only": "./register/transpile-only.js",
     "./register/type-check": "./register/type-check.js",
-    "./register/try-ts-ext": "./register/try-ts-ext.js",
     "./esm": "./esm.mjs",
     "./esm.mjs": "./esm.mjs",
     "./esm/transpile-only": "./esm/transpile-only.mjs",

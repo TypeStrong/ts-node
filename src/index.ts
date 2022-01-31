@@ -387,12 +387,11 @@ export interface CreateOptions {
   preferTsExts?: boolean;
 
   /**
-   * Attempt to resolve the typescript file when a request with a js extension is provided.
-   * Implies preferTsExts.
+   * Enable experimental resolver features, explained in full here:
+   * TODO link to an issue? or a docs page?
    *
-   * @default false
    */
-  tryTsExt?: boolean;
+  experimentalResolverFeatures?: boolean;
 }
 
 export type ModuleTypes = Record<string, 'cjs' | 'esm' | 'package'>;
@@ -466,7 +465,6 @@ export const DEFAULTS: RegisterOptions = {
   skipProject: yn(env.TS_NODE_SKIP_PROJECT),
   skipIgnore: yn(env.TS_NODE_SKIP_IGNORE),
   preferTsExts: yn(env.TS_NODE_PREFER_TS_EXTS),
-  tryTsExt: yn(env.TS_NODE_TRY_TS_EXT),
   ignoreDiagnostics: split(env.TS_NODE_IGNORE_DIAGNOSTICS),
   transpileOnly: yn(env.TS_NODE_TRANSPILE_ONLY),
   typeCheck: yn(env.TS_NODE_TYPE_CHECK),
