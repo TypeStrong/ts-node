@@ -58,6 +58,7 @@ _Environment variables, where available, are in `ALL_CAPS`_
 - `TS_NODE_HISTORY` Path to history file for REPL <br/>*Default:* `~/.ts_node_repl_history`<br/>
 - `--noExperimentalReplAwait` Disable top-level await in REPL.  Equivalent to node's [`--no-experimental-repl-await`](https://nodejs.org/api/cli.html#cli_no_experimental_repl_await)<br/>*Default:* Enabled if TypeScript version is 3.8 or higher and target is ES2018 or higher.<br/>*Environment:* `TS_NODE_EXPERIMENTAL_REPL_AWAIT` set `false` to disable
 - `experimentalResolverFeatures` Enable experimental features that re-map imports and require calls to support: `baseUrl`, `paths`, `rootDirs`, `.js` to `.ts` file extension mappings, `outDir` to `rootDir` mappings for composite projects and monorepos.  For details, see [#1514](https://github.com/TypeStrong/ts-node/issues/1514)<br/>*Default:* `false`<br/>*Can only be specified via `tsconfig.json` or API.*
+- `experimentalPathMapping` Enable TypeScript path mapping in the ESM loader, CommonJS loader, or both. Today, the default is `'esm'` to map paths in the experimental ESM loader but not CommonJS.  In the next major release, the default will become `'both'`.<br/>*Default:* `'esm'`<br/>*Can only be specified via `tsconfig.json` or API.*
 
 ## API
 
