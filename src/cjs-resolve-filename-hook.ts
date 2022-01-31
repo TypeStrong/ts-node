@@ -50,16 +50,21 @@ export function installCommonjsResolveHookIfNecessary(tsNodeService: Service) {
         ...rest
       );
     }
-    if (!tsNodeService.enabled())
-      return defer();
+    if (!tsNodeService.enabled()) return defer();
 
     // Map from emit to source extensions
-    if (!isMain && canReplaceJsWithTsExt(tsNodeService, request, parent?.filename)) {
+    if (
+      !isMain &&
+      canReplaceJsWithTsExt(tsNodeService, request, parent?.filename)
+    ) {
       try {
         return originalResolveFilename.call(
           this,
           request.slice(0, -3),
-          parent, isMain, options, ...rest
+          parent,
+          isMain,
+          options,
+          ...rest
         );
       } catch (e) {
         const mainFile = defer();
@@ -68,7 +73,10 @@ export function installCommonjsResolveHookIfNecessary(tsNodeService: Service) {
           return originalResolveFilename.call(
             this,
             mainFile.slice(0, -3),
-            parent, isMain, options, ...rest
+            parent,
+            isMain,
+            options,
+            ...rest
           );
         }
         return mainFile;
@@ -80,7 +88,11 @@ export function installCommonjsResolveHookIfNecessary(tsNodeService: Service) {
   }
 }
 
-function canReplaceJsWithTsExt(service: Service, request: string, parentPath?: string) {
+function canReplaceJsWithTsExt(
+  service: Service,
+  request: string,
+  parentPath?: string
+) {
   if (!parentPath || service.ignored(parentPath)) return false;
   if (isRelativeSpecifier(request) && request.slice(-3) === '.js') {
     if (!parentPath) return true;

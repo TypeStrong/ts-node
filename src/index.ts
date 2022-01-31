@@ -25,7 +25,10 @@ import {
 } from './module-type-classifier';
 import { createResolverFunctions } from './resolver-functions';
 import type { createEsmHooks as createEsmHooksFn } from './esm';
-import {installCommonjsResolveHookIfNecessary, ModuleConstructorWithInternals} from './cjs-resolve-filename-hook';
+import {
+  installCommonjsResolveHookIfNecessary,
+  ModuleConstructorWithInternals,
+} from './cjs-resolve-filename-hook';
 
 export { TSCommon };
 export {
@@ -139,7 +142,6 @@ export interface ProcessEnv {
   TS_NODE_SKIP_PROJECT?: string;
   TS_NODE_SKIP_IGNORE?: string;
   TS_NODE_PREFER_TS_EXTS?: string;
-  TS_NODE_TRY_TS_EXT?: string;
   TS_NODE_IGNORE_DIAGNOSTICS?: string;
   TS_NODE_TRANSPILE_ONLY?: string;
   TS_NODE_TYPE_CHECK?: string;
