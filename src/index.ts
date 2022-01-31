@@ -25,6 +25,10 @@ import {
 } from './module-type-classifier';
 import { createResolverFunctions } from './resolver-functions';
 import type { createEsmHooks as createEsmHooksFn } from './esm';
+import {
+  installCommonjsResolveHookIfNecessary,
+  ModuleConstructorWithInternals,
+} from './cjs-resolve-filename-hook';
 
 export { TSCommon };
 export {
@@ -379,6 +383,15 @@ export interface RegisterOptions extends CreateOptions {
    * @default false
    */
   preferTsExts?: boolean;
+
+  /**
+   * Enable experimental features that re-map imports and require calls to support:
+   * `baseUrl`, `paths`, `rootDirs`, `.js` to `.ts` file extension mappings,
+   * `outDir` to `rootDir` mappings for composite projects and monorepos.
+   *
+   * For details, see https://github.com/TypeStrong/ts-node/issues/1514
+   */
+  experimentalResolverFeatures?: boolean;
 }
 
 /**
@@ -546,8 +559,12 @@ export function register(
     originalJsHandler
   );
 
+  installCommonjsResolveHookIfNecessary(service);
+
   // Require specified modules before start-up.
-  (Module as any)._preloadModules(service.options.require);
+  (Module as ModuleConstructorWithInternals)._preloadModules(
+    service.options.require
+  );
 
   return service;
 }
