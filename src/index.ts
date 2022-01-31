@@ -16,7 +16,6 @@ import {
   ProjectLocalResolveHelper,
   split,
   yn,
-  isRelativeSpecifier,
 } from './util';
 import { findAndReadConfig, loadCompiler } from './configuration';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
@@ -26,10 +25,7 @@ import {
 } from './module-type-classifier';
 import { createResolverFunctions } from './resolver-functions';
 import type { createEsmHooks as createEsmHooksFn } from './esm';
-import {
-  installCommonjsResolveHookIfNecessary,
-  ModuleConstructorWithInternals,
-} from './cjs-resolve-filename-hook';
+import {installCommonjsResolveHookIfNecessary, ModuleConstructorWithInternals} from './cjs-resolve-filename-hook';
 
 export { TSCommon };
 export {
@@ -570,51 +566,6 @@ export function getExtensions(config: _ts.ParsedCommandLine) {
   if (config.options.allowJs) jsExtensions.push('.js');
   if (config.options.jsx && config.options.allowJs) jsExtensions.push('.jsx');
   return { tsExtensions, jsExtensions };
-}
-
-function canDropJsExt(request: string, parentPath?: string) {
-  if (isRelativeSpecifier(request) && request.slice(-3) === '.js') {
-    if (!parentPath) return true;
-    const paths = require.main?.paths || [];
-    for (let i = 0; i < paths.length; i++) {
-      if (parentPath.startsWith(paths[i])) {
-        return false;
-      }
-    }
-    return true;
-  }
-}
-
-function patchResolveFileName() {
-  const originalResolveFilename = (Module as any)._resolveFilename;
-
-  (Module as any)._resolveFilename = function (...args: any[]) {
-    const [request, parent, isMain] = args;
-    if (isMain) {
-      return originalResolveFilename.apply(this, args);
-    }
-    if (canDropJsExt(request, parent?.path)) {
-      try {
-        return originalResolveFilename.call(
-          this,
-          request.slice(0, -3),
-          ...args.slice(1)
-        );
-      } catch (e) {
-        const mainFile = originalResolveFilename.apply(this, args);
-        if (mainFile.endsWith('.js')) {
-          //re-resolve with configured extension preference
-          return originalResolveFilename.call(
-            this,
-            mainFile.slice(0, -3),
-            ...args.slice(1)
-          );
-        }
-        return mainFile;
-      }
-    }
-    return originalResolveFilename.apply(this, args);
-  };
 }
 
 /**

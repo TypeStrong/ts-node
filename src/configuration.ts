@@ -406,7 +406,6 @@ function filterRecognizedTsConfigTsNodeOptions(jsonObject: any): {
     scope,
     scopeDir,
     moduleTypes,
-    experimentalResolverFeatures,
     swc,
     experimentalResolverFeatures,
     esm,
