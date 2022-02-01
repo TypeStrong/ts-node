@@ -19,14 +19,16 @@ async function main() {
   // Apply this prefix to the names of all ts-node-generated definitions
   const tsnodeDefinitionPrefix = 'tsNode';
   let tsNodeSchema: any = JSON.parse(
-    JSON.stringify(
-      originalTsNodeSchema,
-    ).replace(/#\/definitions\//g, `#/definitions/${ tsnodeDefinitionPrefix }`)
+    JSON.stringify(originalTsNodeSchema).replace(
+      /#\/definitions\//g,
+      `#/definitions/${tsnodeDefinitionPrefix}`
+    )
   );
   tsNodeSchema.definitions = Object.fromEntries(
-    Object.entries(tsNodeSchema.definitions).map(([key, value]) =>
-      [`${ tsnodeDefinitionPrefix }${ key }`, value]
-    )
+    Object.entries(tsNodeSchema.definitions).map(([key, value]) => [
+      `${tsnodeDefinitionPrefix}${key}`,
+      value,
+    ])
   );
   // console.dir(tsNodeSchema, {
   //   depth: Infinity
@@ -67,12 +69,16 @@ async function main() {
           },
         },
       },
-    }
+    },
   };
   // Splice into the allOf array at a spot that looks good.  Does not affect
   // behavior of the schema, but looks nicer if we want to submit as a PR to schemastore.
-  mergedSchema.allOf = mergedSchema.allOf.filter((item: any) => !item.$ref?.includes('tsNode'));
-  mergedSchema.allOf.splice(mergedSchema.allOf.length - 1, 0, { $ref: '#/definitions/tsNodeDefinition' });
+  mergedSchema.allOf = mergedSchema.allOf.filter(
+    (item: any) => !item.$ref?.includes('tsNode')
+  );
+  mergedSchema.allOf.splice(mergedSchema.allOf.length - 1, 0, {
+    $ref: '#/definitions/tsNodeDefinition',
+  });
 
   writeFileSync(
     resolve(__dirname, '../tsconfig.schemastore-schema.json'),
