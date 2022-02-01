@@ -328,18 +328,25 @@ Options:
       process.exit(1);
     }
     let moduleTypes = undefined;
-    if(service.options.moduleTypes) {
+    if (service.options.moduleTypes) {
       // Assumption: this codepath requires CLI invocation, so moduleTypes must have come from a tsconfig, not API.
       const showRelativeTo = dirname(service.configFilePath!);
       moduleTypes = {} as Record<string, string>;
-      for(const [key, value] of Object.entries(service.options.moduleTypes)) {
-        moduleTypes[relative(showRelativeTo, resolve(service.options.optionBasePaths?.moduleTypes!, key))] = value;
+      for (const [key, value] of Object.entries(service.options.moduleTypes)) {
+        moduleTypes[
+          relative(
+            showRelativeTo,
+            resolve(service.options.optionBasePaths?.moduleTypes!, key)
+          )
+        ] = value;
       }
     }
     const json = {
       ['ts-node']: {
         ...service.options,
-        require: service.options.require?.length ? service.options.require : undefined,
+        require: service.options.require?.length
+          ? service.options.require
+          : undefined,
         moduleTypes,
         optionBasePaths: undefined,
         compilerOptions: undefined,
