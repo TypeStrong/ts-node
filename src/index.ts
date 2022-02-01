@@ -349,7 +349,7 @@ export interface CreateOptions {
    * `package` overrides either of the above to default behavior, which obeys package.json "type" and
    * tsconfig.json "module" options.
    */
-  moduleTypes?: Record<string, 'cjs' | 'esm' | 'package'>;
+  moduleTypes?: ModuleTypes;
   /**
    * @internal
    * Set by our configuration loader whenever a config file contains options that
@@ -365,6 +365,8 @@ export interface CreateOptions {
    */
   tsTrace?: (str: string) => void;
 }
+
+type ModuleTypes = Record<string, 'cjs' | 'esm' | 'package'>;
 
 /** @internal */
 export interface OptionBasePaths {
