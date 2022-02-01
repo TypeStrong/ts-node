@@ -323,7 +323,7 @@ Options:
     const ts = service.ts as any as TSInternal;
     if (typeof ts.convertToTSConfig !== 'function') {
       console.error(
-        'Error: --show-config requires a typescript versions >=3.2 that support --showConfig'
+        'Error: --showConfig requires a typescript versions >=3.2 that support --showConfig'
       );
       process.exit(1);
     }
