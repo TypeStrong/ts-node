@@ -477,6 +477,8 @@ export interface Service {
   /** @internal */
   [TS_NODE_SERVICE_BRAND]: true;
   ts: TSCommon;
+  /** @internal */
+  compilerPath: string;
   config: _ts.ParsedCommandLine;
   options: RegisterOptions;
   enabled(enabled?: boolean): boolean;
@@ -1340,6 +1342,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
   return {
     [TS_NODE_SERVICE_BRAND]: true,
     ts,
+    compilerPath: compiler,
     config,
     compile,
     getTypeInfo,
