@@ -937,7 +937,7 @@ test.suite('ts-node', (test) => {
           `${CMD_TS_NODE_WITH_PROJECT_FLAG} --showConfig`
         );
         expect(err).not.toBe(null);
-        expect(stderr).toMatch('Error: --show-config requires');
+        expect(stderr).toMatch('Error: --showConfig requires');
       });
     }
 
