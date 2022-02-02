@@ -312,10 +312,18 @@ Options:
   stdinStuff?.repl.setService(service);
 
   // Output project information.
-  if (version >= 2) {
+  if (version === 2) {
     console.log(`ts-node v${VERSION}`);
     console.log(`node ${process.version}`);
     console.log(`compiler v${service.ts.version}`);
+    process.exit(0);
+  }
+  if (version >= 3) {
+    console.log(`ts-node v${VERSION} ${dirname(__dirname)}`);
+    console.log(`node ${process.version}`);
+    console.log(
+      `compiler v${service.ts.version} ${service.compilerPath ?? ''}`
+    );
     process.exit(0);
   }
 
