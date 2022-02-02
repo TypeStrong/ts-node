@@ -889,7 +889,7 @@ test.suite('ts-node', (test) => {
     });
 
     if (semver.gte(ts.version, '3.2.0')) {
-      test('--show-config should log resolved configuration', async (t) => {
+      test('--showConfig should log resolved configuration', async (t) => {
         function native(path: string) {
           return path.replace(/\/|\\/g, pathSep);
         }
@@ -908,7 +908,6 @@ test.suite('ts-node', (test) => {
                 cwd: native(`${ROOT_DIR}/tests`),
                 projectSearchDir: native(`${ROOT_DIR}/tests`),
                 project: native(`${ROOT_DIR}/tests/tsconfig.json`),
-                require: [],
               },
               compilerOptions: {
                 target: 'es6',
@@ -938,7 +937,7 @@ test.suite('ts-node', (test) => {
           `${CMD_TS_NODE_WITH_PROJECT_FLAG} --showConfig`
         );
         expect(err).not.toBe(null);
-        expect(stderr).toMatch('Error: --show-config requires');
+        expect(stderr).toMatch('Error: --showConfig requires');
       });
     }
 
