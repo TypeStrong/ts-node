@@ -265,6 +265,8 @@ export interface CreateOptions {
    * Transpile with swc instead of the TypeScript compiler, and skip typechecking.
    *
    * Equivalent to setting both `transpileOnly: true` and `transpiler: 'ts-node/transpilers/swc'`
+   *
+   * For complete instructions: https://typestrong.org/ts-node/docs/transpilers
    */
   swc?: boolean;
   /**
