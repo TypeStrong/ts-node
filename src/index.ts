@@ -462,9 +462,15 @@ export const DEFAULTS: RegisterOptions = {
  */
 export class TSError extends BaseError {
   name = 'TSError';
+  diagnosticText!: string;
 
-  constructor(public diagnosticText: string, public diagnosticCodes: number[]) {
+  constructor(diagnosticText: string, public diagnosticCodes: number[]) {
     super(`⨯ Unable to compile TypeScript:\n${diagnosticText}`);
+    Object.defineProperty(this, 'diagnosticText', {
+      configurable: true,
+      writable: true,
+      value: diagnosticText
+    });
   }
 
   /**
