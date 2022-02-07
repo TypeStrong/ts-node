@@ -80,6 +80,10 @@ export namespace NodeLoaderHooksAPI2 {
     format: NodeLoaderHooksFormat;
     source: string | Buffer | undefined;
   }>;
+  export type NodeImportConditions = unknown;
+  export interface NodeImportAssertions {
+    type?: 'json';
+  }
 }
 
 export type NodeLoaderHooksFormat =
@@ -89,11 +93,6 @@ export type NodeLoaderHooksFormat =
   | 'json'
   | 'module'
   | 'wasm';
-
-export type NodeImportConditions = unknown;
-export interface NodeImportAssertions {
-  type?: 'json';
-}
 
 /** @internal */
 export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
@@ -173,7 +172,7 @@ export function createEsmHooks(tsNodeService: Service) {
     url: string,
     context: {
       format: NodeLoaderHooksFormat | null | undefined;
-      importAssertions?: NodeImportAssertions;
+      importAssertions?: NodeLoaderHooksAPI2.NodeImportAssertions;
     },
     defaultLoad: typeof load
   ): Promise<{

@@ -371,7 +371,7 @@ export interface CreateOptions {
   tsTrace?: (str: string) => void;
 }
 
-type ModuleTypes = Record<string, 'cjs' | 'esm' | 'package'>;
+export type ModuleTypes = Record<string, 'cjs' | 'esm' | 'package'>;
 
 /** @internal */
 export interface OptionBasePaths {
