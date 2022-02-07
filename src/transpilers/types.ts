@@ -17,7 +17,10 @@ export type TranspilerFactory = (
 export interface CreateTranspilerOptions {
   // TODO this is confusing because its only a partial Service.  Rename?
   // Careful: must avoid stripInternal breakage by guarding with Extract<>
-  service: Pick<Service, Extract<'config' | 'options' | 'projectLocalResolveHelper', keyof Service>>;
+  service: Pick<
+    Service,
+    Extract<'config' | 'options' | 'projectLocalResolveHelper', keyof Service>
+  >;
 }
 export interface Transpiler {
   // TODOs

@@ -122,20 +122,32 @@ export function attemptRequireWithV8CompileCache(
  * @internal
  */
 export function createProjectLocalResolveHelper(localDirectory: string) {
-  return function projectLocalResolveHelper(specifier: string, fallbackToTsNodeRelative: boolean) {
+  return function projectLocalResolveHelper(
+    specifier: string,
+    fallbackToTsNodeRelative: boolean
+  ) {
     return require.resolve(specifier, {
-      paths: fallbackToTsNodeRelative ? [localDirectory, __dirname] : [localDirectory]
+      paths: fallbackToTsNodeRelative
+        ? [localDirectory, __dirname]
+        : [localDirectory],
     });
-  }
+  };
 }
 /** @internal */
-export type ProjectLocalResolveHelper = ReturnType<typeof createProjectLocalResolveHelper>;
+export type ProjectLocalResolveHelper = ReturnType<
+  typeof createProjectLocalResolveHelper
+>;
 
 /**
  * Used as a reminder of all the factors we must consider when finding project-local dependencies and when a config file
  * on disk may or may not exist.
  * @internal
  */
-export function getBasePathForProjectLocalDependencyResolution(configFilePath: string | undefined, projectSearchDirOption: string | undefined, projectOption: string | undefined, cwdOption: string) {
+export function getBasePathForProjectLocalDependencyResolution(
+  configFilePath: string | undefined,
+  projectSearchDirOption: string | undefined,
+  projectOption: string | undefined,
+  cwdOption: string
+) {
   return configFilePath ?? projectSearchDirOption ?? projectOption ?? cwdOption;
 }

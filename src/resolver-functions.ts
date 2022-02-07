@@ -14,8 +14,14 @@ export function createResolverFunctions(kwargs: {
   config: _ts.ParsedCommandLine;
   projectLocalResolveHelper: ProjectLocalResolveHelper;
 }) {
-  const { host, ts, config, cwd, getCanonicalFileName, projectLocalResolveHelper } =
-    kwargs;
+  const {
+    host,
+    ts,
+    config,
+    cwd,
+    getCanonicalFileName,
+    projectLocalResolveHelper,
+  } = kwargs;
   const moduleResolutionCache = ts.createModuleResolutionCache(
     cwd,
     getCanonicalFileName,
@@ -137,7 +143,10 @@ export function createResolverFunctions(kwargs: {
           // Resolve @types/node relative to project first, then __dirname (copy logic from elsewhere / refactor into reusable function)
           let typesNodePackageJsonPath: string | undefined;
           try {
-            typesNodePackageJsonPath = projectLocalResolveHelper('@types/node/package.json', true);
+            typesNodePackageJsonPath = projectLocalResolveHelper(
+              '@types/node/package.json',
+              true
+            );
           } catch {} // gracefully do nothing when @types/node is not installed for any reason
           if (typesNodePackageJsonPath) {
             const typeRoots = [resolve(typesNodePackageJsonPath, '../..')];

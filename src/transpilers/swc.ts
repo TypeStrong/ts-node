@@ -21,7 +21,10 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   // Load swc compiler
   let swcInstance: typeof swcWasm;
   if (typeof swc === 'string') {
-    swcInstance = require(projectLocalResolveHelper(swc, true)) as typeof swcWasm;
+    swcInstance = require(projectLocalResolveHelper(
+      swc,
+      true
+    )) as typeof swcWasm;
   } else if (swc == null) {
     let swcResolved;
     try {

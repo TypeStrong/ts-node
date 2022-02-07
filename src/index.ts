@@ -596,7 +596,8 @@ export function create(rawOptions: CreateOptions = {}): Service {
    * be changed by the tsconfig, so we have to do this twice.
    */
   function loadCompiler(name: string | undefined, relativeToPath: string) {
-    const projectLocalResolveHelper = createProjectLocalResolveHelper(relativeToPath);
+    const projectLocalResolveHelper =
+      createProjectLocalResolveHelper(relativeToPath);
     const compiler = projectLocalResolveHelper(name || 'typescript', true);
     const ts: typeof _ts = attemptRequireWithV8CompileCache(require, compiler);
     return { compiler, ts, projectLocalResolveHelper };
@@ -605,7 +606,12 @@ export function create(rawOptions: CreateOptions = {}): Service {
   // Compute minimum options to read the config file.
   let { compiler, ts, projectLocalResolveHelper } = loadCompiler(
     compilerName,
-    getBasePathForProjectLocalDependencyResolution(undefined, rawOptions.projectSearchDir, rawOptions.project, cwd)
+    getBasePathForProjectLocalDependencyResolution(
+      undefined,
+      rawOptions.projectSearchDir,
+      rawOptions.project,
+      cwd
+    )
   );
 
   // Read config file and merge new options between env and CLI options.
@@ -627,8 +633,15 @@ export function create(rawOptions: CreateOptions = {}): Service {
   // Compiler is loaded relative to tsconfig.json, so tsconfig discovery may cause us to load a
   // different compiler than we did above, even if the name has not changed.
   if (configFilePath) {
-    ({ compiler, ts, projectLocalResolveHelper } = loadCompiler(options.compiler,
-      getBasePathForProjectLocalDependencyResolution(configFilePath, rawOptions.projectSearchDir, rawOptions.project, cwd)));
+    ({ compiler, ts, projectLocalResolveHelper } = loadCompiler(
+      options.compiler,
+      getBasePathForProjectLocalDependencyResolution(
+        configFilePath,
+        rawOptions.projectSearchDir,
+        rawOptions.project,
+        cwd
+      )
+    ));
   }
 
   // Experimental REPL await is not compatible targets lower than ES2018
