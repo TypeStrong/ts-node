@@ -469,7 +469,7 @@ export class TSError extends BaseError {
     Object.defineProperty(this, 'diagnosticText', {
       configurable: true,
       writable: true,
-      value: diagnosticText
+      value: diagnosticText,
     });
   }
 
