@@ -79,6 +79,14 @@ test.suite('ts-node', (test) => {
     testsDirRequire.resolve('ts-node/node16/tsconfig.json');
   });
 
+  test('should not load typescript outside of loadConfig', async () => {
+    const { err, stdout } = await exec(
+      `node -e "require('ts-node'); console.dir(Object.keys(require.cache).filter(k => k.includes('node_modules/typescript')).length)"`
+    );
+    expect(err).toBe(null);
+    expect(stdout).toBe('0\n');
+  });
+
   test.suite('cli', (test) => {
     test('should execute cli', async () => {
       const { err, stdout } = await exec(
