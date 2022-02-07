@@ -113,3 +113,29 @@ export function attemptRequireWithV8CompileCache(
     return requireFn(specifier);
   }
 }
+
+/**
+ * Helper to discover dependencies relative to a user's project, optionally
+ * falling back to relative to ts-node.  This supports global installations of
+ * ts-node, for example where someone does `#!/usr/bin/env -S ts-node --swc` and
+ * we need to fallback to a global install of @swc/core
+ * @internal
+ */
+export function createProjectLocalResolveHelper(localDirectory: string) {
+  return function projectLocalResolveHelper(specifier: string, fallbackToTsNodeRelative: boolean) {
+    return require.resolve(specifier, {
+      paths: fallbackToTsNodeRelative ? [localDirectory, __dirname] : [localDirectory]
+    });
+  }
+}
+/** @internal */
+export type ProjectLocalResolveHelper = ReturnType<typeof createProjectLocalResolveHelper>;
+
+/**
+ * Used as a reminder of all the factors we must consider when finding project-local dependencies and when a config file
+ * on disk may or may not exist.
+ * @internal
+ */
+export function getBasePathForProjectLocalDependencyResolution(configFilePath: string | undefined, projectSearchDirOption: string | undefined, projectOption: string | undefined, cwdOption: string) {
+  return configFilePath ?? projectSearchDirOption ?? projectOption ?? cwdOption;
+}

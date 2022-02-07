@@ -10,7 +10,7 @@ import {
 import type { TSInternal } from './ts-compiler-types';
 import { createTsInternals } from './ts-internals';
 import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs';
-import { assign, createRequire } from './util';
+import { assign, createProjectLocalResolveHelper } from './util';
 
 /**
  * TypeScript compiler option values required by `ts-node` which cannot be overridden.
@@ -172,9 +172,9 @@ export function readConfig(
     // Some options are relative to the config file, so must be converted to absolute paths here
     if (options.require) {
       // Modules are found relative to the tsconfig file, not the `dir` option
-      const tsconfigRelativeRequire = createRequire(configPath);
+      const tsconfigRelativeResolver = createProjectLocalResolveHelper(configPath);
       options.require = options.require.map((path: string) =>
-        tsconfigRelativeRequire.resolve(path)
+        tsconfigRelativeResolver(path, false)
       );
     }
     if (options.scopeDir) {
@@ -184,6 +184,12 @@ export function readConfig(
     // Downstream code uses the basePath; we do not do that here.
     if (options.moduleTypes) {
       optionBasePaths.moduleTypes = basePath;
+    }
+    if (options.transpiler != null) {
+      optionBasePaths.transpiler = basePath;
+    }
+    if (options.compiler != null) {
+      optionBasePaths.compiler = basePath;
     }
 
     assign(tsNodeOptionsFromTsconfig, options);
