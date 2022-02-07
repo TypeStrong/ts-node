@@ -1,6 +1,6 @@
 {
   "name": "ts-node",
-  "version": "10.4.0",
+  "version": "10.5.0",
   "description": "TypeScript execution environment and REPL for node.js, with source map support",
   "main": "dist/index.js",
   "exports": {
