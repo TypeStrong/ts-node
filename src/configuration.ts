@@ -172,8 +172,9 @@ export function readConfig(
     // Some options are relative to the config file, so must be converted to absolute paths here
     if (options.require) {
       // Modules are found relative to the tsconfig file, not the `dir` option
-      const tsconfigRelativeResolver =
-        createProjectLocalResolveHelper(dirname(configPath));
+      const tsconfigRelativeResolver = createProjectLocalResolveHelper(
+        dirname(configPath)
+      );
       options.require = options.require.map((path: string) =>
         tsconfigRelativeResolver(path, false)
       );

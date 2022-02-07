@@ -150,7 +150,7 @@ export function getBasePathForProjectLocalDependencyResolution(
   projectOption: string | undefined,
   cwdOption: string
 ) {
-  if(configFilePath != null) return dirname(configFilePath);
+  if (configFilePath != null) return dirname(configFilePath);
   return projectSearchDirOption ?? projectOption ?? cwdOption;
   // TODO technically breaks if projectOption is path to a file, not a directory,
   // and we attempt to resolve relative specifiers.  By the time we resolve relative specifiers,
