@@ -1259,7 +1259,7 @@ test.suite('ts-node', (test) => {
 
 test('Falls back to transpileOnly when ts compiler returns emitSkipped', async () => {
   const { err, stdout } = await exec(
-    `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} ./outside-rootDir/foo.js`,
+    `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --project tsconfig.json ./outside-rootDir/foo.js`,
     {
       cwd: join(TEST_DIR, 'emit-skipped-fallback'),
     }
