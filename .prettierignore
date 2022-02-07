@@ -11,3 +11,4 @@ tests/throw error.ts
 tests/throw error react tsx.tsx
 tests/esm/throw error.ts
 tests/legacy-source-map-support-interop/index.ts
+tests/main-realpath/symlink/symlink.tsx
