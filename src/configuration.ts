@@ -173,7 +173,7 @@ export function readConfig(
     if (options.require) {
       // Modules are found relative to the tsconfig file, not the `dir` option
       const tsconfigRelativeResolver =
-        createProjectLocalResolveHelper(configPath);
+        createProjectLocalResolveHelper(dirname(configPath));
       options.require = options.require.map((path: string) =>
         tsconfigRelativeResolver(path, false)
       );

@@ -4,6 +4,7 @@ import {
 } from 'module';
 import type _createRequire from 'create-require';
 import * as ynModule from 'yn';
+import { dirname } from 'path';
 
 /** @internal */
 export const createRequire =
@@ -149,5 +150,9 @@ export function getBasePathForProjectLocalDependencyResolution(
   projectOption: string | undefined,
   cwdOption: string
 ) {
-  return configFilePath ?? projectSearchDirOption ?? projectOption ?? cwdOption;
+  if(configFilePath != null) return dirname(configFilePath);
+  return projectSearchDirOption ?? projectOption ?? cwdOption;
+  // TODO technically breaks if projectOption is path to a file, not a directory,
+  // and we attempt to resolve relative specifiers.  By the time we resolve relative specifiers,
+  // should have configFilePath, so not reach this codepath.
 }
