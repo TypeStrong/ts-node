@@ -742,7 +742,6 @@ export function create(rawOptions: CreateOptions = {}): Service {
       typeof transpiler === 'string' ? transpiler : transpiler[0];
     const transpilerOptions =
       typeof transpiler === 'string' ? {} : transpiler[1] ?? {};
-    // TODO mimic fixed resolution logic from loadCompiler main (I forget what this comment is talking about)
     const transpilerPath = projectLocalResolveHelper(transpilerName, true);
     const transpilerFactory: TranspilerFactory = require(transpilerPath).create;
     customTranspiler = transpilerFactory({

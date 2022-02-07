@@ -137,7 +137,6 @@ export function createResolverFunctions(kwargs: {
           // Resolve @types/node relative to project first, then __dirname (copy logic from elsewhere / refactor into reusable function)
           let typesNodePackageJsonPath: string | undefined;
           try {
-            // TODO unify this require.resolve with generic fallback helper?
             typesNodePackageJsonPath = projectLocalResolveHelper('@types/node/package.json', true);
           } catch {} // gracefully do nothing when @types/node is not installed for any reason
           if (typesNodePackageJsonPath) {
