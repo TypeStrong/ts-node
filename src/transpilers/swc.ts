@@ -15,23 +15,26 @@ export interface SwcTranspilerOptions extends CreateTranspilerOptions {
 export function create(createOptions: SwcTranspilerOptions): Transpiler {
   const {
     swc,
-    service: { config },
+    service: { config, projectLocalResolveHelper },
   } = createOptions;
 
   // Load swc compiler
   let swcInstance: typeof swcWasm;
   if (typeof swc === 'string') {
-    swcInstance = require(swc) as typeof swcWasm;
+    swcInstance = require(projectLocalResolveHelper(
+      swc,
+      true
+    )) as typeof swcWasm;
   } else if (swc == null) {
     let swcResolved;
     try {
-      swcResolved = require.resolve('@swc/core');
+      swcResolved = projectLocalResolveHelper('@swc/core', true);
     } catch (e) {
       try {
-        swcResolved = require.resolve('@swc/wasm');
+        swcResolved = projectLocalResolveHelper('@swc/wasm', true);
       } catch (e) {
         throw new Error(
-          'swc compiler requires either @swc/core or @swc/wasm to be installed as dependencies'
+          'swc compiler requires either @swc/core or @swc/wasm to be installed as a dependency.  See https://typestrong.org/ts-node/docs/transpilers'
         );
       }
     }
