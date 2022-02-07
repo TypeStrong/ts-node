@@ -1016,7 +1016,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
         if (diagnosticList.length) reportTSError(diagnosticList);
 
         if (output.emitSkipped) {
-          throw new TypeError(`${relative(cwd, fileName)}: Emit skipped`);
+          return [undefined, undefined, true];
         }
 
         // Throw an error when requiring `.d.ts` files.
@@ -1029,7 +1029,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
           );
         }
 
-        return [output.outputFiles[1].text, output.outputFiles[0].text];
+        return [output.outputFiles[1].text, output.outputFiles[0].text, false];
       };
 
       getTypeInfo = (code: string, fileName: string, position: number) => {
@@ -1159,7 +1159,8 @@ export function create(rawOptions: CreateOptions = {}): Service {
       };
 
       getOutput = (code: string, fileName: string) => {
-        const output: [string, string] = ['', ''];
+        let outText = '';
+        let outMap = '';
 
         updateMemoryCache(code, fileName);
 
@@ -1179,9 +1180,9 @@ export function create(rawOptions: CreateOptions = {}): Service {
           sourceFile,
           (path, file, writeByteOrderMark) => {
             if (path.endsWith('.map')) {
-              output[1] = file;
+              outMap = file;
             } else {
-              output[0] = file;
+              outText = file;
             }
 
             if (options.emit) sys.writeFile(path, file, writeByteOrderMark);
@@ -1192,11 +1193,11 @@ export function create(rawOptions: CreateOptions = {}): Service {
         );
 
         if (result.emitSkipped) {
-          throw new TypeError(`${relative(cwd, fileName)}: Emit skipped`);
+          return [undefined, undefined, true];
         }
 
         // Throw an error when requiring files that cannot be compiled.
-        if (output[0] === '') {
+        if (outText === '') {
           if (program.isSourceFileFromExternalLibrary(sourceFile)) {
             throw new TypeError(
               `Unable to compile file from external library: ${relative(
@@ -1214,7 +1215,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
           );
         }
 
-        return output;
+        return [outText, outMap, false];
       };
 
       getTypeInfo = (code: string, fileName: string, position: number) => {
@@ -1291,7 +1292,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
       );
       if (diagnosticList.length) reportTSError(diagnosticList);
 
-      return [result.outputText, result.sourceMapText as string];
+      return [result.outputText, result.sourceMapText as string, false];
     };
   }
 
@@ -1308,6 +1309,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
       : createTranspileOnlyGetOutputFunction(
           ts.ModuleKind.ES2020 || ts.ModuleKind.ES2015
         );
+  const getOutputTranspileOnly = createTranspileOnlyGetOutputFunction();
 
   // Create a simple TypeScript compiler proxy.
   function compile(code: string, fileName: string, lineOffset = 0) {
@@ -1315,17 +1317,19 @@ export function create(rawOptions: CreateOptions = {}): Service {
     const classification =
       moduleTypeClassifier.classifyModule(normalizedFileName);
     // Must always call normal getOutput to throw typechecking errors
-    let [value, sourceMap] = getOutput(code, normalizedFileName);
+    let [value, sourceMap, emitSkipped] = getOutput(code, normalizedFileName);
     // If module classification contradicts the above, call the relevant transpiler
     if (classification.moduleType === 'cjs' && getOutputForceCommonJS) {
       [value, sourceMap] = getOutputForceCommonJS(code, normalizedFileName);
     } else if (classification.moduleType === 'esm' && getOutputForceESM) {
       [value, sourceMap] = getOutputForceESM(code, normalizedFileName);
+    } else if (emitSkipped) {
+      [value, sourceMap] = getOutputTranspileOnly(code, normalizedFileName);
     }
     const output = updateOutput(
-      value,
+      value!,
       normalizedFileName,
-      sourceMap,
+      sourceMap!,
       getExtension
     );
     outputCache.set(normalizedFileName, { content: output });
@@ -1456,7 +1460,7 @@ function registerExtension(
 /**
  * Internal source output.
  */
-type SourceOutput = [string, string];
+type SourceOutput = [string, string, false] | [undefined, undefined, true];
 
 /**
  * Update the output remapping the source map.
