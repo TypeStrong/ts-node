@@ -117,7 +117,23 @@ if (nodeSupportsImportAssertions) {
             'parentURL',
           ]);
         } else if (json.loadContextKeys) {
-          expect(json.loadContextKeys).toEqual(['format', 'importAssertions']);
+          try {
+            expect(json.loadContextKeys).toEqual([
+              'format',
+              'importAssertions',
+            ]);
+          } catch (e) {
+            // HACK for https://github.com/TypeStrong/ts-node/issues/1641
+            if (process.version.includes('nightly')) {
+              expect(json.loadContextKeys).toEqual([
+                'format',
+                'importAssertions',
+                'parentURL',
+              ]);
+            } else {
+              throw e;
+            }
+          }
         } else {
           throw new Error('Unexpected stdout in test.');
         }
