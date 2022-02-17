@@ -19,7 +19,7 @@ module.exports = {
     //   //isCloseable: false, // Defaults to `true`.
     // },
     colorMode: {
-      respectPrefersColorScheme: true
+      respectPrefersColorScheme: true,
     },
     navbar: {
       title: 'ts-node',
@@ -61,6 +61,20 @@ module.exports = {
         },
       ],
     },
+    metadata: [
+      {
+        name: 'msapplication-TileColor',
+        content: '#2b5797',
+      },
+      {
+        name: 'msapplication-config',
+        content: '/ts-node/img/favicon/browserconfig.xml',
+      },
+      {
+        name: 'theme-color',
+        content: '#ffffff',
+      },
+    ],
     // footer: {
     //   style: 'dark',
     //   links: [
@@ -124,9 +138,9 @@ module.exports = {
       {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl:
-            'https://github.com/TypeStrong/ts-node/edit/docs/website/',
+          editUrl: 'https://github.com/TypeStrong/ts-node/edit/docs/website/',
         },
+        blog: false,
         // blog: {
         //   showReadingTime: true,
         //   // Please change this to your repo.
@@ -138,5 +152,39 @@ module.exports = {
         },
       },
     ],
+  ],
+  // Misleading API, probably will be refactored in Docusaurus, but this is
+  // simply a list of <link> tags
+  stylesheets: [
+    {
+      rel: 'apple-touch-icon',
+      sizes: '180x180',
+      href: '/ts-node/img/favicon/apple-touch-icon.png',
+    },
+    {
+      rel: 'icon',
+      type: 'image/png',
+      sizes: '32x32',
+      href: '/ts-node/img/favicon/favicon-32x32.png',
+    },
+    {
+      rel: 'icon',
+      type: 'image/png',
+      sizes: '16x16',
+      href: '/ts-node/img/favicon/favicon-16x16.png',
+    },
+    {
+      rel: 'manifest',
+      href: '/ts-node/img/favicon/site.webmanifest',
+    },
+    {
+      rel: 'mask-icon',
+      href: '/ts-node/img/favicon/safari-pinned-tab.svg',
+      color: '#5bbad5',
+    },
+    {
+      rel: 'shortcut icon',
+      href: '/ts-node/img/favicon/favicon.ico',
+    },
   ],
 };

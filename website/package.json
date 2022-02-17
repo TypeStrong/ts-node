@@ -13,9 +13,9 @@
     "build-readme": "./scripts/build-readme.mjs"
   },
   "dependencies": {
-    "@docusaurus/core": "2.0.0-alpha.75",
-    "@docusaurus/preset-classic": "2.0.0-alpha.75",
-    "@docusaurus/theme-search-algolia": "^2.0.0-alpha.75",
+    "@docusaurus/core": "2.0.0-beta.15",
+    "@docusaurus/preset-classic": "2.0.0-beta.15",
+    "@docusaurus/theme-search-algolia": "2.0.0-beta.15",
     "@mdx-js/react": "^1.6.21",
     "@types/js-yaml": "^4.0.0",
     "clsx": "^1.1.1",
