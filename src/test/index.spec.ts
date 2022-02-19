@@ -1277,7 +1277,7 @@ test('Detect when typescript adds new ModuleKind values; flag as a failure so we
       expect(ts.ModuleKind[name]).toBeUndefined();
     } else {
       expect(ts.ModuleKind[value]).toBe(name);
-      foundKeys.push(name, `${ value }`);
+      foundKeys.push(name, `${value}`);
     }
   }
   check(0, 'None', true);
