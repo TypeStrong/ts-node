@@ -7,7 +7,7 @@ import type { ProjectLocalResolveHelper } from './util';
  * In a factory because these are shared across both CompilerHost and LanguageService codepaths
  */
 export function createResolverFunctions(kwargs: {
-  ts: TSCommon & TSInternal;
+  ts: TSCommon;
   host: TSCommon.ModuleResolutionHost;
   cwd: string;
   getCanonicalFileName: (filename: string) => string;
@@ -140,7 +140,10 @@ export function createResolverFunctions(kwargs: {
         const nameIsString = typeof typeDirectiveName === 'string';
         const mode = nameIsString
           ? undefined
-          : ts.getModeForFileReference!(typeDirectiveName, containingFileMode);
+          : (ts as any as TSInternal).getModeForFileReference!(
+              typeDirectiveName,
+              containingFileMode
+            );
         const strName = nameIsString
           ? typeDirectiveName
           : typeDirectiveName.fileName.toLowerCase();

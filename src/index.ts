@@ -605,7 +605,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     const projectLocalResolveHelper =
       createProjectLocalResolveHelper(relativeToPath);
     const compiler = projectLocalResolveHelper(name || 'typescript', true);
-    const ts: typeof _ts = attemptRequireWithV8CompileCache(require, compiler);
+    const ts: TSCommon = attemptRequireWithV8CompileCache(require, compiler);
     return { compiler, ts, projectLocalResolveHelper };
   }
 
