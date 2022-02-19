@@ -77,7 +77,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
     }
     swcTarget = swcTargets[swcTargetIndex];
     const keepClassNames = target! >= /* ts.ScriptTarget.ES2016 */ 3;
-    // swc only supports these 4x module options
+    // swc only supports these 4x module options [MUST_UPDATE_FOR_NEW_MODULEKIND]
     const moduleType =
       module === ModuleKind.CommonJS
         ? 'commonjs'

@@ -1307,13 +1307,16 @@ export function create(rawOptions: CreateOptions = {}): Service {
     config.options.module === ts.ModuleKind.CommonJS
       ? undefined
       : createTranspileOnlyGetOutputFunction(ts.ModuleKind.CommonJS);
+  // [MUST_UPDATE_FOR_NEW_MODULEKIND]
   const getOutputForceESM =
     config.options.module === ts.ModuleKind.ES2015 ||
-    config.options.module === ts.ModuleKind.ES2020 ||
+    (ts.ModuleKind.ES2020 && config.options.module === ts.ModuleKind.ES2020) ||
+    (ts.ModuleKind.ES2022 && config.options.module === ts.ModuleKind.ES2022) ||
     config.options.module === ts.ModuleKind.ESNext
       ? undefined
-      : createTranspileOnlyGetOutputFunction(
-          ts.ModuleKind.ES2020 || ts.ModuleKind.ES2015
+      : // [MUST_UPDATE_FOR_NEW_MODULEKIND]
+        createTranspileOnlyGetOutputFunction(
+          ts.ModuleKind.ES2022 || ts.ModuleKind.ES2020 || ts.ModuleKind.ES2015
         );
   const getOutputTranspileOnly = createTranspileOnlyGetOutputFunction();
 
