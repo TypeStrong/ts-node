@@ -751,7 +751,9 @@ export function create(rawOptions: CreateOptions = {}): Service {
       'Transformers function is unavailable in "--transpile-only"'
     );
   }
-  let customTranspiler: Transpiler | undefined = undefined;
+  let createTranspiler:
+    | ((compilerOptions: TSCommon.CompilerOptions) => Transpiler)
+    | undefined;
   if (transpiler) {
     if (!transpileOnly)
       throw new Error(
@@ -762,11 +764,21 @@ export function create(rawOptions: CreateOptions = {}): Service {
     const transpilerOptions =
       typeof transpiler === 'string' ? {} : transpiler[1] ?? {};
     const transpilerPath = projectLocalResolveHelper(transpilerName, true);
-    const transpilerFactory: TranspilerFactory = require(transpilerPath).create;
-    customTranspiler = transpilerFactory({
-      service: { options, config, projectLocalResolveHelper },
-      ...transpilerOptions,
-    });
+    const transpilerFactory = require(transpilerPath)
+      .create as TranspilerFactory;
+    createTranspiler = function (compilerOptions) {
+      return transpilerFactory({
+        service: {
+          options,
+          config: {
+            ...config,
+            options: compilerOptions,
+          },
+          projectLocalResolveHelper,
+        },
+        ...transpilerOptions,
+      });
+    };
   }
 
   /**
@@ -1277,6 +1289,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     const compilerOptions = { ...config.options };
     if (overrideModuleType !== undefined)
       compilerOptions.module = overrideModuleType;
+    let customTranspiler = createTranspiler?.(compilerOptions);
     return (code: string, fileName: string): SourceOutput => {
       let result: _ts.TranspileOutput;
       if (customTranspiler) {
