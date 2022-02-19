@@ -1286,14 +1286,15 @@ test('Detect when typescript adds new ModuleKind values; flag as a failure so we
   check(3, 'UMD', true);
   check(4, 'System', true);
   check(5, 'ES2015', true);
-  check(6, 'ES2020', false);
-  check(7, 'ES2022', false);
   try {
+    check(6, 'ES2020', false);
     check(99, 'ESNext', true);
   } catch {
     // the value changed: is `99` now, but was `6` in TS 2.7
     check(6, 'ESNext', true);
+    expect(ts.ModuleKind[99]).toBeUndefined();
   }
+  check(7, 'ES2022', false);
   check(100, 'Node12', false);
   check(199, 'NodeNext', false);
   const actualKeys = Object.keys(ts.ModuleKind);
