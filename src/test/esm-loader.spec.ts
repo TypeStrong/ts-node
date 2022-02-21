@@ -277,7 +277,22 @@ test.suite('esm', (test) => {
 
     test.suite(
       'Entrypoint resolution falls back to CommonJS resolver and format',
-      (test) => {}
+      (test) => {
+        test('extensionless entrypoint', async (t) => {
+          const { err, stdout } = await exec(
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./esm-loader-entrypoint-cjs-fallback/extensionless-entrypoint`
+          );
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe('Hello world!');
+        });
+        test('relies upon CommonJS resolution', async (t) => {
+          const { err, stdout } = await exec(
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./esm-loader-entrypoint-cjs-fallback/relies-upon-cjs-resolution`
+          );
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe('Hello world!');
+        });
+      }
     );
   });
 

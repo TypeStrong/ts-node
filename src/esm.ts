@@ -168,8 +168,14 @@ export function createEsmHooks(tsNodeService: Service) {
         if (!isProbablyEntrypoint(specifier, context.parentURL))
           throw esmResolverError;
         try {
+          let cjsSpecifier = specifier;
+          // Attempt to convert from ESM file:// to CommonJS path
+          try {
+            if (specifier.startsWith('file://'))
+              cjsSpecifier = fileURLToPath(specifier);
+          } catch {}
           const resolution = pathToFileURL(
-            createRequire(process.cwd()).resolve(specifier)
+            createRequire(process.cwd()).resolve(cjsSpecifier)
           ).toString();
           rememberIsProbablyEntrypoint.add(resolution);
           rememberResolvedViaCommonjsFallback.add(resolution);
