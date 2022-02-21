@@ -751,7 +751,9 @@ export function create(rawOptions: CreateOptions = {}): Service {
       'Transformers function is unavailable in "--transpile-only"'
     );
   }
-  let customTranspiler: Transpiler | undefined = undefined;
+  let createTranspiler:
+    | ((compilerOptions: TSCommon.CompilerOptions) => Transpiler)
+    | undefined;
   if (transpiler) {
     if (!transpileOnly)
       throw new Error(
@@ -762,11 +764,21 @@ export function create(rawOptions: CreateOptions = {}): Service {
     const transpilerOptions =
       typeof transpiler === 'string' ? {} : transpiler[1] ?? {};
     const transpilerPath = projectLocalResolveHelper(transpilerName, true);
-    const transpilerFactory: TranspilerFactory = require(transpilerPath).create;
-    customTranspiler = transpilerFactory({
-      service: { options, config, projectLocalResolveHelper },
-      ...transpilerOptions,
-    });
+    const transpilerFactory = require(transpilerPath)
+      .create as TranspilerFactory;
+    createTranspiler = function (compilerOptions) {
+      return transpilerFactory({
+        service: {
+          options,
+          config: {
+            ...config,
+            options: compilerOptions,
+          },
+          projectLocalResolveHelper,
+        },
+        ...transpilerOptions,
+      });
+    };
   }
 
   /**
@@ -1277,6 +1289,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
     const compilerOptions = { ...config.options };
     if (overrideModuleType !== undefined)
       compilerOptions.module = overrideModuleType;
+    let customTranspiler = createTranspiler?.(compilerOptions);
     return (code: string, fileName: string): SourceOutput => {
       let result: _ts.TranspileOutput;
       if (customTranspiler) {
@@ -1307,13 +1320,16 @@ export function create(rawOptions: CreateOptions = {}): Service {
     config.options.module === ts.ModuleKind.CommonJS
       ? undefined
       : createTranspileOnlyGetOutputFunction(ts.ModuleKind.CommonJS);
+  // [MUST_UPDATE_FOR_NEW_MODULEKIND]
   const getOutputForceESM =
     config.options.module === ts.ModuleKind.ES2015 ||
-    config.options.module === ts.ModuleKind.ES2020 ||
+    (ts.ModuleKind.ES2020 && config.options.module === ts.ModuleKind.ES2020) ||
+    (ts.ModuleKind.ES2022 && config.options.module === ts.ModuleKind.ES2022) ||
     config.options.module === ts.ModuleKind.ESNext
       ? undefined
-      : createTranspileOnlyGetOutputFunction(
-          ts.ModuleKind.ES2020 || ts.ModuleKind.ES2015
+      : // [MUST_UPDATE_FOR_NEW_MODULEKIND]
+        createTranspileOnlyGetOutputFunction(
+          ts.ModuleKind.ES2022 || ts.ModuleKind.ES2020 || ts.ModuleKind.ES2015
         );
   const getOutputTranspileOnly = createTranspileOnlyGetOutputFunction();
 
