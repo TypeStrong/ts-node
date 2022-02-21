@@ -181,15 +181,7 @@ export function createEsmHooks(tsNodeService: Service) {
           rememberResolvedViaCommonjsFallback.add(resolution);
           return { url: resolution, format: 'commonjs' };
         } catch (commonjsResolverError) {
-          throw new Error(
-            `Resolution via the ECMAScript loader failed.\n` +
-              `ts-node guessed that this resolution was likely the entrypoint script, so attempted a fallback to the CommonJS resolver.\n` +
-              `CommonJS resolver threw:\n` +
-              `${
-                (commonjsResolverError as Error)?.message ??
-                commonjsResolverError
-              }`
-          );
+          throw esmResolverError;
         }
       }
     }

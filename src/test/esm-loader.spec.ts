@@ -292,6 +292,13 @@ test.suite('esm', (test) => {
           expect(err).toBe(null);
           expect(stdout.trim()).toBe('Hello world!');
         });
+        test('fails as expected when entrypoint does not exist at all', async (t) => {
+          const { err, stderr } = await exec(
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./esm-loader-entrypoint-cjs-fallback/does-not-exist`
+          );
+          expect(err).toBeDefined();
+          expect(stderr).toContain(`Cannot find module `);
+        });
       }
     );
   });
