@@ -15,6 +15,7 @@ import {
 import { extname } from 'path';
 import * as assert from 'assert';
 import { normalizeSlashes } from './util';
+import { createRequire } from 'module';
 const {
   createResolve,
 } = require('../dist-raw/node-esm-resolve-implementation');
@@ -68,7 +69,7 @@ export namespace NodeLoaderHooksAPI2 {
       parentURL: string;
     },
     defaultResolve: ResolveHook
-  ) => Promise<{ url: string }>;
+  ) => Promise<{ url: string; format?: NodeLoaderHooksFormat }>;
   export type LoadHook = (
     url: string,
     context: {
@@ -123,7 +124,6 @@ export function createEsmHooks(tsNodeService: Service) {
   const hooksAPI: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 = newHooksAPI
     ? { resolve, load, getFormat: undefined, transformSource: undefined }
     : { resolve, getFormat, transformSource, load: undefined };
-  return hooksAPI;
 
   function isFileUrlOrNodeStyleSpecifier(parsed: UrlWithStringQuery) {
     // We only understand file:// URLs, but in node, the specifier can be a node-style `./foo` or `foo`
@@ -131,39 +131,88 @@ export function createEsmHooks(tsNodeService: Service) {
     return protocol === null || protocol === 'file:';
   }
 
+  /**
+   * Named "probably" as a reminder that this is a guess.
+   * node does not explicitly tell us if we're resolving the entrypoint or not.
+   */
+  function isProbablyEntrypoint(specifier: string, parentURL: string) {
+    return parentURL === undefined && specifier.startsWith('file://');
+  }
+  // Side-channel between `resolve()` and `load()` hooks
+  const rememberIsProbablyEntrypoint = new Set();
+  const rememberResolvedViaCommonjsFallback = new Set();
+
   async function resolve(
     specifier: string,
     context: { parentURL: string },
     defaultResolve: typeof resolve
-  ): Promise<{ url: string }> {
+  ): Promise<{ url: string; format?: NodeLoaderHooksFormat }> {
     const defer = async () => {
       const r = await defaultResolve(specifier, context, defaultResolve);
       return r;
     };
+    // See: https://github.com/nodejs/node/discussions/41711
+    // nodejs will likely implement a similar fallback.  Till then, we can do our users a favor and fallback today.
+    async function entrypointFallback(
+      cb: () => ReturnType<typeof resolve>
+    ): ReturnType<typeof resolve> {
+      try {
+        const resolution = await cb();
+        if (
+          resolution?.url &&
+          isProbablyEntrypoint(specifier, context.parentURL)
+        )
+          rememberIsProbablyEntrypoint.add(resolution.url);
+        return resolution;
+      } catch (esmResolverError) {
+        if (!isProbablyEntrypoint(specifier, context.parentURL))
+          throw esmResolverError;
+        try {
+          const resolution = pathToFileURL(
+            createRequire(process.cwd()).resolve(specifier)
+          ).toString();
+          rememberIsProbablyEntrypoint.add(resolution);
+          rememberResolvedViaCommonjsFallback.add(resolution);
+          return { url: resolution, format: 'commonjs' };
+        } catch (commonjsResolverError) {
+          throw new Error(
+            `Resolution via the ECMAScript loader failed.\n` +
+              `ts-node guessed that this resolution was likely the entrypoint script, so attempted a fallback to the CommonJS resolver.\n` +
+              `CommonJS resolver threw:\n` +
+              `${
+                (commonjsResolverError as Error)?.message ??
+                commonjsResolverError
+              }`
+          );
+        }
+      }
+    }
 
     const parsed = parseUrl(specifier);
     const { pathname, protocol, hostname } = parsed;
 
     if (!isFileUrlOrNodeStyleSpecifier(parsed)) {
-      return defer();
+      return entrypointFallback(defer);
     }
 
     if (protocol !== null && protocol !== 'file:') {
-      return defer();
+      return entrypointFallback(defer);
     }
 
     // Malformed file:// URL?  We should always see `null` or `''`
     if (hostname) {
       // TODO file://./foo sets `hostname` to `'.'`.  Perhaps we should special-case this.
-      return defer();
+      return entrypointFallback(defer);
     }
 
     // pathname is the path to be resolved
 
-    return nodeResolveImplementation.defaultResolve(
-      specifier,
-      context,
-      defaultResolve
+    return entrypointFallback(() =>
+      nodeResolveImplementation.defaultResolve(
+        specifier,
+        context,
+        defaultResolve
+      )
     );
   }
 
@@ -230,10 +279,23 @@ export function createEsmHooks(tsNodeService: Service) {
     const defer = (overrideUrl: string = url) =>
       defaultGetFormat(overrideUrl, context, defaultGetFormat);
 
+    // See: https://github.com/nodejs/node/discussions/41711
+    // nodejs will likely implement a similar fallback.  Till then, we can do our users a favor and fallback today.
+    async function entrypointFallback(
+      cb: () => ReturnType<typeof getFormat>
+    ): ReturnType<typeof getFormat> {
+      try {
+        return await cb();
+      } catch (getFormatError) {
+        if (!rememberIsProbablyEntrypoint.has(url)) throw getFormatError;
+        return { format: 'commonjs' };
+      }
+    }
+
     const parsed = parseUrl(url);
 
     if (!isFileUrlOrNodeStyleSpecifier(parsed)) {
-      return defer();
+      return entrypointFallback(defer);
     }
 
     const { pathname } = parsed;
@@ -248,9 +310,11 @@ export function createEsmHooks(tsNodeService: Service) {
     const ext = extname(nativePath);
     let nodeSays: { format: NodeLoaderHooksFormat };
     if (ext !== '.js' && !tsNodeService.ignored(nativePath)) {
-      nodeSays = await defer(formatUrl(pathToFileURL(nativePath + '.js')));
+      nodeSays = await entrypointFallback(() =>
+        defer(formatUrl(pathToFileURL(nativePath + '.js')))
+      );
     } else {
-      nodeSays = await defer();
+      nodeSays = await entrypointFallback(defer);
     }
     // For files compiled by ts-node that node believes are either CJS or ESM, check if we should override that classification
     if (
@@ -300,4 +364,6 @@ export function createEsmHooks(tsNodeService: Service) {
 
     return { source: emittedJs };
   }
+
+  return hooksAPI;
 }

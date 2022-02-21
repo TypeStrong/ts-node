@@ -34,6 +34,7 @@ export const test = createTestInterface({
   beforeEachFunctions: [],
   mustDoSerial: false,
   automaticallyDoSerial: false,
+  automaticallySkip: false,
   separator: ' > ',
   titlePrefix: undefined,
 });
@@ -96,6 +97,11 @@ export interface TestInterface<
 
   runSerially(): void;
 
+  /** Skip tests unless this condition is met */
+  skipUnless(conditional: boolean): void;
+  /** If conditional is true, run tests, otherwise skip them */
+  runIf(conditional: boolean): void;
+
   // TODO add teardownEach
 }
 function createTestInterface<Context>(opts: {
@@ -103,11 +109,12 @@ function createTestInterface<Context>(opts: {
   separator: string | undefined;
   mustDoSerial: boolean;
   automaticallyDoSerial: boolean;
+  automaticallySkip: boolean;
   beforeEachFunctions: Function[];
 }): TestInterface<Context> {
   const { titlePrefix, separator = ' > ' } = opts;
   const beforeEachFunctions = [...(opts.beforeEachFunctions ?? [])];
-  let { mustDoSerial, automaticallyDoSerial } = opts;
+  let { mustDoSerial, automaticallyDoSerial, automaticallySkip } = opts;
   let hookDeclared = false;
   let suiteOrTestDeclared = false;
   function computeTitle(title: string | undefined) {
@@ -142,13 +149,20 @@ function createTestInterface<Context>(opts: {
     }
     hookDeclared = true;
   }
+  function assertOrderingForDeclaringSkipUnless() {
+    if (suiteOrTestDeclared) {
+      throw new Error(
+        'skipUnless or runIf must be declared before declaring sub-suites or tests'
+      );
+    }
+  }
   /**
    * @param avaDeclareFunction either test or test.serial
    */
   function declareTest(
     title: string | undefined,
     macros: Function[],
-    avaDeclareFunction: Function,
+    avaDeclareFunction: Function & { skip: Function },
     args: any[]
   ) {
     const wrappedMacros = macros.map((macro) => {
@@ -164,7 +178,11 @@ function createTestInterface<Context>(opts: {
       };
     });
     const computedTitle = computeTitle(title);
-    avaDeclareFunction(computedTitle, wrappedMacros, ...args);
+    (automaticallySkip ? avaDeclareFunction.skip : avaDeclareFunction)(
+      computedTitle,
+      wrappedMacros,
+      ...args
+    );
   }
   function test(...inputArgs: any[]) {
     assertOrderingForDeclaringTest();
@@ -234,9 +252,11 @@ function createTestInterface<Context>(opts: {
     title: string,
     cb: (test: TestInterface<Context>) => void
   ) {
+    suiteOrTestDeclared = true;
     const newApi = createTestInterface<Context>({
       mustDoSerial,
       automaticallyDoSerial,
+      automaticallySkip,
       separator,
       titlePrefix: computeTitle(title),
       beforeEachFunctions,
@@ -245,6 +265,10 @@ function createTestInterface<Context>(opts: {
   };
   test.runSerially = function () {
     automaticallyDoSerial = true;
+  };
+  test.skipUnless = test.runIf = function (runIfTrue: boolean) {
+    assertOrderingForDeclaringSkipUnless();
+    automaticallySkip = automaticallySkip || !runIfTrue;
   };
   return test as any;
 }
