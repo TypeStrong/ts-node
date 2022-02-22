@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { join, resolve, dirname, parse as parsePath } from 'path';
+import { spawnSync } from 'child_process';
 import { inspect } from 'util';
 import Module = require('module');
-import arg = require('arg');
+let arg: typeof import('arg');
 import { parse, createRequire, hasOwnProperty } from './util';
 import {
   EVAL_FILENAME,
@@ -17,17 +18,65 @@ import {
   STDIN_NAME,
   REPL_FILENAME,
 } from './repl';
-import { VERSION, TSError, register, versionGteLt } from './index';
+import { VERSION, TSError, register, versionGteLt, create } from './index';
 import type { TSInternal } from './ts-compiler-types';
 import { addBuiltinLibsToObject } from '../dist-raw/node-cjs-helpers';
+import { callInChild } from './child/spawn-child';
 
 /**
  * Main `bin` functionality.
+ *
+ * This file is split into a chain of functions (phases), each one adding to a shared state object.
+ * This is done so that the next function can either be invoked in-process or, if necessary, invoked in a child process.
+ *
+ * The functions are intentionally given uncreative names and left in the same order as the original code, to make a
+ * smaller git diff.
  */
 export function main(
   argv: string[] = process.argv.slice(2),
   entrypointArgs: Record<string, any> = {}
 ) {
+  const args = parseArgv(argv, entrypointArgs);
+  const state: BootstrapState = {
+    shouldUseChildProcess: false,
+    isInChildProcess: false,
+    parseArgvResult: args,
+  };
+  return bootstrap(state);
+}
+
+/**
+ * @internal
+ * Describes state of CLI bootstrapping.
+ * Can be marshalled when necessary to resume bootstrapping in a child process.
+ */
+export interface BootstrapState {
+  isInChildProcess: boolean;
+  shouldUseChildProcess: boolean;
+  parseArgvResult: ReturnType<typeof parseArgv>;
+  phase2Result?: ReturnType<typeof phase2>;
+  phase3Result?: ReturnType<typeof phase3>;
+}
+
+/** @internal */
+export function bootstrap(state: BootstrapState) {
+  if(!state.phase2Result) {
+    state.phase2Result = phase2(state);
+    if(state.shouldUseChildProcess && !state.isInChildProcess) {
+      return callInChild(state);
+    }
+  }
+  if(!state.phase3Result) {
+    state.phase3Result = phase3(state);
+    if(state.shouldUseChildProcess && !state.isInChildProcess) {
+      return callInChild(state);
+    }
+  }
+  return phase4(state);
+}
+
+function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
+  arg ??= require('arg');
   // HACK: technically, this function is not marked @internal so it's possible
   // that libraries in the wild are doing `require('ts-node/dist/bin').main({'--transpile-only': true})`
   // We can mark this function @internal in next major release.
@@ -58,6 +107,7 @@ export function main(
         '--scriptMode': Boolean,
         '--version': arg.COUNT,
         '--showConfig': Boolean,
+        '--esm': Boolean,
 
         // Project options.
         '--cwd': String,
@@ -156,7 +206,20 @@ export function main(
     '--scope': scope = undefined,
     '--scopeDir': scopeDir = undefined,
     '--noExperimentalReplAwait': noExperimentalReplAwait,
+    '--esm': esm,
+    _: restArgs
   } = args;
+  return {
+    restArgs,
+    cwdArg, help, scriptMode, cwdMode, version, showConfig, argsRequire, code, print, interactive, files, compiler,
+    compilerOptions, project, ignoreDiagnostics, ignore, transpileOnly, typeCheck, transpiler, swc, compilerHost,
+    pretty, skipProject, skipIgnore, preferTsExts, logError, emit, scope, scopeDir, noExperimentalReplAwait,
+    esm
+  };
+}
+
+function phase2(payload: BootstrapState) {
+  const {help, version, code, interactive, cwdArg, restArgs, esm} = payload.parseArgvResult;
 
   if (help) {
     console.log(`
@@ -209,8 +272,8 @@ Options:
   // Figure out which we are executing: piped stdin, --eval, REPL, and/or entrypoint
   // This is complicated because node's behavior is complicated
   // `node -e code -i ./script.js` ignores -e
-  const executeEval = code != null && !(interactive && args._.length);
-  const executeEntrypoint = !executeEval && args._.length > 0;
+  const executeEval = code != null && !(interactive && restArgs.length);
+  const executeEntrypoint = !executeEval && restArgs.length > 0;
   const executeRepl =
     !executeEntrypoint &&
     (interactive || (process.stdin.isTTY && !executeEval));
@@ -218,8 +281,60 @@ Options:
 
   const cwd = cwdArg || process.cwd();
   /** Unresolved.  May point to a symlink, not realpath.  May be missing file extension */
-  const scriptPath = executeEntrypoint ? resolve(cwd, args._[0]) : undefined;
+  const scriptPath = executeEntrypoint ? resolve(cwd, restArgs[0]) : undefined;
 
+  if(esm) payload.shouldUseChildProcess = true;
+  return {executeEval, executeEntrypoint, executeRepl, executeStdin, cwd, scriptPath};
+}
+
+function phase3(payload: BootstrapState) {
+  const {
+    emit, files, pretty, transpileOnly, transpiler, noExperimentalReplAwait, typeCheck, swc, compilerHost, ignore,
+    preferTsExts, logError, scriptMode, cwdMode, project, skipProject, skipIgnore, compiler, ignoreDiagnostics,
+    compilerOptions, argsRequire, scope, scopeDir
+  } = payload.parseArgvResult;
+  const {cwd, scriptPath} = payload.phase2Result!;
+
+  // const configWeAlreadyParsed = getConfig({
+  const configWeAlreadyParsed = create({
+    cwd,
+    emit,
+    files,
+    pretty,
+    transpileOnly: transpileOnly ?? transpiler != null ? true : undefined,
+    experimentalReplAwait: noExperimentalReplAwait ? false : undefined,
+    typeCheck,
+    transpiler,
+    swc,
+    compilerHost,
+    ignore,
+    logError,
+    projectSearchDir: getProjectSearchDir(cwd, scriptMode, cwdMode, scriptPath),
+    project,
+    skipProject,
+    skipIgnore,
+    compiler,
+    ignoreDiagnostics,
+    compilerOptions,
+    require: argsRequire,
+    // readFile: evalAwarePartialHost?.readFile ?? undefined,
+    // fileExists: evalAwarePartialHost?.fileExists ?? undefined,
+    readFile: undefined,
+    fileExists: undefined,
+    scope,
+    scopeDir,
+  // });
+  }).options;
+
+  // attach new locals to the payload
+  if(configWeAlreadyParsed.esm) payload.shouldUseChildProcess = true;
+  return {configWeAlreadyParsed};
+}
+
+function phase4(payload: BootstrapState) {
+  const {version, showConfig, restArgs, code, print} = payload.parseArgvResult;
+  const {executeEval, cwd, executeStdin, executeRepl, executeEntrypoint, scriptPath} = payload.phase2Result!;
+  const {configWeAlreadyParsed} = payload.phase3Result!;
   /**
    * <repl>, [stdin], and [eval] are all essentially virtual files that do not exist on disc and are backed by a REPL
    * service to handle eval-ing of code.
@@ -278,33 +393,9 @@ Options:
   }
 
   // Register the TypeScript compiler instance.
-  const service = register({
-    cwd,
-    emit,
-    files,
-    pretty,
-    transpileOnly: transpileOnly ?? transpiler != null ? true : undefined,
-    experimentalReplAwait: noExperimentalReplAwait ? false : undefined,
-    typeCheck,
-    transpiler,
-    swc,
-    compilerHost,
-    ignore,
-    preferTsExts,
-    logError,
-    projectSearchDir: getProjectSearchDir(cwd, scriptMode, cwdMode, scriptPath),
-    project,
-    skipProject,
-    skipIgnore,
-    compiler,
-    ignoreDiagnostics,
-    compilerOptions,
-    require: argsRequire,
-    readFile: evalAwarePartialHost?.readFile ?? undefined,
-    fileExists: evalAwarePartialHost?.fileExists ?? undefined,
-    scope,
-    scopeDir,
-  });
+  // TODO replace this with a call to `getConfig()`
+  // const service = register(createFromConfig(configWeAlreadyParsed));
+  const service = register(configWeAlreadyParsed);
 
   // Bind REPL service to ts-node compiler service (chicken-and-egg problem)
   replStuff?.repl.setService(service);
@@ -352,11 +443,11 @@ Options:
   // Prepend `ts-node` arguments to CLI for child processes.
   process.execArgv.unshift(
     __filename,
-    ...process.argv.slice(2, process.argv.length - args._.length)
+    ...process.argv.slice(2, process.argv.length - restArgs.length)
   );
   process.argv = [process.argv[1]]
     .concat(executeEntrypoint ? ([scriptPath] as string[]) : [])
-    .concat(args._.slice(executeEntrypoint ? 1 : 0));
+    .concat(restArgs.slice(executeEntrypoint ? 1 : 0));
 
   // Execute the main contents (either eval, script or piped).
   if (executeEntrypoint) {

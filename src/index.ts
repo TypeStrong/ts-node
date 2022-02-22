@@ -364,6 +364,10 @@ export interface CreateOptions {
    * @default console.log
    */
   tsTrace?: (str: string) => void;
+  /**
+   * TODO DOCS YAY
+   */
+  esm?: boolean;
 }
 
 type ModuleTypes = Record<string, 'cjs' | 'esm' | 'package'>;
