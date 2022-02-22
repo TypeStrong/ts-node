@@ -1,6 +1,6 @@
 {
   "name": "ts-node",
-  "version": "10.4.0",
+  "version": "10.5.0",
   "description": "TypeScript execution environment and REPL for node.js, with source map support",
   "main": "dist/index.js",
   "exports": {
@@ -138,8 +138,8 @@
     "semver": "^7.1.3",
     "throat": "^6.0.1",
     "typedoc": "^0.22.10",
-    "typescript": "4.5.2",
-    "typescript-json-schema": "^0.51.0",
+    "typescript": "4.5.5",
+    "typescript-json-schema": "^0.53.0",
     "util.promisify": "^1.0.1"
   },
   "peerDependencies": {

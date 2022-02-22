@@ -17,6 +17,13 @@ import semver = require('semver');
 const createRequire: typeof _createRequire = require('create-require');
 export { tsNodeTypes };
 
+export const nodeSupportsEsmHooks = semver.gte(process.version, '12.16.0');
+export const nodeUsesNewHooksApi = semver.gte(process.version, '16.12.0');
+export const nodeSupportsImportAssertions = semver.gte(
+  process.version,
+  '17.1.0'
+);
+
 export const ROOT_DIR = resolve(__dirname, '../..');
 export const DIST_DIR = resolve(__dirname, '..');
 export const TEST_DIR = join(__dirname, '../../tests');
