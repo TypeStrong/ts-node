@@ -59,15 +59,15 @@ export interface BootstrapState {
 
 /** @internal */
 export function bootstrap(state: BootstrapState) {
-  if(!state.phase2Result) {
+  if (!state.phase2Result) {
     state.phase2Result = phase2(state);
-    if(state.shouldUseChildProcess && !state.isInChildProcess) {
+    if (state.shouldUseChildProcess && !state.isInChildProcess) {
       return callInChild(state);
     }
   }
-  if(!state.phase3Result) {
+  if (!state.phase3Result) {
     state.phase3Result = phase3(state);
-    if(state.shouldUseChildProcess && !state.isInChildProcess) {
+    if (state.shouldUseChildProcess && !state.isInChildProcess) {
       return callInChild(state);
     }
   }
@@ -206,19 +206,47 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
     '--scopeDir': scopeDir = undefined,
     '--noExperimentalReplAwait': noExperimentalReplAwait,
     '--esm': esm,
-    _: restArgs
+    _: restArgs,
   } = args;
   return {
     restArgs,
-    cwdArg, help, scriptMode, cwdMode, version, showConfig, argsRequire, code, print, interactive, files, compiler,
-    compilerOptions, project, ignoreDiagnostics, ignore, transpileOnly, typeCheck, transpiler, swc, compilerHost,
-    pretty, skipProject, skipIgnore, preferTsExts, logError, emit, scope, scopeDir, noExperimentalReplAwait,
-    esm
+    cwdArg,
+    help,
+    scriptMode,
+    cwdMode,
+    version,
+    showConfig,
+    argsRequire,
+    code,
+    print,
+    interactive,
+    files,
+    compiler,
+    compilerOptions,
+    project,
+    ignoreDiagnostics,
+    ignore,
+    transpileOnly,
+    typeCheck,
+    transpiler,
+    swc,
+    compilerHost,
+    pretty,
+    skipProject,
+    skipIgnore,
+    preferTsExts,
+    logError,
+    emit,
+    scope,
+    scopeDir,
+    noExperimentalReplAwait,
+    esm,
   };
 }
 
 function phase2(payload: BootstrapState) {
-  const {help, version, code, interactive, cwdArg, restArgs, esm} = payload.parseArgvResult;
+  const { help, version, code, interactive, cwdArg, restArgs, esm } =
+    payload.parseArgvResult;
 
   if (help) {
     console.log(`
@@ -282,17 +310,44 @@ Options:
   /** Unresolved.  May point to a symlink, not realpath.  May be missing file extension */
   const scriptPath = executeEntrypoint ? resolve(cwd, restArgs[0]) : undefined;
 
-  if(esm) payload.shouldUseChildProcess = true;
-  return {executeEval, executeEntrypoint, executeRepl, executeStdin, cwd, scriptPath};
+  if (esm) payload.shouldUseChildProcess = true;
+  return {
+    executeEval,
+    executeEntrypoint,
+    executeRepl,
+    executeStdin,
+    cwd,
+    scriptPath,
+  };
 }
 
 function phase3(payload: BootstrapState) {
   const {
-    emit, files, pretty, transpileOnly, transpiler, noExperimentalReplAwait, typeCheck, swc, compilerHost, ignore,
-    preferTsExts, logError, scriptMode, cwdMode, project, skipProject, skipIgnore, compiler, ignoreDiagnostics,
-    compilerOptions, argsRequire, scope, scopeDir
+    emit,
+    files,
+    pretty,
+    transpileOnly,
+    transpiler,
+    noExperimentalReplAwait,
+    typeCheck,
+    swc,
+    compilerHost,
+    ignore,
+    preferTsExts,
+    logError,
+    scriptMode,
+    cwdMode,
+    project,
+    skipProject,
+    skipIgnore,
+    compiler,
+    ignoreDiagnostics,
+    compilerOptions,
+    argsRequire,
+    scope,
+    scopeDir,
   } = payload.parseArgvResult;
-  const {cwd, scriptPath} = payload.phase2Result!;
+  const { cwd, scriptPath } = payload.phase2Result!;
 
   // const configWeAlreadyParsed = getConfig({
   const configWeAlreadyParsed = create({
@@ -322,18 +377,26 @@ function phase3(payload: BootstrapState) {
     fileExists: undefined,
     scope,
     scopeDir,
-  // });
+    // });
   }).options;
 
   // attach new locals to the payload
-  if(configWeAlreadyParsed.esm) payload.shouldUseChildProcess = true;
-  return {configWeAlreadyParsed};
+  if (configWeAlreadyParsed.esm) payload.shouldUseChildProcess = true;
+  return { configWeAlreadyParsed };
 }
 
 function phase4(payload: BootstrapState) {
-  const {version, showConfig, restArgs, code, print} = payload.parseArgvResult;
-  const {executeEval, cwd, executeStdin, executeRepl, executeEntrypoint, scriptPath} = payload.phase2Result!;
-  const {configWeAlreadyParsed} = payload.phase3Result!;
+  const { version, showConfig, restArgs, code, print } =
+    payload.parseArgvResult;
+  const {
+    executeEval,
+    cwd,
+    executeStdin,
+    executeRepl,
+    executeEntrypoint,
+    scriptPath,
+  } = payload.phase2Result!;
+  const { configWeAlreadyParsed } = payload.phase3Result!;
   /**
    * <repl>, [stdin], and [eval] are all essentially virtual files that do not exist on disc and are backed by a REPL
    * service to handle eval-ing of code.

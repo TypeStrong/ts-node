@@ -104,13 +104,15 @@ export interface NodeImportAssertions {
 // TODO: When the new API is backported to v12, v14, update these version checks accordingly.
 const newHooksAPI =
   versionGteLt(process.versions.node, '17.0.0') ||
-    versionGteLt(process.versions.node, '16.12.0', '17.0.0') ||
-    versionGteLt(process.versions.node, '14.999.999', '15.0.0') ||
-    versionGteLt(process.versions.node, '12.999.999', '13.0.0');
+  versionGteLt(process.versions.node, '16.12.0', '17.0.0') ||
+  versionGteLt(process.versions.node, '14.999.999', '15.0.0') ||
+  versionGteLt(process.versions.node, '12.999.999', '13.0.0');
 
 /** @internal */
-export function filterHooksByAPIVersion(hooks: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2): NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 {
-  const {getFormat, load, resolve, transformSource} = hooks;
+export function filterHooksByAPIVersion(
+  hooks: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2
+): NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 {
+  const { getFormat, load, resolve, transformSource } = hooks;
   // Explicit return type to avoid TS's non-ideal inferred type
   const hooksAPI: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 = newHooksAPI
     ? { resolve, load, getFormat: undefined, transformSource: undefined }
@@ -135,7 +137,12 @@ export function createEsmHooks(tsNodeService: Service) {
     preferTsExts: tsNodeService.options.preferTsExts,
   });
 
-  const hooksAPI = filterHooksByAPIVersion({resolve, load, getFormat, transformSource});
+  const hooksAPI = filterHooksByAPIVersion({
+    resolve,
+    load,
+    getFormat,
+    transformSource,
+  });
 
   function isFileUrlOrNodeStyleSpecifier(parsed: UrlWithStringQuery) {
     // We only understand file:// URLs, but in node, the specifier can be a node-style `./foo` or `foo`
