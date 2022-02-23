@@ -3,7 +3,7 @@ import * as expect from 'expect';
 import { join, resolve, sep as pathSep } from 'path';
 import { tmpdir } from 'os';
 import semver = require('semver');
-import { nodeSupportsEsmHooks, ts } from './helpers';
+import { BIN_PATH_JS, nodeSupportsEsmHooks, ts } from './helpers';
 import { lstatSync, mkdtempSync } from 'fs';
 import { npath } from '@yarnpkg/fslib';
 import type _createRequire from 'create-require';
@@ -1069,6 +1069,44 @@ test('Falls back to transpileOnly when ts compiler returns emitSkipped', async (
   );
   expect(err).toBe(null);
   expect(stdout).toBe('foo\n');
+});
+
+test.suite('node environment', (test) => {
+  test.suite('Sets argv and execArgv correctly in forked processes', (test) => {
+    forkTest(`node --no-warnings ${BIN_PATH_JS}`, BIN_PATH_JS, '--no-warnings');
+    forkTest(
+      `${BIN_PATH}`,
+      process.platform === 'win32' ? BIN_PATH_JS : BIN_PATH
+    );
+
+    function forkTest(
+      command: string,
+      expectParentArgv0: string,
+      nodeFlag?: string
+    ) {
+      test(command, async (t) => {
+        const { err, stderr, stdout } = await exec(
+          `${command} --skipIgnore ./recursive-fork/index.ts argv2`
+        );
+        expect(err).toBeNull();
+        expect(stderr).toBe('');
+        const generations = stdout.split('\n');
+        const expectation = {
+          execArgv: [nodeFlag, BIN_PATH_JS, '--skipIgnore'].filter((v) => v),
+          argv: [
+            // Note: argv[0] is *always* BIN_PATH_JS in child & grandchild
+            expectParentArgv0,
+            resolve(TEST_DIR, 'recursive-fork/index.ts'),
+            'argv2',
+          ],
+        };
+        expect(JSON.parse(generations[0])).toMatchObject(expectation);
+        expectation.argv[0] = BIN_PATH_JS;
+        expect(JSON.parse(generations[1])).toMatchObject(expectation);
+        expect(JSON.parse(generations[2])).toMatchObject(expectation);
+      });
+    }
+  });
 });
 
 test('Detect when typescript adds new ModuleKind values; flag as a failure so we can update our code flagged [MUST_UPDATE_FOR_NEW_MODULEKIND]', async () => {
