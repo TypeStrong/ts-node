@@ -529,7 +529,7 @@ function phase4(payload: BootstrapState) {
   }
 
   // Prepend `ts-node` arguments to CLI for child processes.
-  process.execArgv.unshift(
+  process.execArgv.push(
     __filename,
     ...process.argv.slice(2, process.argv.length - restArgs.length)
   );
