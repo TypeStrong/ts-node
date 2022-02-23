@@ -29,6 +29,7 @@ export const DIST_DIR = resolve(__dirname, '..');
 export const TEST_DIR = join(__dirname, '../../tests');
 export const PROJECT = join(TEST_DIR, 'tsconfig.json');
 export const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node');
+export const BIN_PATH_JS = join(TEST_DIR, 'node_modules/ts-node/dist/bin.js');
 export const BIN_SCRIPT_PATH = join(
   TEST_DIR,
   'node_modules/.bin/ts-node-script'
