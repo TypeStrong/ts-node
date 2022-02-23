@@ -17,7 +17,14 @@ import {
   STDIN_NAME,
   REPL_FILENAME,
 } from './repl';
-import { VERSION, TSError, register, versionGteLt, create } from './index';
+import {
+  VERSION,
+  TSError,
+  register,
+  versionGteLt,
+  create,
+  createEsmHooks,
+} from './index';
 import type { TSInternal } from './ts-compiler-types';
 import { addBuiltinLibsToObject } from '../dist-raw/node-cjs-helpers';
 import { callInChild } from './child/spawn-child';
@@ -386,6 +393,7 @@ function phase3(payload: BootstrapState) {
 }
 
 function phase4(payload: BootstrapState) {
+  const { isInChildProcess } = payload;
   const { version, showConfig, restArgs, code, print } =
     payload.parseArgvResult;
   const {
@@ -458,6 +466,10 @@ function phase4(payload: BootstrapState) {
   // TODO replace this with a call to `getConfig()`
   // const service = register(createFromConfig(configWeAlreadyParsed));
   const service = register(configWeAlreadyParsed);
+  if (isInChildProcess)
+    (
+      require('./child/child-loader') as typeof import('./child/child-loader')
+    ).lateBindHooks(createEsmHooks(service));
 
   // Bind REPL service to ts-node compiler service (chicken-and-egg problem)
   replStuff?.repl.setService(service);
@@ -530,9 +542,12 @@ function phase4(payload: BootstrapState) {
 
   // Prepend `ts-node` arguments to CLI for child processes.
   process.execArgv.push(
+    // TODO this comes from BoostrapState
     __filename,
+    // TODO this comes from BoostrapState
     ...process.argv.slice(2, process.argv.length - restArgs.length)
   );
+  // TODO this comes from BoostrapState
   process.argv = [process.argv[1]]
     .concat(executeEntrypoint ? ([scriptPath] as string[]) : [])
     .concat(restArgs.slice(executeEntrypoint ? 1 : 0));

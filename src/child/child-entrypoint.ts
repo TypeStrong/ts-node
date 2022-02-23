@@ -1,15 +1,12 @@
 import { BootstrapState, bootstrap } from '../bin';
 
-const environmentVariableName = process.argv[2];
-const base64Payload = process.env[environmentVariableName]!;
-delete process.env[environmentVariableName];
+const base64ConfigArg = process.argv[2];
+const argPrefix = '--base64-config=';
+if (!base64ConfigArg.startsWith(argPrefix)) throw new Error('unexpected argv');
+const base64Payload = base64ConfigArg.slice(argPrefix.length);
 const payload = JSON.parse(
   Buffer.from(base64Payload, 'base64').toString()
 ) as BootstrapState;
-console.dir({
-  payloadSize: base64Payload.length,
-  payload: JSON.stringify(payload),
-});
 payload.isInChildProcess = true;
 
 bootstrap(payload);

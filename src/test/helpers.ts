@@ -35,6 +35,7 @@ export const BIN_SCRIPT_PATH = join(
   'node_modules/.bin/ts-node-script'
 );
 export const BIN_CWD_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-cwd');
+export const BIN_ESM_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-esm');
 /** Default `ts-node --project` invocation */
 export const CMD_TS_NODE_WITH_PROJECT_FLAG = `"${BIN_PATH}" --project "${PROJECT}"`;
 /** Default `ts-node` invocation without `--project` */
@@ -224,3 +225,5 @@ function resetObject(
   // Reset descriptors
   Object.defineProperties(object, state.descriptors);
 }
+
+export const delay = promisify(setTimeout);

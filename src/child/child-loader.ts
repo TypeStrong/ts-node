@@ -16,16 +16,16 @@ export function lateBindHooks(
 
 const proxy: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2 = {
   resolve(...args: Parameters<NodeLoaderHooksAPI1['resolve']>) {
-    return hooks.resolve(...args);
+    return (hooks?.resolve ?? args[2])(...args);
   },
   load(...args: Parameters<NodeLoaderHooksAPI2['load']>) {
-    return hooks.load(...args);
+    return (hooks?.load ?? args[2])(...args);
   },
   getFormat(...args: Parameters<NodeLoaderHooksAPI1['getFormat']>) {
-    return hooks.getFormat(...args);
+    return (hooks?.getFormat ?? args[2])(...args);
   },
   transformSource(...args: Parameters<NodeLoaderHooksAPI1['transformSource']>) {
-    return hooks.transformSource(...args);
+    return (hooks?.transformSource ?? args[2])(...args);
   },
 };
 

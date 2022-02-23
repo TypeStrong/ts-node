@@ -5,10 +5,12 @@
 import { context } from './testlib';
 import semver = require('semver');
 import {
+  BIN_ESM_PATH,
   BIN_PATH,
   CMD_ESM_LOADER_WITHOUT_PROJECT,
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   contextTsNodeUnderTest,
+  delay,
   EXPERIMENTAL_MODULES_FLAG,
   nodeSupportsEsmHooks,
   nodeSupportsImportAssertions,
@@ -16,7 +18,7 @@ import {
   resetNodeEnvironment,
   TEST_DIR,
 } from './helpers';
-import { createExec } from './exec-helpers';
+import { createExec, ExecReturn } from './exec-helpers';
 import { join, resolve } from 'path';
 import * as expect from 'expect';
 import type { NodeLoaderHooksAPI2 } from '../';
@@ -301,6 +303,51 @@ test.suite('esm', (test) => {
         });
       }
     );
+
+    test.suite('spawns child process', async (test) => {
+      basic('ts-node-esm executable', () =>
+        exec(`${BIN_ESM_PATH} ./esm-child-process/via-flag/index.ts`)
+      );
+      basic('ts-node --esm flag', () =>
+        exec(`${BIN_PATH} --esm ./esm-child-process/via-flag/index.ts`)
+      );
+      basic('ts-node w/tsconfig esm:true', () =>
+        exec(`${BIN_PATH} --esm ./esm-child-process/via-tsconfig/index.ts`)
+      );
+
+      function basic(title: string, cb: () => ExecReturn) {
+        test(title, async (t) => {
+          const { err, stdout, stderr } = await cb();
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe('Hello world!');
+          expect(stderr).toBe('');
+        });
+      }
+
+      test.suite('parent passes signals to child', (test) => {
+        signalTest('SIGINT');
+        signalTest('SIGTERM');
+        function signalTest(signal: string) {
+          test(signal, async (t) => {
+            const childP = exec(
+              `${BIN_PATH} ./esm-child-process/via-tsconfig/index.ts sleep`
+            );
+            let code: number | null | undefined = undefined;
+            childP.child.on('exit', (_code) => (code = _code));
+            await delay(2e3);
+            expect(code).toBeUndefined();
+            process.kill(childP.child.pid, 'SIGINT');
+            await delay(2e3);
+            expect(code).toBeUndefined();
+            const { stdout, stderr, err } = await childP;
+            expect(err).toBe(null);
+            expect(stdout.trim()).toBe('Hello World!');
+            expect(stderr).toBe('');
+            expect(code).toBe(123);
+          });
+        }
+      });
+    });
   });
 
   test.suite('node >= 12.x.x', (test) => {

@@ -50,6 +50,7 @@
     "/register/",
     "/esm/",
     "/esm.mjs",
+    "/child-loader.mjs",
     "/LICENSE",
     "/tsconfig.schema.json",
     "/tsconfig.schemastore-schema.json",
