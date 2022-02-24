@@ -309,20 +309,22 @@ test.suite('esm', (test) => {
 
     test.suite('spawns child process', async (test) => {
       basic('ts-node-esm executable', () =>
-        exec(`${BIN_ESM_PATH} ./esm-child-process/via-flag/index.ts`)
+        exec(`${BIN_ESM_PATH} ./esm-child-process/via-flag/index.ts foo bar`)
       );
       basic('ts-node --esm flag', () =>
-        exec(`${BIN_PATH} --esm ./esm-child-process/via-flag/index.ts`)
+        exec(`${BIN_PATH} --esm ./esm-child-process/via-flag/index.ts foo bar`)
       );
       basic('ts-node w/tsconfig esm:true', () =>
-        exec(`${BIN_PATH} --esm ./esm-child-process/via-tsconfig/index.ts`)
+        exec(
+          `${BIN_PATH} --esm ./esm-child-process/via-tsconfig/index.ts foo bar`
+        )
       );
 
       function basic(title: string, cb: () => ExecReturn) {
         test(title, async (t) => {
           const { err, stdout, stderr } = await cb();
           expect(err).toBe(null);
-          expect(stdout.trim()).toBe('Hello world!');
+          expect(stdout.trim()).toBe('CLI args: foo bar');
           expect(stderr).toBe('');
         });
       }

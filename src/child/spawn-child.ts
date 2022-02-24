@@ -17,6 +17,7 @@ export function callInChild(state: BootstrapState) {
       `${argPrefix}${brotliCompressSync(
         Buffer.from(JSON.stringify(state), 'utf8')
       ).toString('base64')}`,
+      ...state.parseArgvResult.restArgs,
     ],
     {
       stdio: 'inherit',
