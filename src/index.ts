@@ -370,6 +370,14 @@ export interface CreateOptions {
    * TODO DOCS YAY
    */
   esm?: boolean;
+  /**
+   * Re-order file extensions so that TypeScript imports are preferred.
+   *
+   * For example, when both `index.js` and `index.ts` exist, enabling this option causes `require('./index')` to resolve to `index.ts` instead of `index.js`
+   *
+   * @default false
+   */
+  preferTsExts?: boolean;
 }
 
 export type ModuleTypes = Record<string, 'cjs' | 'esm' | 'package'>;
@@ -385,15 +393,6 @@ export interface OptionBasePaths {
  * Options for registering a TypeScript compiler instance globally.
  */
 export interface RegisterOptions extends CreateOptions {
-  /**
-   * Re-order file extensions so that TypeScript imports are preferred.
-   *
-   * For example, when both `index.js` and `index.ts` exist, enabling this option causes `require('./index')` to resolve to `index.ts` instead of `index.js`
-   *
-   * @default false
-   */
-  preferTsExts?: boolean;
-
   /**
    * Enable experimental features that re-map imports and require calls to support:
    * `baseUrl`, `paths`, `rootDirs`, `.js` to `.ts` file extension mappings,

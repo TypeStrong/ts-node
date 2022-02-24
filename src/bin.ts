@@ -390,6 +390,7 @@ function phase3(payload: BootstrapState) {
     fileExists: undefined,
     scope,
     scopeDir,
+    preferTsExts,
   });
 
   if (preloadedConfig.options.esm) payload.shouldUseChildProcess = true;
