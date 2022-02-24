@@ -1,7 +1,6 @@
 import assert from 'assert';
 assert(import.meta.url.includes('index.ts'));
 console.log('Hello world!');
-console.dir(process.argv);
 if (process.argv[2] === 'sleep') {
   setTimeout(function () {
     console.log('Slept 30 seconds');
