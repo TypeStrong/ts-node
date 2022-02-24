@@ -18,7 +18,7 @@ import {
   resetNodeEnvironment,
   TEST_DIR,
 } from './helpers';
-import { createExec, ExecReturn } from './exec-helpers';
+import { createExec, createSpawn, ExecReturn } from './exec-helpers';
 import { join, resolve } from 'path';
 import * as expect from 'expect';
 import type { NodeLoaderHooksAPI2 } from '../';
@@ -27,6 +27,9 @@ import { pathToFileURL } from 'url';
 const test = context(contextTsNodeUnderTest);
 
 const exec = createExec({
+  cwd: TEST_DIR,
+});
+const spawn = createSpawn({
   cwd: TEST_DIR,
 });
 
@@ -329,20 +332,22 @@ test.suite('esm', (test) => {
         signalTest('SIGTERM');
         function signalTest(signal: string) {
           test(signal, async (t) => {
-            const childP = exec(
-              `${BIN_PATH} ./esm-child-process/via-tsconfig/index.ts sleep`
-            );
+            const childP = spawn([
+              BIN_PATH,
+              `./esm-child-process/via-tsconfig/sleep.ts`,
+            ]);
             let code: number | null | undefined = undefined;
             childP.child.on('exit', (_code) => (code = _code));
             await delay(2e3);
             expect(code).toBeUndefined();
-            process.kill(childP.child.pid, 'SIGINT');
+            process.kill(childP.child.pid, signal);
             await delay(2e3);
             expect(code).toBeUndefined();
-            const { stdout, stderr, err } = await childP;
-            expect(err).toBe(null);
-            expect(stdout.trim()).toBe('Hello World!');
-            expect(stderr).toBe('');
+            const { stdoutP, stderrP } = await childP;
+            expect((await stdoutP).trim()).toBe(
+              `child received signal: ${signal}`
+            );
+            expect(await stderrP).toBe('');
             expect(code).toBe(123);
           });
         }
