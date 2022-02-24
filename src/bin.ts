@@ -22,12 +22,14 @@ import {
   TSError,
   register,
   versionGteLt,
-  create,
   createEsmHooks,
+  createFromPreloadedConfig,
+  DEFAULTS,
 } from './index';
 import type { TSInternal } from './ts-compiler-types';
 import { addBuiltinLibsToObject } from '../dist-raw/node-cjs-helpers';
 import { callInChild } from './child/spawn-child';
+import { findAndReadConfig } from './configuration';
 
 /**
  * Main `bin` functionality.
@@ -46,6 +48,7 @@ export function main(
   const state: BootstrapState = {
     shouldUseChildProcess: false,
     isInChildProcess: false,
+    entrypoint: __filename,
     parseArgvResult: args,
   };
   return bootstrap(state);
@@ -59,6 +62,7 @@ export function main(
 export interface BootstrapState {
   isInChildProcess: boolean;
   shouldUseChildProcess: boolean;
+  entrypoint: string;
   parseArgvResult: ReturnType<typeof parseArgv>;
   phase2Result?: ReturnType<typeof phase2>;
   phase3Result?: ReturnType<typeof phase3>;
@@ -216,7 +220,10 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
     _: restArgs,
   } = args;
   return {
+    // Note: argv and restArgs may be overwritten by child process
+    argv: process.argv,
     restArgs,
+
     cwdArg,
     help,
     scriptMode,
@@ -356,8 +363,7 @@ function phase3(payload: BootstrapState) {
   } = payload.parseArgvResult;
   const { cwd, scriptPath } = payload.phase2Result!;
 
-  // const configWeAlreadyParsed = getConfig({
-  const configWeAlreadyParsed = create({
+  const preloadedConfig = findAndReadConfig({
     cwd,
     emit,
     files,
@@ -384,17 +390,15 @@ function phase3(payload: BootstrapState) {
     fileExists: undefined,
     scope,
     scopeDir,
-    // });
-  }).options;
+  });
 
-  // attach new locals to the payload
-  if (configWeAlreadyParsed.esm) payload.shouldUseChildProcess = true;
-  return { configWeAlreadyParsed };
+  if (preloadedConfig.options.esm) payload.shouldUseChildProcess = true;
+  return { preloadedConfig };
 }
 
 function phase4(payload: BootstrapState) {
-  const { isInChildProcess } = payload;
-  const { version, showConfig, restArgs, code, print } =
+  const { isInChildProcess, entrypoint } = payload;
+  const { version, showConfig, restArgs, code, print, argv } =
     payload.parseArgvResult;
   const {
     executeEval,
@@ -404,7 +408,7 @@ function phase4(payload: BootstrapState) {
     executeEntrypoint,
     scriptPath,
   } = payload.phase2Result!;
-  const { configWeAlreadyParsed } = payload.phase3Result!;
+  const { preloadedConfig } = payload.phase3Result!;
   /**
    * <repl>, [stdin], and [eval] are all essentially virtual files that do not exist on disc and are backed by a REPL
    * service to handle eval-ing of code.
@@ -463,9 +467,18 @@ function phase4(payload: BootstrapState) {
   }
 
   // Register the TypeScript compiler instance.
-  // TODO replace this with a call to `getConfig()`
-  // const service = register(createFromConfig(configWeAlreadyParsed));
-  const service = register(configWeAlreadyParsed);
+  const service = createFromPreloadedConfig({
+    // Since this struct may have been marshalled across thread or process boundaries, we must restore
+    // un-marshall-able values.
+    ...preloadedConfig,
+    options: {
+      ...preloadedConfig.options,
+      readFile: evalAwarePartialHost?.readFile ?? undefined,
+      fileExists: evalAwarePartialHost?.fileExists ?? undefined,
+      tsTrace: DEFAULTS.tsTrace,
+    },
+  });
+  register(service);
   if (isInChildProcess)
     (
       require('./child/child-loader') as typeof import('./child/child-loader')
@@ -542,10 +555,8 @@ function phase4(payload: BootstrapState) {
 
   // Prepend `ts-node` arguments to CLI for child processes.
   process.execArgv.push(
-    // TODO this comes from BoostrapState
-    __filename,
-    // TODO this comes from BoostrapState
-    ...process.argv.slice(2, process.argv.length - restArgs.length)
+    entrypoint,
+    ...argv.slice(2, argv.length - restArgs.length)
   );
   // TODO this comes from BoostrapState
   process.argv = [process.argv[1]]

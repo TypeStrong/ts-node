@@ -1,7 +1,8 @@
 import type { BootstrapState } from '../bin';
 import { spawn } from 'child_process';
+import { brotliCompressSync } from 'zlib';
 
-const argPrefix = '--base64-config=';
+const argPrefix = '--brotli-base64-config=';
 
 /** @internal */
 export function callInChild(state: BootstrapState) {
@@ -13,9 +14,9 @@ export function callInChild(state: BootstrapState) {
       '--loader',
       require.resolve('../../child-loader.mjs'),
       require.resolve('./child-entrypoint.js'),
-      `${argPrefix}${Buffer.from(JSON.stringify(state), 'utf8').toString(
-        'base64'
-      )}`,
+      `${argPrefix}${brotliCompressSync(
+        Buffer.from(JSON.stringify(state), 'utf8')
+      ).toString('base64')}`,
     ],
     {
       stdio: 'inherit',

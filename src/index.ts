@@ -1,4 +1,4 @@
-import { relative, basename, extname, resolve, dirname, join } from 'path';
+import { relative, basename, extname, dirname, join } from 'path';
 import { Module } from 'module';
 import * as util from 'util';
 import { fileURLToPath } from 'url';
@@ -9,18 +9,15 @@ import type * as _ts from 'typescript';
 
 import type { Transpiler, TranspilerFactory } from './transpilers/types';
 import {
-  assign,
-  attemptRequireWithV8CompileCache,
   cachedLookup,
   createProjectLocalResolveHelper,
-  getBasePathForProjectLocalDependencyResolution,
   normalizeSlashes,
   parse,
   ProjectLocalResolveHelper,
   split,
   yn,
 } from './util';
-import { readConfig } from './configuration';
+import { findAndReadConfig, loadCompiler } from './configuration';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
 import {
   createModuleTypeClassifier,
@@ -596,63 +593,29 @@ export function register(
  * Create TypeScript compiler instance.
  */
 export function create(rawOptions: CreateOptions = {}): Service {
-  const cwd = resolve(
-    rawOptions.cwd ?? rawOptions.dir ?? DEFAULTS.cwd ?? process.cwd()
-  );
-  const compilerName = rawOptions.compiler ?? DEFAULTS.compiler;
+  const foundConfigResult = findAndReadConfig(rawOptions);
+  return createFromPreloadedConfig(foundConfigResult);
+}
 
-  /**
-   * Load the typescript compiler. It is required to load the tsconfig but might
-   * be changed by the tsconfig, so we have to do this twice.
-   */
-  function loadCompiler(name: string | undefined, relativeToPath: string) {
-    const projectLocalResolveHelper =
-      createProjectLocalResolveHelper(relativeToPath);
-    const compiler = projectLocalResolveHelper(name || 'typescript', true);
-    const ts: TSCommon = attemptRequireWithV8CompileCache(require, compiler);
-    return { compiler, ts, projectLocalResolveHelper };
-  }
+/** @internal */
+export function createFromPreloadedConfig(
+  foundConfigResult: ReturnType<typeof findAndReadConfig>
+): Service {
+  const {
+    configFilePath,
+    cwd,
+    options,
+    config,
+    compiler,
+    projectLocalResolveDir,
+    optionBasePaths,
+  } = foundConfigResult;
 
-  // Compute minimum options to read the config file.
-  let { compiler, ts, projectLocalResolveHelper } = loadCompiler(
-    compilerName,
-    getBasePathForProjectLocalDependencyResolution(
-      undefined,
-      rawOptions.projectSearchDir,
-      rawOptions.project,
-      cwd
-    )
+  const projectLocalResolveHelper = createProjectLocalResolveHelper(
+    projectLocalResolveDir
   );
 
-  // Read config file and merge new options between env and CLI options.
-  const { configFilePath, config, tsNodeOptionsFromTsconfig, optionBasePaths } =
-    readConfig(cwd, ts, rawOptions);
-  const options = assign<RegisterOptions>(
-    {},
-    DEFAULTS,
-    tsNodeOptionsFromTsconfig || {},
-    { optionBasePaths },
-    rawOptions
-  );
-  options.require = [
-    ...(tsNodeOptionsFromTsconfig.require || []),
-    ...(rawOptions.require || []),
-  ];
-
-  // Re-load the compiler in case it has changed.
-  // Compiler is loaded relative to tsconfig.json, so tsconfig discovery may cause us to load a
-  // different compiler than we did above, even if the name has not changed.
-  if (configFilePath) {
-    ({ compiler, ts, projectLocalResolveHelper } = loadCompiler(
-      options.compiler,
-      getBasePathForProjectLocalDependencyResolution(
-        configFilePath,
-        rawOptions.projectSearchDir,
-        rawOptions.project,
-        cwd
-      )
-    ));
-  }
+  const ts = loadCompiler(compiler);
 
   // Experimental REPL await is not compatible targets lower than ES2018
   const targetSupportsTla = config.options.target! >= ts.ScriptTarget.ES2018;
@@ -767,7 +730,13 @@ export function create(rawOptions: CreateOptions = {}): Service {
       typeof transpiler === 'string' ? transpiler : transpiler[0];
     const transpilerOptions =
       typeof transpiler === 'string' ? {} : transpiler[1] ?? {};
-    const transpilerPath = projectLocalResolveHelper(transpilerName, true);
+    const transpilerConfigLocalResolveHelper = optionBasePaths.transpiler
+      ? createProjectLocalResolveHelper(optionBasePaths.transpiler!)
+      : projectLocalResolveHelper;
+    const transpilerPath = transpilerConfigLocalResolveHelper(
+      transpilerName,
+      true
+    );
     const transpilerFactory = require(transpilerPath)
       .create as TranspilerFactory;
     createTranspiler = function (compilerOptions) {
@@ -780,6 +749,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
           },
           projectLocalResolveHelper,
         },
+        transpilerConfigLocalResolveHelper,
         ...transpilerOptions,
       });
     };

@@ -16,12 +16,13 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   const {
     swc,
     service: { config, projectLocalResolveHelper },
+    transpilerConfigLocalResolveHelper,
   } = createOptions;
 
   // Load swc compiler
   let swcInstance: typeof swcWasm;
   if (typeof swc === 'string') {
-    swcInstance = require(projectLocalResolveHelper(
+    swcInstance = require(transpilerConfigLocalResolveHelper(
       swc,
       true
     )) as typeof swcWasm;
