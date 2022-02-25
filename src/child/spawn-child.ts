@@ -1,8 +1,12 @@
 import type { BootstrapState } from '../bin';
 import { spawn } from 'child_process';
 import { brotliCompressSync } from 'zlib';
+import { pathToFileURL } from 'url';
+import { versionGteLt } from '..';
 
 const argPrefix = '--brotli-base64-config=';
+const extraNodeFlags: string[] = [];
+if(!versionGteLt(process.version, '12.17.0')) extraNodeFlags.push('--experimental-modules');
 
 /** @internal */
 export function callInChild(state: BootstrapState) {
@@ -11,8 +15,10 @@ export function callInChild(state: BootstrapState) {
     [
       '--require',
       require.resolve('./child-require.js'),
+      ...extraNodeFlags,
       '--loader',
-      require.resolve('../../child-loader.mjs'),
+      // Node on Windows doesn't like `c:\` absolute paths here; must be `file:///c:/`
+      pathToFileURL(require.resolve('../../child-loader.mjs')).toString(),
       require.resolve('./child-entrypoint.js'),
       `${argPrefix}${brotliCompressSync(
         Buffer.from(JSON.stringify(state), 'utf8')
