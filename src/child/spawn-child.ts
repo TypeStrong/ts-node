@@ -6,7 +6,8 @@ import { versionGteLt } from '..';
 
 const argPrefix = '--brotli-base64-config=';
 const extraNodeFlags: string[] = [];
-if(!versionGteLt(process.version, '12.17.0')) extraNodeFlags.push('--experimental-modules');
+if (!versionGteLt(process.version, '12.17.0'))
+  extraNodeFlags.push('--experimental-modules');
 
 /** @internal */
 export function callInChild(state: BootstrapState) {
