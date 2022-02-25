@@ -27,10 +27,10 @@ import mapStatic from 'static';
 import './index-tsx.tsx';
 import './index-js.js';
 
-assert.equal(map1foo, 'mapped/1-foo');
-assert.equal(map1jsx, 'mapped/1-jsx');
-assert.equal(map2foo, 'mapped/2-foo');
-assert.equal(map2bar, 'mapped/2a-bar');
-assert.equal(map2js, 'mapped/2a-js');
-assert.equal(map2specific, 'mapped/2-specific-foo');
-assert.equal(mapStatic, 'mapped/static');
+assert.strictEqual(map1foo, 'mapped/1-foo');
+assert.strictEqual(map1jsx, 'mapped/1-jsx');
+assert.strictEqual(map2foo, 'mapped/2-foo');
+assert.strictEqual(map2bar, 'mapped/2a-bar');
+assert.strictEqual(map2js, 'mapped/2a-js');
+assert.strictEqual(map2specific, 'mapped/2-specific-foo');
+assert.strictEqual(mapStatic, 'mapped/static');
