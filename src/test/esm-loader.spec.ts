@@ -335,10 +335,12 @@ test.suite('esm', (test) => {
         signalTest('SIGTERM');
         function signalTest(signal: string) {
           test(signal, async (t) => {
-            const childP = spawn([
-              BIN_PATH,
-              `./esm-child-process/via-tsconfig/sleep.ts`,
-            ]);
+            const childP = spawn(
+              [BIN_PATH, `./esm-child-process/via-tsconfig/sleep.ts`],
+              {
+                stdio: ['ignore', 'pipe', 'pipe'],
+              }
+            );
             let code: number | null | undefined = undefined;
             childP.child.on('exit', (_code) => (code = _code));
             await delay(2e3);

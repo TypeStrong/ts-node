@@ -73,8 +73,8 @@ export function createSpawn<T extends Partial<SpawnOptions>>(
    */
   return function spawn(
     cmd: string[],
-    opts?: Pick<ExecOptions, Exclude<keyof ExecOptions, keyof T>> &
-      Partial<Pick<ExecOptions, keyof T & keyof ExecOptions>>
+    opts?: Pick<SpawnOptions, Exclude<keyof SpawnOptions, keyof T>> &
+      Partial<Pick<SpawnOptions, keyof T & keyof SpawnOptions>>
   ) {
     let child!: ChildProcess;
     return Object.assign(

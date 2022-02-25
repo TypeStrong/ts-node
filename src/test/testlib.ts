@@ -19,6 +19,19 @@ export { ExecutionContext, expect };
 // each .spec file in its own process, so actual concurrency is higher.
 const concurrencyLimiter = throat(16);
 
+function errorPostprocessor<T extends Function>(fn: T): T {
+  return async function (this: any) {
+    try {
+      return await fn.call(this, arguments);
+    } catch (error: any) {
+      delete error?.matcherResult;
+      // delete error?.matcherResult?.message;
+      if (error?.message) error.message = `\n${error.message}\n`;
+      throw error;
+    }
+  } as any;
+}
+
 function once<T extends Function>(func: T): T {
   let run = false;
   let ret: any = undefined;
@@ -167,14 +180,16 @@ function createTestInterface<Context>(opts: {
   ) {
     const wrappedMacros = macros.map((macro) => {
       return async function (t: ExecutionContext<Context>, ...args: any[]) {
-        return concurrencyLimiter(async () => {
-          let i = 0;
-          for (const func of beforeEachFunctions) {
-            await func(t);
-            i++;
-          }
-          return macro(t, ...args);
-        });
+        return concurrencyLimiter(
+          errorPostprocessor(async () => {
+            let i = 0;
+            for (const func of beforeEachFunctions) {
+              await func(t);
+              i++;
+            }
+            return macro(t, ...args);
+          })
+        );
       };
     });
     const computedTitle = computeTitle(title);
