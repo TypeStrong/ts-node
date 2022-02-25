@@ -335,12 +335,10 @@ test.suite('esm', (test) => {
         signalTest('SIGTERM');
         function signalTest(signal: string) {
           test(signal, async (t) => {
-            const childP = spawn(
-              [BIN_PATH, `./esm-child-process/via-tsconfig/sleep.ts`],
-              {
-                stdio: ['ignore', 'pipe', 'pipe'],
-              }
-            );
+            const childP = spawn([
+              BIN_PATH,
+              `./esm-child-process/via-tsconfig/sleep.ts`,
+            ]);
             let code: number | null | undefined = undefined;
             childP.child.on('exit', (_code) => (code = _code));
             await delay(2e3);
@@ -360,7 +358,9 @@ test.suite('esm', (test) => {
             });
             expect(codeAfter2Seconds).toBeUndefined();
             expect(codeAfter4Seconds).toBeUndefined();
-            expect(stdout.trim()).toBe(`child received signal: ${signal}`);
+            expect(stdout.trim()).toBe(
+              `child received signal: ${signal}\nchild exiting`
+            );
             expect(stderr).toBe('');
             expect(code).toBe(123);
           });

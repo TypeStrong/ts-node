@@ -6,6 +6,7 @@ process.on('SIGINT', onSignal);
 function onSignal(signal: string) {
   console.log(`child received signal: ${signal}`);
   setTimeout(() => {
+    console.log(`child exiting`);
     process.exit(123);
   }, 5e3);
 }

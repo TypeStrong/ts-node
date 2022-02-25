@@ -11,4 +11,5 @@ export default {
   },
   require: ['./src/test/remove-env-var-force-color.js'],
   timeout: '300s',
+  concurrency: 1,
 };
