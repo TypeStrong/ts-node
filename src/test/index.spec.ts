@@ -1251,6 +1251,16 @@ test.suite('ts-node', (test) => {
           expect(stderr).toMatch(/- file:\/\/.*mapped\/2-does-not-exist.ts/);
           expect(stderr).toMatch(/- file:\/\/.*mapped\/2a-does-not-exist.ts/);
         });
+
+        test('baseUrl set and no paths', async () => {
+          const { stderr, err } = await exec(
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} --project="tsconfig-baseurl-no-paths.json" baseurl-no-paths.ts`,
+            {
+              cwd: join(TEST_DIR, './esm-path-mapping'),
+            }
+          );
+          expect(err).toBe(null);
+        });
       });
       // TODO ensure these tests run even when `--loader` is not supported
       // Do so by moving these test cases elsewhere
