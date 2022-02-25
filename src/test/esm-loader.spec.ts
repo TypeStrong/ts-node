@@ -341,23 +341,23 @@ test.suite('esm', (test) => {
             ]);
             let code: number | null | undefined = undefined;
             childP.child.on('exit', (_code) => (code = _code));
-            await delay(2e3);
-            const codeAfter2Seconds = code;
+            await delay(6e3);
+            const codeAfter6Seconds = code;
             process.kill(childP.child.pid, signal);
             await delay(2e3);
-            const codeAfter4Seconds = code;
+            const codeAfter8Seconds = code;
             const { stdoutP, stderrP } = await childP;
             const stdout = await stdoutP;
             const stderr = await stderrP;
             t.log({
               stdout,
               stderr,
-              codeAfter2Seconds,
-              codeAfter4Seconds,
+              codeAfter2Seconds: codeAfter6Seconds,
+              codeAfter4Seconds: codeAfter8Seconds,
               code,
             });
-            expect(codeAfter2Seconds).toBeUndefined();
-            expect(codeAfter4Seconds).toBeUndefined();
+            expect(codeAfter6Seconds).toBeUndefined();
+            expect(codeAfter8Seconds).toBeUndefined();
             expect(stdout.trim()).toBe(
               `child registered signal handlers\nchild received signal: ${signal}\nchild exiting`
             );
