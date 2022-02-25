@@ -1271,6 +1271,16 @@ test.suite('ts-node', (test) => {
           );
           expect(err).toBe(null);
         });
+
+        test('fallback to node_modules', async () => {
+          const { err } = await exec(
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} --project="tsconfig-baseurl-star-path.json" node-modules-star-path.ts`,
+            {
+              cwd: join(TEST_DIR, './esm-path-mapping'),
+            }
+          );
+          expect(err).toBe(null);
+        });
       });
       // TODO ensure these tests run even when `--loader` is not supported
       // Do so by moving these test cases elsewhere
