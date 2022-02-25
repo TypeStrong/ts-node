@@ -33,8 +33,9 @@ export const CMD_TS_NODE_WITH_PROJECT_FLAG = `"${BIN_PATH}" --project "${PROJECT
 export const CMD_TS_NODE_WITHOUT_PROJECT_FLAG = `"${BIN_PATH}"`;
 export const EXPERIMENTAL_MODULES_FLAG = semver.gte(process.version, '12.17.0')
   ? ''
-  : '--experimental-modules';
-export const CMD_ESM_LOADER_WITHOUT_PROJECT = `node ${EXPERIMENTAL_MODULES_FLAG} --loader ts-node/esm`;
+  : ' --experimental-modules';
+/** Default `node --loader` invocation (pass `TS_NODE_PROJECT` as env) */
+export const CMD_ESM_LOADER_WITHOUT_PROJECT = `node${EXPERIMENTAL_MODULES_FLAG} --loader ts-node/esm`;
 
 // `createRequire` does not exist on older node versions
 export const testsDirRequire = createRequire(join(TEST_DIR, 'index.js'));
