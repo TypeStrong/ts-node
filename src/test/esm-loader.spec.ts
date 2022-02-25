@@ -359,7 +359,7 @@ test.suite('esm', (test) => {
             expect(codeAfter2Seconds).toBeUndefined();
             expect(codeAfter4Seconds).toBeUndefined();
             expect(stdout.trim()).toBe(
-              `child received signal: ${signal}\nchild exiting`
+              `child registered signal handlers\nchild received signal: ${signal}\nchild exiting`
             );
             expect(stderr).toBe('');
             expect(code).toBe(123);

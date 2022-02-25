@@ -3,6 +3,7 @@ setTimeout(function () {
 }, 30e3);
 process.on('SIGTERM', onSignal);
 process.on('SIGINT', onSignal);
+console.log('child registered signal handlers');
 function onSignal(signal: string) {
   console.log(`child received signal: ${signal}`);
   setTimeout(() => {
