@@ -14,6 +14,7 @@ import {
   EXPERIMENTAL_MODULES_FLAG,
   nodeSupportsEsmHooks,
   nodeSupportsImportAssertions,
+  nodeSupportsSpawningChildProcess,
   nodeUsesNewHooksApi,
   resetNodeEnvironment,
   TEST_DIR,
@@ -308,6 +309,8 @@ test.suite('esm', (test) => {
     );
 
     test.suite('spawns child process', async (test) => {
+      test.runIf(nodeSupportsSpawningChildProcess);
+
       basic('ts-node-esm executable', () =>
         exec(`${BIN_ESM_PATH} ./esm-child-process/via-flag/index.ts foo bar`)
       );

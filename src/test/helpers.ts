@@ -18,6 +18,10 @@ const createRequire: typeof _createRequire = require('create-require');
 export { tsNodeTypes };
 
 export const nodeSupportsEsmHooks = semver.gte(process.version, '12.16.0');
+export const nodeSupportsSpawningChildProcess = semver.gte(
+  process.version,
+  '12.17.0'
+);
 export const nodeUsesNewHooksApi = semver.gte(process.version, '16.12.0');
 export const nodeSupportsImportAssertions = semver.gte(
   process.version,

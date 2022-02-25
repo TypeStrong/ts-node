@@ -5,18 +5,17 @@ import { pathToFileURL } from 'url';
 import { versionGteLt } from '..';
 
 const argPrefix = '--brotli-base64-config=';
-const extraNodeFlags: string[] = [];
-if (!versionGteLt(process.version, '12.17.0'))
-  extraNodeFlags.push('--experimental-modules');
 
 /** @internal */
 export function callInChild(state: BootstrapState) {
+  if (!versionGteLt(process.version, '12.17.0')) {
+    throw new Error('`ts-node-esm` and `ts-node --esm` require node version 12.17.0 or newer.');
+  }
   const child = spawn(
     process.execPath,
     [
       '--require',
       require.resolve('./child-require.js'),
-      ...extraNodeFlags,
       '--loader',
       // Node on Windows doesn't like `c:\` absolute paths here; must be `file:///c:/`
       pathToFileURL(require.resolve('../../child-loader.mjs')).toString(),
