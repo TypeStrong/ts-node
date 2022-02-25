@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig-base.json",
+  "compilerOptions": {
+    "baseUrl": "./level-1",
+    "paths": {
+      "*": ["./level-2/*"]
+    }
+  }
+}
