@@ -7,6 +7,7 @@ import semver = require('semver');
 import {
   BIN_ESM_PATH,
   BIN_PATH,
+  BIN_PATH_JS,
   CMD_ESM_LOADER_WITHOUT_PROJECT,
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   contextTsNodeUnderTest,
@@ -339,7 +340,9 @@ test.suite('esm', (test) => {
         function signalTest(signal: string) {
           test(signal, async (t) => {
             const childP = spawn([
-              BIN_PATH,
+              // exec lets us run the shims on windows; spawn does not
+              process.execPath,
+              BIN_PATH_JS,
               `./esm-child-process/via-tsconfig/sleep.ts`,
             ]);
             let code: number | null | undefined = undefined;
