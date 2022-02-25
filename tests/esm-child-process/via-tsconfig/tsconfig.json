@@ -4,6 +4,7 @@
     "esModuleInterop": true
   },
   "ts-node": {
-    "esm": true
+    "esm": true,
+    "swc": true
   }
 }

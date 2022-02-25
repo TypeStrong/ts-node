@@ -330,6 +330,7 @@ test.suite('esm', (test) => {
       }
 
       test.suite('parent passes signals to child', (test) => {
+        test.runSerially();
         signalTest('SIGINT');
         signalTest('SIGTERM');
         function signalTest(signal: string) {
@@ -341,15 +342,24 @@ test.suite('esm', (test) => {
             let code: number | null | undefined = undefined;
             childP.child.on('exit', (_code) => (code = _code));
             await delay(2e3);
-            expect(code).toBeUndefined();
+            const codeAfter2Seconds = code;
             process.kill(childP.child.pid, signal);
             await delay(2e3);
-            expect(code).toBeUndefined();
+            const codeAfter4Seconds = code;
             const { stdoutP, stderrP } = await childP;
-            expect((await stdoutP).trim()).toBe(
-              `child received signal: ${signal}`
-            );
-            expect(await stderrP).toBe('');
+            const stdout = await stdoutP;
+            const stderr = await stderrP;
+            t.log({
+              stdout,
+              stderr,
+              codeAfter2Seconds,
+              codeAfter4Seconds,
+              code,
+            });
+            expect(codeAfter2Seconds).toBeUndefined();
+            expect(codeAfter4Seconds).toBeUndefined();
+            expect(stdout.trim()).toBe(`child received signal: ${signal}`);
+            expect(stderr).toBe('');
             expect(code).toBe(123);
           });
         }
