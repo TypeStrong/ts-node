@@ -1253,7 +1253,7 @@ test.suite('ts-node', (test) => {
         });
 
         test('baseUrl set and no paths', async () => {
-          const { stderr, err } = await exec(
+          const { err } = await exec(
             `${CMD_ESM_LOADER_WITHOUT_PROJECT} --project="tsconfig-baseurl-no-paths.json" baseurl-no-paths.ts`,
             {
               cwd: join(TEST_DIR, './esm-path-mapping'),
@@ -1263,7 +1263,7 @@ test.suite('ts-node', (test) => {
         });
 
         test('baseUrl set and * path', async () => {
-          const { stderr, err } = await exec(
+          const { err } = await exec(
             `${CMD_ESM_LOADER_WITHOUT_PROJECT} --project="tsconfig-baseurl-star-path.json" baseurl-star-path.ts`,
             {
               cwd: join(TEST_DIR, './esm-path-mapping'),
