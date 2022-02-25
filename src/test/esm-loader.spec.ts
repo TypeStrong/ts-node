@@ -335,8 +335,10 @@ test.suite('esm', (test) => {
 
       test.suite('parent passes signals to child', (test) => {
         test.runSerially();
+
         signalTest('SIGINT');
         signalTest('SIGTERM');
+
         function signalTest(signal: string) {
           test(signal, async (t) => {
             const childP = spawn([
@@ -358,17 +360,25 @@ test.suite('esm', (test) => {
             t.log({
               stdout,
               stderr,
-              codeAfter2Seconds: codeAfter6Seconds,
-              codeAfter4Seconds: codeAfter8Seconds,
+              codeAfter6Seconds,
+              codeAfter8Seconds,
               code,
             });
             expect(codeAfter6Seconds).toBeUndefined();
-            expect(codeAfter8Seconds).toBeUndefined();
-            expect(stdout.trim()).toBe(
-              `child registered signal handlers\nchild received signal: ${signal}\nchild exiting`
-            );
+            if (process.platform === 'win32') {
+              // Windows doesn't have signals, and node attempts an imperfect facsimile.
+              // In Windows, SIGINT and SIGTERM kill the process immediately with exit
+              // code 1, and the process can't catch or prevent this.
+              expect(codeAfter8Seconds).toBe(1);
+              expect(code).toBe(1);
+            } else {
+              expect(codeAfter8Seconds).toBe(undefined);
+              expect(code).toBe(123);
+              expect(stdout.trim()).toBe(
+                `child registered signal handlers\nchild received signal: ${signal}\nchild exiting`
+              );
+            }
             expect(stderr).toBe('');
-            expect(code).toBe(123);
           });
         }
       });
