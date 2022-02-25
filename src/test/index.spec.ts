@@ -1254,9 +1254,12 @@ test.suite('ts-node', (test) => {
 
         test('baseUrl set and no paths', async () => {
           const { err } = await exec(
-            `${CMD_ESM_LOADER_WITHOUT_PROJECT} --project="tsconfig-baseurl-no-paths.json" baseurl-no-paths.ts`,
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} baseurl-no-paths.ts`,
             {
               cwd: join(TEST_DIR, './esm-path-mapping'),
+              env: {
+                TS_NODE_PROJECT: `./esm-path-mapping/tsconfig-baseurl-no-paths.json`,
+              },
             }
           );
           expect(err).toBe(null);
@@ -1264,9 +1267,12 @@ test.suite('ts-node', (test) => {
 
         test('baseUrl set and * path', async () => {
           const { err } = await exec(
-            `${CMD_ESM_LOADER_WITHOUT_PROJECT} --project="tsconfig-baseurl-star-path.json" baseurl-star-path.ts`,
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} baseurl-star-path.ts`,
             {
               cwd: join(TEST_DIR, './esm-path-mapping'),
+              env: {
+                TS_NODE_PROJECT: `./esm-path-mapping/tsconfig-baseurl-star-path.json`,
+              },
             }
           );
           expect(err).toBe(null);
@@ -1274,9 +1280,12 @@ test.suite('ts-node', (test) => {
 
         test('fallback to node_modules', async () => {
           const { err } = await exec(
-            `${CMD_ESM_LOADER_WITHOUT_PROJECT} --project="tsconfig-baseurl-star-path.json" node-modules-star-path.ts`,
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} node-modules-star-path.ts`,
             {
               cwd: join(TEST_DIR, './esm-path-mapping'),
+              env: {
+                TS_NODE_PROJECT: `./esm-path-mapping/tsconfig-baseurl-star-path.json`,
+              },
             }
           );
           expect(err).toBe(null);
