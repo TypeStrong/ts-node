@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig-base.json",
   "compilerOptions": {
-    "baseUrl": "./mapped",
+    "baseUrl": "./level-1/level-2",
     "paths": {
       "map1/*": ["./1-*"],
       "map2/*": ["./2-*", "./2a-*"],
