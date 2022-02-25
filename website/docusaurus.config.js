@@ -153,7 +153,7 @@ module.exports = {
       },
     ],
   ],
-  // Misleading API, probably will be refactored in Docusaurus, but this is
+  // Misleading API that probably will be refactored in Docusaurus, but this is
   // simply a list of <link> tags
   stylesheets: [
     {
