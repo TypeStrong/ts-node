@@ -48,7 +48,8 @@ export const test = createTestInterface({
   mustDoSerial: false,
   automaticallyDoSerial: false,
   automaticallySkip: false,
-  separator: ' > ',
+  // The little right chevron used by ava
+  separator: ' \u203a ',
   titlePrefix: undefined,
 });
 // In case someone wants to `const test = _test.context()`
