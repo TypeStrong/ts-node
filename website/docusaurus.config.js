@@ -113,23 +113,13 @@ module.exports = {
     //   // copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
     // },
     prism: {
-      // for syntax highlighting
-      // additionalLanguages: ['powershell'],
+      theme: require('prism-react-renderer/themes/github'),
+      darkTheme: require('prism-react-renderer/themes/vsDark'),
     },
     algolia: {
-      apiKey: 'c882a0a136ef4e15aa99db604280caa6',
+      appId: 'BYGNLKSCOV',
+      apiKey: '74ac2b781b0cf603c2f1b5e4f44e1c69',
       indexName: 'ts-node',
-
-      // Optional: see doc section below
-      // contextualSearch: true,
-
-      // Optional: see doc section below
-      // appId: 'YOUR_APP_ID',
-
-      // Optional: Algolia search parameters
-      // searchParameters: {},
-
-      //... other Algolia params
     },
   },
   presets: [
@@ -141,12 +131,6 @@ module.exports = {
           editUrl: 'https://github.com/TypeStrong/ts-node/edit/docs/website/',
         },
         blog: false,
-        // blog: {
-        //   showReadingTime: true,
-        //   // Please change this to your repo.
-        //   editUrl:
-        //     'https://github.com/facebook/docusaurus/edit/master/website/blog/',
-        // },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
