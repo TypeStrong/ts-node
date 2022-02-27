@@ -1258,7 +1258,8 @@ test.suite('ts-node', (test) => {
             {
               cwd: join(TEST_DIR, './esm-path-mapping'),
               env: {
-                TS_NODE_PROJECT: `./esm-path-mapping/tsconfig-baseurl-no-paths.json`,
+                ...process.env,
+                TS_NODE_PROJECT: `./tsconfig-baseurl-no-paths.json`,
               },
             }
           );
@@ -1271,7 +1272,8 @@ test.suite('ts-node', (test) => {
             {
               cwd: join(TEST_DIR, './esm-path-mapping'),
               env: {
-                TS_NODE_PROJECT: `./esm-path-mapping/tsconfig-baseurl-star-path.json`,
+                ...process.env,
+                TS_NODE_PROJECT: `./tsconfig-baseurl-star-path.json`,
               },
             }
           );
@@ -1284,7 +1286,8 @@ test.suite('ts-node', (test) => {
             {
               cwd: join(TEST_DIR, './esm-path-mapping'),
               env: {
-                TS_NODE_PROJECT: `./esm-path-mapping/tsconfig-baseurl-star-path.json`,
+                ...process.env,
+                TS_NODE_PROJECT: `./tsconfig-baseurl-star-path.json`,
               },
             }
           );
@@ -1297,7 +1300,8 @@ test.suite('ts-node', (test) => {
             {
               cwd: join(TEST_DIR, './esm-path-mapping'),
               env: {
-                TS_NODE_PROJECT: `./esm-path-mapping/tsconfig-baseurl-star-path.json`,
+                ...process.env,
+                TS_NODE_PROJECT: `./tsconfig-baseurl-star-path.json`,
               },
             }
           );
