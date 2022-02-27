@@ -1336,6 +1336,44 @@ test.suite('ts-node', (test) => {
           expect(err).toBe(null);
         });
       });
+
+      test('relative imports should ignore paths', async () => {
+        const { stderr, err } = await exec(
+          `${CMD_ESM_LOADER_WITHOUT_PROJECT} path-relative.ts`,
+          {
+            cwd: join(TEST_DIR, './esm-path-mapping'),
+            env: {
+              ...process.env,
+              TS_NODE_PROJECT: `./tsconfig-baseurl-star-path.json`,
+            },
+          }
+        );
+        expect(err).toBeTruthy();
+        expect(stderr).toMatch(
+          `[ERR_MODULE_NOT_FOUND]: Cannot find './1-foo'`
+        );
+        // Expect tried candidates to be listed
+        expect(stderr).toMatch(/- file:\/\/.*level-1\/1-foo.ts/);
+      });
+
+      test('base relative imports should ignore paths', async () => {
+        const { stderr, err } = await exec(
+          `${CMD_ESM_LOADER_WITHOUT_PROJECT} path-base-relative.ts`,
+          {
+            cwd: join(TEST_DIR, './esm-path-mapping'),
+            env: {
+              ...process.env,
+              TS_NODE_PROJECT: `./tsconfig-baseurl-star-path.json`,
+            },
+          }
+        );
+        expect(err).toBeTruthy();
+        expect(stderr).toMatch(
+          `[ERR_MODULE_NOT_FOUND]: Cannot find '/1-foo'`
+        );
+        // Expect tried candidates to be listed
+        expect(stderr).toMatch(/- file:\/\/.*level-1\/1-foo.ts/);
+      });
       // TODO ensure these tests run even when `--loader` is not supported
       // Do so by moving these test cases elsewhere
       test.suite('CJS path mapping', (test) => {
