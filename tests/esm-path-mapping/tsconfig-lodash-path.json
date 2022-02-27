@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig-base.json",
+  "compilerOptions": {
+    "baseUrl": "./level-1/level-2",
+    "paths": {
+      "lodash": ["./1-foo.js"]
+    }
+  }
+}
