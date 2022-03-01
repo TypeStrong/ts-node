@@ -9,17 +9,12 @@ type PathMapper = (specifier: string) => string[] | null;
 export function createPathMapper(
   compilerOptions: ts.CompilerOptions
 ): PathMapper {
-  if (compilerOptions.paths) {
-    if (!compilerOptions.baseUrl) {
-      throw new Error(`Compiler option 'baseUrl' required when 'paths' is set`);
-    }
-
-    // TODO this should run when baseUrl is set even if paths is not set.
+  if (compilerOptions.baseUrl) {
     // TODO should only attempt baseUrl / path mapping for non-relative, non-absolute specifiers.
-    const mappings = Object.entries({
-      '*': ['*'],
-      ...(compilerOptions.paths ?? {}),
-    }).map(([patternString, outputs]) => ({
+    // TODO double-check: should `*` default apply if `paths` is specified but it does not specify a `*` mapping?
+    const mappings = Object.entries(
+      compilerOptions.paths ?? { '*': ['*'] }
+    ).map(([patternString, outputs]) => ({
       pattern: parsePattern(patternString),
       outputs,
     }));

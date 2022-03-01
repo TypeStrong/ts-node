@@ -55,7 +55,7 @@ export function installCommonjsResolveHookIfNecessary(tsNodeService: Service) {
     if (attemptPathMapping) {
       const mappedSpecifiers = tsNodeService.mapPath(request);
       if (mappedSpecifiers) {
-        candidateSpecifiers = mappedSpecifiers;
+        candidateSpecifiers = [...mappedSpecifiers, request];
       }
     }
     // Attempt all resolutions.  Collect resolution failures and throw an

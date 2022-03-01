@@ -5,5 +5,8 @@
     "allowJs": true,
     "jsx": "react",
     "moduleResolution": "node"
+  },
+  "ts-node": {
+    "experimentalPathMapping": "both"
   }
 }

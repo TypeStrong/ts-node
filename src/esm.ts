@@ -214,9 +214,10 @@ export function createEsmHooks(tsNodeService: Service) {
       if (parentPath && !tsNodeService.ignored(parentPath)) {
         const mappedSpecifiers = tsNodeService.mapPath(specifier);
         if (mappedSpecifiers) {
-          candidateSpecifiers = mappedSpecifiers.map((path) =>
-            pathToFileURL(path).toString()
-          );
+          candidateSpecifiers = [
+            ...mappedSpecifiers.map((path) => pathToFileURL(path).toString()),
+            specifier,
+          ];
         }
       }
     }
