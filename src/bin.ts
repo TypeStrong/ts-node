@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { join, resolve, dirname, parse as parsePath } from 'path';
+import { join, resolve, dirname, parse as parsePath, relative } from 'path';
 import { inspect } from 'util';
 import Module = require('module');
 import arg = require('arg');
@@ -312,10 +312,18 @@ Options:
   stdinStuff?.repl.setService(service);
 
   // Output project information.
-  if (version >= 2) {
+  if (version === 2) {
     console.log(`ts-node v${VERSION}`);
     console.log(`node ${process.version}`);
     console.log(`compiler v${service.ts.version}`);
+    process.exit(0);
+  }
+  if (version >= 3) {
+    console.log(`ts-node v${VERSION} ${dirname(__dirname)}`);
+    console.log(`node ${process.version}`);
+    console.log(
+      `compiler v${service.ts.version} ${service.compilerPath ?? ''}`
+    );
     process.exit(0);
   }
 
@@ -323,13 +331,31 @@ Options:
     const ts = service.ts as any as TSInternal;
     if (typeof ts.convertToTSConfig !== 'function') {
       console.error(
-        'Error: --show-config requires a typescript versions >=3.2 that support --showConfig'
+        'Error: --showConfig requires a typescript versions >=3.2 that support --showConfig'
       );
       process.exit(1);
+    }
+    let moduleTypes = undefined;
+    if (service.options.moduleTypes) {
+      // Assumption: this codepath requires CLI invocation, so moduleTypes must have come from a tsconfig, not API.
+      const showRelativeTo = dirname(service.configFilePath!);
+      moduleTypes = {} as Record<string, string>;
+      for (const [key, value] of Object.entries(service.options.moduleTypes)) {
+        moduleTypes[
+          relative(
+            showRelativeTo,
+            resolve(service.options.optionBasePaths?.moduleTypes!, key)
+          )
+        ] = value;
+      }
     }
     const json = {
       ['ts-node']: {
         ...service.options,
+        require: service.options.require?.length
+          ? service.options.require
+          : undefined,
+        moduleTypes,
         optionBasePaths: undefined,
         compilerOptions: undefined,
         project: service.configFilePath ?? service.options.project,
@@ -350,7 +376,7 @@ Options:
   }
 
   // Prepend `ts-node` arguments to CLI for child processes.
-  process.execArgv.unshift(
+  process.execArgv.push(
     __filename,
     ...process.argv.slice(2, process.argv.length - args._.length)
   );

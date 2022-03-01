@@ -31,7 +31,7 @@ export interface CreateOptions {
     ignore?: string[];
     ignoreDiagnostics?: Array<number | string>;
     logError?: boolean;
-    moduleTypes?: Record<string, 'cjs' | 'esm' | 'package'>;
+    moduleTypes?: ModuleTypes;
     pretty?: boolean;
     project?: string;
     projectSearchDir?: string;
@@ -43,10 +43,12 @@ export interface CreateOptions {
     scopeDir?: string;
     skipIgnore?: boolean;
     skipProject?: boolean;
+    swc?: boolean;
     // (undocumented)
     transformers?: _ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers);
     transpileOnly?: boolean;
     transpiler?: string | [string, object];
+    tsTrace?: (str: string) => void;
     typeCheck?: boolean;
 }
 
@@ -72,11 +74,14 @@ export interface CreateReplOptions {
 // @public (undocumented)
 export interface CreateTranspilerOptions {
     // (undocumented)
-    service: Pick<Service, 'config' | 'options'>;
+    service: Pick<Service, Extract<'config' | 'options' | 'projectLocalResolveHelper', keyof Service>>;
 }
 
 // @public
 export type EvalAwarePartialHost = Pick<CreateOptions, 'readFile' | 'fileExists'>;
+
+// @public (undocumented)
+export type ModuleTypes = Record<string, 'cjs' | 'esm' | 'package'>;
 
 // @public (undocumented)
 export interface NodeLoaderHooksAPI1 {
@@ -118,12 +123,22 @@ export namespace NodeLoaderHooksAPI2 {
     // (undocumented)
     export type LoadHook = (url: string, context: {
         format: NodeLoaderHooksFormat | null | undefined;
+        importAssertions?: NodeImportAssertions;
     }, defaultLoad: NodeLoaderHooksAPI2['load']) => Promise<{
         format: NodeLoaderHooksFormat;
         source: string | Buffer | undefined;
     }>;
     // (undocumented)
+    export interface NodeImportAssertions {
+        // (undocumented)
+        type?: 'json';
+    }
+    // (undocumented)
+    export type NodeImportConditions = unknown;
+    // (undocumented)
     export type ResolveHook = (specifier: string, context: {
+        conditions?: NodeImportConditions;
+        importAssertions?: NodeImportAssertions;
         parentURL: string;
     }, defaultResolve: ResolveHook) => Promise<{
         url: string;
@@ -147,6 +162,7 @@ export const REGISTER_INSTANCE: unique symbol;
 
 // @public
 export interface RegisterOptions extends CreateOptions {
+    experimentalResolverFeatures?: boolean;
     preferTsExts?: boolean;
 }
 
@@ -276,7 +292,7 @@ export interface TSCommon {
 }
 
 // @public
-export interface TsConfigOptions extends Omit<RegisterOptions, 'transformers' | 'readFile' | 'fileExists' | 'skipProject' | 'project' | 'dir' | 'cwd' | 'projectSearchDir' | 'optionBasePaths'> {
+export interface TsConfigOptions extends Omit<RegisterOptions, 'transformers' | 'readFile' | 'fileExists' | 'skipProject' | 'project' | 'dir' | 'cwd' | 'projectSearchDir' | 'optionBasePaths' | 'tsTrace'> {
 }
 
 // @public
