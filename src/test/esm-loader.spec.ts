@@ -261,17 +261,38 @@ test.suite('esm', (test) => {
     test.suite('supports import assertions', (test) => {
       test.runIf(nodeSupportsImportAssertions);
 
-      test('Can import JSON using the appropriate flag and assertion', async (t) => {
-        const { err, stdout } = await exec(
-          `${CMD_ESM_LOADER_WITHOUT_PROJECT} --experimental-json-modules ./importJson.ts`,
-          {
-            cwd: resolve(TEST_DIR, 'esm-import-assertions'),
-          }
-        );
-        expect(err).toBe(null);
-        expect(stdout.trim()).toBe(
-          'A fuchsia car has 2 seats and the doors are open.\nDone!'
-        );
+      test.suite('node >=17.5.0', (test) => {
+        test.runIf(semver.gte(process.version, '17.5.0'));
+
+        test('Can import JSON modules with appropriate assertion', async (t) => {
+          const { err, stdout } = await exec(
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./importJson.ts`,
+            {
+              cwd: resolve(TEST_DIR, 'esm-import-assertions'),
+            }
+          );
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe(
+            'A fuchsia car has 2 seats and the doors are open.\nDone!'
+          );
+        });
+      });
+
+      test.suite('node <17.5.0', (test) => {
+        test.runIf(semver.lt(process.version, '17.5.0'));
+
+        test('Can import JSON using the appropriate flag and assertion', async (t) => {
+          const { err, stdout } = await exec(
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} --experimental-json-modules ./importJson.ts`,
+            {
+              cwd: resolve(TEST_DIR, 'esm-import-assertions'),
+            }
+          );
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe(
+            'A fuchsia car has 2 seats and the doors are open.\nDone!'
+          );
+        });
       });
     });
 

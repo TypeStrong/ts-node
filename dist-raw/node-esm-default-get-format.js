@@ -11,7 +11,11 @@ const {
 const { extname } = require('path');
 const { getOptionValue } = require('./node-options');
 
-const experimentalJsonModules = getOptionValue('--experimental-json-modules');
+const [nodeMajor, nodeMinor] = process.versions.node.split('.').map(s => parseInt(s, 10));
+const experimentalJsonModules =
+  nodeMajor > 17
+  || (nodeMajor === 17 && nodeMinor >= 5)
+  || getOptionValue('--experimental-json-modules');
 const experimentalSpeciferResolution =
   getOptionValue('--experimental-specifier-resolution');
 const experimentalWasmModules = getOptionValue('--experimental-wasm-modules');
