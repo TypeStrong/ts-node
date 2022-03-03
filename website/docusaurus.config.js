@@ -113,7 +113,8 @@ module.exports = {
     //   // copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
     // },
     prism: {
-      theme: require('prism-react-renderer/themes/github'),
+      // Note: these themes are ignored due to using shiki-twoslash
+      theme: require('prism-react-renderer/themes/vsLight'),
       darkTheme: require('prism-react-renderer/themes/vsDark'),
     },
     algolia: {
@@ -134,6 +135,26 @@ module.exports = {
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
+      },
+    ],
+    [
+      'docusaurus-preset-shiki-twoslash',
+      {
+        // https://github.com/shikijs/twoslash/blob/main/packages/shiki-twoslash/README.md#user-settings
+
+        // langs: ["shell", "typescript", "javascript", "ts", "js", "tsx", "jsx", "json", "jsonc"],
+        includeJSDocInHover: true,
+
+        themes: ["github-light", "nord"],
+
+        // VSCode default
+        // themes: ["light-plus", "dark-plus"],
+
+        // Other options
+        // themes: ["min-light", "nord"],
+        // themes: ["min-light", "min-dark"],
+        // themes: ["github-light", "github-dark"],
+        // themes: ["solarized-light", "solarized-dark"],
       },
     ],
   ],

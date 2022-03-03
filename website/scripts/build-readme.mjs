@@ -92,6 +92,7 @@ async function main() {
     .use(codeLanguageJsonToJsonc)
     .use(rewritePageLinksToAnchorLinks)
     .use(rewriteImgTargets)
+    .use(trimCutFromTwoslashCode)
     .use(remarkToc, { tight: true })
     .process(
       vfile({
@@ -144,6 +145,18 @@ function rewriteImgTargets() {
     visit(ast, 'image', (node) => {
       node.url = node.url.replace(/^\//, 'website/static/');
     });
+  };
+}
+
+function trimCutFromTwoslashCode() {
+  return (ast) => {
+    // Strip everything above // ---cut--- in twoslash code blocks
+    const lookingFor = '\n// ---cut---\n';
+    visit(ast, 'code', (node) => {
+      if(node.meta?.includes('twoslash') && node.value.includes(lookingFor)) {
+        node.value = node.value.slice(node.value.lastIndexOf(lookingFor) + lookingFor.length);
+      }
+    })
   };
 }
 
