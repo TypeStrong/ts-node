@@ -1,4 +1,4 @@
-import { diffLines } from 'diff';
+import { diffLines } from '../dist-vendor/diff';
 import { homedir } from 'os';
 import { join } from 'path';
 import {
