@@ -1,6 +1,6 @@
 {
   "name": "ts-node",
-  "version": "10.5.0",
+  "version": "10.6.0",
   "description": "TypeScript execution environment and REPL for node.js, with source map support",
   "main": "dist/index.js",
   "exports": {
@@ -176,7 +176,7 @@
     "singleQuote": true
   },
   "volta": {
-    "node": "16.9.1",
+    "node": "17.5.0",
     "npm": "6.14.15"
   }
 }

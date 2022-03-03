@@ -142,6 +142,7 @@ export namespace NodeLoaderHooksAPI2 {
         parentURL: string;
     }, defaultResolve: ResolveHook) => Promise<{
         url: string;
+        format?: NodeLoaderHooksFormat;
     }>;
 }
 
@@ -278,7 +279,7 @@ export interface TSCommon {
     // (undocumented)
     resolveModuleNameFromCache: typeof _ts.resolveModuleNameFromCache;
     // (undocumented)
-    resolveTypeReferenceDirective: typeof _ts.resolveTypeReferenceDirective;
+    resolveTypeReferenceDirective(typeReferenceDirectiveName: string, containingFile: string | undefined, options: _ts.CompilerOptions, host: _ts.ModuleResolutionHost, redirectedReference?: _ts.ResolvedProjectReference, cache?: _ts.TypeReferenceDirectiveResolutionCache, resolutionMode?: _ts.SourceFile['impliedNodeFormat']): _ts.ResolvedTypeReferenceDirectiveWithFailedLookupLocations;
     // (undocumented)
     ScriptSnapshot: typeof _ts.ScriptSnapshot;
     // (undocumented)
@@ -289,6 +290,33 @@ export interface TSCommon {
     transpileModule: typeof _ts.transpileModule;
     // (undocumented)
     version: typeof _ts.version;
+}
+
+// @public (undocumented)
+export namespace TSCommon {
+    // (undocumented)
+    export type CompilerOptions = _ts.CompilerOptions;
+    // (undocumented)
+    export type FileReference = _ts.FileReference;
+    // (undocumented)
+    export interface LanguageServiceHost extends _ts.LanguageServiceHost {
+        // (undocumented)
+        resolveTypeReferenceDirectives?(typeDirectiveNames: string[] | _ts.FileReference[], containingFile: string, redirectedReference: _ts.ResolvedProjectReference | undefined, options: _ts.CompilerOptions, containingFileMode?: _ts.SourceFile['impliedNodeFormat'] | undefined): (_ts.ResolvedTypeReferenceDirective | undefined)[];
+    }
+    // (undocumented)
+    export type ModuleResolutionHost = _ts.ModuleResolutionHost;
+    // (undocumented)
+    export type ParsedCommandLine = _ts.ParsedCommandLine;
+    // (undocumented)
+    export type ResolvedModule = _ts.ResolvedModule;
+    // (undocumented)
+    export type ResolvedModuleWithFailedLookupLocations = _ts.ResolvedModuleWithFailedLookupLocations;
+    // (undocumented)
+    export type ResolvedProjectReference = _ts.ResolvedProjectReference;
+    // (undocumented)
+    export type ResolvedTypeReferenceDirective = _ts.ResolvedTypeReferenceDirective;
+    // (undocumented)
+    export type SourceFile = _ts.SourceFile;
 }
 
 // @public
