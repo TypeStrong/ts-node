@@ -153,10 +153,12 @@ function trimCutFromTwoslashCode() {
     // Strip everything above // ---cut--- in twoslash code blocks
     const lookingFor = '\n// ---cut---\n';
     visit(ast, 'code', (node) => {
-      if(node.meta?.includes('twoslash') && node.value.includes(lookingFor)) {
-        node.value = node.value.slice(node.value.lastIndexOf(lookingFor) + lookingFor.length);
+      if (node.meta?.includes('twoslash') && node.value.includes(lookingFor)) {
+        node.value = node.value.slice(
+          node.value.lastIndexOf(lookingFor) + lookingFor.length
+        );
       }
-    })
+    });
   };
 }
 

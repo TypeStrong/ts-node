@@ -145,7 +145,7 @@ module.exports = {
         // langs: ["shell", "typescript", "javascript", "ts", "js", "tsx", "jsx", "json", "jsonc"],
         includeJSDocInHover: true,
 
-        themes: ["github-light", "nord"],
+        themes: ['github-light', 'nord'],
 
         // VSCode default
         // themes: ["light-plus", "dark-plus"],
