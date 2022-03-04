@@ -1,6 +1,6 @@
 // Change: HomeBreadcrumbItem points to /docs instead of /
 
-import React, {type ReactNode} from 'react';
+import React, { type ReactNode } from 'react';
 import {
   ThemeClassNames,
   useSidebarBreadcrumbs,
@@ -39,7 +39,8 @@ function BreadcrumbsItem({
     <li
       className={clsx('breadcrumbs__item', {
         'breadcrumbs__item--active': active,
-      })}>
+      })}
+    >
       {children}
     </li>
   );
@@ -66,9 +67,10 @@ export default function DocBreadcrumbs(): JSX.Element | null {
     <nav
       className={clsx(
         ThemeClassNames.docs.docBreadcrumbs,
-        styles.breadcrumbsContainer,
+        styles.breadcrumbsContainer
       )}
-      aria-label="breadcrumbs">
+      aria-label="breadcrumbs"
+    >
       <ul className="breadcrumbs">
         {homePageRoute && <HomeBreadcrumbItem />}
         {breadcrumbs.map((item, idx) => (
