@@ -1,4 +1,4 @@
-import { diffLines } from 'diff';
+import type * as _diff from 'diff';
 import { homedir } from 'os';
 import { join } from 'path';
 import {
@@ -25,6 +25,13 @@ function getProcessTopLevelAwait() {
     } = require('../dist-raw/node-repl-await'));
   }
   return _processTopLevelAwait;
+}
+let diff: typeof _diff;
+function getDiffLines() {
+  if (diff === undefined) {
+    diff = require('diff');
+  }
+  return diff.diffLines;
 }
 
 /** @internal */
@@ -544,7 +551,7 @@ function appendCompileAndEvalInput(options: {
   );
 
   // Use `diff` to check for new JavaScript to execute.
-  const changes = diffLines(
+  const changes = getDiffLines()(
     oldOutputWithoutSourcemapComment,
     outputWithoutSourcemapComment
   );
