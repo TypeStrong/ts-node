@@ -680,6 +680,8 @@ const RECOVERY_CODES: Set<number> = new Set([
   1160, // "Unterminated template literal."
   1161, // "Unterminated regular expression literal."
   2355, // "A function whose declared type is neither 'void' nor 'any' must return a value."
+  2391, // "Function implementation is missing or not immediately following the declaration."
+  7010, // "Function, which lacks return-type annotation, implicitly has an 'any' return type."
 ]);
 
 /**

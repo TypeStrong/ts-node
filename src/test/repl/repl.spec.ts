@@ -424,6 +424,29 @@ test.suite(
         expect(stdout).toContain(":1:1'\n");
       }
     );
+
+    // Serial because it's timing-sensitive
+    test.serial(
+      'multiline function args declaration is supported',
+      async (t) => {
+        const script = `function myFn(
+          a: string,
+          b: string
+        ) {
+          return a + ' ' + b
+        }
+        myFn('test', '!')
+        `;
+
+        const { stdout, stderr } = await t.context.executeInRepl(script, {
+          registerHooks: true,
+          startInternalOptions: { useGlobal: false },
+          waitPattern: 'done!',
+        });
+        expect(stderr).toBe('');
+        expect(stdout).toContain(`'test !'`);
+      }
+    );
   }
 );
 
