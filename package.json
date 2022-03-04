@@ -36,11 +36,11 @@
   "types": "dist/index.d.ts",
   "bin": {
     "ts-node": "dist/bin.js",
-    "ts-script": "dist/bin-script-deprecated.js",
-    "ts-node-script": "dist/bin-script.js",
     "ts-node-cwd": "dist/bin-cwd.js",
+    "ts-node-esm": "dist/bin-esm.js",
+    "ts-node-script": "dist/bin-script.js",
     "ts-node-transpile-only": "dist/bin-transpile.js",
-    "ts-node-esm": "dist/bin-esm.js"
+    "ts-script": "dist/bin-script-deprecated.js"
   },
   "files": [
     "/transpilers/",
