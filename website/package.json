@@ -13,8 +13,8 @@
     "build-readme": "./scripts/build-readme.mjs"
   },
   "dependencies": {
-    "@docusaurus/core": "2.0.0-beta.16",
-    "@docusaurus/preset-classic": "2.0.0-beta.16",
+    "@docusaurus/core": "2.0.0-beta.17",
+    "@docusaurus/preset-classic": "2.0.0-beta.17",
     "@mdx-js/react": "^1.6.22",
     "@types/js-yaml": "^4.0.0",
     "clsx": "^1.1.1",
