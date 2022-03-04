@@ -33,3 +33,24 @@
   margin: 0 calc(-1 * var(--ifm-pre-padding));
   padding: 0 var(--ifm-pre-padding);
 }
+
+/* Hide the external link icon */
+.navbar__item svg {
+  display: none;
+}
+
+/*
+ * Shiki-twoslash
+ * See: https://github.com/shikijs/twoslash/tree/main/packages/docusaurus-preset-shiki-twoslash
+ */
+[data-theme='light'] .shiki.nord,
+[data-theme='light'] .shiki.min-dark,
+[data-theme='light'] .shiki.github-dark,
+[data-theme='light'] .shiki.dark-plus,
+[data-theme='light'] .shiki.solarized-dark,
+[data-theme='dark'] .shiki.min-light,
+[data-theme='dark'] .shiki.github-light,
+[data-theme='dark'] .shiki.light-plus,
+[data-theme='dark'] .shiki.solarized-light {
+  display: none;
+}

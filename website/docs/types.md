@@ -28,7 +28,7 @@ Example project structure:
 
 Example module declaration file:
 
-```typescript
+```typescript twoslash
 declare module '<module_name>' {
     // module definitions go here
 }
@@ -36,7 +36,7 @@ declare module '<module_name>' {
 
 For module definitions, you can use [`paths`](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping):
 
-```json
+```json title="tsconfig.json"
 {
   "compilerOptions": {
     "baseUrl": ".",
@@ -49,9 +49,11 @@ For module definitions, you can use [`paths`](https://www.typescriptlang.org/doc
 
 An alternative approach for definitions of third-party libraries are [triple-slash directives](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html). This may be helpful if you prefer not to change your TypeScript `compilerOptions` or structure your custom type definitions when using `typeRoots`. Below is an example of the triple-slash directive as a relative path within your project:
 
-```typescript
-/// <reference types="./types/untyped_js_lib" />
-import UntypedJsLib from "untyped_js_lib"
+```typescript twoslash
+/// <reference path="./types/untyped_js_lib" />
+import {Greeter} from "untyped_js_lib"
+const g = new Greeter();
+g.sayHello();
 ```
 
 **Tip:** If you _must_ use `files`, `include`, or `exclude`, enable `--files` flags or set `TS_NODE_FILES=true`.
