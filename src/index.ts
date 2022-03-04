@@ -793,7 +793,9 @@ export function create(rawOptions: CreateOptions = {}): Service {
   // Install source map support and read from memory cache.
   installSourceMapSupport();
   function installSourceMapSupport() {
-    (require('@cspotcode/source-map-support') as typeof _sourceMapSupport).install({
+    const sourceMapSupport =
+      require('@cspotcode/source-map-support') as typeof _sourceMapSupport;
+    sourceMapSupport.install({
       environment: 'node',
       retrieveFile(pathOrUrl: string) {
         let path = pathOrUrl;
