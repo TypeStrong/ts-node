@@ -159,43 +159,80 @@ export function main(
   } = args;
 
   if (help) {
+    const chalk = require('chalk') as typeof import('chalk');
     console.log(`
-Usage: ts-node [options] [ -e script | script.ts ] [arguments]
+${chalk.bold(`Usage:`)}
+  ts-node [options] [ -e script | script.ts ] [arguments]
 
-Options:
+${chalk.bold(`Documentation:`)}
+  ${chalk.underline(`https://typestrong.org/ts-node/docs/`)}
+
+${chalk.bold(`Common Options:`)}
 
   -e, --eval [code]               Evaluate code
   -p, --print                     Print result of \`--eval\`
   -r, --require [path]            Require a node module before execution
   -i, --interactive               Opens the REPL even if stdin does not appear to be a terminal
 
+  --esm                           Bootstrap with the ESM loader, enabling full ESM support
+  --swc                           Use the faster swc transpiler. Implies \`--transpileOnly\`
+
+${chalk.bold(`Informational Options:`)}
+
   -h, --help                      Print CLI usage
-  -v, --version                   Print module version information
-  --cwdMode                       Use current directory instead of <script.ts> for config resolution
+  -v, --version                   Print module version information. \`-vvv\` to print additional information
   --showConfig                    Print resolved configuration and exit
 
-  -T, --transpileOnly             Use TypeScript's faster \`transpileModule\` or a third-party transpiler
-  --swc                           Use the swc transpiler
-  -H, --compilerHost              Use TypeScript's compiler host API
-  -I, --ignore [pattern]          Override the path patterns to skip compilation
-  -P, --project [path]            Path to TypeScript JSON project file
-  -C, --compiler [name]           Specify a custom TypeScript compiler
-  --transpiler [name]             Specify a third-party, non-typechecking transpiler
-  -D, --ignoreDiagnostics [code]  Ignore TypeScript warnings by diagnostic code
+${chalk.bold(`TSConfig Options:`)}
+
+  -P, --project [path]            Path to \`tsconfig.json\`
+  --skipProject                   Skip reading \`tsconfig.json\`
+  --cwdMode                       Use current directory instead of <script.ts> to search for \`tsconfig.json\`
   -O, --compilerOptions [opts]    JSON object to merge with compiler options
 
-  --cwd                           Behave as if invoked within this working directory.
+${chalk.bold(`Typechecking Options:`)}
+
+  -D, --ignoreDiagnostics [code]  Ignore TypeScript warnings by diagnostic code
+  --logError                      Logs TypeScript errors to stderr instead of throwing exceptions
   --files                         Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
+                                  May avoid typechecking failures due to missing types
   --pretty                        Use pretty diagnostic formatter (usually enabled by default)
-  --skipProject                   Skip reading \`tsconfig.json\`
-  --skipIgnore                    Skip \`--ignore\` checks
-  --emit                          Emit output files into \`.ts-node\` directory
+
+${chalk.bold(`Transpilation Options:`)}
+
+  --swc                           Use the faster swc transpiler.  Implies \`--transpileOnly\`
+  -T, --transpileOnly             Skip typechecking to compile faster
+  --transpiler [name]             Specify a third-party, non-typechecking transpiler
+
+${chalk.bold(`Scope Options:`)}
+
+  -I, --ignore [pattern]          Skip compiling files matching these regexp patterns.  Default: skips \`node_modules\`
+  --skipIgnore                    Skip \`--ignore\` checks, compile files in \`node_modules\`
   --scope                         Scope compiler to files within \`scopeDir\`.  Anything outside this directory is ignored.
   --scopeDir                      Directory for \`--scope\`
+
+${chalk.bold(`Advanced Options:`)}
+
+  -C, --compiler [name]           Specify a custom TypeScript compiler
+  --cwd                           Behave as if invoked within this working directory.
+  --emit                          Emit output files into \`.ts-node\` directory
   --preferTsExts                  Prefer importing TypeScript files over JavaScript files
-  --logError                      Logs TypeScript errors to stderr instead of throwing exceptions
-  --noExperimentalReplAwait       Disable top-level await in REPL.  Equivalent to node's --no-experimental-repl-await
-`);
+  -H, --compilerHost              Use TypeScript's compiler host API
+  --noExperimentalReplAwait       Disable top-level await in REPL. Equivalent to node's \`--no-experimental-repl-await\`
+`.replace(/.*\n/g, (v) => {
+  console.dir(v);
+  const maxWidth = Math.min(120, process.stdout.getWindowSize()?.[0] ?? 120);
+  const indent = 34;
+  let offset = 0;
+  let ret = '';
+  while(v.length - offset > maxWidth) {
+    let i;
+    for(i = offset + maxWidth; v[i] !== ' ' && i > offset; i--) {}
+    ret += v.slice(offset, offset + i) + '\n' + ' '.repeat(indent);
+    offset += i + 1;
+  }
+  return ret + v.slice(offset);
+}).replace(/\`.*?\`/g, (v) => chalk.cyan(v)));
 
     process.exit(0);
   }
