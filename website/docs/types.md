@@ -8,7 +8,7 @@ For global definitions, you can use the `typeRoots` compiler option.  This requi
 
 Example `tsconfig.json`:
 
-```json tsconfig
+```json
 {
   "compilerOptions": {
     "typeRoots" : ["./node_modules/@types", "./typings"]
@@ -36,7 +36,7 @@ declare module '<module_name>' {
 
 For module definitions, you can use [`paths`](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping):
 
-```json tsconfig title="tsconfig.json"
+```json title="tsconfig.json"
 {
   "compilerOptions": {
     "baseUrl": ".",

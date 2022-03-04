@@ -5,7 +5,7 @@ title: |
 
 You can use ts-node together with [tsconfig-paths](https://www.npmjs.com/package/tsconfig-paths) to load modules according to the `paths` section in `tsconfig.json`.
 
-```json tsconfig title="tsconfig.json"
+```json title="tsconfig.json"
 {
   "ts-node": {
     // Do not forget to `npm i -D tsconfig-paths`

@@ -25,7 +25,7 @@ When searching, it is resolved using [the same search behavior as `tsc`](https:/
 
 You can use this sample configuration as a starting point:
 
-```json tsconfig title="tsconfig.json"
+```json title="tsconfig.json"
 {
   // This is an alias to @tsconfig/node12: https://github.com/tsconfig/bases
   "extends": "ts-node/node12/tsconfig.json",
@@ -57,7 +57,7 @@ Our bundled [JSON schema](https://unpkg.com/browse/ts-node@latest/tsconfig.schem
 [@tsconfig/bases](https://github.com/tsconfig/bases) maintains recommended configurations for several node versions.
 As a convenience, these are bundled with ts-node.
 
-```json tsconfig title="tsconfig.json"
+```json title="tsconfig.json"
 {
   "extends": "ts-node/node16/tsconfig.json",
 

@@ -17,7 +17,7 @@ CommonJS or ESM.  Node supports similar overriding via `.cjs` and `.mjs` file ex
 
 The following example tells ts-node to execute a webpack config as CommonJS:
 
-```json tsconfig title="tsconfig.json"
+```json title="tsconfig.json"
 {
   "ts-node": {
     "transpileOnly": true,

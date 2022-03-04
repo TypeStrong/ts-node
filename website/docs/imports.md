@@ -24,7 +24,7 @@ Transforming to CommonJS is typically simpler and more widely supported because 
 }
 ```
 
-```json tsconfig title="tsconfig.json"
+```json title="tsconfig.json"
 {
   "compilerOptions": {
     "module": "CommonJS"
@@ -34,7 +34,7 @@ Transforming to CommonJS is typically simpler and more widely supported because 
 
 If you must keep `"module": "ESNext"` for `tsc`, webpack, or another build tool, you can set an override for ts-node.
 
-```json tsconfig title="tsconfig.json"
+```json title="tsconfig.json"
 {
   "compilerOptions": {
     "module": "ESNext"
@@ -61,7 +61,7 @@ You must set [`"type": "module"`](https://nodejs.org/api/packages.html#packages_
 }
 ```
 
-```json tsconfig title="tsconfig.json"
+```json title="tsconfig.json"
 {
   "compilerOptions": {
     "module": "ESNext" // or ES2015, ES2020

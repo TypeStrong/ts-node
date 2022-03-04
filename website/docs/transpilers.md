@@ -27,7 +27,7 @@ npm i -D @swc/core @swc/helpers regenerator-runtime
 
 Then add the following to your `tsconfig.json`.
 
-```json tsconfig title="tsconfig.json"
+```json title="tsconfig.json"
 {
   "ts-node": {
     "swc": true
@@ -46,7 +46,7 @@ For example, to use a hypothetical "speedy-ts-compiler", first install it into y
 
 Then add the following to your tsconfig:
 
-```json tsconfig title="tsconfig.json"
+```json title="tsconfig.json"
 {
   "ts-node": {
     "transpileOnly": true,

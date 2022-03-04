@@ -8,7 +8,7 @@ implement the same API.
 
 For example, to use `ttypescript` and `ts-transformer-keys`, add this to your `tsconfig.json`:
 
-```json tsconfig title="tsconfig.json"
+```json title="tsconfig.json"
 {
   "ts-node": {
     // This can be omitted when using ts-patch
