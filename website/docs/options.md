@@ -15,6 +15,7 @@ _Environment variables, where available, are in `ALL_CAPS`_
 -  `-e, --eval`   Evaluate code
 -  `-p, --print`   Print result of `--eval`
 -  `-i, --interactive`   Opens the REPL even if stdin does not appear to be a terminal
+-  `--esm`   Bootstrap with the ESM loader, enabling full ESM support
 
 ## TSConfig
 

@@ -1,5 +1,6 @@
 import type * as ts from 'typescript';
 import type { Service } from '../index';
+import type { ProjectLocalResolveHelper } from '../util';
 
 /**
  * Third-party transpilers are implemented as a CommonJS module with a
@@ -21,6 +22,11 @@ export interface CreateTranspilerOptions {
     Service,
     Extract<'config' | 'options' | 'projectLocalResolveHelper', keyof Service>
   >;
+  /**
+   * If `"transpiler"` option is declared in an "extends" tsconfig, this path might be different than
+   * the `projectLocalResolveHelper`
+   */
+  transpilerConfigLocalResolveHelper: ProjectLocalResolveHelper;
 }
 export interface Transpiler {
   // TODOs

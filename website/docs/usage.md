@@ -25,6 +25,9 @@ ts-node-transpile-only script.ts
 
 # Equivalent to ts-node --cwdMode
 ts-node-cwd script.ts
+
+# Equivalent to ts-node --esm
+ts-node-esm script.ts
 ```
 
 ## Shebang

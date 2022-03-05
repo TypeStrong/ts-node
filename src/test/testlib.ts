@@ -19,6 +19,19 @@ export { ExecutionContext, expect };
 // each .spec file in its own process, so actual concurrency is higher.
 const concurrencyLimiter = throat(16);
 
+function errorPostprocessor<T extends Function>(fn: T): T {
+  return async function (this: any) {
+    try {
+      return await fn.call(this, arguments);
+    } catch (error: any) {
+      delete error?.matcherResult;
+      // delete error?.matcherResult?.message;
+      if (error?.message) error.message = `\n${error.message}\n`;
+      throw error;
+    }
+  } as any;
+}
+
 function once<T extends Function>(func: T): T {
   let run = false;
   let ret: any = undefined;
@@ -35,7 +48,8 @@ export const test = createTestInterface({
   mustDoSerial: false,
   automaticallyDoSerial: false,
   automaticallySkip: false,
-  separator: ' > ',
+  // The little right chevron used by ava
+  separator: ' \u203a ',
   titlePrefix: undefined,
 });
 // In case someone wants to `const test = _test.context()`
@@ -101,6 +115,8 @@ export interface TestInterface<
   skipUnless(conditional: boolean): void;
   /** If conditional is true, run tests, otherwise skip them */
   runIf(conditional: boolean): void;
+  /** If conditional is false, skip tests */
+  skipIf(conditional: boolean): void;
 
   // TODO add teardownEach
 }
@@ -167,14 +183,16 @@ function createTestInterface<Context>(opts: {
   ) {
     const wrappedMacros = macros.map((macro) => {
       return async function (t: ExecutionContext<Context>, ...args: any[]) {
-        return concurrencyLimiter(async () => {
-          let i = 0;
-          for (const func of beforeEachFunctions) {
-            await func(t);
-            i++;
-          }
-          return macro(t, ...args);
-        });
+        return concurrencyLimiter(
+          errorPostprocessor(async () => {
+            let i = 0;
+            for (const func of beforeEachFunctions) {
+              await func(t);
+              i++;
+            }
+            return macro(t, ...args);
+          })
+        );
       };
     });
     const computedTitle = computeTitle(title);
@@ -269,6 +287,9 @@ function createTestInterface<Context>(opts: {
   test.skipUnless = test.runIf = function (runIfTrue: boolean) {
     assertOrderingForDeclaringSkipUnless();
     automaticallySkip = automaticallySkip || !runIfTrue;
+  };
+  test.skipIf = function (skipIfTrue: boolean) {
+    test.runIf(!skipIfTrue);
   };
   return test as any;
 }
