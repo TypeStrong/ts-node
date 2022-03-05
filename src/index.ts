@@ -3,7 +3,7 @@ import { Module } from 'module';
 import * as util from 'util';
 import { fileURLToPath } from 'url';
 
-import sourceMapSupport = require('@cspotcode/source-map-support');
+import type * as _sourceMapSupport from '@cspotcode/source-map-support';
 import { BaseError } from 'make-error';
 import type * as _ts from 'typescript';
 
@@ -793,6 +793,8 @@ export function create(rawOptions: CreateOptions = {}): Service {
   // Install source map support and read from memory cache.
   installSourceMapSupport();
   function installSourceMapSupport() {
+    const sourceMapSupport =
+      require('@cspotcode/source-map-support') as typeof _sourceMapSupport;
     sourceMapSupport.install({
       environment: 'node',
       retrieveFile(pathOrUrl: string) {
