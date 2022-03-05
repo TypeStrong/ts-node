@@ -29,10 +29,10 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   } else if (swc == null) {
     let swcResolved;
     try {
-      swcResolved = projectLocalResolveHelper('@swc/core', true);
+      swcResolved = transpilerConfigLocalResolveHelper('@swc/core', true);
     } catch (e) {
       try {
-        swcResolved = projectLocalResolveHelper('@swc/wasm', true);
+        swcResolved = transpilerConfigLocalResolveHelper('@swc/wasm', true);
       } catch (e) {
         throw new Error(
           'swc compiler requires either @swc/core or @swc/wasm to be installed as a dependency.  See https://typestrong.org/ts-node/docs/transpilers'

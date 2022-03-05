@@ -100,7 +100,10 @@ export function findAndReadConfig(rawOptions: CreateOptions) {
       rawOptions.project,
       cwd
     );
-    ({ compiler } = resolveCompiler(options.compiler, projectLocalResolveDir));
+    ({ compiler } = resolveCompiler(
+      options.compiler,
+      optionBasePaths.compiler ?? projectLocalResolveDir
+    ));
   }
 
   return {
@@ -258,6 +261,9 @@ export function readConfig(
     if (options.compiler != null) {
       optionBasePaths.compiler = basePath;
     }
+    if (options.swc != null) {
+      optionBasePaths.swc = basePath;
+    }
 
     assign(tsNodeOptionsFromTsconfig, options);
   }
@@ -329,19 +335,16 @@ export function resolveAndLoadCompiler(
   name: string | undefined,
   relativeToPath: string
 ) {
-  const { compiler, projectLocalResolveHelper } = resolveCompiler(
-    name,
-    relativeToPath
-  );
+  const { compiler } = resolveCompiler(name, relativeToPath);
   const ts = loadCompiler(compiler);
-  return { compiler, ts, projectLocalResolveHelper };
+  return { compiler, ts };
 }
 
 function resolveCompiler(name: string | undefined, relativeToPath: string) {
   const projectLocalResolveHelper =
     createProjectLocalResolveHelper(relativeToPath);
   const compiler = projectLocalResolveHelper(name || 'typescript', true);
-  return { projectLocalResolveHelper, compiler };
+  return { compiler };
 }
 
 /** @internal */

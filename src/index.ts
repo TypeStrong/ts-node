@@ -387,6 +387,7 @@ export interface OptionBasePaths {
   moduleTypes?: string;
   transpiler?: string;
   compiler?: string;
+  swc?: string;
 }
 
 /**
@@ -658,11 +659,15 @@ export function createFromPreloadedConfig(
   const transpileOnly =
     (options.transpileOnly === true || options.swc === true) &&
     options.typeCheck !== true;
-  const transpiler = options.transpiler
-    ? options.transpiler
-    : options.swc
-    ? require.resolve('./transpilers/swc.js')
-    : undefined;
+  let transpiler: RegisterOptions['transpiler'] | undefined = undefined;
+  let transpilerBasePath: string | undefined = undefined;
+  if (options.transpiler) {
+    transpiler = options.transpiler;
+    transpilerBasePath = optionBasePaths.transpiler;
+  } else if (options.swc) {
+    transpiler = require.resolve('./transpilers/swc.js');
+    transpilerBasePath = optionBasePaths.swc;
+  }
   const transformers = options.transformers || undefined;
   const diagnosticFilters: Array<DiagnosticFilter> = [
     {
@@ -729,8 +734,8 @@ export function createFromPreloadedConfig(
       typeof transpiler === 'string' ? transpiler : transpiler[0];
     const transpilerOptions =
       typeof transpiler === 'string' ? {} : transpiler[1] ?? {};
-    const transpilerConfigLocalResolveHelper = optionBasePaths.transpiler
-      ? createProjectLocalResolveHelper(optionBasePaths.transpiler!)
+    const transpilerConfigLocalResolveHelper = transpilerBasePath
+      ? createProjectLocalResolveHelper(transpilerBasePath)
       : projectLocalResolveHelper;
     const transpilerPath = transpilerConfigLocalResolveHelper(
       transpilerName,
