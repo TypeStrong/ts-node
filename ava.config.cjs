@@ -24,7 +24,8 @@ module.exports = {
    * ts-node, from either node_modules or tests/node_modules
    */
 
-  const { rmSync, existsSync } = require('fs-extra');
+  const { existsSync } = require('fs');
+  const rimraf = require('rimraf');
   const { resolve } = require('path');
 
   remove(resolve(__dirname, 'node_modules/ts-node'));
@@ -34,6 +35,6 @@ module.exports = {
   expect(() => {createRequire(resolve(__dirname, 'tests/foo.js')).resolve('ts-node')}).toThrow();
 
   function remove(p) {
-    if(existsSync(p)) rmSync(p, {recursive: true})
+    if(existsSync(p)) rimraf.sync(p, {recursive: true})
   }
 }
