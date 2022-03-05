@@ -28,16 +28,43 @@ test.suite(
     macro('tsconfig-swc-wasm.json', 'root @swc/wasm');
     macro('tsconfig-swc.json', 'root @swc/core');
 
-    macro('node_modules/shared-config/tsconfig-custom-compiler.json', 'shared-config custom compiler');
-    macro('node_modules/shared-config/tsconfig-custom-transpiler.json', 'shared-config custom transpiler');
-    macro('node_modules/shared-config/tsconfig-swc-custom-backend.json', 'shared-config custom swc backend');
-    macro('node_modules/shared-config/tsconfig-swc-core.json', 'shared-config @swc/core');
-    macro('node_modules/shared-config/tsconfig-swc-wasm.json', 'shared-config @swc/wasm');
-    macro('node_modules/shared-config/tsconfig-swc.json', 'shared-config @swc/core');
+    macro(
+      'node_modules/shared-config/tsconfig-custom-compiler.json',
+      'shared-config custom compiler'
+    );
+    macro(
+      'node_modules/shared-config/tsconfig-custom-transpiler.json',
+      'shared-config custom transpiler'
+    );
+    macro(
+      'node_modules/shared-config/tsconfig-swc-custom-backend.json',
+      'shared-config custom swc backend'
+    );
+    macro(
+      'node_modules/shared-config/tsconfig-swc-core.json',
+      'shared-config @swc/core'
+    );
+    macro(
+      'node_modules/shared-config/tsconfig-swc-wasm.json',
+      'shared-config @swc/wasm'
+    );
+    macro(
+      'node_modules/shared-config/tsconfig-swc.json',
+      'shared-config @swc/core'
+    );
 
-    macro('tsconfig-extend-custom-compiler.json', 'shared-config custom compiler');
-    macro('tsconfig-extend-custom-transpiler.json', 'shared-config custom transpiler');
-    macro('tsconfig-extend-swc-custom-backend.json', 'shared-config custom swc backend');
+    macro(
+      'tsconfig-extend-custom-compiler.json',
+      'shared-config custom compiler'
+    );
+    macro(
+      'tsconfig-extend-custom-transpiler.json',
+      'shared-config custom transpiler'
+    );
+    macro(
+      'tsconfig-extend-swc-custom-backend.json',
+      'shared-config custom swc backend'
+    );
     macro('tsconfig-extend-swc-core.json', 'shared-config @swc/core');
     macro('tsconfig-extend-swc-wasm.json', 'shared-config @swc/wasm');
     macro('tsconfig-extend-swc.json', 'shared-config @swc/core');
