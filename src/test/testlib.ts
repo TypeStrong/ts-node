@@ -115,6 +115,8 @@ export interface TestInterface<
   skipUnless(conditional: boolean): void;
   /** If conditional is true, run tests, otherwise skip them */
   runIf(conditional: boolean): void;
+  /** If conditional is false, skip tests */
+  skipIf(conditional: boolean): void;
 
   // TODO add teardownEach
 }
@@ -285,6 +287,9 @@ function createTestInterface<Context>(opts: {
   test.skipUnless = test.runIf = function (runIfTrue: boolean) {
     assertOrderingForDeclaringSkipUnless();
     automaticallySkip = automaticallySkip || !runIfTrue;
+  };
+  test.skipIf = function (skipIfTrue: boolean) {
+    test.runIf(!skipIfTrue);
   };
   return test as any;
 }

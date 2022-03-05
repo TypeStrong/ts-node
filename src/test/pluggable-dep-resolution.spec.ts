@@ -1,5 +1,9 @@
 import { context } from './testlib';
-import { contextTsNodeUnderTest, resetNodeEnvironment } from './helpers';
+import {
+  contextTsNodeUnderTest,
+  resetNodeEnvironment,
+  tsSupportsTsconfigInheritanceViaNodePackages,
+} from './helpers';
 import * as expect from 'expect';
 import { resolve } from 'path';
 
@@ -20,6 +24,8 @@ test.suite(
     //
     // ts-node should resolve ts-patch or @swc/core relative to the extended tsconfig
     // to ensure we use the known working versions.
+
+    const macro = _macro.bind(null, test);
 
     macro('tsconfig-custom-compiler.json', 'root custom compiler');
     macro('tsconfig-custom-transpiler.json', 'root custom transpiler');
@@ -53,24 +59,30 @@ test.suite(
       'shared-config @swc/core'
     );
 
-    macro(
-      'tsconfig-extend-custom-compiler.json',
-      'shared-config custom compiler'
-    );
-    macro(
-      'tsconfig-extend-custom-transpiler.json',
-      'shared-config custom transpiler'
-    );
-    macro(
-      'tsconfig-extend-swc-custom-backend.json',
-      'shared-config custom swc backend'
-    );
-    macro('tsconfig-extend-swc-core.json', 'shared-config @swc/core');
-    macro('tsconfig-extend-swc-wasm.json', 'shared-config @swc/wasm');
-    macro('tsconfig-extend-swc.json', 'shared-config @swc/core');
+    test.suite('"extends"', (test) => {
+      test.runIf(tsSupportsTsconfigInheritanceViaNodePackages);
 
-    function macro(config: string, expected: string) {
-      test(`${config} uses ${expected}`, async (t) => {
+      const macro = _macro.bind(null, test);
+
+      macro(
+        'tsconfig-extend-custom-compiler.json',
+        'shared-config custom compiler'
+      );
+      macro(
+        'tsconfig-extend-custom-transpiler.json',
+        'shared-config custom transpiler'
+      );
+      macro(
+        'tsconfig-extend-swc-custom-backend.json',
+        'shared-config custom swc backend'
+      );
+      macro('tsconfig-extend-swc-core.json', 'shared-config @swc/core');
+      macro('tsconfig-extend-swc-wasm.json', 'shared-config @swc/wasm');
+      macro('tsconfig-extend-swc.json', 'shared-config @swc/core');
+    });
+
+    function _macro(_test: typeof test, config: string, expected: string) {
+      _test(`${config} uses ${expected}`, async (t) => {
         t.teardown(resetNodeEnvironment);
 
         const output = t.context.tsNodeUnderTest
