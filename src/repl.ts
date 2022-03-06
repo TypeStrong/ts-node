@@ -115,6 +115,7 @@ export interface ReplService {
   readonly console: Console;
 }
 
+/** @category REPL */
 export interface CreateReplOptions {
   service?: Service;
   state?: EvalState;
@@ -144,6 +145,8 @@ export interface CreateReplOptions {
  *     const service = tsNode.create({...repl.evalAwarePartialHost});
  *     repl.setService(service);
  *     repl.start();
+ *
+ * @category REPL
  */
 export function createRepl(options: CreateReplOptions = {}) {
   const { ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl = true } = options;
