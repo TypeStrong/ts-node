@@ -110,7 +110,7 @@
   },
   "homepage": "https://typestrong.org/ts-node",
   "devDependencies": {
-    "@microsoft/api-extractor": "^7.15.2",
+    "@microsoft/api-extractor": "^7.19.4",
     "@swc/core": ">=1.2.50",
     "@swc/wasm": ">=1.2.50",
     "@types/chai": "^4.0.4",

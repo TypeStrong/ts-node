@@ -4,6 +4,8 @@
 
 ```ts
 
+/// <reference types="node" />
+
 import { BaseError } from 'make-error';
 import type * as _ts from 'typescript';
 
@@ -24,6 +26,7 @@ export interface CreateOptions {
     // @deprecated
     dir?: string;
     emit?: boolean;
+    esm?: boolean;
     experimentalReplAwait?: boolean;
     // (undocumented)
     fileExists?: (path: string) => boolean;
@@ -32,6 +35,7 @@ export interface CreateOptions {
     ignoreDiagnostics?: Array<number | string>;
     logError?: boolean;
     moduleTypes?: ModuleTypes;
+    preferTsExts?: boolean;
     pretty?: boolean;
     project?: string;
     projectSearchDir?: string;
@@ -164,7 +168,6 @@ export const REGISTER_INSTANCE: unique symbol;
 // @public
 export interface RegisterOptions extends CreateOptions {
     experimentalResolverFeatures?: boolean;
-    preferTsExts?: boolean;
 }
 
 // @public (undocumented)
@@ -344,7 +347,6 @@ export interface TypeInfo {
 
 // @public
 export const VERSION: any;
-
 
 // (No @packageDocumentation comment for this package)
 

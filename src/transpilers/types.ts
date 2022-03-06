@@ -25,6 +25,8 @@ export interface CreateTranspilerOptions {
   /**
    * If `"transpiler"` option is declared in an "extends" tsconfig, this path might be different than
    * the `projectLocalResolveHelper`
+   *
+   * @internal
    */
   transpilerConfigLocalResolveHelper: ProjectLocalResolveHelper;
 }
