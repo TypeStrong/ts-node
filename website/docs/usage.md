@@ -32,7 +32,7 @@ ts-node-esm script.ts
 
 ## Shebang
 
-```typescript
+```typescript twoslash
 #!/usr/bin/env ts-node
 
 console.log("Hello, world!")
@@ -40,7 +40,7 @@ console.log("Hello, world!")
 
 Passing options via shebang requires the [`env -S` flag](https://manpages.debian.org/bullseye/coreutils/env.1.en.html#S), which is available on recent versions of `env`. ([compatibility](https://github.com/TypeStrong/ts-node/pull/1448#issuecomment-913895766))
 
-```typescript
+```typescript twoslash
 #!/usr/bin/env -S ts-node --files
 // This shebang works on Mac and Linux with newer versions of env
 // Technically, Mac allows omitting `-S`, but Linux requires it
@@ -48,7 +48,7 @@ Passing options via shebang requires the [`env -S` flag](https://manpages.debian
 
 To write scripts with maximum portability, [specify all options in your `tsconfig.json`](./configuration#via-tsconfigjson-recommended) and omit them from the shebang.
 
-```typescript
+```typescript twoslash
 #!/usr/bin/env ts-node
 // This shebang works everywhere
 ```

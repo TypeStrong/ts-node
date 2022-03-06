@@ -71,7 +71,10 @@ the [tsconfig `"target"` option](https://www.typescriptlang.org/tsconfig#target)
 
 For example, `node` 12 does not understand the `?.` optional chaining operator.  If you use `"target": "esnext"`, then the following TypeScript syntax:
 
-```typescript
+```typescript twoslash
+export {};
+var foo: {bar: string} | undefined;
+// ---cut---
 const bar: string | undefined = foo?.bar;
 ```
 

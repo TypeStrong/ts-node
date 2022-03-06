@@ -19,7 +19,7 @@ module.exports = {
     //   //isCloseable: false, // Defaults to `true`.
     // },
     colorMode: {
-      respectPrefersColorScheme: true
+      respectPrefersColorScheme: true,
     },
     navbar: {
       title: 'ts-node',
@@ -61,6 +61,20 @@ module.exports = {
         },
       ],
     },
+    metadata: [
+      {
+        name: 'msapplication-TileColor',
+        content: '#2b5797',
+      },
+      {
+        name: 'msapplication-config',
+        content: '/ts-node/img/favicon/browserconfig.xml',
+      },
+      {
+        name: 'theme-color',
+        content: '#ffffff',
+      },
+    ],
     // footer: {
     //   style: 'dark',
     //   links: [
@@ -99,23 +113,14 @@ module.exports = {
     //   // copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
     // },
     prism: {
-      // for syntax highlighting
-      // additionalLanguages: ['powershell'],
+      // Note: these themes are ignored due to using shiki-twoslash
+      theme: require('prism-react-renderer/themes/vsLight'),
+      darkTheme: require('prism-react-renderer/themes/vsDark'),
     },
     algolia: {
-      apiKey: 'c882a0a136ef4e15aa99db604280caa6',
+      appId: 'BYGNLKSCOV',
+      apiKey: '74ac2b781b0cf603c2f1b5e4f44e1c69',
       indexName: 'ts-node',
-
-      // Optional: see doc section below
-      // contextualSearch: true,
-
-      // Optional: see doc section below
-      // appId: 'YOUR_APP_ID',
-
-      // Optional: Algolia search parameters
-      // searchParameters: {},
-
-      //... other Algolia params
     },
   },
   presets: [
@@ -124,19 +129,67 @@ module.exports = {
       {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl:
-            'https://github.com/TypeStrong/ts-node/edit/docs/website/',
+          editUrl: 'https://github.com/TypeStrong/ts-node/edit/docs/website/',
         },
-        // blog: {
-        //   showReadingTime: true,
-        //   // Please change this to your repo.
-        //   editUrl:
-        //     'https://github.com/facebook/docusaurus/edit/master/website/blog/',
-        // },
+        blog: false,
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
       },
     ],
+    [
+      'docusaurus-preset-shiki-twoslash',
+      {
+        // https://github.com/shikijs/twoslash/blob/main/packages/shiki-twoslash/README.md#user-settings
+
+        // langs: ["shell", "typescript", "javascript", "ts", "js", "tsx", "jsx", "json", "jsonc"],
+        includeJSDocInHover: true,
+
+        themes: ['github-light', 'nord'],
+
+        // VSCode default
+        // themes: ["light-plus", "dark-plus"],
+
+        // Other options
+        // themes: ["min-light", "nord"],
+        // themes: ["min-light", "min-dark"],
+        // themes: ["github-light", "github-dark"],
+        // themes: ["solarized-light", "solarized-dark"],
+      },
+    ],
+  ],
+  // Misleading API that probably will be refactored in Docusaurus, but this is
+  // simply a list of <link> tags
+  stylesheets: [
+    {
+      rel: 'apple-touch-icon',
+      sizes: '180x180',
+      href: '/ts-node/img/favicon/apple-touch-icon.png',
+    },
+    {
+      rel: 'icon',
+      type: 'image/png',
+      sizes: '32x32',
+      href: '/ts-node/img/favicon/favicon-32x32.png',
+    },
+    {
+      rel: 'icon',
+      type: 'image/png',
+      sizes: '16x16',
+      href: '/ts-node/img/favicon/favicon-16x16.png',
+    },
+    {
+      rel: 'manifest',
+      href: '/ts-node/img/favicon/site.webmanifest',
+    },
+    {
+      rel: 'mask-icon',
+      href: '/ts-node/img/favicon/safari-pinned-tab.svg',
+      color: '#5bbad5',
+    },
+    {
+      rel: 'shortcut icon',
+      href: '/ts-node/img/favicon/favicon.ico',
+    },
   ],
 };
