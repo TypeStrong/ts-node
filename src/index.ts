@@ -367,7 +367,9 @@ export interface CreateOptions {
    */
   tsTrace?: (str: string) => void;
   /**
-   * TODO DOCS YAY
+   * Enable native ESM support.
+   *
+   * For details, see https://typestrong.org/ts-node/docs/imports#native-ecmascript-modules
    */
   esm?: boolean;
   /**
