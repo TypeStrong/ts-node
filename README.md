@@ -153,11 +153,14 @@ ts-node-transpile-only script.ts
 
 # Equivalent to ts-node --cwdMode
 ts-node-cwd script.ts
+
+# Equivalent to ts-node --esm
+ts-node-esm script.ts
 ```
 
 ## Shebang
 
-```typescript
+```typescript twoslash
 #!/usr/bin/env ts-node
 
 console.log("Hello, world!")
@@ -165,7 +168,7 @@ console.log("Hello, world!")
 
 Passing options via shebang requires the [`env -S` flag](https://manpages.debian.org/bullseye/coreutils/env.1.en.html#S), which is available on recent versions of `env`. ([compatibility](https://github.com/TypeStrong/ts-node/pull/1448#issuecomment-913895766))
 
-```typescript
+```typescript twoslash
 #!/usr/bin/env -S ts-node --files
 // This shebang works on Mac and Linux with newer versions of env
 // Technically, Mac allows omitting `-S`, but Linux requires it
@@ -173,7 +176,7 @@ Passing options via shebang requires the [`env -S` flag](https://manpages.debian
 
 To write scripts with maximum portability, [specify all options in your `tsconfig.json`](#via-tsconfigjson-recommended) and omit them from the shebang.
 
-```typescript
+```typescript twoslash
 #!/usr/bin/env ts-node
 // This shebang works everywhere
 ```
@@ -302,6 +305,7 @@ All command-line flags support both `--camelCase` and `--hyphen-case`.
 *   `-e, --eval`   Evaluate code
 *   `-p, --print`   Print result of `--eval`
 *   `-i, --interactive`   Opens the REPL even if stdin does not appear to be a terminal
+*   `--esm`   Bootstrap with the ESM loader, enabling full ESM support
 
 ## TSConfig
 
@@ -361,7 +365,7 @@ Here is a brief comparison of the two.
 | Write native `import` syntax | Write native `import` syntax |
 | Transforms `import` into `require()` | Does not transform `import` |
 | Node executes scripts using the classic [CommonJS loader](https://nodejs.org/dist/latest-v16.x/docs/api/modules.html) | Node executes scripts using the new [ESM loader](https://nodejs.org/dist/latest-v16.x/docs/api/esm.html) |
-| Use any of:<br/>ts-node CLI<br/>`node -r ts-node/register`<br/>`NODE_OPTIONS="ts-node/register" node`<br/>`require('ts-node').register({/* options */})` | Must use the ESM loader via:<br/>`node --loader ts-node/esm`<br/>`NODE_OPTIONS="--loader ts-node/esm" node` |
+| Use any of:<br/>`ts-node`<br/>`node -r ts-node/register`<br/>`NODE_OPTIONS="ts-node/register" node`<br/>`require('ts-node').register({/* options */})` | Use any of:<br/>`ts-node --esm`<br/>`ts-node-esm`<br/>Set `"esm": true` in `tsconfig.json`<br />`node --loader ts-node/esm`<br/>`NODE_OPTIONS="--loader ts-node/esm" node` |
 
 ## CommonJS
 
@@ -415,8 +419,34 @@ You must set [`"type": "module"`](https://nodejs.org/api/packages.html#packages_
 {
   "compilerOptions": {
     "module": "ESNext" // or ES2015, ES2020
+  },
+  "ts-node": {
+    // Tell ts-node CLI to install the --loader automatically, explained below
+    "esm": true
   }
 }
+```
+
+You must also ensure node is passed `--loader`.  The ts-node CLI will do this automatically with our `esm` option.
+
+> Note: `--esm` must spawn a child process to pass it `--loader`.  This may change if node adds the ability to install loader hooks
+> into the current process.
+
+```shell
+# pass the flag
+ts-node --esm
+# Use the convenience binary
+ts-node-esm
+# or add `"esm": true` to your tsconfig.json to make it automatic
+ts-node
+```
+
+If you are not using our CLI, pass the loader flag to node.
+
+```shell
+node --loader ts-node/esm ./index.ts
+# Or via environment variable
+NODE_OPTIONS="--loader ts-node/esm" node ./index.ts
 ```
 
 # Troubleshooting
@@ -490,7 +520,7 @@ the [tsconfig `"target"` option](https://www.typescriptlang.org/tsconfig#target)
 
 For example, `node` 12 does not understand the `?.` optional chaining operator.  If you use `"target": "esnext"`, then the following TypeScript syntax:
 
-```typescript
+```typescript twoslash
 const bar: string | undefined = foo?.bar;
 ```
 
@@ -606,7 +636,7 @@ Example project structure:
 
 Example module declaration file:
 
-```typescript
+```typescript twoslash
 declare module '<module_name>' {
     // module definitions go here
 }
@@ -614,7 +644,7 @@ declare module '<module_name>' {
 
 For module definitions, you can use [`paths`](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping):
 
-```jsonc
+```jsonc title="tsconfig.json"
 {
   "compilerOptions": {
     "baseUrl": ".",
@@ -627,9 +657,11 @@ For module definitions, you can use [`paths`](https://www.typescriptlang.org/doc
 
 An alternative approach for definitions of third-party libraries are [triple-slash directives](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html). This may be helpful if you prefer not to change your TypeScript `compilerOptions` or structure your custom type definitions when using `typeRoots`. Below is an example of the triple-slash directive as a relative path within your project:
 
-```typescript
-/// <reference types="./types/untyped_js_lib" />
-import UntypedJsLib from "untyped_js_lib"
+```typescript twoslash
+/// <reference path="./types/untyped_js_lib" />
+import {Greeter} from "untyped_js_lib"
+const g = new Greeter();
+g.sayHello();
 ```
 
 **Tip:** If you *must* use `files`, `include`, or `exclude`, enable `--files` flags or set `TS_NODE_FILES=true`.
@@ -737,7 +769,7 @@ CommonJS or ESM.  Node supports similar overriding via `.cjs` and `.mjs` file ex
 
 The following example tells ts-node to execute a webpack config as CommonJS:
 
-```jsonc title=tsconfig.json
+```jsonc title="tsconfig.json"
 {
   "ts-node": {
     "transpileOnly": true,
@@ -783,7 +815,7 @@ Assuming you are configuring AVA via your `package.json`, add one of the followi
 
 Use this configuration if your `package.json` does not have `"type": "module"`.
 
-```jsonc title"package.json"
+```jsonc title="package.json"
 {
   "ava": {
     "extensions": [
@@ -800,7 +832,7 @@ Use this configuration if your `package.json` does not have `"type": "module"`.
 
 This configuration is necessary if your `package.json` has `"type": "module"`.
 
-```jsonc title"package.json"
+```jsonc title="package.json"
 {
   "ava": {
     "extensions": {
