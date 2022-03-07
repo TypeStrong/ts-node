@@ -11,6 +11,8 @@ module.exports = {
     // This avoids passing it to spawned processes under test, which would negatively affect
     // their behavior.
     FORCE_COLOR: '3',
+    // DO NOT MERGE: testing how fast transpileOnly might make our tests on CI.  They will fail
+    TS_NODE_TRANSPILE_ONLY: 'true'
   },
   require: ['./src/test/remove-env-var-force-color.js'],
   timeout: '300s',
