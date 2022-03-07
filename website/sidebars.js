@@ -10,6 +10,7 @@ module.exports = {
         'usage',
         'configuration',
         'options',
+        'swc',
         'imports',
         'troubleshooting',
         'performance',
@@ -21,11 +22,12 @@ module.exports = {
       collapsed: false,
       items: [
         'how-it-works',
+        'scope',
         'paths',
-        'types',
         'compilers',
         'transpilers',
         'module-type-overrides',
+        'api',
       ],
     },
     {
@@ -34,6 +36,7 @@ module.exports = {
       collapsed: false,
       items: [
         'recipes/watching-and-restarting',
+        'recipes/npx-yarn-dlx',
         'recipes/ava',
         'recipes/gulp',
         'recipes/intellij',

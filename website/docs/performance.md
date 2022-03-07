@@ -1,16 +1,16 @@
 ---
-title: Make it fast
+title: Performance
 ---
 
 These tricks will make ts-node faster.
 
 ## Skip typechecking
 
-It is often better to use `tsc --noEmit` to typecheck once before your tests run or as a lint step. In these cases, ts-node can skip typechecking.
+It is often better to use `tsc --noEmit` to typecheck as part of your tests or linting. In these cases, ts-node can skip typechecking.
 
-* Enable [`transpileOnly`](./options.md) to skip typechecking
-* Use our [`swc` integration](./transpilers.md#swc)
+* Enable [swc](./transpilers.md#swc)
   * This is by far the fastest option
+* Enable [`transpileOnly`](./options.md) to skip typechecking without swc
 
 ## With typechecking
 

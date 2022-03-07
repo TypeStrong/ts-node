@@ -2,7 +2,7 @@
 title: Troubleshooting
 ---
 
-## Understanding configuration
+## Configuration
 
 ts-node uses sensible default configurations to reduce boilerplate while still respecting `tsconfig.json` if you
 have one.  If you are unsure which configuration is used, you can log it with `ts-node --showConfig`.  This is similar to
@@ -52,7 +52,7 @@ $ ts-node --showConfig
 }
 ```
 
-## Understanding Errors
+## Common errors
 
 It is important to differentiate between errors from ts-node, errors from the TypeScript compiler, and errors from `node`.  It is also important to understand when errors are caused by a type error in your code, a bug in your code, or a flaw in your configuration.
 
@@ -109,3 +109,71 @@ This error is thrown by node when a module has an unrecognized file extension, o
   - Solution: upgrade to ts-node >=[v10.6.0](https://github.com/TypeStrong/ts-node/releases/tag/v10.6.0), which implements a workaround.
 - Our ESM loader is not installed.
   - Solution: Use `ts-node-esm`, `ts-node --esm`, or add `"ts-node": {"esm": true}` to your tsconfig.json.  [Docs](./imports.md#native-ecmascript-modules)
+
+## Missing Types
+
+ts-node does _not_ eagerly load `files`, `include` or `exclude` by default. This is because a large majority of projects do not use all of the files in a project directory (e.g. `Gulpfile.ts`, runtime vs tests) and parsing every file for types slows startup time. Instead, ts-node starts with the script file (e.g. `ts-node index.ts`) and TypeScript resolves dependencies based on imports and references.
+
+Occasionally, this optimization leads to missing types. Fortunately, there are other ways to include them in typechecking.
+
+For global definitions, you can use the `typeRoots` compiler option.  This requires that your type definitions be structured as type packages (not loose TypeScript definition files). More details on how this works can be found in the [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types).
+
+Example `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "typeRoots" : ["./node_modules/@types", "./typings"]
+  }
+}
+```
+
+Example project structure:
+
+```text
+<project_root>/
+-- tsconfig.json
+-- typings/
+  -- <module_name>/
+    -- index.d.ts
+```
+
+Example module declaration file:
+
+```typescript twoslash
+declare module '<module_name>' {
+    // module definitions go here
+}
+```
+
+For module definitions, you can use [`paths`](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping):
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "custom-module-type": ["types/custom-module-type"]
+    }
+  }
+}
+```
+
+Another option is [triple-slash directives](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html). This may be helpful if you prefer not to change your `compilerOptions` or structure your type definitions for `typeRoots`. Below is an example of a triple-slash directive as a relative path within your project:
+
+```typescript twoslash
+/// <reference path="./types/lib_greeter" />
+import {Greeter} from "lib_greeter"
+const g = new Greeter();
+g.sayHello();
+```
+
+If none of the above work, and you _must_ use `files`, `include`, or `exclude`, enable our [`files`](./options.md#files) option.
+
+## npx, yarn dlx, and node_modules
+
+When executing TypeScript with `npx` or `yarn dlx`, the code resides within a temporary `node_modules` directory.
+
+The contents of `node_modules` are ignored by default.  If execution fails, enable [`skipIgnore`](./options.md#skipignore).
+
+See also: [npx and yarn dlx](./recipes/npx-yarn-dlx.md)
