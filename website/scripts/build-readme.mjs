@@ -135,7 +135,10 @@ function rewritePageLinksToAnchorLinks() {
     visit(ast, 'link', (node) => {
       if (node.url?.match?.(/^https?\:\/\//)) return;
       // TODO take page title into account
-      node.url = node.url.replace(/^[\.\/]*(?:recipes\/)?(?:([^#]+)|.*#(.*))$/, '#$1$2');
+      node.url = node.url.replace(
+        /^[\.\/]*(?:recipes\/)?(?:([^#]+)|.*#(.*))$/,
+        '#$1$2'
+      );
       node.url = node.url.replace(/\.md$/, '');
     });
   };
