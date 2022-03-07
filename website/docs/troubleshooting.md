@@ -91,13 +91,13 @@ When you try to run this code, node 12 will throw a `SyntaxError`.  To fix this,
 This error is thrown by node when a module is `require()`d, but node believes it should execute as native ESM.  This can happen for a few reasons:
 
 - You have installed an ESM dependency but your own code compiles to CommonJS.
-  - Solution: configure your project to compile and execute as native ESM. [Docs](./imports.md#native-ecmascript-modules)
+  - Solution: configure your project to compile and execute as native ESM. [Docs](./commonjs-vs-native-ecmascript-modules.md#native-ecmascript-modules)
   - Solution: downgrade the dependency to an older, CommonJS version.
 - You have moved your project to ESM but still have a config file, such as `webpack.config.js`, which must be executed as CommonJS
   - Solution: if supported by the relevant tool, rename your config file to `.cjs`
   - Solution: Configure a module type override. [Docs](./module-type-overrides.md)
 - You have a mix of CommonJS and native ESM in your project
-  - Solution: double-check all package.json "type" and tsconfig.json "module" configuration [Docs](./imports.md)
+  - Solution: double-check all package.json "type" and tsconfig.json "module" configuration [Docs](./commonjs-vs-native-ecmascript-modules.md)
   - Solution: consider simplifying and switch to all CommonJS or all native ESM
 
 ### `ERR_UNKNOWN_FILE_EXTENSION`
@@ -108,7 +108,7 @@ This error is thrown by node when a module has an unrecognized file extension, o
   - CommonJS supports extensionless files but native ESM does not.
   - Solution: upgrade to ts-node >=[v10.6.0](https://github.com/TypeStrong/ts-node/releases/tag/v10.6.0), which implements a workaround.
 - Our ESM loader is not installed.
-  - Solution: Use `ts-node-esm`, `ts-node --esm`, or add `"ts-node": {"esm": true}` to your tsconfig.json.  [Docs](./imports.md#native-ecmascript-modules)
+  - Solution: Use `ts-node-esm`, `ts-node --esm`, or add `"ts-node": {"esm": true}` to your tsconfig.json.  [Docs](./commonjs-vs-native-ecmascript-modules.md#native-ecmascript-modules)
 
 ## Missing Types
 
@@ -176,4 +176,4 @@ When executing TypeScript with `npx` or `yarn dlx`, the code resides within a te
 
 The contents of `node_modules` are ignored by default.  If execution fails, enable [`skipIgnore`](./options.md#skipignore).
 
-See also: [npx and yarn dlx](./recipes/npx-yarn-dlx.md)
+See also: [npx and yarn dlx](./recipes/npx-and-yarn-dlx.md)

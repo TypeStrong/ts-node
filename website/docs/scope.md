@@ -25,7 +25,7 @@ By default, ts-node avoids compiling files in `/node_modules/` for three reasons
 2. Transpiling the entire dependency tree will make your project slower
 3. Differing behaviours between TypeScript and node.js (e.g. ES2015 modules) can result in a project that works until you decide to support a feature natively from node.js
 
-If you need to import uncompiled TypeScript in `node_modules`, use [`--skipIgnore`](./options#transpilation) or [`TS_NODE_SKIP_IGNORE`](./options#transpilation) to bypass this restriction.
+If you need to import uncompiled TypeScript in `node_modules`, use [`--skipIgnore`](./options#skipignore) or [`TS_NODE_SKIP_IGNORE`](./options#skipignore) to bypass this restriction.
 
 ## Skipping pre-compiled TypeScript
 

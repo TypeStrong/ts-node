@@ -11,7 +11,7 @@ module.exports = {
         'configuration',
         'options',
         'swc',
-        'imports',
+        'commonjs-vs-native-ecmascript-modules',
         'troubleshooting',
         'performance',
       ],
@@ -36,7 +36,7 @@ module.exports = {
       collapsed: false,
       items: [
         'recipes/watching-and-restarting',
-        'recipes/npx-yarn-dlx',
+        'recipes/npx-and-yarn-dlx',
         'recipes/ava',
         'recipes/gulp',
         'recipes/intellij',
