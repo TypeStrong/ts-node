@@ -27,7 +27,7 @@
     "out": "website/static/api",
     "excludeTags": ["allof"],
     "categorizeByGroup": false,
-    "categoryOrder": ["Basic", "REPL", "Transpilers", "ESM Loader", "Other"],
+    "categoryOrder": ["Basic", "REPL", "Transpiler", "ESM Loader", "Other"],
     "defaultCategory": "Other"
   }
 }
