@@ -76,6 +76,7 @@ Bootstrap with the ESM loader, enabling full ESM support
 
 ```shell
 ts-node -P <path/to/tsconfig>
+ts-node --project <path/to/tsconfig>
 ```
 
 Path to tsconfig file.
