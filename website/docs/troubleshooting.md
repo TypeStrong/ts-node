@@ -176,4 +176,4 @@ When executing TypeScript with `npx` or `yarn dlx`, the code resides within a te
 
 The contents of `node_modules` are ignored by default.  If execution fails, enable [`skipIgnore`](./options.md#skipignore).
 
-See also: [npx and yarn dlx](./recipes/npx-and-yarn-dlx.md)
+<!--See also: [npx and yarn dlx](./recipes/npx-and-yarn-dlx.md)-->

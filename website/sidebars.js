@@ -36,7 +36,7 @@ module.exports = {
       collapsed: false,
       items: [
         'recipes/watching-and-restarting',
-        'recipes/npx-and-yarn-dlx',
+        // 'recipes/npx-and-yarn-dlx',
         'recipes/ava',
         'recipes/gulp',
         'recipes/intellij',

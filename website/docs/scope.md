@@ -3,9 +3,11 @@ title: Ignored files
 ---
 
 ts-node transforms certain files and ignores others.  We refer to this mechanism as "scoping."  There are various
-options to configure scope so that ts-node transforms the files in your project and ignores others.
+options to configure scoping, so that ts-node transforms only the files in your project.
 
-> **Note:** an ignored file can still be executed by node.js.  Ignoring a file means we do not transform it from TypeScript into JavaScript.
+> **Warning:**
+>
+> An ignored file can still be executed by node.js.  Ignoring a file means we do not transform it from TypeScript into JavaScript, but it does not prevent execution.
 >
 > If a file requires transformation but is ignored, node may either fail to resolve it or attempt to execute it as vanilla JavaScript.  This may cause syntax errors or other failures, because node does not understand TypeScript type syntax nor bleeding-edge ECMAScript features.
 
@@ -15,7 +17,9 @@ options to configure scope so that ts-node transforms the files in your project 
 
 `.tsx` and `.jsx` are only transformed when [`jsx`](https://www.typescriptlang.org/docs/handbook/jsx.html) is enabled.
 
-> **Warning:** When ts-node is used with `allowJs`, _all_ non-ignored JavaScript files are transformed by ts-node.
+> **Warning:**
+>
+> When ts-node is used with `allowJs`, _all_ non-ignored JavaScript files are transformed by ts-node.
 
 ## Skipping `node_modules`
 
