@@ -10,7 +10,8 @@ module.exports = {
         'usage',
         'configuration',
         'options',
-        'imports',
+        'swc',
+        'commonjs-vs-native-ecmascript-modules',
         'troubleshooting',
         'performance',
       ],
@@ -21,11 +22,12 @@ module.exports = {
       collapsed: false,
       items: [
         'how-it-works',
+        'scope',
         'paths',
-        'types',
         'compilers',
         'transpilers',
         'module-type-overrides',
+        'api',
       ],
     },
     {
@@ -34,6 +36,7 @@ module.exports = {
       collapsed: false,
       items: [
         'recipes/watching-and-restarting',
+        // 'recipes/npx-and-yarn-dlx',
         'recipes/ava',
         'recipes/gulp',
         'recipes/intellij',

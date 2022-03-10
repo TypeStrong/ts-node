@@ -7,7 +7,7 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  /* Generating by pasting #3178C6, the shade of blue from typescriptlang.org's navbar, into the palette generator at https://v2.docusaurus.io/docs/styling-layout/ */
+  /* Generating by pasting #3178C6, the shade of blue from typescriptlang.org's navbar, into the palette generator at https://docusaurus.io/docs/styling-layout/ */
   --ifm-color-primary: #3178c6;
   --ifm-color-primary-dark: #2c6cb2;
   --ifm-color-primary-darker: #2a66a8;
@@ -25,6 +25,18 @@
   --ifm-color-primary-lighter: rgb(102, 212, 189);
   --ifm-color-primary-lightest: rgb(146, 224, 208);
   --ifm-code-font-size: 95%; */
+}
+
+[data-theme='dark'] {
+  /* Generating by pasting #4084d0, into the palette generator at https://docusaurus.io/docs/styling-layout/ */
+  --ifm-color-primary: #4084d0;
+  --ifm-color-primary-dark: #3076c4;
+  --ifm-color-primary-darker: #2e70ba;
+  --ifm-color-primary-darkest: #265c99;
+  --ifm-color-primary-light: #5692d5;
+  --ifm-color-primary-lighter: #6199d8;
+  --ifm-color-primary-lightest: #81aee0;
+  --ifm-color-primary-lighter: #4a8bd2;
 }
 
 .docusaurus-highlight-code-line {

@@ -183,6 +183,8 @@ export const VERSION = require('../package.json').version;
 
 /**
  * Options for creating a new TypeScript compiler instance.
+
+ * @category Basic
  */
 export interface CreateOptions {
   /**
@@ -367,7 +369,9 @@ export interface CreateOptions {
    */
   tsTrace?: (str: string) => void;
   /**
-   * TODO DOCS YAY
+   * Enable native ESM support.
+   *
+   * For details, see https://typestrong.org/ts-node/docs/imports#native-ecmascript-modules
    */
   esm?: boolean;
   /**
@@ -392,6 +396,8 @@ export interface OptionBasePaths {
 
 /**
  * Options for registering a TypeScript compiler instance globally.
+
+ * @category Basic
  */
 export interface RegisterOptions extends CreateOptions {
   /**
@@ -548,10 +554,14 @@ export function getExtensions(config: _ts.ParsedCommandLine) {
 
 /**
  * Create a new TypeScript compiler instance and register it onto node.js
+
+ * @category Basic
  */
 export function register(opts?: RegisterOptions): Service;
 /**
  * Register TypeScript compiler instance onto node.js
+
+ * @category Basic
  */
 export function register(service: Service): Service;
 export function register(
@@ -591,6 +601,8 @@ export function register(
 
 /**
  * Create TypeScript compiler instance.
+ *
+ * @category Basic
  */
 export function create(rawOptions: CreateOptions = {}): Service {
   const foundConfigResult = findAndReadConfig(rawOptions);
@@ -1585,6 +1597,8 @@ function getTokenAtPosition(
  *
  * Node changed the hooks API, so there are two possible APIs.  This function
  * detects your node version and returns the appropriate API.
+ *
+ * @category ESM Loader
  */
 export const createEsmHooks: typeof createEsmHooksFn = (
   tsNodeService: Service

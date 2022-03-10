@@ -1,5 +1,6 @@
 ---
 title: "CommonJS vs native ECMAScript modules"
+slug: imports
 ---
 
 TypeScript is almost always written using modern `import` syntax, but it is also transformed before being executed by the underlying runtime.  You can choose to either transform to CommonJS or to preserve the native `import` syntax, using node's native ESM support.  Configuration is different for each.

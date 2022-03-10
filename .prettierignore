@@ -8,6 +8,7 @@
 !/tests
 !/website
 /website/.docusaurus
+/website/build
 /website/docs
 /website/readme-sources
 /website/static

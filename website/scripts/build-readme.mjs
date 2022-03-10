@@ -100,6 +100,9 @@ async function main() {
         contents: '',
       })
     );
+
+  fs.writeFileSync(readmePath, renderedReadme.contents);
+
   console.error(vfileReporter(renderedReadme));
   if (renderedReadme.messages.length)
     throw new Error('Aborting on diagnostics.');
@@ -109,8 +112,6 @@ async function main() {
     .process(renderedReadme);
   console.error(vfileReporter(lintResults));
   if (lintResults.messages.length) throw new Error('Aborting on diagnostics.');
-
-  fs.writeFileSync(readmePath, renderedReadme.contents);
 }
 
 function parseFrontmatter() {
@@ -134,7 +135,10 @@ function rewritePageLinksToAnchorLinks() {
     visit(ast, 'link', (node) => {
       if (node.url?.match?.(/^https?\:\/\//)) return;
       // TODO take page title into account
-      node.url = node.url.replace(/^[\.\/]*(?:([^#]+)|.*#(.*))$/, '#$1$2');
+      node.url = node.url.replace(
+        /^[\.\/]*(?:recipes\/)?(?:([^#]+)|.*#(.*))$/,
+        '#$1$2'
+      );
       node.url = node.url.replace(/\.md$/, '');
     });
   };
