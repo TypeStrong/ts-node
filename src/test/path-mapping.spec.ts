@@ -102,10 +102,7 @@ test.suite('path mapping esm', (test) => {
   });
 
   test('skip type definitions', async () => {
-    const { err } = await execEsm({
-      file: 'type-definition.ts',
-      project: './tsconfig-baseurl-no-paths.json',
-    });
+    const { err } = await execEsm({ cwd: 'skip-type-definitions' });
     expect(err).toBe(null);
   });
 
