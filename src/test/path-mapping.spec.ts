@@ -73,10 +73,7 @@ test.suite('path mapping esm', (test) => {
   });
 
   test('baseUrl set and no paths', async () => {
-    const { err } = await execEsm({
-      file: 'baseurl-no-paths.ts',
-      project: './tsconfig-baseurl-no-paths.json',
-    });
+    const { err } = await execEsm({ cwd: 'base-url-no-paths' });
     expect(err).toBe(null);
   });
 
