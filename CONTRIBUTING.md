@@ -29,7 +29,7 @@ To run a subset of tests:
 # Use ava's --match flag to match the name of a test or suite
 # https://github.com/avajs/ava/blob/main/docs/05-command-line.md
 # Don't forget the * wildcards
-npm run test-local --match '*esm loader*'
+npm run test-local -- --match '*esm loader*'
 ```
 
 Tests are run with AVA, but using a custom wrapper API to enable some TS-friendly features and grouped test suites.
