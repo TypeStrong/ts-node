@@ -1,9 +1,14 @@
-// Pre-conditions
-const assert = require('assert');
-if (typeof assert.strictEqual !== 'function')
-  throw new Error('Pre-condition failed: assert could not be imported');
+// Should ignore paths when importing inside node_modules
+const dependsOnLodash = require('depends-on-lodash');
 
-// Act: import a dependency with transitive dependencies
-const { proxyLodash } = require('depends-on-lodash');
+const main = async (): Promise<void> => {
+  // Pre-conditions
+  const assert: any = require('assert');
+  if (typeof assert.strictEqual !== 'function')
+    throw new Error('Pre-condition failed: assert could not be imported');
 
-assert.strictEqual(proxyLodash, 'lodash'); // not our 'lodash-local'
+  // Assertions
+  assert.strictEqual(dependsOnLodash.proxyLodash, 'lodash'); // not our 'lodash-local'
+};
+
+main();
