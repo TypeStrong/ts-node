@@ -1,5 +1,5 @@
 // Should ignore paths when importing inside node_modules
-const dependsOnLodash = require('depends-on-lodash');
+import dependsOnLodash = require('depends-on-lodash');
 
 const main = async (): Promise<void> => {
   // Pre-conditions

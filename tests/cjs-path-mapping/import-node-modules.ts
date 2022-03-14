@@ -1,8 +1,12 @@
 // Should be able to import from node_modules
-const someCjsDependency = require('some-cjs-dependency');
-// const someEsmDependency = await import('some-esm-dependency');
+import someCjsDependency = require('some-cjs-dependency');
+// TODO: Import an ESM dep statically or...
+// import someEsmDependency from 'some-esm-dependency'
 
 const main = async (): Promise<void> => {
+  // TODO: ...or dynamically
+  // const someEsmDependency = await import('some-esm-dependency');
+
   // Pre-conditions
   const assert: any = require('assert');
   if (typeof assert.strictEqual !== 'function')
