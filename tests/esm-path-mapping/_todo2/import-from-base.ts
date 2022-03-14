@@ -10,7 +10,7 @@ import childJs from 'child/js.js';
 import childJsx from 'child/jsx.jsx';
 import childTs from 'child/ts.js';
 
-if (typeof assert !== 'function')
+if (typeof assert.strictEqual !== 'function')
   throw new Error('Pre-condition failed: assert could not be imported');
 
 assert.strictEqual(baseJs, 'base/js');

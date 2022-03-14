@@ -3,7 +3,9 @@
     "allowJs": true,
     "jsx": "react",
     "module": "CommonJS",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "outDir": "./lib",
+    "esModuleInterop": true
   },
   "ts-node": {
     "experimentalPathMapping": "both"

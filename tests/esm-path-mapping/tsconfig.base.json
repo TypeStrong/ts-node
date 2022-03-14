@@ -4,7 +4,6 @@
     "jsx": "react",
     "module": "ESNext",
     "moduleResolution": "node",
-    "noEmit": true,
     "outDir": "./lib"
   }
 }
