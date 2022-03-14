@@ -1,9 +1,10 @@
 {
-  "include": ["**/*.ts", "**/*.mts", "**/*.tsx", "**/*.js", "**/*.jsx"],
   "compilerOptions": {
-    "module": "ESNext",
     "allowJs": true,
     "jsx": "react",
-    "moduleResolution": "node"
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "outDir": "./lib"
   }
 }

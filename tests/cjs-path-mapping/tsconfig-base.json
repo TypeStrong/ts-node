@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "jsx": "react",
+    "module": "CommonJS",
+    "moduleResolution": "node"
+  },
+  "ts-node": {
+    "experimentalPathMapping": "both"
+  }
+}
