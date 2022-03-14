@@ -3,5 +3,5 @@ const assert = require('assert');
 const { stat } = require('fs');
 
 if (typeof assert.strictEqual !== 'function')
-  throw new Error('Pre-condition failed: assert could not be imported');
+  throw new Error('Failed to import `assert`');
 assert.strictEqual(typeof stat, 'function');
