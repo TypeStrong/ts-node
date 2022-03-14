@@ -5,5 +5,8 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "outDir": "./lib"
+  },
+  "ts-node": {
+    "experimentalPathMapping": "both"
   }
 }

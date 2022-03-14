@@ -4,8 +4,7 @@
     "jsx": "react",
     "module": "CommonJS",
     "moduleResolution": "node",
-    "outDir": "./lib",
-    "esModuleInterop": true
+    "outDir": "./lib"
   },
   "ts-node": {
     "experimentalPathMapping": "both"
