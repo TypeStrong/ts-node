@@ -9,8 +9,6 @@ const main = async (): Promise<void> => {
 
   // Pre-conditions
   const assert: any = require('assert');
-  if (typeof assert.strictEqual !== 'function')
-    throw new Error('Pre-condition failed: assert could not be imported');
 
   // Assertions
   assert.strictEqual(someCjsDependency, 'export-from-some-cjs-dependency');

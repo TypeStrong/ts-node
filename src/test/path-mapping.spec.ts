@@ -1,4 +1,3 @@
-import * as expect from 'expect';
 import { join } from 'path';
 
 import { createExec } from './exec-helpers';
@@ -20,7 +19,11 @@ const execBuilder = (
     env: { ...process.env, TS_NODE_PROJECT: tsConfig },
   });
 
-  return (file = 'index.ts') => partialExec(`${command} ${file}`);
+  return (file = 'index.ts', throwErrors = true) =>
+    partialExec(`${command} ${file}`).then((res) => {
+      if (throwErrors && res.err) throw res.err;
+      return res;
+    });
 };
 
 type ModuleType = 'cjs' | 'esm';
@@ -59,19 +62,16 @@ for (const moduleType of MODULE_TYPES) {
       );
 
       test.suite(`project: ${project}`, (test) => {
-        test(`fallback to node built-in`, async () => {
-          const { err } = await exec('import-node-built-in.ts');
-          expect(err).toBe(null);
+        test(`fallback to node built-in`, async (t) => {
+          await t.notThrowsAsync(exec('import-node-built-in.ts'));
         });
 
-        test(`fallback to node_modules`, async () => {
-          const { err } = await exec('import-node-modules.ts');
-          expect(err).toBe(null);
+        test(`fallback to node_modules`, async (t) => {
+          await t.notThrowsAsync(exec('import-node-modules.ts'));
         });
 
-        test(`imports within node_modules ignore paths`, async () => {
-          const { err } = await exec('import-within-node-modules.ts');
-          expect(err).toBe(null);
+        test(`imports within node_modules ignore paths`, async (t) => {
+          await t.notThrowsAsync(exec('import-within-node-modules.ts'));
         });
 
         // test('ignore type definitions', async () => {

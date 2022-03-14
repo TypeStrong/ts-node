@@ -2,6 +2,5 @@
 import * as assert from 'assert';
 import { stat } from 'fs';
 
-if (typeof assert.strictEqual !== 'function')
-  throw new Error('Failed to import `assert`');
+// Assertions
 assert.strictEqual(typeof stat, 'function');
