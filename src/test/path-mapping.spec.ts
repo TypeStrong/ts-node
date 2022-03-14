@@ -74,10 +74,9 @@ for (const moduleType of MODULE_TYPES) {
           await t.notThrowsAsync(exec('import-within-node-modules.ts'));
         });
 
-        // test('ignore type definitions', async () => {
-        //   const { err } = await exec('ignore-type-definitions');
-        //   expect(err).toBe(null);
-        // });
+        test('ignore type definitions', async (t) => {
+          await t.notThrowsAsync(exec('ignore-type-definitions.ts'));
+        });
 
         // test(`import from baseUrl with ${project}`, async () => {
         //   const { err } = await exec('import-from-base.ts');
