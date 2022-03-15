@@ -6,8 +6,11 @@ import {
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   nodeSupportsEsmHooks,
   TEST_DIR,
+  installTsNode,
 } from './helpers';
 import { test } from './testlib';
+
+test.beforeAll(installTsNode);
 
 const execBuilder = (
   command: string,
@@ -46,7 +49,7 @@ const PROJECT_CONFIGS = {
   BASE_URL_NO_PATHS: 'tsconfig-baseurl-only.json',
   BASE_URL_AND_PATHS: 'tsconfig.json',
   BASE_URL_STAR_PATH: 'tsconfig-star-path.json',
-};
+} as const;
 
 for (const moduleType of MODULE_TYPES) {
   test.suite(`path mapping ${moduleType}`, (test) => {
