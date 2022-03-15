@@ -3,7 +3,13 @@ import * as expect from 'expect';
 import { join, resolve, sep as pathSep } from 'path';
 import { tmpdir } from 'os';
 import semver = require('semver');
-import { BIN_PATH_JS, nodeSupportsEsmHooks, ts } from './helpers';
+import {
+  BIN_PATH_JS,
+  nodeSupportsEsmHooks,
+  ts,
+  tsSupportsShowConfig,
+  tsSupportsTsconfigInheritanceViaNodePackages,
+} from './helpers';
 import { lstatSync, mkdtempSync } from 'fs';
 import { npath } from '@yarnpkg/fslib';
 import type _createRequire from 'create-require';
@@ -167,31 +173,29 @@ test.suite('ts-node', (test) => {
       expect(stdout).toBe('object\n');
     });
 
-    if (semver.gte(ts.version, '1.8.0')) {
-      test('should allow js', async () => {
-        const { err, stdout } = await exec(
-          [
-            CMD_TS_NODE_WITH_PROJECT_FLAG,
-            '-O "{\\"allowJs\\":true}"',
-            '-pe "import { main } from \'./allow-js/run\';main()"',
-          ].join(' ')
-        );
-        expect(err).toBe(null);
-        expect(stdout).toBe('hello world\n');
-      });
+    test('should allow js', async () => {
+      const { err, stdout } = await exec(
+        [
+          CMD_TS_NODE_WITH_PROJECT_FLAG,
+          '-O "{\\"allowJs\\":true}"',
+          '-pe "import { main } from \'./allow-js/run\';main()"',
+        ].join(' ')
+      );
+      expect(err).toBe(null);
+      expect(stdout).toBe('hello world\n');
+    });
 
-      test('should include jsx when `allow-js` true', async () => {
-        const { err, stdout } = await exec(
-          [
-            CMD_TS_NODE_WITH_PROJECT_FLAG,
-            '-O "{\\"allowJs\\":true}"',
-            '-pe "import { Foo2 } from \'./allow-js/with-jsx\'; Foo2.sayHi()"',
-          ].join(' ')
-        );
-        expect(err).toBe(null);
-        expect(stdout).toBe('hello world\n');
-      });
-    }
+    test('should include jsx when `allow-js` true', async () => {
+      const { err, stdout } = await exec(
+        [
+          CMD_TS_NODE_WITH_PROJECT_FLAG,
+          '-O "{\\"allowJs\\":true}"',
+          '-pe "import { Foo2 } from \'./allow-js/with-jsx\'; Foo2.sayHi()"',
+        ].join(' ')
+      );
+      expect(err).toBe(null);
+      expect(stdout).toBe('hello world\n');
+    });
 
     test('should eval code', async () => {
       const { err, stdout } = await exec(
@@ -501,21 +505,16 @@ test.suite('ts-node', (test) => {
     });
 
     test.suite('issue #884', (test) => {
+      // TODO disabled because it consistently fails on Windows on TS 2.7
+      test.skipIf(
+        process.platform === 'win32' && semver.satisfies(ts.version, '2.7')
+      );
       test('should compile', async (t) => {
-        // TODO disabled because it consistently fails on Windows on TS 2.7
-        if (
-          process.platform === 'win32' &&
-          semver.satisfies(ts.version, '2.7')
-        ) {
-          t.log('Skipping');
-          return;
-        } else {
-          const { err, stdout } = await exec(
-            `"${BIN_PATH}" --project issue-884/tsconfig.json issue-884`
-          );
-          expect(err).toBe(null);
-          expect(stdout).toBe('');
-        }
+        const { err, stdout } = await exec(
+          `"${BIN_PATH}" --project issue-884/tsconfig.json issue-884`
+        );
+        expect(err).toBe(null);
+        expect(stdout).toBe('');
       });
     });
 
@@ -706,7 +705,7 @@ test.suite('ts-node', (test) => {
         ]);
       });
 
-      if (semver.gte(ts.version, '3.2.0')) {
+      if (tsSupportsTsconfigInheritanceViaNodePackages) {
         test('should pull ts-node options from extended `tsconfig.json`', async () => {
           const { err, stdout } = await exec(
             `${BIN_PATH} --show-config --project ./tsconfig-extends/tsconfig.json`
@@ -810,33 +809,33 @@ test.suite('ts-node', (test) => {
       }
     );
 
-    if (semver.gte(ts.version, '3.2.0')) {
-      test.suite(
-        'should bundle @tsconfig/bases to be used in your own tsconfigs',
-        (test) => {
-          const macro = test.macro((nodeVersion: string) => async (t) => {
-            const config = require(`@tsconfig/${nodeVersion}/tsconfig.json`);
-            const { err, stdout, stderr } = await exec(
-              `${BIN_PATH} --showConfig -e 10n`,
-              {
-                cwd: join(TEST_DIR, 'tsconfig-bases', nodeVersion),
-              }
-            );
-            expect(err).toBe(null);
-            t.like(JSON.parse(stdout), {
-              compilerOptions: {
-                target: config.compilerOptions.target,
-                lib: config.compilerOptions.lib,
-              },
-            });
+    test.suite(
+      'should bundle @tsconfig/bases to be used in your own tsconfigs',
+      (test) => {
+        test.runIf(tsSupportsTsconfigInheritanceViaNodePackages);
+
+        const macro = test.macro((nodeVersion: string) => async (t) => {
+          const config = require(`@tsconfig/${nodeVersion}/tsconfig.json`);
+          const { err, stdout, stderr } = await exec(
+            `${BIN_PATH} --showConfig -e 10n`,
+            {
+              cwd: join(TEST_DIR, 'tsconfig-bases', nodeVersion),
+            }
+          );
+          expect(err).toBe(null);
+          t.like(JSON.parse(stdout), {
+            compilerOptions: {
+              target: config.compilerOptions.target,
+              lib: config.compilerOptions.lib,
+            },
           });
-          test(`ts-node/node10/tsconfig.json`, macro, 'node10');
-          test(`ts-node/node12/tsconfig.json`, macro, 'node12');
-          test(`ts-node/node14/tsconfig.json`, macro, 'node14');
-          test(`ts-node/node16/tsconfig.json`, macro, 'node16');
-        }
-      );
-    }
+        });
+        test(`ts-node/node10/tsconfig.json`, macro, 'node10');
+        test(`ts-node/node12/tsconfig.json`, macro, 'node12');
+        test(`ts-node/node14/tsconfig.json`, macro, 'node14');
+        test(`ts-node/node16/tsconfig.json`, macro, 'node16');
+      }
+    );
 
     test.suite('compiler host', (test) => {
       test('should execute cli', async () => {
@@ -896,7 +895,7 @@ test.suite('ts-node', (test) => {
       });
     });
 
-    if (semver.gte(ts.version, '3.2.0')) {
+    if (tsSupportsShowConfig) {
       test('--showConfig should log resolved configuration', async (t) => {
         function native(path: string) {
           return path.replace(/\/|\\/g, pathSep);

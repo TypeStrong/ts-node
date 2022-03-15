@@ -5,18 +5,22 @@
 import { context } from './testlib';
 import semver = require('semver');
 import {
+  BIN_ESM_PATH,
   BIN_PATH,
+  BIN_PATH_JS,
   CMD_ESM_LOADER_WITHOUT_PROJECT,
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   contextTsNodeUnderTest,
+  delay,
   EXPERIMENTAL_MODULES_FLAG,
   nodeSupportsEsmHooks,
   nodeSupportsImportAssertions,
+  nodeSupportsSpawningChildProcess,
   nodeUsesNewHooksApi,
   resetNodeEnvironment,
   TEST_DIR,
 } from './helpers';
-import { createExec } from './exec-helpers';
+import { createExec, createSpawn, ExecReturn } from './exec-helpers';
 import { join, resolve } from 'path';
 import * as expect from 'expect';
 import type { NodeLoaderHooksAPI2 } from '../';
@@ -25,6 +29,9 @@ import { pathToFileURL } from 'url';
 const test = context(contextTsNodeUnderTest);
 
 const exec = createExec({
+  cwd: TEST_DIR,
+});
+const spawn = createSpawn({
   cwd: TEST_DIR,
 });
 
@@ -261,17 +268,38 @@ test.suite('esm', (test) => {
     test.suite('supports import assertions', (test) => {
       test.runIf(nodeSupportsImportAssertions);
 
-      test('Can import JSON using the appropriate flag and assertion', async (t) => {
-        const { err, stdout } = await exec(
-          `${CMD_ESM_LOADER_WITHOUT_PROJECT} --experimental-json-modules ./importJson.ts`,
-          {
-            cwd: resolve(TEST_DIR, 'esm-import-assertions'),
-          }
-        );
-        expect(err).toBe(null);
-        expect(stdout.trim()).toBe(
-          'A fuchsia car has 2 seats and the doors are open.\nDone!'
-        );
+      test.suite('node >=17.5.0', (test) => {
+        test.runIf(semver.gte(process.version, '17.5.0'));
+
+        test('Can import JSON modules with appropriate assertion', async (t) => {
+          const { err, stdout } = await exec(
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./importJson.ts`,
+            {
+              cwd: resolve(TEST_DIR, 'esm-import-assertions'),
+            }
+          );
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe(
+            'A fuchsia car has 2 seats and the doors are open.\nDone!'
+          );
+        });
+      });
+
+      test.suite('node <17.5.0', (test) => {
+        test.runIf(semver.lt(process.version, '17.5.0'));
+
+        test('Can import JSON using the appropriate flag and assertion', async (t) => {
+          const { err, stdout } = await exec(
+            `${CMD_ESM_LOADER_WITHOUT_PROJECT} --experimental-json-modules ./importJson.ts`,
+            {
+              cwd: resolve(TEST_DIR, 'esm-import-assertions'),
+            }
+          );
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe(
+            'A fuchsia car has 2 seats and the doors are open.\nDone!'
+          );
+        });
       });
     });
 
@@ -301,6 +329,81 @@ test.suite('esm', (test) => {
         });
       }
     );
+
+    test.suite('spawns child process', async (test) => {
+      test.runIf(nodeSupportsSpawningChildProcess);
+
+      basic('ts-node-esm executable', () =>
+        exec(`${BIN_ESM_PATH} ./esm-child-process/via-flag/index.ts foo bar`)
+      );
+      basic('ts-node --esm flag', () =>
+        exec(`${BIN_PATH} --esm ./esm-child-process/via-flag/index.ts foo bar`)
+      );
+      basic('ts-node w/tsconfig esm:true', () =>
+        exec(
+          `${BIN_PATH} --esm ./esm-child-process/via-tsconfig/index.ts foo bar`
+        )
+      );
+
+      function basic(title: string, cb: () => ExecReturn) {
+        test(title, async (t) => {
+          const { err, stdout, stderr } = await cb();
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe('CLI args: foo bar');
+          expect(stderr).toBe('');
+        });
+      }
+
+      test.suite('parent passes signals to child', (test) => {
+        test.runSerially();
+
+        signalTest('SIGINT');
+        signalTest('SIGTERM');
+
+        function signalTest(signal: string) {
+          test(signal, async (t) => {
+            const childP = spawn([
+              // exec lets us run the shims on windows; spawn does not
+              process.execPath,
+              BIN_PATH_JS,
+              `./esm-child-process/via-tsconfig/sleep.ts`,
+            ]);
+            let code: number | null | undefined = undefined;
+            childP.child.on('exit', (_code) => (code = _code));
+            await delay(6e3);
+            const codeAfter6Seconds = code;
+            process.kill(childP.child.pid, signal);
+            await delay(2e3);
+            const codeAfter8Seconds = code;
+            const { stdoutP, stderrP } = await childP;
+            const stdout = await stdoutP;
+            const stderr = await stderrP;
+            t.log({
+              stdout,
+              stderr,
+              codeAfter6Seconds,
+              codeAfter8Seconds,
+              code,
+            });
+            expect(codeAfter6Seconds).toBeUndefined();
+            if (process.platform === 'win32') {
+              // Windows doesn't have signals, and node attempts an imperfect facsimile.
+              // In Windows, SIGINT and SIGTERM kill the process immediately with exit
+              // code 1, and the process can't catch or prevent this.
+              expect(codeAfter8Seconds).toBe(1);
+              expect(code).toBe(1);
+            } else {
+              expect(codeAfter8Seconds).toBe(undefined);
+              expect(code).toBe(123);
+              expect(stdout.trim()).toBe(
+                `child registered signal handlers\nchild received signal: ${signal}\nchild exiting`
+              );
+            }
+            expect(stderr).toBe('');
+          });
+        }
+      });
+    });
   });
 
   test.suite('node >= 12.x.x', (test) => {

@@ -1,0 +1,1 @@
+{ "extends": "shared-config/tsconfig-swc.json" }

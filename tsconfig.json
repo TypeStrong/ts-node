@@ -24,6 +24,10 @@
   "typedocOptions": {
     "entryPoints": ["./src/index.ts"],
     "readme": "none",
-    "out": "website/static/api"
+    "out": "website/static/api",
+    "excludeTags": ["allof"],
+    "categorizeByGroup": false,
+    "categoryOrder": ["Basic", "REPL", "Transpiler", "ESM Loader", "Other"],
+    "defaultCategory": "Other"
   }
 }

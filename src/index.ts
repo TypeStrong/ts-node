@@ -1,26 +1,23 @@
-import { relative, basename, extname, resolve, dirname, join } from 'path';
+import { relative, basename, extname, dirname, join } from 'path';
 import { Module } from 'module';
 import * as util from 'util';
 import { fileURLToPath } from 'url';
 
-import sourceMapSupport = require('@cspotcode/source-map-support');
+import type * as _sourceMapSupport from '@cspotcode/source-map-support';
 import { BaseError } from 'make-error';
 import type * as _ts from 'typescript';
 
 import type { Transpiler, TranspilerFactory } from './transpilers/types';
 import {
-  assign,
-  attemptRequireWithV8CompileCache,
   cachedLookup,
   createProjectLocalResolveHelper,
-  getBasePathForProjectLocalDependencyResolution,
   normalizeSlashes,
   parse,
   ProjectLocalResolveHelper,
   split,
   yn,
 } from './util';
-import { readConfig } from './configuration';
+import { findAndReadConfig, loadCompiler } from './configuration';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
 import {
   createModuleTypeClassifier,
@@ -187,6 +184,8 @@ export const VERSION = require('../package.json').version;
 
 /**
  * Options for creating a new TypeScript compiler instance.
+
+ * @category Basic
  */
 export interface CreateOptions {
   /**
@@ -381,6 +380,20 @@ export interface CreateOptions {
    * See: https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping
    */
   experimentalPathMapping?: 'both' | 'esm' | 'cjs' | 'none';
+  /**
+   * Enable native ESM support.
+   *
+   * For details, see https://typestrong.org/ts-node/docs/imports#native-ecmascript-modules
+   */
+  esm?: boolean;
+  /**
+   * Re-order file extensions so that TypeScript imports are preferred.
+   *
+   * For example, when both `index.js` and `index.ts` exist, enabling this option causes `require('./index')` to resolve to `index.ts` instead of `index.js`
+   *
+   * @default false
+   */
+  preferTsExts?: boolean;
 }
 
 export type ModuleTypes = Record<string, 'cjs' | 'esm' | 'package'>;
@@ -390,21 +403,15 @@ export interface OptionBasePaths {
   moduleTypes?: string;
   transpiler?: string;
   compiler?: string;
+  swc?: string;
 }
 
 /**
  * Options for registering a TypeScript compiler instance globally.
+
+ * @category Basic
  */
 export interface RegisterOptions extends CreateOptions {
-  /**
-   * Re-order file extensions so that TypeScript imports are preferred.
-   *
-   * For example, when both `index.js` and `index.ts` exist, enabling this option causes `require('./index')` to resolve to `index.ts` instead of `index.js`
-   *
-   * @default false
-   */
-  preferTsExts?: boolean;
-
   /**
    * Enable experimental features that re-map imports and require calls to support:
    * `baseUrl`, `paths`, `rootDirs`, `.js` to `.ts` file extension mappings,
@@ -571,10 +578,14 @@ export function getExtensions(config: _ts.ParsedCommandLine) {
 
 /**
  * Create a new TypeScript compiler instance and register it onto node.js
+
+ * @category Basic
  */
 export function register(opts?: RegisterOptions): Service;
 /**
  * Register TypeScript compiler instance onto node.js
+
+ * @category Basic
  */
 export function register(service: Service): Service;
 export function register(
@@ -614,65 +625,33 @@ export function register(
 
 /**
  * Create TypeScript compiler instance.
+ *
+ * @category Basic
  */
 export function create(rawOptions: CreateOptions = {}): Service {
-  const cwd = resolve(
-    rawOptions.cwd ?? rawOptions.dir ?? DEFAULTS.cwd ?? process.cwd()
-  );
-  const compilerName = rawOptions.compiler ?? DEFAULTS.compiler;
+  const foundConfigResult = findAndReadConfig(rawOptions);
+  return createFromPreloadedConfig(foundConfigResult);
+}
 
-  /**
-   * Load the typescript compiler. It is required to load the tsconfig but might
-   * be changed by the tsconfig, so we have to do this twice.
-   */
-  function loadCompiler(name: string | undefined, relativeToPath: string) {
-    const projectLocalResolveHelper =
-      createProjectLocalResolveHelper(relativeToPath);
-    const compiler = projectLocalResolveHelper(name || 'typescript', true);
-    const ts: TSCommon = attemptRequireWithV8CompileCache(require, compiler);
-    return { compiler, ts, projectLocalResolveHelper };
-  }
+/** @internal */
+export function createFromPreloadedConfig(
+  foundConfigResult: ReturnType<typeof findAndReadConfig>
+): Service {
+  const {
+    configFilePath,
+    cwd,
+    options,
+    config,
+    compiler,
+    projectLocalResolveDir,
+    optionBasePaths,
+  } = foundConfigResult;
 
-  // Compute minimum options to read the config file.
-  let { compiler, ts, projectLocalResolveHelper } = loadCompiler(
-    compilerName,
-    getBasePathForProjectLocalDependencyResolution(
-      undefined,
-      rawOptions.projectSearchDir,
-      rawOptions.project,
-      cwd
-    )
+  const projectLocalResolveHelper = createProjectLocalResolveHelper(
+    projectLocalResolveDir
   );
 
-  // Read config file and merge new options between env and CLI options.
-  const { configFilePath, config, tsNodeOptionsFromTsconfig, optionBasePaths } =
-    readConfig(cwd, ts, rawOptions);
-  const options = assign<RegisterOptions>(
-    {},
-    DEFAULTS,
-    tsNodeOptionsFromTsconfig || {},
-    { optionBasePaths },
-    rawOptions
-  );
-  options.require = [
-    ...(tsNodeOptionsFromTsconfig.require || []),
-    ...(rawOptions.require || []),
-  ];
-
-  // Re-load the compiler in case it has changed.
-  // Compiler is loaded relative to tsconfig.json, so tsconfig discovery may cause us to load a
-  // different compiler than we did above, even if the name has not changed.
-  if (configFilePath) {
-    ({ compiler, ts, projectLocalResolveHelper } = loadCompiler(
-      options.compiler,
-      getBasePathForProjectLocalDependencyResolution(
-        configFilePath,
-        rawOptions.projectSearchDir,
-        rawOptions.project,
-        cwd
-      )
-    ));
-  }
+  const ts = loadCompiler(compiler);
 
   // Experimental REPL await is not compatible targets lower than ES2018
   const targetSupportsTla = config.options.target! >= ts.ScriptTarget.ES2018;
@@ -716,11 +695,15 @@ export function create(rawOptions: CreateOptions = {}): Service {
   const transpileOnly =
     (options.transpileOnly === true || options.swc === true) &&
     options.typeCheck !== true;
-  const transpiler = options.transpiler
-    ? options.transpiler
-    : options.swc
-    ? require.resolve('./transpilers/swc.js')
-    : undefined;
+  let transpiler: RegisterOptions['transpiler'] | undefined = undefined;
+  let transpilerBasePath: string | undefined = undefined;
+  if (options.transpiler) {
+    transpiler = options.transpiler;
+    transpilerBasePath = optionBasePaths.transpiler;
+  } else if (options.swc) {
+    transpiler = require.resolve('./transpilers/swc.js');
+    transpilerBasePath = optionBasePaths.swc;
+  }
   const transformers = options.transformers || undefined;
   const diagnosticFilters: Array<DiagnosticFilter> = [
     {
@@ -787,7 +770,13 @@ export function create(rawOptions: CreateOptions = {}): Service {
       typeof transpiler === 'string' ? transpiler : transpiler[0];
     const transpilerOptions =
       typeof transpiler === 'string' ? {} : transpiler[1] ?? {};
-    const transpilerPath = projectLocalResolveHelper(transpilerName, true);
+    const transpilerConfigLocalResolveHelper = transpilerBasePath
+      ? createProjectLocalResolveHelper(transpilerBasePath)
+      : projectLocalResolveHelper;
+    const transpilerPath = transpilerConfigLocalResolveHelper(
+      transpilerName,
+      true
+    );
     const transpilerFactory = require(transpilerPath)
       .create as TranspilerFactory;
     createTranspiler = function (compilerOptions) {
@@ -800,6 +789,7 @@ export function create(rawOptions: CreateOptions = {}): Service {
           },
           projectLocalResolveHelper,
         },
+        transpilerConfigLocalResolveHelper,
         ...transpilerOptions,
       });
     };
@@ -832,6 +822,8 @@ export function create(rawOptions: CreateOptions = {}): Service {
   // Install source map support and read from memory cache.
   installSourceMapSupport();
   function installSourceMapSupport() {
+    const sourceMapSupport =
+      require('@cspotcode/source-map-support') as typeof _sourceMapSupport;
     sourceMapSupport.install({
       environment: 'node',
       retrieveFile(pathOrUrl: string) {
@@ -1649,6 +1641,8 @@ function getTokenAtPosition(
  *
  * Node changed the hooks API, so there are two possible APIs.  This function
  * detects your node version and returns the appropriate API.
+ *
+ * @category ESM Loader
  */
 export const createEsmHooks: typeof createEsmHooksFn = (
   tsNodeService: Service

@@ -1,5 +1,6 @@
 ---
 title: "CommonJS vs native ECMAScript modules"
+slug: imports
 ---
 
 TypeScript is almost always written using modern `import` syntax, but it is also transformed before being executed by the underlying runtime.  You can choose to either transform to CommonJS or to preserve the native `import` syntax, using node's native ESM support.  Configuration is different for each.
@@ -11,7 +12,7 @@ Here is a brief comparison of the two.
 | Write native `import` syntax | Write native `import` syntax |
 | Transforms `import` into `require()` | Does not transform `import` |
 | Node executes scripts using the classic [CommonJS loader](https://nodejs.org/dist/latest-v16.x/docs/api/modules.html) | Node executes scripts using the new [ESM loader](https://nodejs.org/dist/latest-v16.x/docs/api/esm.html) |
-| Use any of:<br/>ts-node CLI<br/>`node -r ts-node/register`<br/>`NODE_OPTIONS="ts-node/register" node`<br/>`require('ts-node').register({/* options */})` | Must use the ESM loader via:<br/>`node --loader ts-node/esm`<br/>`NODE_OPTIONS="--loader ts-node/esm" node` |
+| Use any of:<br/>`ts-node`<br/>`node -r ts-node/register`<br/>`NODE_OPTIONS="ts-node/register" node`<br/>`require('ts-node').register({/* options */})` | Use any of:<br/>`ts-node --esm`<br/>`ts-node-esm`<br/>Set `"esm": true` in `tsconfig.json`<br />`node --loader ts-node/esm`<br/>`NODE_OPTIONS="--loader ts-node/esm" node` |
 
 ## CommonJS
 
@@ -65,6 +66,32 @@ You must set [`"type": "module"`](https://nodejs.org/api/packages.html#packages_
 {
   "compilerOptions": {
     "module": "ESNext" // or ES2015, ES2020
+  },
+  "ts-node": {
+    // Tell ts-node CLI to install the --loader automatically, explained below
+    "esm": true
   }
 }
+```
+
+You must also ensure node is passed `--loader`.  The ts-node CLI will do this automatically with our `esm` option.
+
+> Note: `--esm` must spawn a child process to pass it `--loader`.  This may change if node adds the ability to install loader hooks
+into the current process.
+
+```shell
+# pass the flag
+ts-node --esm
+# Use the convenience binary
+ts-node-esm
+# or add `"esm": true` to your tsconfig.json to make it automatic
+ts-node
+```
+
+If you are not using our CLI, pass the loader flag to node.
+
+```shell
+node --loader ts-node/esm ./index.ts
+# Or via environment variable
+NODE_OPTIONS="--loader ts-node/esm" node ./index.ts
 ```
