@@ -23,6 +23,15 @@ compiled code in `dist`.
 
 Test cases are declared in `src/test/*.spec.ts`, and test fixtures live in `./tests`.  They can be run with `npm run test-local`.
 
+To run a subset of tests:
+
+```
+# Use ava's --match flag to match the name of a test or suite
+# https://github.com/avajs/ava/blob/main/docs/05-command-line.md
+# Don't forget the * wildcards
+npm run test-local -- --match '*esm loader*'
+```
+
 Tests are run with AVA, but using a custom wrapper API to enable some TS-friendly features and grouped test suites.
 
 The tests `npm pack` ts-node into a tarball and `npm install` it into `./tests/node_modules`.  This makes `./tests` a better testing environment
