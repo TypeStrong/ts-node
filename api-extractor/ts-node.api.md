@@ -4,6 +4,8 @@
 
 ```ts
 
+/// <reference types="node" />
+
 import { BaseError } from 'make-error';
 import type * as _ts from 'typescript';
 
@@ -24,6 +26,7 @@ export interface CreateOptions {
     // @deprecated
     dir?: string;
     emit?: boolean;
+    esm?: boolean;
     experimentalReplAwait?: boolean;
     // (undocumented)
     fileExists?: (path: string) => boolean;
@@ -31,7 +34,8 @@ export interface CreateOptions {
     ignore?: string[];
     ignoreDiagnostics?: Array<number | string>;
     logError?: boolean;
-    moduleTypes?: Record<string, 'cjs' | 'esm' | 'package'>;
+    moduleTypes?: ModuleTypes;
+    preferTsExts?: boolean;
     pretty?: boolean;
     project?: string;
     projectSearchDir?: string;
@@ -43,10 +47,12 @@ export interface CreateOptions {
     scopeDir?: string;
     skipIgnore?: boolean;
     skipProject?: boolean;
+    swc?: boolean;
     // (undocumented)
     transformers?: _ts.CustomTransformers | ((p: _ts.Program) => _ts.CustomTransformers);
     transpileOnly?: boolean;
     transpiler?: string | [string, object];
+    tsTrace?: (str: string) => void;
     typeCheck?: boolean;
 }
 
@@ -72,11 +78,14 @@ export interface CreateReplOptions {
 // @public (undocumented)
 export interface CreateTranspilerOptions {
     // (undocumented)
-    service: Pick<Service, 'config' | 'options'>;
+    service: Pick<Service, Extract<'config' | 'options' | 'projectLocalResolveHelper', keyof Service>>;
 }
 
 // @public
 export type EvalAwarePartialHost = Pick<CreateOptions, 'readFile' | 'fileExists'>;
+
+// @public (undocumented)
+export type ModuleTypes = Record<string, 'cjs' | 'esm' | 'package'>;
 
 // @public (undocumented)
 export interface NodeLoaderHooksAPI1 {
@@ -118,15 +127,26 @@ export namespace NodeLoaderHooksAPI2 {
     // (undocumented)
     export type LoadHook = (url: string, context: {
         format: NodeLoaderHooksFormat | null | undefined;
+        importAssertions?: NodeImportAssertions;
     }, defaultLoad: NodeLoaderHooksAPI2['load']) => Promise<{
         format: NodeLoaderHooksFormat;
         source: string | Buffer | undefined;
     }>;
     // (undocumented)
+    export interface NodeImportAssertions {
+        // (undocumented)
+        type?: 'json';
+    }
+    // (undocumented)
+    export type NodeImportConditions = unknown;
+    // (undocumented)
     export type ResolveHook = (specifier: string, context: {
+        conditions?: NodeImportConditions;
+        importAssertions?: NodeImportAssertions;
         parentURL: string;
     }, defaultResolve: ResolveHook) => Promise<{
         url: string;
+        format?: NodeLoaderHooksFormat;
     }>;
 }
 
@@ -147,7 +167,7 @@ export const REGISTER_INSTANCE: unique symbol;
 
 // @public
 export interface RegisterOptions extends CreateOptions {
-    preferTsExts?: boolean;
+    experimentalResolverFeatures?: boolean;
 }
 
 // @public (undocumented)
@@ -262,7 +282,7 @@ export interface TSCommon {
     // (undocumented)
     resolveModuleNameFromCache: typeof _ts.resolveModuleNameFromCache;
     // (undocumented)
-    resolveTypeReferenceDirective: typeof _ts.resolveTypeReferenceDirective;
+    resolveTypeReferenceDirective(typeReferenceDirectiveName: string, containingFile: string | undefined, options: _ts.CompilerOptions, host: _ts.ModuleResolutionHost, redirectedReference?: _ts.ResolvedProjectReference, cache?: _ts.TypeReferenceDirectiveResolutionCache, resolutionMode?: _ts.SourceFile['impliedNodeFormat']): _ts.ResolvedTypeReferenceDirectiveWithFailedLookupLocations;
     // (undocumented)
     ScriptSnapshot: typeof _ts.ScriptSnapshot;
     // (undocumented)
@@ -275,8 +295,35 @@ export interface TSCommon {
     version: typeof _ts.version;
 }
 
+// @public (undocumented)
+export namespace TSCommon {
+    // (undocumented)
+    export type CompilerOptions = _ts.CompilerOptions;
+    // (undocumented)
+    export type FileReference = _ts.FileReference;
+    // (undocumented)
+    export interface LanguageServiceHost extends _ts.LanguageServiceHost {
+        // (undocumented)
+        resolveTypeReferenceDirectives?(typeDirectiveNames: string[] | _ts.FileReference[], containingFile: string, redirectedReference: _ts.ResolvedProjectReference | undefined, options: _ts.CompilerOptions, containingFileMode?: _ts.SourceFile['impliedNodeFormat'] | undefined): (_ts.ResolvedTypeReferenceDirective | undefined)[];
+    }
+    // (undocumented)
+    export type ModuleResolutionHost = _ts.ModuleResolutionHost;
+    // (undocumented)
+    export type ParsedCommandLine = _ts.ParsedCommandLine;
+    // (undocumented)
+    export type ResolvedModule = _ts.ResolvedModule;
+    // (undocumented)
+    export type ResolvedModuleWithFailedLookupLocations = _ts.ResolvedModuleWithFailedLookupLocations;
+    // (undocumented)
+    export type ResolvedProjectReference = _ts.ResolvedProjectReference;
+    // (undocumented)
+    export type ResolvedTypeReferenceDirective = _ts.ResolvedTypeReferenceDirective;
+    // (undocumented)
+    export type SourceFile = _ts.SourceFile;
+}
+
 // @public
-export interface TsConfigOptions extends Omit<RegisterOptions, 'transformers' | 'readFile' | 'fileExists' | 'skipProject' | 'project' | 'dir' | 'cwd' | 'projectSearchDir' | 'optionBasePaths'> {
+export interface TsConfigOptions extends Omit<RegisterOptions, 'transformers' | 'readFile' | 'fileExists' | 'skipProject' | 'project' | 'dir' | 'cwd' | 'projectSearchDir' | 'optionBasePaths' | 'tsTrace'> {
 }
 
 // @public
@@ -300,7 +347,6 @@ export interface TypeInfo {
 
 // @public
 export const VERSION: any;
-
 
 // (No @packageDocumentation comment for this package)
 

@@ -4,6 +4,7 @@ import { Stream } from 'stream';
 import semver = require('semver');
 import { ts } from '../helpers';
 import type { ContextWithTsNodeUnderTest } from './helpers';
+import { nodeSupportsEsmHooks } from '../helpers';
 
 interface SharedObjects extends ContextWithTsNodeUnderTest {
   TEST_DIR: string;
@@ -39,9 +40,11 @@ export async function upstreamTopLevelAwaitTests({
     },
   });
   replService.setService(service);
-  (replService.stdout as NodeJS.WritableStream & {
-    isTTY: boolean;
-  }).isTTY = true;
+  (
+    replService.stdout as NodeJS.WritableStream & {
+      isTTY: boolean;
+    }
+  ).isTTY = true;
   const replServer = replService.startInternal({
     prompt: PROMPT,
     terminal: true,
@@ -125,12 +128,12 @@ export async function upstreamTopLevelAwaitTests({
     [
       'Bar',
       // Adjusted since ts-node supports older versions of node
-      semver.gte(process.version, '12.16.0')
+      nodeSupportsEsmHooks
         ? 'Uncaught ReferenceError: Bar is not defined'
         : 'ReferenceError: Bar is not defined',
       // Line increased due to TS added lines
       {
-        line: semver.gte(process.version, '12.16.0') ? 4 : 5,
+        line: nodeSupportsEsmHooks ? 4 : 5,
       },
     ],
 
@@ -142,12 +145,12 @@ export async function upstreamTopLevelAwaitTests({
     [
       'j',
       // Adjusted since ts-node supports older versions of node
-      semver.gte(process.version, '12.16.0')
+      nodeSupportsEsmHooks
         ? 'Uncaught ReferenceError: j is not defined'
         : 'ReferenceError: j is not defined',
       // Line increased due to TS added lines
       {
-        line: semver.gte(process.version, '12.16.0') ? 4 : 5,
+        line: nodeSupportsEsmHooks ? 4 : 5,
       },
     ],
 
@@ -156,12 +159,12 @@ export async function upstreamTopLevelAwaitTests({
     [
       'return 42; await 5;',
       // Adjusted since ts-node supports older versions of node
-      semver.gte(process.version, '12.16.0')
+      nodeSupportsEsmHooks
         ? 'Uncaught SyntaxError: Illegal return statement'
         : 'SyntaxError: Illegal return statement',
       // Line increased due to TS added lines
       {
-        line: semver.gte(process.version, '12.16.0') ? 4 : 5,
+        line: nodeSupportsEsmHooks ? 4 : 5,
       },
     ],
 

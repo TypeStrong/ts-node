@@ -34,7 +34,9 @@ function parseArgv(argv) {
     '--es-module-specifier-resolution': '--experimental-specifier-resolution',
     '--experimental-policy': String,
     '--conditions': [String],
-    '--pending-deprecation': Boolean
+    '--pending-deprecation': Boolean,
+    '--experimental-json-modules': Boolean,
+    '--experimental-wasm-modules': Boolean,
   }, {
     argv,
     permissive: true

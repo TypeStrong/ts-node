@@ -1,6 +1,15 @@
-import type { ChildProcess, ExecException, ExecOptions } from 'child_process';
-import { exec as childProcessExec } from 'child_process';
-import * as expect from 'expect';
+import type {
+  ChildProcess,
+  ExecException,
+  ExecOptions,
+  SpawnOptions,
+} from 'child_process';
+import {
+  exec as childProcessExec,
+  spawn as childProcessSpawn,
+} from 'child_process';
+import { getStream } from './helpers';
+import { expect } from './testlib';
 
 export type ExecReturn = Promise<ExecResult> & { child: ChildProcess };
 export interface ExecResult {
@@ -36,6 +45,52 @@ export function createExec<T extends Partial<ExecOptions>>(
             resolve({ err, stdout, stderr, child });
           }
         );
+      }),
+      {
+        child,
+      }
+    );
+  };
+}
+
+export type SpawnReturn = Promise<SpawnResult> & { child: ChildProcess };
+export interface SpawnResult {
+  stdoutP: Promise<string>;
+  stderrP: Promise<string>;
+  code: number | null;
+  child: ChildProcess;
+}
+
+export function createSpawn<T extends Partial<SpawnOptions>>(
+  preBoundOptions?: T
+) {
+  /**
+   * Helper to spawn a child process.
+   * Returns a Promise and a reference to the child process to suite multiple situations.
+   *
+   * Should almost always avoid this helper, and instead use `createExec` / `exec`.  `spawn`
+   * may be necessary if you need to avoid `exec`'s intermediate shell.
+   */
+  return function spawn(
+    cmd: string[],
+    opts?: Pick<SpawnOptions, Exclude<keyof SpawnOptions, keyof T>> &
+      Partial<Pick<SpawnOptions, keyof T & keyof SpawnOptions>>
+  ) {
+    let child!: ChildProcess;
+    return Object.assign(
+      new Promise<SpawnResult>((resolve, reject) => {
+        child = childProcessSpawn(cmd[0], cmd.slice(1), {
+          ...preBoundOptions,
+          ...opts,
+        });
+        const stdoutP = getStream(child.stdout!);
+        const stderrP = getStream(child.stderr!);
+        child.on('exit', (code) => {
+          resolve({ stdoutP, stderrP, code, child });
+        });
+        child.on('error', (error) => {
+          reject(error);
+        });
       }),
       {
         child,

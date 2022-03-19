@@ -4,13 +4,19 @@ import {
   CreateOptions,
   DEFAULTS,
   OptionBasePaths,
+  RegisterOptions,
   TSCommon,
   TsConfigOptions,
 } from './index';
 import type { TSInternal } from './ts-compiler-types';
 import { createTsInternals } from './ts-internals';
 import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs';
-import { assign, createRequire } from './util';
+import {
+  assign,
+  attemptRequireWithV8CompileCache,
+  createProjectLocalResolveHelper,
+  getBasePathForProjectLocalDependencyResolution,
+} from './util';
 
 /**
  * TypeScript compiler option values required by `ts-node` which cannot be overridden.
@@ -47,6 +53,68 @@ function fixConfig(ts: TSCommon, config: _ts.ParsedCommandLine) {
   }
 
   return config;
+}
+
+/** @internal */
+export function findAndReadConfig(rawOptions: CreateOptions) {
+  const cwd = resolve(
+    rawOptions.cwd ?? rawOptions.dir ?? DEFAULTS.cwd ?? process.cwd()
+  );
+  const compilerName = rawOptions.compiler ?? DEFAULTS.compiler;
+
+  // Compute minimum options to read the config file.
+  let projectLocalResolveDir = getBasePathForProjectLocalDependencyResolution(
+    undefined,
+    rawOptions.projectSearchDir,
+    rawOptions.project,
+    cwd
+  );
+  let { compiler, ts } = resolveAndLoadCompiler(
+    compilerName,
+    projectLocalResolveDir
+  );
+
+  // Read config file and merge new options between env and CLI options.
+  const { configFilePath, config, tsNodeOptionsFromTsconfig, optionBasePaths } =
+    readConfig(cwd, ts, rawOptions);
+
+  const options = assign<RegisterOptions>(
+    {},
+    DEFAULTS,
+    tsNodeOptionsFromTsconfig || {},
+    { optionBasePaths },
+    rawOptions
+  );
+  options.require = [
+    ...(tsNodeOptionsFromTsconfig.require || []),
+    ...(rawOptions.require || []),
+  ];
+
+  // Re-resolve the compiler in case it has changed.
+  // Compiler is loaded relative to tsconfig.json, so tsconfig discovery may cause us to load a
+  // different compiler than we did above, even if the name has not changed.
+  if (configFilePath) {
+    projectLocalResolveDir = getBasePathForProjectLocalDependencyResolution(
+      configFilePath,
+      rawOptions.projectSearchDir,
+      rawOptions.project,
+      cwd
+    );
+    ({ compiler } = resolveCompiler(
+      options.compiler,
+      optionBasePaths.compiler ?? projectLocalResolveDir
+    ));
+  }
+
+  return {
+    options,
+    config,
+    projectLocalResolveDir,
+    optionBasePaths,
+    configFilePath,
+    cwd,
+    compiler,
+  };
 }
 
 /**
@@ -142,7 +210,7 @@ export function readConfig(
           },
           bp,
           errors,
-          ((ts as unknown) as TSInternal).createCompilerDiagnostic
+          (ts as unknown as TSInternal).createCompilerDiagnostic
         );
         if (errors.length) {
           return {
@@ -165,15 +233,18 @@ export function readConfig(
   const optionBasePaths: OptionBasePaths = {};
   for (let i = configChain.length - 1; i >= 0; i--) {
     const { config, basePath, configPath } = configChain[i];
-    const options = filterRecognizedTsConfigTsNodeOptions(config['ts-node'])
-      .recognized;
+    const options = filterRecognizedTsConfigTsNodeOptions(
+      config['ts-node']
+    ).recognized;
 
     // Some options are relative to the config file, so must be converted to absolute paths here
     if (options.require) {
       // Modules are found relative to the tsconfig file, not the `dir` option
-      const tsconfigRelativeRequire = createRequire(configPath);
+      const tsconfigRelativeResolver = createProjectLocalResolveHelper(
+        dirname(configPath)
+      );
       options.require = options.require.map((path: string) =>
-        tsconfigRelativeRequire.resolve(path)
+        tsconfigRelativeResolver(path, false)
       );
     }
     if (options.scopeDir) {
@@ -183,6 +254,15 @@ export function readConfig(
     // Downstream code uses the basePath; we do not do that here.
     if (options.moduleTypes) {
       optionBasePaths.moduleTypes = basePath;
+    }
+    if (options.transpiler != null) {
+      optionBasePaths.transpiler = basePath;
+    }
+    if (options.compiler != null) {
+      optionBasePaths.compiler = basePath;
+    }
+    if (options.swc != null) {
+      optionBasePaths.swc = basePath;
     }
 
     assign(tsNodeOptionsFromTsconfig, options);
@@ -247,12 +327,36 @@ export function readConfig(
 }
 
 /**
+ * Load the typescript compiler. It is required to load the tsconfig but might
+ * be changed by the tsconfig, so we have to do this twice.
+ * @internal
+ */
+export function resolveAndLoadCompiler(
+  name: string | undefined,
+  relativeToPath: string
+) {
+  const { compiler } = resolveCompiler(name, relativeToPath);
+  const ts = loadCompiler(compiler);
+  return { compiler, ts };
+}
+
+function resolveCompiler(name: string | undefined, relativeToPath: string) {
+  const projectLocalResolveHelper =
+    createProjectLocalResolveHelper(relativeToPath);
+  const compiler = projectLocalResolveHelper(name || 'typescript', true);
+  return { compiler };
+}
+
+/** @internal */
+export function loadCompiler(compiler: string): TSCommon {
+  return attemptRequireWithV8CompileCache(require, compiler);
+}
+
+/**
  * Given the raw "ts-node" sub-object from a tsconfig, return an object with only the properties
  * recognized by "ts-node"
  */
-function filterRecognizedTsConfigTsNodeOptions(
-  jsonObject: any
-): {
+function filterRecognizedTsConfigTsNodeOptions(jsonObject: any): {
   recognized: TsConfigOptions;
   unrecognized: any;
 } {
@@ -278,6 +382,8 @@ function filterRecognizedTsConfigTsNodeOptions(
     moduleTypes,
     experimentalReplAwait,
     swc,
+    experimentalResolverFeatures,
+    esm,
     ...unrecognized
   } = jsonObject as TsConfigOptions;
   const filteredTsConfigOptions = {
@@ -301,9 +407,13 @@ function filterRecognizedTsConfigTsNodeOptions(
     scopeDir,
     moduleTypes,
     swc,
+    experimentalResolverFeatures,
+    esm,
   };
   // Use the typechecker to make sure this implementation has the correct set of properties
-  const catchExtraneousProps: keyof TsConfigOptions = (null as any) as keyof typeof filteredTsConfigOptions;
-  const catchMissingProps: keyof typeof filteredTsConfigOptions = (null as any) as keyof TsConfigOptions;
+  const catchExtraneousProps: keyof TsConfigOptions =
+    null as any as keyof typeof filteredTsConfigOptions;
+  const catchMissingProps: keyof typeof filteredTsConfigOptions =
+    null as any as keyof TsConfigOptions;
   return { recognized: filteredTsConfigOptions, unrecognized };
 }

@@ -12,6 +12,7 @@ exports.codes = {
   ERR_PACKAGE_PATH_NOT_EXPORTED: createErrorCtor(joinArgs('ERR_PACKAGE_PATH_NOT_EXPORTED')),
   ERR_UNSUPPORTED_DIR_IMPORT: createErrorCtor(joinArgs('ERR_UNSUPPORTED_DIR_IMPORT')),
   ERR_UNSUPPORTED_ESM_URL_SCHEME: createErrorCtor(joinArgs('ERR_UNSUPPORTED_ESM_URL_SCHEME')),
+  ERR_UNKNOWN_FILE_EXTENSION: createErrorCtor(joinArgs('ERR_UNKNOWN_FILE_EXTENSION')),
 }
 
 function joinArgs(name) {

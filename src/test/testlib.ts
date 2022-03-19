@@ -11,28 +11,45 @@ import avaTest, {
 } from 'ava';
 import * as assert from 'assert';
 import throat from 'throat';
-export { ExecutionContext };
+import * as expect from 'expect';
+
+export { ExecutionContext, expect };
 
 // NOTE: this limits concurrency within a single process, but AVA launches
 // each .spec file in its own process, so actual concurrency is higher.
 const concurrencyLimiter = throat(16);
 
+function errorPostprocessor<T extends Function>(fn: T): T {
+  return async function (this: any) {
+    try {
+      return await fn.call(this, arguments);
+    } catch (error: any) {
+      delete error?.matcherResult;
+      // delete error?.matcherResult?.message;
+      if (error?.message) error.message = `\n${error.message}\n`;
+      throw error;
+    }
+  } as any;
+}
+
 function once<T extends Function>(func: T): T {
   let run = false;
   let ret: any = undefined;
-  return (function (...args: any[]) {
+  return function (...args: any[]) {
     if (run) return ret;
     run = true;
     ret = func(...args);
     return ret;
-  } as any) as T;
+  } as any as T;
 }
 
 export const test = createTestInterface({
   beforeEachFunctions: [],
   mustDoSerial: false,
   automaticallyDoSerial: false,
-  separator: ' > ',
+  automaticallySkip: false,
+  // The little right chevron used by ava
+  separator: ' \u203a ',
   titlePrefix: undefined,
 });
 // In case someone wants to `const test = _test.context()`
@@ -94,6 +111,13 @@ export interface TestInterface<
 
   runSerially(): void;
 
+  /** Skip tests unless this condition is met */
+  skipUnless(conditional: boolean): void;
+  /** If conditional is true, run tests, otherwise skip them */
+  runIf(conditional: boolean): void;
+  /** If conditional is false, skip tests */
+  skipIf(conditional: boolean): void;
+
   // TODO add teardownEach
 }
 function createTestInterface<Context>(opts: {
@@ -101,11 +125,12 @@ function createTestInterface<Context>(opts: {
   separator: string | undefined;
   mustDoSerial: boolean;
   automaticallyDoSerial: boolean;
+  automaticallySkip: boolean;
   beforeEachFunctions: Function[];
 }): TestInterface<Context> {
   const { titlePrefix, separator = ' > ' } = opts;
   const beforeEachFunctions = [...(opts.beforeEachFunctions ?? [])];
-  let { mustDoSerial, automaticallyDoSerial } = opts;
+  let { mustDoSerial, automaticallyDoSerial, automaticallySkip } = opts;
   let hookDeclared = false;
   let suiteOrTestDeclared = false;
   function computeTitle(title: string | undefined) {
@@ -140,29 +165,42 @@ function createTestInterface<Context>(opts: {
     }
     hookDeclared = true;
   }
+  function assertOrderingForDeclaringSkipUnless() {
+    if (suiteOrTestDeclared) {
+      throw new Error(
+        'skipUnless or runIf must be declared before declaring sub-suites or tests'
+      );
+    }
+  }
   /**
    * @param avaDeclareFunction either test or test.serial
    */
   function declareTest(
     title: string | undefined,
     macros: Function[],
-    avaDeclareFunction: Function,
+    avaDeclareFunction: Function & { skip: Function },
     args: any[]
   ) {
     const wrappedMacros = macros.map((macro) => {
       return async function (t: ExecutionContext<Context>, ...args: any[]) {
-        return concurrencyLimiter(async () => {
-          let i = 0;
-          for (const func of beforeEachFunctions) {
-            await func(t);
-            i++;
-          }
-          return macro(t, ...args);
-        });
+        return concurrencyLimiter(
+          errorPostprocessor(async () => {
+            let i = 0;
+            for (const func of beforeEachFunctions) {
+              await func(t);
+              i++;
+            }
+            return macro(t, ...args);
+          })
+        );
       };
     });
     const computedTitle = computeTitle(title);
-    avaDeclareFunction(computedTitle, wrappedMacros, ...args);
+    (automaticallySkip ? avaDeclareFunction.skip : avaDeclareFunction)(
+      computedTitle,
+      wrappedMacros,
+      ...args
+    );
   }
   function test(...inputArgs: any[]) {
     assertOrderingForDeclaringTest();
@@ -232,9 +270,11 @@ function createTestInterface<Context>(opts: {
     title: string,
     cb: (test: TestInterface<Context>) => void
   ) {
+    suiteOrTestDeclared = true;
     const newApi = createTestInterface<Context>({
       mustDoSerial,
       automaticallyDoSerial,
+      automaticallySkip,
       separator,
       titlePrefix: computeTitle(title),
       beforeEachFunctions,
@@ -243,6 +283,13 @@ function createTestInterface<Context>(opts: {
   };
   test.runSerially = function () {
     automaticallyDoSerial = true;
+  };
+  test.skipUnless = test.runIf = function (runIfTrue: boolean) {
+    assertOrderingForDeclaringSkipUnless();
+    automaticallySkip = automaticallySkip || !runIfTrue;
+  };
+  test.skipIf = function (skipIfTrue: boolean) {
+    test.runIf(!skipIfTrue);
   };
   return test as any;
 }

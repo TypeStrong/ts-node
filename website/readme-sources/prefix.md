@@ -14,7 +14,7 @@ You can build the readme with this command:
     cd website && yarn build-readme
 -->
 
-# ![TypeScript Node](logo.svg?sanitize=true)
+# [![TypeScript Node](logo.svg?sanitize=true)](https://typestrong.org/ts-node)
 
 [![NPM version](https://img.shields.io/npm/v/ts-node.svg?style=flat)](https://npmjs.org/package/ts-node)
 [![NPM downloads](https://img.shields.io/npm/dm/ts-node.svg?style=flat)](https://npmjs.org/package/ts-node)
