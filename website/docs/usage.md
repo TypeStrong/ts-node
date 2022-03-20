@@ -2,7 +2,7 @@
 title: Usage
 ---
 
-## Shell
+## Command Line
 
 ```shell
 # Execute a script as `node` + `tsc`.
@@ -25,44 +25,64 @@ ts-node-transpile-only script.ts
 
 # Equivalent to ts-node --cwdMode
 ts-node-cwd script.ts
+
+# Equivalent to ts-node --esm
+ts-node-esm script.ts
 ```
 
 ## Shebang
 
-```typescript
+To write scripts with maximum portability, [specify options in your `tsconfig.json`](./configuration#via-tsconfigjson-recommended) and omit them from the shebang.
+
+```typescript twoslash
 #!/usr/bin/env ts-node
+
+// ts-node options are read from tsconfig.json
 
 console.log("Hello, world!")
 ```
 
-Passing options via shebang requires the [`env -S` flag](https://manpages.debian.org/bullseye/coreutils/env.1.en.html#S), which is available on recent versions of `env`. ([compatibility](https://github.com/TypeStrong/ts-node/pull/1448#issuecomment-913895766))
+Including options within the shebang requires the [`env -S` flag](https://manpages.debian.org/bullseye/coreutils/env.1.en.html#S), which is available on recent versions of `env`. ([compatibility](https://github.com/TypeStrong/ts-node/pull/1448#issuecomment-913895766))
 
-```typescript
+```typescript twoslash
 #!/usr/bin/env -S ts-node --files
 // This shebang works on Mac and Linux with newer versions of env
 // Technically, Mac allows omitting `-S`, but Linux requires it
 ```
 
-To write scripts with maximum portability, [specify all options in your `tsconfig.json`](./configuration#via-tsconfigjson-recommended) and omit them from the shebang.
-
-```typescript
-#!/usr/bin/env ts-node
-// This shebang works everywhere
-```
-
-To test your version of `env` for compatibility:
+To test your version of `env` for compatibility with `-S`:
 
 ```shell
 # Note that these unusual quotes are necessary
 /usr/bin/env --debug '-S echo foo bar'
 ```
 
+## node flags and other tools
+
+You can register ts-node without using our CLI: `node -r ts-node/register` and `node --loader ts-node/esm`
+
+In many cases, setting [`NODE_OPTIONS`](https://nodejs.org/api/cli.html#cli_node_options_options) will enable `ts-node` within other node tools, child processes, and worker threads.  This can be combined with other node flags.
+
+```shell
+NODE_OPTIONS="-r ts-node/register --no-warnings" node ./index.ts
+```
+
+Or, if you require native ESM support:
+
+```shell
+NODE_OPTIONS="--loader ts-node/esm"
+```
+
+This tells any node processes which receive this environment variable to install `ts-node`'s hooks before executing other code.
+
+If you are invoking node directly, you can avoid the environment variable and pass those flags to node.
+
+```shell
+node --loader ts-node/esm --inspect ./index.ts
+```
+
 ## Programmatic
 
-You can require ts-node and register the loader for future requires by using `require('ts-node').register({ /* options */ })`. You can also use file shortcuts - `node -r ts-node/register` or `node -r ts-node/register/transpile-only` - depending on your preferences.
+You can require ts-node and register the loader for future requires by using `require('ts-node').register({ /* options */ })`.
 
-**Note:** If you need to use advanced node.js CLI arguments (e.g. `--inspect`), use them with `node -r ts-node/register` instead of ts-node's CLI.
-
-### Developers
-
-ts-node exports a `create()` function that can be used to initialize a TypeScript compiler that isn't registered to `require.extensions`, and it uses the same code as `register`.
+Check out our [API](./api.md) for more features.

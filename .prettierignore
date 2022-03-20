@@ -6,6 +6,12 @@
 !/scripts
 !/src
 !/tests
+!/website
+/website/.docusaurus
+/website/build
+/website/docs
+/website/readme-sources
+/website/static
 tests/main-realpath/symlink/tsconfig.json
 tests/throw error.ts
 tests/throw error react tsx.tsx

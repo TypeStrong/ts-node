@@ -1,6 +1,6 @@
 {
   "name": "ts-node",
-  "version": "10.6.0",
+  "version": "10.7.0",
   "description": "TypeScript execution environment and REPL for node.js, with source map support",
   "main": "dist/index.js",
   "exports": {
@@ -15,6 +15,8 @@
     "./dist/bin-script.js": "./dist/bin-script.js",
     "./dist/bin-cwd": "./dist/bin-cwd.js",
     "./dist/bin-cwd.js": "./dist/bin-cwd.js",
+    "./dist/bin-esm": "./dist/bin-esm.js",
+    "./dist/bin-esm.js": "./dist/bin-esm.js",
     "./register": "./register/index.js",
     "./register/files": "./register/files.js",
     "./register/transpile-only": "./register/transpile-only.js",
@@ -23,6 +25,7 @@
     "./esm.mjs": "./esm.mjs",
     "./esm/transpile-only": "./esm/transpile-only.mjs",
     "./esm/transpile-only.mjs": "./esm/transpile-only.mjs",
+    "./child-loader.mjs": "./child-loader.mjs",
     "./transpilers/swc": "./transpilers/swc.js",
     "./transpilers/swc-experimental": "./transpilers/swc-experimental.js",
     "./node10/tsconfig.json": "./node10/tsconfig.json",
@@ -33,10 +36,11 @@
   "types": "dist/index.d.ts",
   "bin": {
     "ts-node": "dist/bin.js",
-    "ts-script": "dist/bin-script-deprecated.js",
-    "ts-node-script": "dist/bin-script.js",
     "ts-node-cwd": "dist/bin-cwd.js",
-    "ts-node-transpile-only": "dist/bin-transpile.js"
+    "ts-node-esm": "dist/bin-esm.js",
+    "ts-node-script": "dist/bin-script.js",
+    "ts-node-transpile-only": "dist/bin-transpile.js",
+    "ts-script": "dist/bin-script-deprecated.js"
   },
   "files": [
     "/transpilers/",
@@ -46,6 +50,7 @@
     "/register/",
     "/esm/",
     "/esm.mjs",
+    "/child-loader.mjs",
     "/LICENSE",
     "/tsconfig.schema.json",
     "/tsconfig.schemastore-schema.json",
@@ -105,7 +110,7 @@
   },
   "homepage": "https://typestrong.org/ts-node",
   "devDependencies": {
-    "@microsoft/api-extractor": "^7.15.2",
+    "@microsoft/api-extractor": "^7.19.4",
     "@swc/core": ">=1.2.50",
     "@swc/wasm": ">=1.2.50",
     "@types/chai": "^4.0.4",
