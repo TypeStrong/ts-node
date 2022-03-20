@@ -309,6 +309,7 @@ function resolveExtensionsWithTryExactName(search) {
   return resolveExtensions(search);
 }
 
+// [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
 const extensions = Array.from(new Set([
   ...(preferTsExts ? tsExtensions : []),
   '.js',
@@ -329,6 +330,7 @@ function resolveExtensions(search) {
 /**
  * TS's resolver can resolve foo.js to foo.ts, by replacing .js extension with several source extensions.
  * IMPORTANT: preserve ordering according to preferTsExts; this affects resolution behavior!
+ * [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
  */
 const replacementExtensionsForJs = extensions.filter(ext => ['.js', '.jsx', '.ts', '.tsx'].includes(ext));
 const replacementExtensionsForMjs = extensions.filter(ext => ['.mjs', '.mts'].includes(ext));
@@ -336,7 +338,7 @@ const replacementExtensionsForCjs = extensions.filter(ext => ['.cjs', '.cts'].in
 
 function resolveReplacementExtensions(search) {
   const lastDotIndex = search.pathname.lastIndexOf('.');
-  const ext = search.pathname.slice(lastDotIndex);
+  const ext = lastDotIndex >= 0 ? search.pathname.slice(lastDotIndex) : '';
   if (ext === '.js' || ext === '.cjs' || ext === '.mjs') {
     const pathnameWithoutExtension = search.pathname.slice(0, lastDotIndex);
     const replacementExtensions =

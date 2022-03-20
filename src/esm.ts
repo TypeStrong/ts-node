@@ -348,7 +348,7 @@ export function createEsmHooks(tsNodeService: Service) {
       !tsNodeService.ignored(nativePath) &&
       (nodeSays.format === 'commonjs' || nodeSays.format === 'module')
     ) {
-      const { moduleType } = tsNodeService.moduleTypeClassifier.classifyModule(
+      const { moduleType } = tsNodeService.moduleTypeClassifier.classifyModuleByModuleTypeOverrides(
         normalizeSlashes(nativePath)
       );
       if (moduleType === 'cjs') {

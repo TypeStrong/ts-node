@@ -8,6 +8,7 @@ const {JSONParse} = require('./node-primordials');
 const {normalizeSlashes} = require('../dist/util');
 
 module.exports.assertScriptCanLoadAsCJSImpl = assertScriptCanLoadAsCJSImpl;
+module.exports.readPackageScope = readPackageScope;
 
 /**
  * copied from Module._extensions['.js']
@@ -20,13 +21,19 @@ function assertScriptCanLoadAsCJSImpl(service, module, filename) {
   const pkg = readPackageScope(filename);
 
   // ts-node modification: allow our configuration to override
-  const tsNodeClassification = service.moduleTypeClassifier.classifyModule(normalizeSlashes(filename));
+  const tsNodeClassification = service.moduleTypeClassifier.classifyModuleByModuleTypeOverrides(normalizeSlashes(filename));
   if(tsNodeClassification.moduleType === 'cjs') return;
 
-  // TODO modify to ignore package.json when file extension is ESM-only
+
+  // ignore package.json when file extension is ESM-only or CJS-only
+  // [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
+  const lastDotIndex = filename.lastIndexOf('.');
+  const ext = lastDotIndex >= 0 ? filename.slice(lastDotIndex) : '';
+
+  if(ext === '.cts' || ext === '.cjs') return;
 
   // Function require shouldn't be used in ES modules.
-  if (tsNodeClassification.moduleType === 'esm' || (pkg && pkg.data && pkg.data.type === 'module')) {
+  if (ext === '.mts' || ext === '.mjs' || tsNodeClassification.moduleType === 'esm' || (pkg && pkg.data && pkg.data.type === 'module')) {
     const parentPath = module.parent && module.parent.filename;
     const packageJsonPath = pkg ? path.resolve(pkg.path, 'package.json') : null;
     throw createErrRequireEsm(filename, parentPath, packageJsonPath);

@@ -1,20 +1,24 @@
-import { dirname } from 'path';
+import type { ModuleTypeOverride, ModuleTypes } from '.';
 import { getPatternFromSpec } from './ts-internals';
 import { cachedLookup, normalizeSlashes } from './util';
 
-// Logic to support out `moduleTypes` option, which allows overriding node's default ESM / CJS
+// Logic to support our `moduleTypes` option, which allows overriding node's default ESM / CJS
 // classification of `.js` files based on package.json `type` field.
 
-/** @internal */
-export type ModuleType = 'cjs' | 'esm' | 'package';
+/**
+ * Seperate internal type because `auto` is clearer than `package`, but changing
+ * the public API is a breaking change.
+ * @internal
+ */
+export type InternalModuleTypeOverride = 'cjs' | 'esm' | 'auto';
 /** @internal */
 export interface ModuleTypeClassification {
-  moduleType: ModuleType;
+  moduleType: InternalModuleTypeOverride;
 }
 /** @internal */
 export interface ModuleTypeClassifierOptions {
   basePath?: string;
-  patterns?: Record<string, ModuleType>;
+  patterns?: ModuleTypes;
 }
 /** @internal */
 export type ModuleTypeClassifier = ReturnType<
@@ -42,9 +46,9 @@ export function createModuleTypeClassifier(
     }
   );
 
-  const classifications: Record<ModuleType, ModuleTypeClassification> = {
+  const classifications: Record<ModuleTypeOverride, ModuleTypeClassification> = {
     package: {
-      moduleType: 'package',
+      moduleType: 'auto',
     },
     cjs: {
       moduleType: 'cjs',
@@ -69,7 +73,7 @@ export function createModuleTypeClassifier(
   }
 
   return {
-    classifyModule: patternTypePairs.length
+    classifyModuleByModuleTypeOverrides: patternTypePairs.length
       ? classifyModule
       : classifyModuleAuto,
   };

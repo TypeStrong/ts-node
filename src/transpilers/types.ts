@@ -1,5 +1,5 @@
 import type * as ts from 'typescript';
-import type { Service } from '../index';
+import type { NodeModuleEmitKind, Service } from '../index';
 import type { ProjectLocalResolveHelper } from '../util';
 
 /**
@@ -34,6 +34,13 @@ export interface CreateTranspilerOptions {
    * @internal
    */
   transpilerConfigLocalResolveHelper: ProjectLocalResolveHelper;
+  /**
+   * When using `module: nodenext` or `module: node12`, there are two possible styles of emit:
+   * - CommonJS with dynamic imports preserved (not transformed into `require()` calls)
+   * - ECMAScript modules with `import foo = require()` transformed into `require = createRequire(); const foo = require()`
+   * @internal
+   */
+  nodeModuleEmitKind?: NodeModuleEmitKind;
 }
 /** @category Transpiler */
 export interface Transpiler {
