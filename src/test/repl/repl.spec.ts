@@ -263,7 +263,7 @@ test.suite('top level await', (_test) => {
 
     test('should pass upstream test cases', async (t) => {
       const { tsNodeUnderTest } = t.context;
-      upstreamTopLevelAwaitTests({ TEST_DIR, tsNodeUnderTest });
+      await upstreamTopLevelAwaitTests({ TEST_DIR, tsNodeUnderTest });
     });
   } else {
     test('should throw error when attempting to use top level await on TS < 3.8', async (t) => {
