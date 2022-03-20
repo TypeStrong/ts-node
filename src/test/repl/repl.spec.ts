@@ -1,5 +1,5 @@
 import { _test, expect } from '../testlib';
-import { ts } from '../helpers';
+import { resetNodeEnvironment, ts } from '../helpers';
 import semver = require('semver');
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
@@ -9,10 +9,15 @@ import {
 } from '../helpers';
 import { createExec, createExecTester } from '../exec-helpers';
 import { upstreamTopLevelAwaitTests } from './node-repl-tla';
-import { contextReplHelpers } from './helpers';
+import { contextReplHelpers, replMacros } from './helpers';
 import { promisify } from 'util';
 
 const test = _test.context(contextTsNodeUnderTest).context(contextReplHelpers);
+test.beforeEach(async (t) => {
+  t.teardown(() => {
+    resetNodeEnvironment();
+  });
+});
 
 const exec = createExec({
   cwd: TEST_DIR,
@@ -258,7 +263,7 @@ test.suite('top level await', (_test) => {
 
     test('should pass upstream test cases', async (t) => {
       const { tsNodeUnderTest } = t.context;
-      upstreamTopLevelAwaitTests({ TEST_DIR, tsNodeUnderTest });
+      await upstreamTopLevelAwaitTests({ TEST_DIR, tsNodeUnderTest });
     });
   } else {
     test('should throw error when attempting to use top level await on TS < 3.8', async (t) => {
@@ -308,12 +313,12 @@ test.suite(
 test.suite(
   'REPL inputs are syntactically independent of each other',
   (test) => {
-    // Serial because it's timing-sensitive
-    test.serial(
-      'arithmetic operators are independent of previous values',
-      async (t) => {
-        const { stdout, stderr } = await t.context.executeInRepl(
-          `9
+    // Serial because they're timing-sensitive
+    test.runSerially();
+
+    test('arithmetic operators are independent of previous values', async (t) => {
+      const { stdout, stderr } = await t.context.executeInRepl(
+        `9
           + 3
           7
           - 3
@@ -325,107 +330,120 @@ test.suite(
           ** 2\n.break
           console.log('done!')
           `,
-          {
-            registerHooks: true,
-            startInternalOptions: { useGlobal: false },
-            waitPattern: 'done!\nundefined\n>',
-          }
-        );
-        expect(stdout).not.toContain('12');
-        expect(stdout).not.toContain('4');
-        expect(stdout).not.toContain('21');
-        expect(stdout).not.toContain('50');
-        expect(stdout).not.toContain('25');
-        expect(stdout).toContain('3');
-        expect(stdout).toContain('-3');
-      }
-    );
+        {
+          registerHooks: true,
+          startInternalOptions: { useGlobal: false },
+          waitPattern: 'done!\nundefined\n>',
+        }
+      );
+      expect(stdout).not.toContain('12');
+      expect(stdout).not.toContain('4');
+      expect(stdout).not.toContain('21');
+      expect(stdout).not.toContain('50');
+      expect(stdout).not.toContain('25');
+      expect(stdout).toContain('3');
+      expect(stdout).toContain('-3');
+    });
 
-    // Serial because it's timing-sensitive
-    test.serial(
-      'automatically inserted semicolons do not appear in error messages at the end',
-      async (t) => {
-        const { stdout, stderr } = await t.context.executeInRepl(
-          `(
+    test('automatically inserted semicolons do not appear in error messages at the end', async (t) => {
+      const { stdout, stderr } = await t.context.executeInRepl(
+        `(
           a
           console.log('done!')`,
-          {
-            registerHooks: true,
-            startInternalOptions: { useGlobal: false },
-            waitPattern: 'done!\nundefined\n>',
-          }
-        );
-        expect(stderr).toContain("error TS1005: ')' expected.");
-        expect(stderr).not.toContain(';');
-      }
-    );
+        {
+          registerHooks: true,
+          startInternalOptions: { useGlobal: false },
+          waitPattern: 'done!\nundefined\n>',
+        }
+      );
+      expect(stderr).toContain("error TS1005: ')' expected.");
+      expect(stderr).not.toContain(';');
+    });
 
-    // Serial because it's timing-sensitive
-    test.serial(
-      'automatically inserted semicolons do not appear in error messages at the start',
-      async (t) => {
-        const { stdout, stderr } = await t.context.executeInRepl(
-          `)
+    test('automatically inserted semicolons do not appear in error messages at the start', async (t) => {
+      const { stdout, stderr } = await t.context.executeInRepl(
+        `)
           console.log('done!')`,
-          {
-            registerHooks: true,
-            startInternalOptions: { useGlobal: false },
-            waitPattern: 'done!\nundefined\n>',
-          }
-        );
-        expect(stderr).toContain(
-          'error TS1128: Declaration or statement expected.'
-        );
-        expect(stderr).toContain(')');
-        expect(stderr).not.toContain(';');
-      }
-    );
+        {
+          registerHooks: true,
+          startInternalOptions: { useGlobal: false },
+          waitPattern: 'done!\nundefined\n>',
+        }
+      );
+      expect(stderr).toContain(
+        'error TS1128: Declaration or statement expected.'
+      );
+      expect(stderr).toContain(')');
+      expect(stderr).not.toContain(';');
+    });
 
-    // Serial because it's timing-sensitive
-    test.serial(
-      'automatically inserted semicolons do not break function calls',
-      async (t) => {
-        const { stdout, stderr } = await t.context.executeInRepl(
-          `function foo(a: number) {
+    test('automatically inserted semicolons do not break function calls', async (t) => {
+      const { stdout, stderr } = await t.context.executeInRepl(
+        `function foo(a: number) {
               return a + 1;
           }
           foo(
             1
           )`,
-          {
-            registerHooks: true,
-            startInternalOptions: { useGlobal: false },
-            waitPattern: '2\n>',
-          }
-        );
-        expect(stderr).toBe('');
-        expect(stdout).toContain('2');
-      }
-    );
+        {
+          registerHooks: true,
+          startInternalOptions: { useGlobal: false },
+          waitPattern: '2\n>',
+        }
+      );
+      expect(stderr).toBe('');
+      expect(stdout).toContain('2');
+    });
 
-    // Serial because it's timing-sensitive
-    test.serial(
-      'automatically inserted semicolons do not affect subsequent line numbers',
-      async (t) => {
-        // If first line of input ends in a semicolon, should not add a second semicolon.
-        // That will cause an extra blank line in the compiled output which will
-        // offset the stack line number.
-        const { stdout, stderr } = await t.context.executeInRepl(
-          `1;
+    test('automatically inserted semicolons do not affect subsequent line numbers', async (t) => {
+      // If first line of input ends in a semicolon, should not add a second semicolon.
+      // That will cause an extra blank line in the compiled output which will
+      // offset the stack line number.
+      const { stdout, stderr } = await t.context.executeInRepl(
+        `1;
           new Error().stack!.split('\\n')[1]
           console.log('done!')`,
-          {
-            registerHooks: true,
-            startInternalOptions: { useGlobal: false },
-            waitPattern: 'done!',
-          }
-        );
-        expect(stderr).toBe('');
-        expect(stdout).toContain(":1:1'\n");
-      }
-    );
+        {
+          registerHooks: true,
+          startInternalOptions: { useGlobal: false },
+          waitPattern: 'done!',
+        }
+      );
+      expect(stderr).toBe('');
+      expect(stdout).toContain(":1:1'\n");
+    });
   }
 );
+
+test.suite('Multiline inputs and RECOVERY_CODES', (test) => {
+  test.runSerially();
+  const macros = replMacros(test);
+
+  macros.noErrorsAndStdoutContains(
+    'multiline function args declaration',
+    `
+      function myFn(
+        a: string,
+        b: string
+      ) {
+        return a + ' ' + b
+      }
+      myFn('test', '!')
+    `,
+    'test !'
+  );
+
+  macros.stderrContains(
+    'Conditional recovery codes: this one-liner *should* raise an error; should not be recoverable',
+    `
+      (a: any) => a = null;
+    `,
+    'error TS',
+    {
+      createServiceOpts: { compilerOptions: { strictNullChecks: false } },
+    }
+  );
+});
 
 test.suite('REPL works with traceResolution', (test) => {
   test.serial(

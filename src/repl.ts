@@ -679,17 +679,24 @@ function lineCount(value: string) {
 }
 
 /**
- * TS diagnostic codes which are recoverable, meaning that the user likely entered and incomplete line of code
+ * TS diagnostic codes which are recoverable, meaning that the user likely entered an incomplete line of code
  * and should be prompted for the next.  For example, starting a multi-line for() loop and not finishing it.
+ * null value means code is always recoverable.  `Set` means code is only recoverable when occurring alongside at least one
+ * of the other codes.
  */
-const RECOVERY_CODES: Set<number> = new Set([
-  1003, // "Identifier expected."
-  1005, // "')' expected."
-  1109, // "Expression expected."
-  1126, // "Unexpected end of text."
-  1160, // "Unterminated template literal."
-  1161, // "Unterminated regular expression literal."
-  2355, // "A function whose declared type is neither 'void' nor 'any' must return a value."
+const RECOVERY_CODES: Map<number, Set<number> | null> = new Map([
+  [1003, null], // "Identifier expected."
+  [1005, null], // "')' expected.", "'}' expected."
+  [1109, null], // "Expression expected."
+  [1126, null], // "Unexpected end of text."
+  [1160, null], // "Unterminated template literal."
+  [1161, null], // "Unterminated regular expression literal."
+  [2355, null], // "A function whose declared type is neither 'void' nor 'any' must return a value."
+  [2391, null], // "Function implementation is missing or not immediately following the declaration."
+  [
+    7010, // "Function, which lacks return-type annotation, implicitly has an 'any' return type."
+    new Set([1005]), // happens when fn signature spread across multiple lines: 'function a(\nb: any\n) {'
+  ],
 ]);
 
 /**
@@ -708,7 +715,13 @@ const topLevelAwaitDiagnosticCodes = [
  * Check if a function can recover gracefully.
  */
 function isRecoverable(error: TSError) {
-  return error.diagnosticCodes.every((code) => RECOVERY_CODES.has(code));
+  return error.diagnosticCodes.every((code) => {
+    const deps = RECOVERY_CODES.get(code);
+    return (
+      deps === null ||
+      (deps && error.diagnosticCodes.some((code) => deps.has(code)))
+    );
+  });
 }
 
 /**
