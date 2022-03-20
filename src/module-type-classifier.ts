@@ -46,17 +46,18 @@ export function createModuleTypeClassifier(
     }
   );
 
-  const classifications: Record<ModuleTypeOverride, ModuleTypeClassification> = {
-    package: {
-      moduleType: 'auto',
-    },
-    cjs: {
-      moduleType: 'cjs',
-    },
-    esm: {
-      moduleType: 'esm',
-    },
-  };
+  const classifications: Record<ModuleTypeOverride, ModuleTypeClassification> =
+    {
+      package: {
+        moduleType: 'auto',
+      },
+      cjs: {
+        moduleType: 'cjs',
+      },
+      esm: {
+        moduleType: 'esm',
+      },
+    };
   const auto = classifications.package;
 
   // Passed path must be normalized!

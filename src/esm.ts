@@ -295,7 +295,7 @@ export function createEsmHooks(tsNodeService: Service) {
     ['.tsx', '.js'],
     ['.jsx', '.js'],
     ['.mts', '.mjs'],
-    ['.cts', '.cjs']
+    ['.cts', '.cjs'],
   ]);
 
   async function getFormat(
@@ -339,7 +339,9 @@ export function createEsmHooks(tsNodeService: Service) {
     let nodeSays: { format: NodeLoaderHooksFormat };
     const nodeEquivalentExt = nodeEquivalentExtensions.get(ext);
     if (nodeEquivalentExt && !tsNodeService.ignored(nativePath)) {
-      nodeSays = await entrypointFallback(() => defer(formatUrl(pathToFileURL(nativePath + nodeEquivalentExt))));
+      nodeSays = await entrypointFallback(() =>
+        defer(formatUrl(pathToFileURL(nativePath + nodeEquivalentExt)))
+      );
     } else {
       nodeSays = await entrypointFallback(defer);
     }
@@ -348,9 +350,10 @@ export function createEsmHooks(tsNodeService: Service) {
       !tsNodeService.ignored(nativePath) &&
       (nodeSays.format === 'commonjs' || nodeSays.format === 'module')
     ) {
-      const { moduleType } = tsNodeService.moduleTypeClassifier.classifyModuleByModuleTypeOverrides(
-        normalizeSlashes(nativePath)
-      );
+      const { moduleType } =
+        tsNodeService.moduleTypeClassifier.classifyModuleByModuleTypeOverrides(
+          normalizeSlashes(nativePath)
+        );
       if (moduleType === 'cjs') {
         return { format: 'commonjs' };
       } else if (moduleType === 'esm') {

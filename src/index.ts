@@ -551,13 +551,16 @@ export type Extensions = ReturnType<typeof getExtensions>;
  * [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
  * @internal
  */
-export function getExtensions(config: _ts.ParsedCommandLine, tsVersion: string) {
+export function getExtensions(
+  config: _ts.ParsedCommandLine,
+  tsVersion: string
+) {
   // TS 4.5 is first version to understand .cts, .mts, .cjs, and .mjs extensions
   const tsSupportsMtsCtsExts = versionGteLt(tsVersion, '4.5.0');
   const tsExtensions = ['.ts'];
   const jsExtensions = [];
 
-  if(tsSupportsMtsCtsExts) tsExtensions.push('.mts', '.cts');
+  if (tsSupportsMtsCtsExts) tsExtensions.push('.mts', '.cts');
 
   // Enable additional extensions when JSX or `allowJs` is enabled.
   if (config.options.jsx) tsExtensions.push('.tsx');
@@ -870,15 +873,15 @@ export function createFromPreloadedConfig(
    */
   function getEmitExtension(path: string) {
     const lastDotIndex = path.lastIndexOf('.');
-    if(lastDotIndex >= 0) {
+    if (lastDotIndex >= 0) {
       const ext = path.slice(lastDotIndex);
-      switch(ext) {
+      switch (ext) {
         case '.js':
         case '.ts':
           return '.js';
         case '.jsx':
         case '.tsx':
-          return jsxEmitPreserve ? '.jsx' : '.js'
+          return jsxEmitPreserve ? '.jsx' : '.js';
         case '.mjs':
         case '.mts':
           return '.mjs';
@@ -1328,12 +1331,15 @@ export function createFromPreloadedConfig(
       } else {
         // [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
         // The only way to tell `ts.transpileModule` to emit node-flavored ESM is to set file extension to `.mts` or `.mjs`
-        if(nodeModuleEmitKind === 'nodeesm') {
+        if (nodeModuleEmitKind === 'nodeesm') {
           const lastDotIndex = _fileName.lastIndexOf('.');
           const ext = _fileName.slice(lastDotIndex);
-          const fileNameSansExtension = lastDotIndex >= 0 ? _fileName.slice(0, lastDotIndex) : _fileName;
-          if(ext === '.ts' || ext === '.tsx') fileName = fileNameSansExtension + '.mts';
-          if(ext === '.js' || ext === '.jsx') fileName = fileNameSansExtension + '.mjs';
+          const fileNameSansExtension =
+            lastDotIndex >= 0 ? _fileName.slice(0, lastDotIndex) : _fileName;
+          if (ext === '.ts' || ext === '.tsx')
+            fileName = fileNameSansExtension + '.mts';
+          if (ext === '.js' || ext === '.jsx')
+            fileName = fileNameSansExtension + '.mjs';
         }
         result = ts.transpileModule(code, {
           fileName,
@@ -1358,21 +1364,31 @@ export function createFromPreloadedConfig(
   const shouldOverwriteEmitWhenForcingCommonJS =
     config.options.module !== ts.ModuleKind.CommonJS;
   // [MUST_UPDATE_FOR_NEW_MODULEKIND]
-  const shouldOverwriteEmitWhenForcingEsm =
-    !(config.options.module === ts.ModuleKind.ES2015 ||
+  const shouldOverwriteEmitWhenForcingEsm = !(
+    config.options.module === ts.ModuleKind.ES2015 ||
     (ts.ModuleKind.ES2020 && config.options.module === ts.ModuleKind.ES2020) ||
     (ts.ModuleKind.ES2022 && config.options.module === ts.ModuleKind.ES2022) ||
-    config.options.module === ts.ModuleKind.ESNext);
+    config.options.module === ts.ModuleKind.ESNext
+  );
   /**
    * node12 or nodenext
    * [MUST_UPDATE_FOR_NEW_MODULEKIND]
    */
   const isNodeModuleType =
     (ts.ModuleKind.Node12 && config.options.module === ts.ModuleKind.Node12) ||
-    (ts.ModuleKind.NodeNext && config.options.module === ts.ModuleKind.NodeNext);
-  const getOutputForceCommonJS = createTranspileOnlyGetOutputFunction(ts.ModuleKind.CommonJS);
-  const getOutputForceNodeCommonJS = createTranspileOnlyGetOutputFunction(ts.ModuleKind.NodeNext, 'nodecjs');
-  const getOutputForceNodeESM = createTranspileOnlyGetOutputFunction(ts.ModuleKind.NodeNext, 'nodeesm');
+    (ts.ModuleKind.NodeNext &&
+      config.options.module === ts.ModuleKind.NodeNext);
+  const getOutputForceCommonJS = createTranspileOnlyGetOutputFunction(
+    ts.ModuleKind.CommonJS
+  );
+  const getOutputForceNodeCommonJS = createTranspileOnlyGetOutputFunction(
+    ts.ModuleKind.NodeNext,
+    'nodecjs'
+  );
+  const getOutputForceNodeESM = createTranspileOnlyGetOutputFunction(
+    ts.ModuleKind.NodeNext,
+    'nodeesm'
+  );
   // [MUST_UPDATE_FOR_NEW_MODULEKIND]
   const getOutputForceESM = createTranspileOnlyGetOutputFunction(
     ts.ModuleKind.ES2022 || ts.ModuleKind.ES2020 || ts.ModuleKind.ES2015
@@ -1383,38 +1399,49 @@ export function createFromPreloadedConfig(
   function compile(code: string, fileName: string, lineOffset = 0) {
     const normalizedFileName = normalizeSlashes(fileName);
     const classification =
-      moduleTypeClassifier.classifyModuleByModuleTypeOverrides(normalizedFileName);
+      moduleTypeClassifier.classifyModuleByModuleTypeOverrides(
+        normalizedFileName
+      );
     let value: string | undefined = '';
     let sourceMap: string | undefined = '';
     let emitSkipped = true;
-    if(getOutput) {
+    if (getOutput) {
       // Must always call normal getOutput to throw typechecking errors
       [value, sourceMap, emitSkipped] = getOutput(code, normalizedFileName);
     }
     // If module classification contradicts the above, call the relevant transpiler
-    if (classification.moduleType === 'cjs' && (shouldOverwriteEmitWhenForcingCommonJS || emitSkipped)) {
+    if (
+      classification.moduleType === 'cjs' &&
+      (shouldOverwriteEmitWhenForcingCommonJS || emitSkipped)
+    ) {
       [value, sourceMap] = getOutputForceCommonJS(code, normalizedFileName);
-    } else if (classification.moduleType === 'esm' && (shouldOverwriteEmitWhenForcingEsm || emitSkipped)) {
+    } else if (
+      classification.moduleType === 'esm' &&
+      (shouldOverwriteEmitWhenForcingEsm || emitSkipped)
+    ) {
       [value, sourceMap] = getOutputForceESM(code, normalizedFileName);
     } else if (emitSkipped) {
       // Happens when ts compiler skips emit or in transpileOnly mode
-      const classification = classifyModule(normalizedFileName, isNodeModuleType);
+      const classification = classifyModule(
+        normalizedFileName,
+        isNodeModuleType
+      );
       [value, sourceMap] =
         classification === 'nodecjs'
-        ? getOutputForceNodeCommonJS(code, normalizedFileName)
-        : classification === 'nodeesm'
-        ? getOutputForceNodeESM(code, normalizedFileName)
-        : classification === 'cjs'
-        ? getOutputForceCommonJS(code, normalizedFileName)
-        : classification === 'esm'
-        ? getOutputForceESM(code, normalizedFileName)
-        : getOutputTranspileOnly(code, normalizedFileName);
+          ? getOutputForceNodeCommonJS(code, normalizedFileName)
+          : classification === 'nodeesm'
+          ? getOutputForceNodeESM(code, normalizedFileName)
+          : classification === 'cjs'
+          ? getOutputForceCommonJS(code, normalizedFileName)
+          : classification === 'esm'
+          ? getOutputForceESM(code, normalizedFileName)
+          : getOutputTranspileOnly(code, normalizedFileName);
     }
     const output = updateOutput(
       value!,
       normalizedFileName,
       sourceMap!,
-      getEmitExtension,
+      getEmitExtension
     );
     outputCache.set(normalizedFileName, { content: output });
     return output;
@@ -1502,7 +1529,7 @@ function registerExtensions(
   const exts = new Set(extensions);
   // Only way to transform .mts and .cts is via the .js extension.
   // Can't register those extensions cuz would allow omitting file extension; node requires ext for .cjs and .mjs
-  if(exts.has('.mts') || exts.has('.cts')) exts.add('.js');
+  if (exts.has('.mts') || exts.has('.cts')) exts.add('.js');
   // Filter extensions which should not be added to `require.extensions`
   // They may still be handled via the `.js` extension handler.
   exts.delete('.mts');
@@ -1569,7 +1596,7 @@ function updateOutput(
   outputText: string,
   fileName: string,
   sourceMap: string,
-  getEmitExtension: (fileName: string) => string,
+  getEmitExtension: (fileName: string) => string
 ) {
   const base64Map = Buffer.from(
     updateSourceMap(sourceMap, fileName),

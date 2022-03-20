@@ -17,7 +17,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
     swc,
     service: { config, projectLocalResolveHelper },
     transpilerConfigLocalResolveHelper,
-    nodeModuleEmitKind
+    nodeModuleEmitKind,
   } = createOptions;
 
   // Load swc compiler
@@ -79,7 +79,8 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
     }
     swcTarget = swcTargets[swcTargetIndex];
     const keepClassNames = target! >= /* ts.ScriptTarget.ES2016 */ 3;
-    const isNodeModuleKind = module === ModuleKind.Node12 || module === ModuleKind.NodeNext;
+    const isNodeModuleKind =
+      module === ModuleKind.Node12 || module === ModuleKind.NodeNext;
     // swc only supports these 4x module options [MUST_UPDATE_FOR_NEW_MODULEKIND]
     const moduleType =
       module === ModuleKind.CommonJS

@@ -1,4 +1,4 @@
-import {readPackageScope} from '../dist-raw/node-cjs-loader-utils';
+import { readPackageScope } from '../dist-raw/node-cjs-loader-utils';
 
 /**
  * TODO https://github.com/microsoft/TypeScript/issues/46452#issuecomment-1073145723
@@ -15,11 +15,14 @@ import {readPackageScope} from '../dist-raw/node-cjs-loader-utils';
  * - undefined == emit according to tsconfig `module` config, whatever that is
  * @internal
  */
-export function classifyModule(filename: string, isNodeModuleType: boolean): 'nodecjs' | 'cjs' | 'esm' | 'nodeesm' | undefined {
+export function classifyModule(
+  filename: string,
+  isNodeModuleType: boolean
+): 'nodecjs' | 'cjs' | 'esm' | 'nodeesm' | undefined {
   // [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
   const lastDotIndex = filename.lastIndexOf('.');
   const ext = lastDotIndex >= 0 ? filename.slice(lastDotIndex) : '';
-  switch(ext) {
+  switch (ext) {
     case '.cjs':
     case '.cts':
       return isNodeModuleType ? 'nodecjs' : 'cjs';
@@ -27,9 +30,9 @@ export function classifyModule(filename: string, isNodeModuleType: boolean): 'no
     case '.mts':
       return isNodeModuleType ? 'nodeesm' : 'esm';
   }
-  if(isNodeModuleType) {
+  if (isNodeModuleType) {
     const packageScope = readPackageScope(filename);
-    if(packageScope && packageScope.data.type === 'module') return 'nodeesm';
+    if (packageScope && packageScope.data.type === 'module') return 'nodeesm';
     return 'nodecjs';
   }
   return undefined;
