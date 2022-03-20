@@ -64,7 +64,7 @@ export async function upstreamTopLevelAwaitTests({
     return promise;
   }
 
-  runAndWait([
+  await runAndWait([
     'function foo(x) { return x; }',
     'function koo() { return Promise.resolve(4); }',
   ]);

@@ -12,7 +12,7 @@ import type { Readable } from 'stream';
  */
 import type * as tsNodeTypes from '../index';
 import type _createRequire from 'create-require';
-import { has, once } from 'lodash';
+import { has, mapValues, once } from 'lodash';
 import semver = require('semver');
 const createRequire: typeof _createRequire = require('create-require');
 export { tsNodeTypes };
@@ -218,25 +218,29 @@ export function resetNodeEnvironment() {
   resetObject(require('module'), defaultModule);
 
   // May be modified by REPL tests, since the REPL sets globals.
-  resetObject(global, defaultGlobal);
+  // Avoid deleting nyc's coverage data.
+  resetObject(global, defaultGlobal, ['__coverage__']);
 }
 
 function captureObjectState(object: any) {
+  const descriptors = Object.getOwnPropertyDescriptors(object);
+  const values = mapValues(descriptors, (_d, key) => object[key]);
   return {
-    descriptors: Object.getOwnPropertyDescriptors(object),
-    values: { ...object },
+    descriptors,
+    values,
   };
 }
 // Redefine all property descriptors and delete any new properties
 function resetObject(
   object: any,
-  state: ReturnType<typeof captureObjectState>
+  state: ReturnType<typeof captureObjectState>,
+  doNotDeleteTheseKeys: string[] = []
 ) {
   const currentDescriptors = Object.getOwnPropertyDescriptors(object);
   for (const key of Object.keys(currentDescriptors)) {
-    if (!has(state.descriptors, key)) {
-      delete object[key];
-    }
+    if (doNotDeleteTheseKeys.includes(key)) continue;
+    if (has(state.descriptors, key)) continue;
+    delete object[key];
   }
   // Trigger nyc's setter functions
   for (const [key, value] of Object.entries(state.values)) {
