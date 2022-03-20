@@ -669,7 +669,7 @@ function lineCount(value: string) {
 }
 
 /**
- * TS diagnostic codes which are recoverable, meaning that the user likely entered and incomplete line of code
+ * TS diagnostic codes which are recoverable, meaning that the user likely entered an incomplete line of code
  * and should be prompted for the next.  For example, starting a multi-line for() loop and not finishing it.
  * null value means code is always recoverable.  `Set` means code is only recoverable when occurring alongside at least one
  * of the other codes.
