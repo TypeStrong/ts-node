@@ -1,6 +1,6 @@
-import { TEST_DIR } from "./helpers";
-import * as fs from "fs";
-import * as Path from "path";
+import { TEST_DIR } from './helpers';
+import * as fs from 'fs';
+import * as Path from 'path';
 
 // Helpers to describe a bunch of files in a project programmatically,
 // then write them to disk in a temp directory.
@@ -13,14 +13,16 @@ export interface JsonFile<T> extends File {
   obj: T;
 }
 export interface DirectoryApi {
-  add(file: File): void;
-  addFile(...args: Parameters<typeof file>): void;
-  addJsonFile(...args: Parameters<typeof jsonFile>): void;
+  add(file: File): File;
+  addFile(...args: Parameters<typeof file>): File;
+  addJsonFile(...args: Parameters<typeof jsonFile>): JsonFile<any>;
   dir(dirPath: string, cb?: (dir: DirectoryApi) => void): DirectoryApi;
 }
 
+export type ProjectAPI = ReturnType<typeof projectInternal>;
+
 export function file(path: string, content = '') {
-  return {path, content};
+  return { path, content };
 }
 export function jsonFile<T>(path: string, obj: T) {
   const file: JsonFile<T> = {
@@ -28,47 +30,63 @@ export function jsonFile<T>(path: string, obj: T) {
     obj,
     get content() {
       return JSON.stringify(obj, null, 2);
-    }
+    },
   };
   return file;
 }
 
-export function tempdirProject() {
-  const tmpdir = fs.mkdtempSync(`${ TEST_DIR }/tmp/`);
+export function tempdirProject(name = '') {
+  const rootTmpDir = `${TEST_DIR}/tmp/`;
+  fs.mkdirSync(rootTmpDir, { recursive: true });
+  const tmpdir = fs.mkdtempSync(`${TEST_DIR}/tmp/${name}`);
+  return projectInternal(tmpdir);
+}
+
+export function project(name: string) {
+  return projectInternal(`${TEST_DIR}/tmp/${name}`);
+}
+
+function projectInternal(cwd: string) {
   const files: File[] = [];
   function write() {
-    for(const file of files) {
-      const outPath = Path.join(tmpdir, file.path);
-      fs.mkdirSync(Path.dirname(outPath), {recursive: true});
-      fs.writeFileSync(outPath, file.content);
+    for (const file of files) {
+      fs.mkdirSync(Path.dirname(file.path), { recursive: true });
+      fs.writeFileSync(file.path, file.content);
     }
   }
   function rm() {
-    fs.rmdirSync(tmpdir, {recursive: true});
+    fs.rmdirSync(cwd, { recursive: true });
   }
-  const {add, addFile, addJsonFile, dir} = createDirectory(tmpdir);
-  function createDirectory(dirPath: string, cb?: (dir: DirectoryApi) => void): DirectoryApi {
+  const { add, addFile, addJsonFile, dir } = createDirectory(cwd);
+  function createDirectory(
+    dirPath: string,
+    cb?: (dir: DirectoryApi) => void
+  ): DirectoryApi {
     function add(file: File) {
       file.path = Path.join(dirPath, file.path);
       files.push(file);
+      return file;
     }
     function addFile(...args: Parameters<typeof file>) {
-      add(file(...args));
+      return add(file(...args));
     }
     function addJsonFile(...args: Parameters<typeof jsonFile>) {
-      add(jsonFile(...args));
+      return add(jsonFile(...args)) as JsonFile<unknown>;
     }
     function dir(path: string, cb?: (dir: DirectoryApi) => void) {
       return createDirectory(Path.join(dirPath, path), cb);
     }
     const _dir: DirectoryApi = {
-      add, addFile, addJsonFile, dir
-    }
+      add,
+      addFile,
+      addJsonFile,
+      dir,
+    };
     cb?.(_dir);
     return _dir;
   }
   return {
-    cwd: tmpdir,
+    cwd,
     files: [],
     dir,
     add,
@@ -76,5 +94,5 @@ export function tempdirProject() {
     addJsonFile,
     write,
     rm,
-  }
+  };
 }

@@ -1,5 +1,6 @@
 /node_modules/
 /tests/node_modules/
+/tests/tmp
 .nyc_output/
 coverage/
 .DS_Store

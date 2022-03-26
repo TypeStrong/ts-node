@@ -754,41 +754,47 @@ export function createFromPreloadedConfig(
       'Transformers function is unavailable in "--transpile-only"'
     );
   }
-  let createTranspiler:
-    | ((compilerOptions: TSCommon.CompilerOptions) => Transpiler)
-    | undefined;
-  if (transpiler) {
-    if (!transpileOnly)
-      throw new Error(
-        'Custom transpiler can only be used when transpileOnly is enabled.'
+  let createTranspiler = initializeTranspilerFactory();
+  function initializeTranspilerFactory() {
+    if (transpiler) {
+      if (!transpileOnly)
+        throw new Error(
+          'Custom transpiler can only be used when transpileOnly is enabled.'
+        );
+      const transpilerName =
+        typeof transpiler === 'string' ? transpiler : transpiler[0];
+      const transpilerOptions =
+        typeof transpiler === 'string' ? {} : transpiler[1] ?? {};
+      const transpilerConfigLocalResolveHelper = transpilerBasePath
+        ? createProjectLocalResolveHelper(transpilerBasePath)
+        : projectLocalResolveHelper;
+      const transpilerPath = transpilerConfigLocalResolveHelper(
+        transpilerName,
+        true
       );
-    const transpilerName =
-      typeof transpiler === 'string' ? transpiler : transpiler[0];
-    const transpilerOptions =
-      typeof transpiler === 'string' ? {} : transpiler[1] ?? {};
-    const transpilerConfigLocalResolveHelper = transpilerBasePath
-      ? createProjectLocalResolveHelper(transpilerBasePath)
-      : projectLocalResolveHelper;
-    const transpilerPath = transpilerConfigLocalResolveHelper(
-      transpilerName,
-      true
-    );
-    const transpilerFactory = require(transpilerPath)
-      .create as TranspilerFactory;
-    createTranspiler = function (compilerOptions) {
-      return transpilerFactory({
-        service: {
-          options,
-          config: {
-            ...config,
-            options: compilerOptions,
+      const transpilerFactory = require(transpilerPath)
+        .create as TranspilerFactory;
+      return createTranspiler;
+
+      function createTranspiler(
+        compilerOptions: TSCommon.CompilerOptions,
+        nodeModuleEmitKind?: NodeModuleEmitKind
+      ) {
+        return transpilerFactory?.({
+          service: {
+            options,
+            config: {
+              ...config,
+              options: compilerOptions,
+            },
+            projectLocalResolveHelper,
           },
-          projectLocalResolveHelper,
-        },
-        transpilerConfigLocalResolveHelper,
-        ...transpilerOptions,
-      });
-    };
+          transpilerConfigLocalResolveHelper,
+          nodeModuleEmitKind,
+          ...transpilerOptions,
+        });
+      }
+    }
   }
 
   /**
@@ -1320,7 +1326,10 @@ export function createFromPreloadedConfig(
     const compilerOptions = { ...config.options };
     if (overrideModuleType !== undefined)
       compilerOptions.module = overrideModuleType;
-    let customTranspiler = createTranspiler?.(compilerOptions);
+    let customTranspiler = createTranspiler?.(
+      compilerOptions,
+      nodeModuleEmitKind
+    );
     return (code: string, _fileName: string): SourceOutput => {
       let fileName = _fileName;
       let result: _ts.TranspileOutput;

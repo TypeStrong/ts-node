@@ -100,6 +100,7 @@ export function createSpawn<T extends Partial<SpawnOptions>>(
 }
 
 const defaultExec = createExec();
+export { defaultExec as exec };
 
 export interface ExecTesterOptions {
   cmd: string;
