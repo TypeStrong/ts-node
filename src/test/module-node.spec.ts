@@ -10,7 +10,8 @@ import {
 } from './helpers';
 import { createExec, createExecTester } from './exec-helpers';
 import { promisify } from 'util';
-import { createImportEqualsDeclaration } from 'typescript';
+import { createImportEqualsDeclaration, isPartiallyEmittedExpression } from 'typescript';
+import { file, tempdirProject } from './fs-helpers';
 
 const test = _test.context(contextTsNodeUnderTest);
 test.beforeEach(async t => {
@@ -21,32 +22,62 @@ const packageJsonTypes = [undefined, 'commonjs', 'module'] as const;
 const typecheckModes = ['typecheck', 'transpileOnly', 'swc'] as const;
 const importStyles = ['static import', 'require', 'dynamic import', 'import = require'] as const;
 const importExtension = ['js', 'ts', 'omitted'] as const;
+interface Extension {
+  ext: string;
+  forcesCjs: boolean;
+  forcesEsm: boolean;
+  isJs: boolean;
+  supportsJsx: boolean;
+}
 const extensions = [
   {
     ext: 'cts',
-    isCjs: true,
+    forcesCjs: true,
+    forcesEsm: false,
+    isJs: false,
+    supportsJsx: true
   }, {
     ext: 'cjs',
-    isCjs: true,
+    forcesCjs: true,
+    forcesEsm: false,
     isJs: true,
+    supportsJsx: true,
   }, {
     ext: 'mts',
-    isEsm: true,
+    forcesCjs: false,
+    forcesEsm: true,
+    isJs: false,
+    supportsJsx: true,
   }, {
     ext: 'mjs',
-    isEsm: true,
+    forcesCjs: false,
+    forcesEsm: true,
     isJs: true,
+    supportsJsx: true,
   }, {
     ext: 'ts',
+    forcesCjs: false,
+    forcesEsm: false,
+    isJs: false,
+    supportsJsx: false,
   }, {
     ext: 'tsx',
-    isJsx: true,
+    forcesCjs: false,
+    forcesEsm: false,
+    isJs: false,
+    supportsJsx: true,
   }, {
     ext: 'jsx',
-    isJsx: true,
+    forcesCjs: false,
+    forcesEsm: false,
     isJs: true,
+    supportsJsx: true,
   }, {
-    ext: 'js'
+    ext: 'js',
+    forcesCjs: false,
+    forcesEsm: false,
+    isJs: true,
+    supportsJsx: false,
   }
 ] as const;
 
@@ -75,8 +106,8 @@ for(const allowJs of [true, false]) {
 
 function createTest(params: TestParams) {
   const {allowJs, packageJsonType, typecheckMode} = params;
-  const name = `package.json-type=${packageJsonType} allowJs=${allowJs} ${typecheckMode}`;
-  const dir = fs.mkdtempSync(`${ TEST_DIR }/tmp-`);
+  const name = `package-json-type=${packageJsonType} allowJs=${allowJs} ${typecheckMode}`;
+  const tempProject = tempdirProject();
 
   for(const importStyle of importStyles) {
     for(const importerExtension of extensions) {
@@ -88,17 +119,87 @@ function createTest(params: TestParams) {
     const {importStyle, importerExtension} = subtestParams;
     const name = `${importerExtension.ext} ${importStyle}`;
 
-    let importerSource = '';
+    const dir = tempProject.dir(name);
+
+    dir.addJsonFile('package.json', {
+      type: packageJsonType
+    });
+
+    dir.addJsonFile('tsconfig.json', {
+      compilerOptions: {
+        allowJs,
+        target: 'esnext',
+        module: 'nodenext'
+      },
+      'ts-node': {
+        transpileOnly: typecheckMode === 'transpileOnly',
+        swc: typecheckMode === 'swc'
+      }
+    });
+
+    let importer = file(`importer.${importerExtension.ext}`, `
+      async function main() {
+    `);
+    dir.add(importer);
 
     for(const importeeExtension of extensions) {
       createImportee({importeeExtension});
+      switch(importStyle) {
+        case 'dynamic import':
+          importer.content += `await import('./${importeeExtension.ext}');\n`;
+          break;
+        case 'import = require':
+          importer.content += `import ${importeeExtension.ext} = require('./${importeeExtension.ext}');\n`;
+          break;
+        case 'require':
+          importer.content += `const ${importeeExtension.ext} = require('./${importeeExtension.ext}');\n`;
+          break;
+        case 'static import':
+          importer.content += `import * as ${importeeExtension.ext} from './${importeeExtension.ext}';\n`;
+          break;
+      }
+      importer.content += `if(${importeeExtension.ext}.ext !== '${importeeExtension.ext}') throw new Error('Wrong export from importee: expected ${importeeExtension.ext} but got ' + ${importeeExtension.ext}.ext);\n`
     }
+
+    importer.content += `
+      }
+      main();
+    `;
 
     function createImportee(importeeParams: ImporteeParams) {
       const {importeeExtension} = importeeParams;
-      fs.writeFileSync(`${ dir }/${ name }/${importeeExtension.ext}.${importeeExtension.ext}`, `
-
-      `);
+      const f = file(`${importeeExtension.ext}.${importeeExtension.ext}`);
+      const isCompiled = allowJs || !importeeExtension.isJs;
+      const isExecutedAsEsm = importeeExtension.forcesEsm || (!importeeExtension.forcesCjs && packageJsonType === 'module');
+      const isExecutedAsCjs = !isExecutedAsEsm;
+      if(isCompiled || isExecutedAsEsm) {
+        f.content += `export const ext = '${importeeExtension.ext}';\n`;
+      } else {
+        f.content += `exports.ext = '${importeeExtension.ext}';\n`;
+      }
+      if(!importeeExtension.isJs) {
+        f.content += `const testTsTypeSyntax: string = 'a string';\n`;
+      }
+      if(isExecutedAsCjs) {
+        f.content += `if(typeof __filename !== 'string') throw new Error('expected file to be CJS but __filename is not declared');\n`;
+      } else {
+        f.content += `if(typeof __filename !== 'undefined') throw new Error('expected file to be ESM but __filename is declared');\n`;
+        f.content += `if(typeof import.meta.url !== 'string') throw new Error('expected file to be ESM but import.meta.url is not declared');\n`;
+      }
+      if(importeeExtension.supportsJsx) {
+        f.content += `
+          const React = {
+            createElement(tag, dunno, content) {
+              return content
+            }
+          };
+          const jsxTest = <a>Hello World</a>;
+          if(jsxTest !== 'Hello World') throw new Error('Expected ${importeeExtension.ext} to support JSX but it did not.');
+        `;
+      }
+      dir.add(f);
     }
   }
+
+  tempProject.write();
 }
