@@ -145,13 +145,10 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
         expect(err).toBeNull();
       });
 
-      //   test('map to first candidate', async (t) => {
-      //     // TODO
-      //   });
-
-      //   test('map to second candidate when first not available', async (t) => {
-      //     // TODO
-      //   });
+      test('map to first available candidate', async (t) => {
+        const { err } = await exec('map-to-first-available-candidate.ts');
+        expect(err).toBeNull();
+      });
 
       //   test('map to more specific candidate', async (t) => {
       //     // TODO

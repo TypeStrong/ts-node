@@ -4,8 +4,8 @@
   "compilerOptions": {
     "baseUrl": "./level-1/level-2",
     "paths": {
-      "mapped/*": ["./mapped-*"]
-      // "map2/*": ["./2-*", "./2a-*"],
+      "mapped/*": ["./mapped-*"],
+      "candidate/*": ["./candidate-1-*", "./candidate-2-*"]
       // "map2/specific/*": ["./2-specific-*"],
       // "static": ["./static.js"]
     }
