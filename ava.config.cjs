@@ -21,7 +21,14 @@ module.exports = {
   /*
    * Tests *must* install and use our most recent ts-node tarball.
    * We must prevent them from accidentally require-ing a different version of
-   * ts-node, from either node_modules or tests/node_modules
+   * ts-node, from either node_modules or tests/node_modules.
+   * 
+   * Another possibility of interference is NODE_PATH environment variable being set,
+   * and ts-node being installed globally or in any of the paths in NODE_PATH, to fix this,
+   * we must remove NODE_PATH from the environment variables *BEFORE* running ava,
+   * as seen in the test-spec npm script using cross-env for interop between OS'es.
+   * This is not a breaking change, as calling ava directly with NODE_PATH unset will also still work,
+   * it is only strictly required for environments where NODE_PATH is set to folders containing ts-node.
    */
 
   const { existsSync } = require('fs');
