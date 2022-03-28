@@ -101,19 +101,18 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
           expect(err).toBeNull();
         });
 
-        // test(`import invalid path`, async () => {
-        //   const { stderr, err } = await exec('import-non-existing.ts');
+        test(`import invalid path should error`, async () => {
+          const { stderr, err } = await exec('import-non-existing.ts');
 
-        //   // Expect error
-        //   expect(err).toBeTruthy();
-        //   expect(stderr).toMatch(
-        //     `[ERR_MODULE_NOT_FOUND]: Cannot find 'map2/does-not-exist.ts'`
-        //   );
+          // Expect error
+          expect(err).toBeTruthy();
+          expect(stderr).toMatch(
+            `[ERR_MODULE_NOT_FOUND]: Cannot find 'non-existing.js'`
+          );
 
-        //   // Expect tried candidates to be listed
-        //   expect(stderr).toMatch(/- file:\/\/.*mapped\/2-does-not-exist.ts/);
-        //   expect(stderr).toMatch(/- file:\/\/.*mapped\/2a-does-not-exist.ts/);
-        // });
+          // Expect tried candidates to be listed
+          expect(stderr).toMatch(/- file:\/\/.*non-existing.js/);
+        });
       });
     }
 
