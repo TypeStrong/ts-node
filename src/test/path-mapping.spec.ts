@@ -150,13 +150,15 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
         expect(err).toBeNull();
       });
 
-      //   test('map to more specific candidate', async (t) => {
-      //     // TODO
-      //   });
+      test('map using more specific candidate', async (t) => {
+        const { err } = await exec('map-using-more-specific-path.ts');
+        expect(err).toBeNull();
+      });
 
-      //   test('map to static (no wildcard)', async (t) => {
-      //     // TODO
-      //   });
+      test('map to static (no wildcard)', async (t) => {
+        const { err } = await exec('map-using-static-path.ts');
+        expect(err).toBeNull();
+      });
 
       //   test('map from js, jsx, tsx', async (t) => {
       //     // TODO
