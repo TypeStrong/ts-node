@@ -1,6 +1,6 @@
-// Should import from base directory
+// Should import under base directory
 import underBaseJs from 'level-3/under-base-js.js';
-import underBaseJsx from 'level-3/under-base-jsx.jsx';
+import underBaseJsx from 'level-3/under-base-jsx.js';
 import underBaseTs from 'level-3/under-base-ts.js';
 
 // Pre-conditions

@@ -1,6 +1,6 @@
 // Should import from base directory
 import atBaseJs from 'at-base-js.js';
-import atBaseJsx from 'at-base-jsx.jsx';
+import atBaseJsx from 'at-base-jsx.js';
 import atBaseTs from 'at-base-ts.js';
 
 // Pre-conditions

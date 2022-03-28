@@ -1,6 +1,6 @@
 // Should import from base directory
 const atBaseJs = require('at-base-js.js');
-const atBaseJsx = require('at-base-jsx.jsx');
+const atBaseJsx = require('at-base-jsx.js');
 const atBaseTs = require('at-base-ts.js');
 
 // Pre-conditions
