@@ -160,9 +160,10 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
         expect(err).toBeNull();
       });
 
-      //   test('map from js, jsx, tsx', async (t) => {
-      //     // TODO
-      //   });
+      test('map from js, jsx, tsx', async (t) => {
+        const { err } = await exec('map-from-js-jsx-tsx.ts');
+        expect(err).toBeNull();
+      });
     });
   });
 }
