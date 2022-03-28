@@ -56,21 +56,6 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
       const exec = execBuilder(moduleType.command, moduleType.baseDir, project);
 
       test.suite(`${project}`, (test) => {
-        test(`fallback to node built-in`, async (t) => {
-          const { err } = await exec('import-node-built-in.ts');
-          expect(err).toBeNull();
-        });
-
-        test(`fallback to node_modules`, async (t) => {
-          const { err } = await exec('import-node-modules.ts');
-          expect(err).toBeNull();
-        });
-
-        test(`imports within node_modules ignore paths`, async (t) => {
-          const { err } = await exec('import-within-node-modules.ts');
-          expect(err).toBeNull();
-        });
-
         test('ignore type definitions', async (t) => {
           const { err } = await exec('ignore-type-definitions.ts');
           expect(err).toBeNull();
@@ -96,10 +81,25 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
           expect(err).toBeNull();
         });
 
-        // test('relative imports should ignore paths', async () => {
-        //   const { err } = await exec('import-relative.ts');
-        //   expect(err).toBeNull();
-        // });
+        test(`import node built-in`, async (t) => {
+          const { err } = await exec('import-node-built-in.ts');
+          expect(err).toBeNull();
+        });
+
+        test(`import node_modules`, async (t) => {
+          const { err } = await exec('import-node-modules.ts');
+          expect(err).toBeNull();
+        });
+
+        test(`import within node_modules ignores paths`, async (t) => {
+          const { err } = await exec('import-within-node-modules.ts');
+          expect(err).toBeNull();
+        });
+
+        test('import relative', async () => {
+          const { err } = await exec('import-relative.ts');
+          expect(err).toBeNull();
+        });
 
         // test(`import invalid path`, async () => {
         //   const { stderr, err } = await exec('import-non-existing.ts');
@@ -116,6 +116,8 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
         // });
       });
     }
+
+    // TODO: Import relative shouldn't succeed using star-path
 
     // // Create ts-node runner config with paths
     // const exec = execBuilder(
