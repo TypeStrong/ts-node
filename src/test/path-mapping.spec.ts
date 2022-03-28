@@ -40,9 +40,9 @@ const MODULE_TYPES = <const>{
 };
 
 const PROJECT_CONFIGS = <const>{
-  BASE_URL_NO_PATHS: 'tsconfig-baseurl-only.json',
-  BASE_URL_AND_PATHS: 'tsconfig.json',
-  BASE_URL_STAR_PATH: 'tsconfig-star-path.json',
+  BASE_URL_NO_PATHS: 'tsconfig-baseurl-no-paths.json',
+  BASE_URL_SOME_PATHS: 'tsconfig-baseurl-some-paths.json',
+  BASE_URL_STAR_PATH: 'tsconfig-baseurl-star-path.json',
 };
 
 for (const moduleType of Object.values(MODULE_TYPES)) {
@@ -55,7 +55,7 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
       // Create ts-node runner for this config
       const exec = execBuilder(moduleType.command, moduleType.baseDir, project);
 
-      test.suite(`project: ${project}`, (test) => {
+      test.suite(`${project}`, (test) => {
         test(`fallback to node built-in`, async (t) => {
           const { err } = await exec('import-node-built-in.ts');
           expect(err).toBeNull();
