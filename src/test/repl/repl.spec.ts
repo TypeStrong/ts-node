@@ -537,3 +537,118 @@ test.suite('REPL declares types for node built-ins within REPL', (test) => {
     expect(stderr).toBe('');
   });
 });
+
+test.suite(
+  'REPL treats object literals and block scopes correctly',
+  (test) => {
+    test('repl should treat { key: 123 } as object literal', async (t) => {
+      const { stdout, stderr } = await execTester({
+        flags: '-i',
+        stdin: '{ key: 123 }\n',
+      });
+      expect(stdout).toContain('{ key: 123 }');
+    });
+    test('repl should treat ({ key: 123 }) as object literal', async (t) => {
+      const { stdout, stderr } = await execTester({
+        flags: '-i',
+        stdin: '({ key: 123 })\n',
+      });
+      expect(stdout).toContain('{ key: 123 }');
+    });
+    test('repl should treat ({ let v = 0; v; }) as object literal and error', async (t) => {
+      const { stdout, stderr } = await execTester({
+        flags: '-i',
+        stdin: '({ let v = 0; v; })\n',
+      });
+      expect(stderr).toContain('No value exists in scope for the shorthand property');
+    });
+    test('repl should treat { let v = 0; v; } as block scope', async (t) => {
+      const { stdout, stderr } = await execTester({
+        flags: '-i',
+        stdin: '{ let v = 0; v; }\n',
+      });
+      expect(stdout).toContain('0');
+    });
+    test('repl should treat { key: 123 }; as block scope', async (t) => {
+      const { stdout, stderr } = await execTester({
+        flags: '-i',
+        stdin: '{ key: 123 };\n',
+      });
+      expect(stdout).toContain('123');
+    });
+    test.suite('multiline', (test) => {
+      test('repl should treat {\\nkey: 123\\n} as object literal', async (t) => {
+        const { stdout, stderr } = await execTester({
+          flags: '-i',
+          stdin: '{\nkey: 123\n}\n',
+        });
+        expect(stdout).toContain('{ key: 123 }');
+      });
+      test('repl should treat ({\\nkey: 123\\n}) as object literal', async (t) => {
+        const { stdout, stderr } = await execTester({
+          flags: '-i',
+          stdin: '({\nkey: 123\n})\n',
+        });
+        expect(stdout).toContain('{ key: 123 }');
+      });
+      test('repl should treat ({\\nlet v = 0;\\nv;\\n}) as object literal and error', async (t) => {
+        const { stdout, stderr } = await execTester({
+          flags: '-i',
+          stdin: '({\nlet v = 0;\nv;\n})\n',
+        });
+        expect(stderr).toContain('No value exists in scope for the shorthand property');
+      });
+      test('repl should treat {\\nlet v = 0;\\nv;\\n} as block scope', async (t) => {
+        const { stdout, stderr } = await execTester({
+          flags: '-i',
+          stdin: '{\nlet v = 0;\nv;\n}\n',
+        });
+        expect(stdout).toContain('0');
+      });
+      test('repl should treat { key: 123 }; as block scope', async (t) => {
+        const { stdout, stderr } = await execTester({
+          flags: '-i',
+          stdin: '{\nkey: 123\n};\n',
+        });
+        expect(stdout).toContain('123');
+      });
+    });
+    test.suite('property access', (test) => {
+      test('repl should treat { key: 123 }.key as object literal property access', async (t) => {
+        const { stdout, stderr } = await execTester({
+          flags: '-i',
+          stdin: '{ key: 123 }.key\n',
+        });
+        expect(stdout).toContain('123');
+      });
+      test('repl should treat { key: 123 }["key"] as object literal indexed access', async (t) => {
+        const { stdout, stderr } = await execTester({
+          flags: '-i',
+          stdin: '{ key: 123 }["key"]\n',
+        });
+        expect(stdout).toContain('123');
+      });
+      test('repl should treat { key: 123 }.foo as object literal non-existent property access', async (t) => {
+        const { stdout, stderr } = await execTester({
+          flags: '-i',
+          stdin: '{ key: 123 }.foo\n',
+        });
+        expect(stderr).toContain('Property \'foo\' does not exist on type');
+      });
+      test('repl should treat { key: 123 }["foo"] as object literal non-existent indexed access', async (t) => {
+        const { stdout, stderr } = await execTester({
+          flags: '-i',
+          stdin: '{ key: 123 }["foo"]\n',
+        });
+        expect(stderr).toContain('Property \'foo\' does not exist on type');
+      });
+      test('repl should treat { key: 123 }[] as block scope (edge case)', async (t) => {
+        const { stdout, stderr } = await execTester({
+          flags: '-i',
+          stdin: '{ key: 123 }[]\n',
+        });
+        expect(stdout).toContain('[]');
+      });
+    });
+  }
+);
