@@ -1,4 +1,4 @@
-export default 'base/child/jsx';
+export default 'mapped-tsx';
 
 const React = {
   createElement() {},

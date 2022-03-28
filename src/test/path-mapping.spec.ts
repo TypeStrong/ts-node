@@ -128,36 +128,42 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
       });
     });
 
-    // test.suite(`${PROJECT_CONFIGS.BASE_URL_SOME_PATHS} only`, (test) => {
-    //   const exec = execBuilder(moduleType.command, moduleType.baseDir, PROJECT_CONFIGS.BASE_URL_SOME_PATHS);
+    test.suite(`${PROJECT_CONFIGS.BASE_URL_SOME_PATHS} only`, (test) => {
+      const exec = execBuilder(
+        moduleType.command,
+        moduleType.baseDir,
+        PROJECT_CONFIGS.BASE_URL_SOME_PATHS
+      );
 
-    //   test('map using a prefix', async (t) => {
-    //     // TODO
-    //   });
+      test('map using a prefix', async (t) => {
+        const { err } = await exec('map-using-prefix.ts');
+        expect(err).toBeNull();
+      });
 
-    //   test('map to js, jsx, tsx', async (t) => {
-    //     // TODO
-    //   });
+      test('map to js, jsx, tsx', async (t) => {
+        const { err } = await exec('map-to-js-jsx-tsx.ts');
+        expect(err).toBeNull();
+      });
 
-    //   test('map to first candidate', async (t) => {
-    //     // TODO
-    //   });
+      //   test('map to first candidate', async (t) => {
+      //     // TODO
+      //   });
 
-    //   test('map to second candidate when first not available', async (t) => {
-    //     // TODO
-    //   });
+      //   test('map to second candidate when first not available', async (t) => {
+      //     // TODO
+      //   });
 
-    //   test('map to more specific candidate', async (t) => {
-    //     // TODO
-    //   });
+      //   test('map to more specific candidate', async (t) => {
+      //     // TODO
+      //   });
 
-    //   test('map to static (no wildcard)', async (t) => {
-    //     // TODO
-    //   });
+      //   test('map to static (no wildcard)', async (t) => {
+      //     // TODO
+      //   });
 
-    //   test('map from js, jsx, tsx', async (t) => {
-    //     // TODO
-    //   });
-    // })
+      //   test('map from js, jsx, tsx', async (t) => {
+      //     // TODO
+      //   });
+    });
   });
 }
