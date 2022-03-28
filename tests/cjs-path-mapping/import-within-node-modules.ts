@@ -2,7 +2,10 @@
 import dependsOnLodash = require('depends-on-lodash');
 
 // Pre-conditions
-import assert = require('assert');
+const assert = require('assert');
 
 // Assertions
 assert.strictEqual(dependsOnLodash.proxyLodash, 'lodash'); // not our 'lodash-local'
+
+// Force this to be a module
+export {};

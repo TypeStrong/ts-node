@@ -1,8 +1,11 @@
 // Should ignore local ambient.d.ts
-import ambient = require('ambient');
+const ambient = require('ambient');
 
 // Pre-conditions
-import * as assert from 'assert';
+const assert = require('assert');
 
 // Assertions
 assert.strictEqual(ambient, 'ambient'); // not our 'local-ambient'
+
+// Force this to be a module
+export {};

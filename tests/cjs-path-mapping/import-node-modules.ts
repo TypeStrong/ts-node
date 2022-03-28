@@ -10,7 +10,7 @@ const main = async (): Promise<void> => {
   const someEsmDependency = await importDefaultHelper('some-esm-dependency');
 
   // Pre-conditions
-  const assert: any = require('assert');
+  const assert = require('assert');
 
   // Assertions
   assert.strictEqual(someCjsDependency, 'export-from-some-cjs-dependency');
@@ -18,3 +18,6 @@ const main = async (): Promise<void> => {
 };
 
 main();
+
+// Force this to be a module
+export {};

@@ -1,6 +1,9 @@
 // Should be able to import node built-ins
-import * as assert from 'assert';
-import { stat } from 'fs';
+const assert = require('assert');
+const { stat } = require('fs');
 
 // Assertions
 assert.strictEqual(typeof stat, 'function');
+
+// Force this to be a module
+export {};
