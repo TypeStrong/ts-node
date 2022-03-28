@@ -1,3 +1,4 @@
+import * as expect from 'expect';
 import { join } from 'path';
 
 import { createExec } from './exec-helpers';
@@ -22,83 +23,77 @@ const execBuilder = (
     env: { ...process.env, TS_NODE_PROJECT: tsConfig },
   });
 
-  return (file = 'index.ts', throwErrors = true) =>
-    partialExec(`${command} ${file}`).then((res) => {
-      if (throwErrors && res.err) throw res.err;
-      return res;
-    });
+  return (file = 'index.ts') => partialExec(`${command} ${file}`);
 };
 
-type ModuleType = 'cjs' | 'esm';
-const MODULE_TYPES: ModuleType[] = ['cjs', 'esm'];
-const MODULE_TYPE_ESM = MODULE_TYPES[1];
-
-type ExecBuilderParams = { baseDir: string; command: string };
-const EXEC_BUILDER_PARAMS: Record<ModuleType, ExecBuilderParams> = {
-  cjs: {
+const MODULE_TYPES = <const>{
+  CJS: {
+    name: 'cjs',
     baseDir: 'cjs-path-mapping',
     command: CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   },
-  esm: {
+  ESM: {
+    name: 'esm',
     baseDir: 'esm-path-mapping',
     command: CMD_ESM_LOADER_WITHOUT_PROJECT,
   },
 };
 
-const PROJECT_CONFIGS = {
+const PROJECT_CONFIGS = <const>{
   BASE_URL_NO_PATHS: 'tsconfig-baseurl-only.json',
   BASE_URL_AND_PATHS: 'tsconfig.json',
   BASE_URL_STAR_PATH: 'tsconfig-star-path.json',
-} as const;
+};
 
-for (const moduleType of MODULE_TYPES) {
-  test.suite(`path mapping ${moduleType}`, (test) => {
-    test.runIf(nodeSupportsEsmHooks || moduleType !== MODULE_TYPE_ESM);
-    const execBuilderParams = EXEC_BUILDER_PARAMS[moduleType];
+for (const moduleType of Object.values(MODULE_TYPES)) {
+  test.suite(`path mapping ${moduleType.name}`, (test) => {
+    test.runIf(
+      nodeSupportsEsmHooks || moduleType.name !== MODULE_TYPES.ESM.name
+    );
 
     for (const project of Object.values(PROJECT_CONFIGS)) {
       // Create ts-node runner for this config
-      const exec = execBuilder(
-        execBuilderParams.command,
-        execBuilderParams.baseDir,
-        project
-      );
+      const exec = execBuilder(moduleType.command, moduleType.baseDir, project);
 
       test.suite(`project: ${project}`, (test) => {
         test(`fallback to node built-in`, async (t) => {
-          await t.notThrowsAsync(exec('import-node-built-in.ts'));
+          const { err } = await exec('import-node-built-in.ts');
+          expect(err).toBeNull();
         });
 
         test(`fallback to node_modules`, async (t) => {
-          await t.notThrowsAsync(exec('import-node-modules.ts'));
+          const { err } = await exec('import-node-modules.ts');
+          expect(err).toBeNull();
         });
 
         test(`imports within node_modules ignore paths`, async (t) => {
-          await t.notThrowsAsync(exec('import-within-node-modules.ts'));
+          const { err } = await exec('import-within-node-modules.ts');
+          expect(err).toBeNull();
         });
 
         test('ignore type definitions', async (t) => {
-          await t.notThrowsAsync(exec('ignore-type-definitions.ts'));
+          const { err } = await exec('ignore-type-definitions.ts');
+          expect(err).toBeNull();
         });
 
         // test(`import from baseUrl with ${project}`, async () => {
         //   const { err } = await exec('import-from-base.ts');
-        //   expect(err).toBe(null);
+        //   expect(err).toBeNull();
         // });
 
         // test(`import under baseUrl with ${project}`, async () => {
         //   const { err } = await exec('import-under-base.ts');
-        //   expect(err).toBe(null);
+        //   expect(err).toBeNull();
         // });
 
         // test(`import from js, js, tsx with ${project}`, async () => {
         //   const { err } = await exec('import-from-base.ts');
-        //   expect(err).toBe(null);
+        //   expect(err).toBeNull();
         // });
 
         // test('relative imports should ignore paths', async () => {
         //   const { err } = await exec('import-relative.ts');
-        //   expect(err).toBe(null);
+        //   expect(err).toBeNull();
         // });
 
         // test(`import invalid path with ${project}`, async () => {
@@ -126,7 +121,7 @@ for (const moduleType of MODULE_TYPES) {
 
     // test(`import specific paths`, async () => {
     //   const { err } = await exec('???');
-    //   expect(err).toBe(null);
+    //   expect(err).toBeNull();
     // });
   });
 }
