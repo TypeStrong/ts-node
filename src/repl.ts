@@ -509,6 +509,7 @@ function appendCompileAndEvalInput(options: {
   service: Service;
   state: EvalState;
   input: string;
+  wrappedErr?: unknown;
   /** Enable top-level await but only if the TSNode service allows it. */
   enableTopLevelAwait?: boolean;
   context: Context | undefined;
@@ -516,10 +517,22 @@ function appendCompileAndEvalInput(options: {
   const {
     service,
     state,
-    input,
+    wrappedErr,
     enableTopLevelAwait = false,
     context,
   } = options;
+  let { input } = options;
+
+  // It's confusing for `{ a: 1 }` to be interpreted as a block statement
+  // rather than an object literal. So, we first try to wrap it in
+  // parentheses, so that it will be interpreted as an expression.
+  // Based on https://github.com/nodejs/node/blob/c2e6822153bad023ab7ebd30a6117dcc049e475c/lib/repl.js#L413-L422
+  let wrappedCmd = false;
+  if (!wrappedErr && /^\s*{/.test(input) && !/;\s*$/.test(input)) {
+    input = `(${input.trim()})\n`;
+    wrappedCmd = true;
+  }
+
   const lines = state.lines;
   const isCompletion = !/\n$/.test(input);
   const undo = appendToEvalState(state, input);
@@ -536,6 +549,16 @@ function appendCompileAndEvalInput(options: {
     output = service.compile(state.input, state.path, -lines);
   } catch (err) {
     undo();
+
+    if (wrappedCmd) {
+      // Unwrap and try again
+      return appendCompileAndEvalInput({
+        ...options,
+        wrappedErr: err
+      });
+    }
+
+    if (wrappedErr) throw wrappedErr;
     throw err;
   }
 
@@ -689,6 +712,10 @@ const RECOVERY_CODES: Map<number, Set<number> | null> = new Map([
   [1005, null], // "')' expected.", "'}' expected."
   [1109, null], // "Expression expected."
   [1126, null], // "Unexpected end of text."
+  [
+    1136, // "Property assignment expected."
+    new Set([1005]), // happens when typing out an object literal or block scope across multiple lines: '{ foo: 123,'
+  ], 
   [1160, null], // "Unterminated template literal."
   [1161, null], // "Unterminated regular expression literal."
   [2355, null], // "A function whose declared type is neither 'void' nor 'any' must return a value."
