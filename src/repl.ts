@@ -551,6 +551,10 @@ function appendCompileAndEvalInput(options: {
     undo();
 
     if (wrappedCmd) {
+      if (err instanceof TSError && err.diagnosticCodes[0] === 2339) {
+        // Ensure consistent and more sane behavior between { a: 1 }['b'] and ({ a: 1 }['b'])
+        throw err;
+      }
       // Unwrap and try again
       return appendCompileAndEvalInput({
         ...options,
