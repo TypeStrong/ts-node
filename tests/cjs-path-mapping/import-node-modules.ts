@@ -1,18 +1,20 @@
-// Should be able to import from node_modules
-import someCjsDependency = require('some-cjs-dependency');
-// TODO: Import an ESM dep statically or...
-// import someEsmDependency from 'some-esm-dependency'
+// Do not extract this helper - it will change the meaning of relative imports
+const importDefaultHelper = new Function(
+  'specifier',
+  'return import(specifier).then(mod => mod.default)'
+);
 
 const main = async (): Promise<void> => {
-  // TODO: ...or dynamically
-  // const someEsmDependency = await import('some-esm-dependency');
+  // Should be able to import from node_modules
+  const someCjsDependency = require('some-cjs-dependency');
+  const someEsmDependency = await importDefaultHelper('some-esm-dependency');
 
   // Pre-conditions
   const assert: any = require('assert');
 
   // Assertions
   assert.strictEqual(someCjsDependency, 'export-from-some-cjs-dependency');
-  // assert.strictEqual(someEsmDependency, 'export-from-some-esm-dependency');
+  assert.strictEqual(someEsmDependency, 'export-from-some-esm-dependency');
 };
 
 main();
