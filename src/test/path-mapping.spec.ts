@@ -76,17 +76,22 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
           expect(err).toBeNull();
         });
 
-        // test(`import from baseUrl with ${project}`, async () => {
-        //   const { err } = await exec('import-from-base.ts');
-        //   expect(err).toBeNull();
-        // });
+        test(`import at baseUrl`, async () => {
+          const { err } = await exec('import-at-base.ts');
+          expect(err).toBeNull();
+        });
 
-        // test(`import under baseUrl with ${project}`, async () => {
-        //   const { err } = await exec('import-under-base.ts');
-        //   expect(err).toBeNull();
-        // });
+        test(`import at baseUrl without file extensions`, async () => {
+          const { err } = await exec('import-at-base-no-extensions.ts');
+          expect(err).toBeNull();
+        });
 
-        // test(`import from js, js, tsx with ${project}`, async () => {
+        test(`import under baseUrl`, async () => {
+          const { err } = await exec('import-under-base.ts');
+          expect(err).toBeNull();
+        });
+
+        // test(`import from js, js, tsx`, async () => {
         //   const { err } = await exec('import-from-base.ts');
         //   expect(err).toBeNull();
         // });
@@ -96,7 +101,7 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
         //   expect(err).toBeNull();
         // });
 
-        // test(`import invalid path with ${project}`, async () => {
+        // test(`import invalid path`, async () => {
         //   const { stderr, err } = await exec('import-non-existing.ts');
 
         //   // Expect error
