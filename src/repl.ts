@@ -558,7 +558,7 @@ function appendCompileAndEvalInput(options: {
       // Unwrap and try again
       return appendCompileAndEvalInput({
         ...options,
-        wrappedErr: err
+        wrappedErr: err,
       });
     }
 
@@ -719,7 +719,7 @@ const RECOVERY_CODES: Map<number, Set<number> | null> = new Map([
   [
     1136, // "Property assignment expected."
     new Set([1005]), // happens when typing out an object literal or block scope across multiple lines: '{ foo: 123,'
-  ], 
+  ],
   [1160, null], // "Unterminated template literal."
   [1161, null], // "Unterminated regular expression literal."
   [2355, null], // "A function whose declared type is neither 'void' nor 'any' must return a value."
