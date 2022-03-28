@@ -13,18 +13,18 @@ import { test } from './testlib';
 
 test.beforeAll(installTsNode);
 
-const execBuilder = (
+function execBuilder(
   command: string,
   moduleDir: string,
   tsConfig: string = 'tsconfig.json'
-) => {
+) {
   const partialExec = createExec({
     cwd: join(TEST_DIR, moduleDir),
     env: { ...process.env, TS_NODE_PROJECT: tsConfig },
   });
 
   return (file = 'index.ts') => partialExec(`${command} ${file}`);
-};
+}
 
 const MODULE_TYPES = <const>{
   CJS: {
