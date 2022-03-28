@@ -1,4 +1,4 @@
-export default 'under-base-jsx';
+export default 'below-base-jsx';
 
 const React = {
   createElement() {},

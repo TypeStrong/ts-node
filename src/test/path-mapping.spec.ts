@@ -86,8 +86,8 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
           expect(err).toBeNull();
         });
 
-        test(`import under baseUrl`, async () => {
-          const { err } = await exec('import-under-base.ts');
+        test(`import below baseUrl`, async () => {
+          const { err } = await exec('import-below-base.ts');
           expect(err).toBeNull();
         });
 
