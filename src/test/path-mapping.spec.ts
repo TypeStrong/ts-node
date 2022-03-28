@@ -91,10 +91,10 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
           expect(err).toBeNull();
         });
 
-        // test(`import from js, js, tsx`, async () => {
-        //   const { err } = await exec('import-from-base.ts');
-        //   expect(err).toBeNull();
-        // });
+        test(`import from js, jsx, tsx`, async () => {
+          const { err } = await exec('import-from-js-jsx-tsx.ts');
+          expect(err).toBeNull();
+        });
 
         // test('relative imports should ignore paths', async () => {
         //   const { err } = await exec('import-relative.ts');
