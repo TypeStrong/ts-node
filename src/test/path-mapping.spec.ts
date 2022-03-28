@@ -101,33 +101,63 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
           expect(err).toBeNull();
         });
 
-        test(`import invalid path should error`, async () => {
-          const { stderr, err } = await exec('import-non-existing.ts');
-
-          // Expect error
+        test(`import invalid path should error & list candidates`, async () => {
+          const { err, stderr } = await exec('import-non-existing.ts');
           expect(err).toBeTruthy();
           expect(stderr).toMatch(
             `[ERR_MODULE_NOT_FOUND]: Cannot find 'non-existing.js'`
           );
-
-          // Expect tried candidates to be listed
           expect(stderr).toMatch(/- file:\/\/.*non-existing.js/);
         });
       });
     }
 
-    // TODO: Import relative shouldn't succeed using star-path
+    test.suite(`${PROJECT_CONFIGS.BASE_URL_STAR_PATH} only`, (test) => {
+      const exec = execBuilder(
+        moduleType.command,
+        moduleType.baseDir,
+        PROJECT_CONFIGS.BASE_URL_STAR_PATH
+      );
 
-    // // Create ts-node runner config with paths
-    // const exec = execBuilder(
-    //   execBuilderParams.command,
-    //   execBuilderParams.baseDir,
-    //   PROJECT_CONFIGS.BASE_URL_AND_PATHS
-    // );
+      test('import relative should not succeed using star-path', async (t) => {
+        const { err, stderr } = await exec('import-relative-ignores-star.ts');
+        expect(err).toBeTruthy();
+        expect(stderr).toMatch(
+          `[ERR_MODULE_NOT_FOUND]: Cannot find './should-not-resolve'`
+        );
+      });
+    });
 
-    // test(`import specific paths`, async () => {
-    //   const { err } = await exec('???');
-    //   expect(err).toBeNull();
-    // });
+    // test.suite(`${PROJECT_CONFIGS.BASE_URL_SOME_PATHS} only`, (test) => {
+    //   const exec = execBuilder(moduleType.command, moduleType.baseDir, PROJECT_CONFIGS.BASE_URL_SOME_PATHS);
+
+    //   test('map using a prefix', async (t) => {
+    //     // TODO
+    //   });
+
+    //   test('map to js, jsx, tsx', async (t) => {
+    //     // TODO
+    //   });
+
+    //   test('map to first candidate', async (t) => {
+    //     // TODO
+    //   });
+
+    //   test('map to second candidate when first not available', async (t) => {
+    //     // TODO
+    //   });
+
+    //   test('map to more specific candidate', async (t) => {
+    //     // TODO
+    //   });
+
+    //   test('map to static (no wildcard)', async (t) => {
+    //     // TODO
+    //   });
+
+    //   test('map from js, jsx, tsx', async (t) => {
+    //     // TODO
+    //   });
+    // })
   });
 }
