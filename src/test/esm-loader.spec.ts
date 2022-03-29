@@ -350,7 +350,7 @@ test.suite('esm', (test) => {
           const { err, stdout, stderr } = await cb();
           expect(err).toBe(null);
           expect(stdout.trim()).toBe('CLI args: foo bar');
-          if (stderr && process.version.includes('nightly')) {
+          if (stderr) {
             // Nightly builds of Node.js might randomly start spitting out warnings,
             // which would cause the tests to fail despite actually working, so we
             // should check if stderr is a warning and consider it a pass if it is.
