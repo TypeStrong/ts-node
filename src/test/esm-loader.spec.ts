@@ -407,7 +407,8 @@ test.suite('esm', (test) => {
                 `child registered signal handlers\nchild received signal: ${signal}\nchild exiting`
               );
             }
-            expect(stderr).toBe('');
+            t.log(process.version);
+            if (!process.version.includes('nightly')) expect(stderr).toBe('');
           });
         }
       });
