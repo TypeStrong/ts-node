@@ -559,7 +559,9 @@ test.suite('REPL treats object literals and block scopes correctly', (test) => {
       stdin: '({ let v = 0; v; })\n',
     });
     expect(stderr).toContain(
-      'No value exists in scope for the shorthand property'
+      semver.satisfies(ts.version, '2.7')
+        ? 'error TS2304'
+        : 'No value exists in scope for the shorthand property'
     );
   });
   test('repl should treat { let v = 0; v; } as block scope', async (t) => {
@@ -569,12 +571,29 @@ test.suite('REPL treats object literals and block scopes correctly', (test) => {
     });
     expect(stdout).toContain('0');
   });
-  test('repl should treat { key: 123 }; as block scope', async (t) => {
-    const { stdout, stderr } = await execTester({
-      flags: '-i',
-      stdin: '{ key: 123 };\n',
+  test.suite('extra', (test) => {
+    test.skipIf(semver.satisfies(ts.version, '2.7'));
+    test('repl should treat { key: 123 }; as block scope', async (t) => {
+      const { stdout, stderr } = await execTester({
+        flags: '-i',
+        stdin: '{ key: 123 };\n',
+      });
+      expect(stdout).toContain('123');
     });
-    expect(stdout).toContain('123');
+    test('repl should treat {\\nkey: 123\\n}; as block scope', async (t) => {
+      const { stdout, stderr } = await execTester({
+        flags: '-i',
+        stdin: '{\nkey: 123\n};\n',
+      });
+      expect(stdout).toContain('123');
+    });
+    test('repl should treat { key: 123 }[] as block scope (edge case)', async (t) => {
+      const { stdout, stderr } = await execTester({
+        flags: '-i',
+        stdin: '{ key: 123 }[]\n',
+      });
+      expect(stdout).toContain('[]');
+    });
   });
   test.suite('multiline', (test) => {
     test('repl should treat {\\nkey: 123\\n} as object literal', async (t) => {
@@ -597,7 +616,9 @@ test.suite('REPL treats object literals and block scopes correctly', (test) => {
         stdin: '({\nlet v = 0;\nv;\n})\n',
       });
       expect(stderr).toContain(
-        'No value exists in scope for the shorthand property'
+        semver.satisfies(ts.version, '2.7')
+          ? 'error TS2304'
+          : 'No value exists in scope for the shorthand property'
       );
     });
     test('repl should treat {\\nlet v = 0;\\nv;\\n} as block scope', async (t) => {
@@ -606,13 +627,6 @@ test.suite('REPL treats object literals and block scopes correctly', (test) => {
         stdin: '{\nlet v = 0;\nv;\n}\n',
       });
       expect(stdout).toContain('0');
-    });
-    test('repl should treat { key: 123 }; as block scope', async (t) => {
-      const { stdout, stderr } = await execTester({
-        flags: '-i',
-        stdin: '{\nkey: 123\n};\n',
-      });
-      expect(stdout).toContain('123');
     });
   });
   test.suite('property access', (test) => {
@@ -642,14 +656,11 @@ test.suite('REPL treats object literals and block scopes correctly', (test) => {
         flags: '-i',
         stdin: '{ key: 123 }["foo"]\n',
       });
-      expect(stderr).toContain("Property 'foo' does not exist on type");
-    });
-    test('repl should treat { key: 123 }[] as block scope (edge case)', async (t) => {
-      const { stdout, stderr } = await execTester({
-        flags: '-i',
-        stdin: '{ key: 123 }[]\n',
-      });
-      expect(stdout).toContain('[]');
+      expect(stderr).toContain(
+        semver.satisfies(ts.version, '2.7')
+          ? 'error TS7017'
+          : "Property 'foo' does not exist on type"
+      );
     });
   });
 });
