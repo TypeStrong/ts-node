@@ -334,30 +334,14 @@ test.suite('esm', (test) => {
       test.runIf(nodeSupportsSpawningChildProcess);
 
       basic('ts-node-esm executable', () =>
-        exec(`${BIN_ESM_PATH} ./esm-child-process/via-flag/index.ts foo bar`, {
-          env: {
-            NODE_OPTIONS: (process.env.NODE_OPTIONS ?? '') + '--no-warnings',
-          },
-        })
+        exec(`${BIN_ESM_PATH} ./esm-child-process/via-flag/index.ts foo bar`)
       );
       basic('ts-node --esm flag', () =>
-        exec(
-          `${BIN_PATH} --esm ./esm-child-process/via-flag/index.ts foo bar`,
-          {
-            env: {
-              NODE_OPTIONS: (process.env.NODE_OPTIONS ?? '') + '--no-warnings',
-            },
-          }
-        )
+        exec(`${BIN_PATH} --esm ./esm-child-process/via-flag/index.ts foo bar`)
       );
       basic('ts-node w/tsconfig esm:true', () =>
         exec(
-          `${BIN_PATH} --esm ./esm-child-process/via-tsconfig/index.ts foo bar`,
-          {
-            env: {
-              NODE_OPTIONS: (process.env.NODE_OPTIONS ?? '') + '--no-warnings',
-            },
-          }
+          `${BIN_PATH} --esm ./esm-child-process/via-tsconfig/index.ts foo bar`
         )
       );
 
@@ -366,7 +350,16 @@ test.suite('esm', (test) => {
           const { err, stdout, stderr } = await cb();
           expect(err).toBe(null);
           expect(stdout.trim()).toBe('CLI args: foo bar');
-          expect(stderr).toBe('');
+          if (stderr && process.version.includes('nightly')) {
+            // Nightly builds of Node.js might randomly start spitting out warnings,
+            // which would cause the tests to fail despite actually working, so we
+            // should check if stderr is a warning and consider it a pass if it is.
+            expect(stderr).toMatch(
+              /^\(node:\d+?\) .*?Warning: .+?(?:\n\(Use `node --trace-(?:deprecation|warnings) \.{3}`.+?\))?\n?$/
+            );
+          } else {
+            expect(stderr).toBe('');
+          }
         });
       }
 
