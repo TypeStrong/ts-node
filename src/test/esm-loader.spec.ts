@@ -350,14 +350,10 @@ test.suite('esm', (test) => {
           const { err, stdout, stderr } = await cb();
           expect(err).toBe(null);
           expect(stdout.trim()).toBe('CLI args: foo bar');
-          if (stderr) {
-            // Nightly builds of Node.js might randomly start spitting out warnings,
-            // which would cause the tests to fail despite actually working, so we
-            // should check if stderr is a warning and consider it a pass if it is.
-            expect(stderr).toContain('Warning:');
-          } else {
-            //expect(stderr).toBe('');
-          }
+          // Nightly builds of Node.js might randomly start printing warnings,
+          // which would cause this test to fail despite actually working,
+          // so we should ignore stderr when testing on Node.js nightly.
+          if (!process.version.includes('nightly')) expect(stderr).toBe('');
         });
       }
 
@@ -372,7 +368,6 @@ test.suite('esm', (test) => {
             const childP = spawn([
               // exec lets us run the shims on windows; spawn does not
               process.execPath,
-              '--no-warnings',
               BIN_PATH_JS,
               `./esm-child-process/via-tsconfig/sleep.ts`,
             ]);
@@ -407,7 +402,9 @@ test.suite('esm', (test) => {
                 `child registered signal handlers\nchild received signal: ${signal}\nchild exiting`
               );
             }
-            t.log(process.version);
+            // Nightly builds of Node.js might randomly start printing warnings,
+            // which would cause this test to fail despite actually working,
+            // so we should ignore stderr when testing on Node.js nightly.
             if (!process.version.includes('nightly')) expect(stderr).toBe('');
           });
         }
