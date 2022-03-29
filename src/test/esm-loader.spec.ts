@@ -334,14 +334,20 @@ test.suite('esm', (test) => {
       test.runIf(nodeSupportsSpawningChildProcess);
 
       basic('ts-node-esm executable', () =>
-        exec(`${BIN_ESM_PATH} ./esm-child-process/via-flag/index.ts foo bar`)
+        exec(`${BIN_ESM_PATH} ./esm-child-process/via-flag/index.ts foo bar`, {
+          env: { NODE_OPTIONS: '--no-warnings' },
+        })
       );
       basic('ts-node --esm flag', () =>
-        exec(`${BIN_PATH} --esm ./esm-child-process/via-flag/index.ts foo bar`)
+        exec(
+          `${BIN_PATH} --esm ./esm-child-process/via-flag/index.ts foo bar`,
+          { env: { NODE_OPTIONS: '--no-warnings' } }
+        )
       );
       basic('ts-node w/tsconfig esm:true', () =>
         exec(
-          `${BIN_PATH} --esm ./esm-child-process/via-tsconfig/index.ts foo bar`
+          `${BIN_PATH} --esm ./esm-child-process/via-tsconfig/index.ts foo bar`,
+          { env: { NODE_OPTIONS: '--no-warnings' } }
         )
       );
 
@@ -365,6 +371,7 @@ test.suite('esm', (test) => {
             const childP = spawn([
               // exec lets us run the shims on windows; spawn does not
               process.execPath,
+              '--no-warnings',
               BIN_PATH_JS,
               `./esm-child-process/via-tsconfig/sleep.ts`,
             ]);
