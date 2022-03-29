@@ -335,19 +335,29 @@ test.suite('esm', (test) => {
 
       basic('ts-node-esm executable', () =>
         exec(`${BIN_ESM_PATH} ./esm-child-process/via-flag/index.ts foo bar`, {
-          env: { NODE_OPTIONS: '--no-warnings' },
+          env: {
+            NODE_OPTIONS: (process.env.NODE_OPTIONS ?? '') + '--no-warnings',
+          },
         })
       );
       basic('ts-node --esm flag', () =>
         exec(
           `${BIN_PATH} --esm ./esm-child-process/via-flag/index.ts foo bar`,
-          { env: { NODE_OPTIONS: '--no-warnings' } }
+          {
+            env: {
+              NODE_OPTIONS: (process.env.NODE_OPTIONS ?? '') + '--no-warnings',
+            },
+          }
         )
       );
       basic('ts-node w/tsconfig esm:true', () =>
         exec(
           `${BIN_PATH} --esm ./esm-child-process/via-tsconfig/index.ts foo bar`,
-          { env: { NODE_OPTIONS: '--no-warnings' } }
+          {
+            env: {
+              NODE_OPTIONS: (process.env.NODE_OPTIONS ?? '') + '--no-warnings',
+            },
+          }
         )
       );
 
