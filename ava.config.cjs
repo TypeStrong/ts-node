@@ -24,11 +24,9 @@ module.exports = {
    * ts-node, from either node_modules or tests/node_modules.
    * 
    * Another possibility of interference is NODE_PATH environment variable being set,
-   * and ts-node being installed globally or in any of the paths in NODE_PATH, to fix this,
-   * we must remove NODE_PATH from the environment variables *BEFORE* running ava,
-   * as seen in the test-spec npm script using cross-env for interop between OS'es.
-   * This is not a breaking change, as calling ava directly with NODE_PATH unset will also still work,
-   * it is only strictly required for environments where NODE_PATH is set to folders containing ts-node.
+   * and ts-node being installed in any of the paths listed in NODE_PATH, to fix this,
+   * the NODE_PATH variable must be removed from the environment *BEFORE* running ava.
+   * An error will be thrown when trying to run tests with NODE_PATH set to paths with ts-node installed.
    */
 
   const { existsSync } = require('fs');
