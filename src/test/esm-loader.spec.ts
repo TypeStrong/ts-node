@@ -350,10 +350,7 @@ test.suite('esm', (test) => {
           const { err, stdout, stderr } = await cb();
           expect(err).toBe(null);
           expect(stdout.trim()).toBe('CLI args: foo bar');
-          // Nightly builds of Node.js might randomly start printing warnings,
-          // which would cause this test to fail despite actually working,
-          // so we should ignore stderr when testing on Node.js nightly.
-          if (!process.version.includes('nightly')) expect(stderr).toBe('');
+          expect(stderr).toBe('');
         });
       }
 
@@ -402,10 +399,7 @@ test.suite('esm', (test) => {
                 `child registered signal handlers\nchild received signal: ${signal}\nchild exiting`
               );
             }
-            // Nightly builds of Node.js might randomly start printing warnings,
-            // which would cause this test to fail despite actually working,
-            // so we should ignore stderr when testing on Node.js nightly.
-            if (!process.version.includes('nightly')) expect(stderr).toBe('');
+            expect(stderr).toBe('');
           });
         }
       });
