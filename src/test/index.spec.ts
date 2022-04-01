@@ -979,14 +979,7 @@ test.suite('ts-node', (test) => {
       let err: unknown = null;
 
       try {
-        service.compile(
-          `
-  console.log('The Error constructor expects a string argument');
-
-  const error = new Error(123);
-  `,
-          'test.ts'
-        );
+        service.compile('new Error(123)', 'test.ts');
       } catch (error) {
         err = error;
       }
@@ -1003,20 +996,36 @@ test.suite('ts-node', (test) => {
       );
     });
 
+    test('should throw errors with diagnostic text', ({
+      context: { service },
+    }) => {
+      let err: unknown = null;
+
+      try {
+        service.compile('new Error(123)', 'test.ts');
+      } catch (error) {
+        err = error;
+      }
+
+      if (err === null) {
+        throw new Error('Command was expected to fail, but it succeeded.');
+      }
+
+      expect((err as TSError).diagnosticText).toMatch(
+        new RegExp(
+          "TS2345: Argument of type '123' " +
+            "is not assignable to parameter of type 'string | undefined'\\."
+        )
+      );
+    });
+
     test('should throw errors with diagnostic codes', ({
       context: { service },
     }) => {
       let err: unknown = null;
 
       try {
-        service.compile(
-          `
-  console.log('The Error constructor expects a string argument');
-
-  const error = new Error(123);
-  `,
-          'test.ts'
-        );
+        service.compile('new Error(123)', 'test.ts');
       } catch (error) {
         err = error;
       }
@@ -1034,14 +1043,7 @@ test.suite('ts-node', (test) => {
       let err: unknown = null;
 
       try {
-        service.compile(
-          `
-  console.log('The Error constructor expects a string argument');
-
-  const error = new Error(123);
-  `,
-          'test.ts'
-        );
+        service.compile('new Error(123)', 'test.ts');
       } catch (error) {
         err = error;
       }
@@ -1051,7 +1053,7 @@ test.suite('ts-node', (test) => {
       }
 
       expect((err as TSError).errorLocations).toEqual({
-        2345: { start: 94, length: 3 },
+        2345: { start: 10, length: 3 },
       });
     });
 
