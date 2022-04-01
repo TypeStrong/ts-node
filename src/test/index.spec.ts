@@ -31,6 +31,7 @@ import {
   CMD_ESM_LOADER_WITHOUT_PROJECT,
   EXPERIMENTAL_MODULES_FLAG,
 } from './helpers';
+import type { TSError } from '..';
 
 const exec = createExec({
   cwd: TEST_DIR,
@@ -972,6 +973,86 @@ test.suite('ts-node', (test) => {
     }) => {
       const output = service.compile('const x = 10', 'test.ts');
       expect(output).toMatch('var x = 10;');
+    });
+
+    test('should throw errors', ({ context: { service } }) => {
+      let err: unknown = null;
+
+      try {
+        service.compile(
+          `
+  console.log('The Error constructor expects a string argument');
+
+  const error = new Error(123);
+  `,
+          'test.ts'
+        );
+      } catch (error) {
+        err = error;
+      }
+
+      if (err === null) {
+        throw new Error('Command was expected to fail, but it succeeded.');
+      }
+
+      expect((err as Error).message).toMatch(
+        new RegExp(
+          "TS2345: Argument of type '123' " +
+            "is not assignable to parameter of type 'string | undefined'\\."
+        )
+      );
+    });
+
+    test('should throw errors with diagnostic codes', ({
+      context: { service },
+    }) => {
+      let err: unknown = null;
+
+      try {
+        service.compile(
+          `
+  console.log('The Error constructor expects a string argument');
+
+  const error = new Error(123);
+  `,
+          'test.ts'
+        );
+      } catch (error) {
+        err = error;
+      }
+
+      if (err === null) {
+        throw new Error('Command was expected to fail, but it succeeded.');
+      }
+
+      expect((err as TSError).diagnosticCodes).toEqual([2345]);
+    });
+
+    test('should throw errors with error locations', ({
+      context: { service },
+    }) => {
+      let err: unknown = null;
+
+      try {
+        service.compile(
+          `
+  console.log('The Error constructor expects a string argument');
+
+  const error = new Error(123);
+  `,
+          'test.ts'
+        );
+      } catch (error) {
+        err = error;
+      }
+
+      if (err === null) {
+        throw new Error('Command was expected to fail, but it succeeded.');
+      }
+
+      expect((err as TSError).errorLocations).toEqual({
+        2345: { start: 94, length: 3 },
+      });
     });
 
     test.suite('should get type information', (test) => {

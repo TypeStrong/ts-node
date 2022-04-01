@@ -471,7 +471,14 @@ export class TSError extends BaseError {
   name = 'TSError';
   diagnosticText!: string;
 
-  constructor(diagnosticText: string, public diagnosticCodes: number[]) {
+  constructor(
+    diagnosticText: string,
+    public diagnosticCodes: number[],
+    public errorLocations: Record<
+      string,
+      { start?: number; length?: number }
+    > = {}
+  ) {
     super(`⨯ Unable to compile TypeScript:\n${diagnosticText}`);
     Object.defineProperty(this, 'diagnosticText', {
       configurable: true,
@@ -829,7 +836,12 @@ export function createFromPreloadedConfig(
   function createTSError(diagnostics: ReadonlyArray<_ts.Diagnostic>) {
     const diagnosticText = formatDiagnostics(diagnostics, diagnosticHost);
     const diagnosticCodes = diagnostics.map((x) => x.code);
-    return new TSError(diagnosticText, diagnosticCodes);
+    const errorLocations = Object.fromEntries(
+      diagnostics.map((x) => {
+        return [x.code, { start: x.start, length: x.length }];
+      })
+    );
+    return new TSError(diagnosticText, diagnosticCodes, errorLocations);
   }
 
   function reportTSError(configDiagnosticList: _ts.Diagnostic[]) {
