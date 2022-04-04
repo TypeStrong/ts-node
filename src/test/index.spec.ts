@@ -1037,7 +1037,7 @@ test.suite('ts-node', (test) => {
       expect((err as TSError).diagnosticCodes).toEqual([2345]);
     });
 
-    test('should throw errors with error locations', ({
+    test('should throw errors with complete diagnostic information', ({
       context: { service },
     }) => {
       let err: unknown = null;
@@ -1052,8 +1052,16 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect((err as TSError).errorLocations).toEqual({
-        2345: { start: 10, length: 3 },
+      const diagnostics = (err as TSError).diagnostics;
+
+      expect(diagnostics).toHaveLength(1);
+      expect(diagnostics[0]).toMatchObject({
+        code: 2345,
+        start: 10,
+        length: 3,
+        messageText:
+          "Argument of type '123' " +
+          "is not assignable to parameter of type 'string | undefined'.",
       });
     });
 

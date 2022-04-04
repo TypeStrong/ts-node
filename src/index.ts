@@ -470,12 +470,12 @@ export const DEFAULTS: RegisterOptions = {
 export class TSError extends BaseError {
   name = 'TSError';
   diagnosticText!: string;
-  errorLocations!: Record<string, { start?: number; length?: number }>;
+  diagnostics!: ReadonlyArray<_ts.Diagnostic>;
 
   constructor(
     diagnosticText: string,
     public diagnosticCodes: number[],
-    errorLocations: Record<string, { start?: number; length?: number }> = {}
+    diagnostics: ReadonlyArray<_ts.Diagnostic> = []
   ) {
     super(`⨯ Unable to compile TypeScript:\n${diagnosticText}`);
     Object.defineProperty(this, 'diagnosticText', {
@@ -483,10 +483,10 @@ export class TSError extends BaseError {
       writable: true,
       value: diagnosticText,
     });
-    Object.defineProperty(this, 'errorLocations', {
+    Object.defineProperty(this, 'diagnostics', {
       configurable: true,
       writable: true,
-      value: errorLocations,
+      value: diagnostics,
     });
   }
 
@@ -839,12 +839,7 @@ export function createFromPreloadedConfig(
   function createTSError(diagnostics: ReadonlyArray<_ts.Diagnostic>) {
     const diagnosticText = formatDiagnostics(diagnostics, diagnosticHost);
     const diagnosticCodes = diagnostics.map((x) => x.code);
-    const errorLocations = Object.fromEntries(
-      diagnostics.map((x) => {
-        return [x.code, { start: x.start, length: x.length }];
-      })
-    );
-    return new TSError(diagnosticText, diagnosticCodes, errorLocations);
+    return new TSError(diagnosticText, diagnosticCodes, diagnostics);
   }
 
   function reportTSError(configDiagnosticList: _ts.Diagnostic[]) {
