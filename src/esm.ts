@@ -69,7 +69,11 @@ export namespace NodeLoaderHooksAPI2 {
       parentURL: string;
     },
     defaultResolve: ResolveHook
-  ) => Promise<{ url: string; format?: NodeLoaderHooksFormat }>;
+  ) => Promise<{
+    url: string;
+    format?: NodeLoaderHooksFormat;
+    shortCircuit?: boolean;
+  }>;
   export type LoadHook = (
     url: string,
     context: {
@@ -80,6 +84,7 @@ export namespace NodeLoaderHooksAPI2 {
   ) => Promise<{
     format: NodeLoaderHooksFormat;
     source: string | Buffer | undefined;
+    shortCircuit?: boolean;
   }>;
   export type NodeImportConditions = unknown;
   export interface NodeImportAssertions {
@@ -205,32 +210,34 @@ export function createEsmHooks(tsNodeService: Service) {
       }
     }
 
-    const parsed = parseUrl(specifier);
-    const { pathname, protocol, hostname } = parsed;
+    return addShortCircuitFlag(async () => {
+      const parsed = parseUrl(specifier);
+      const { pathname, protocol, hostname } = parsed;
 
-    if (!isFileUrlOrNodeStyleSpecifier(parsed)) {
-      return entrypointFallback(defer);
-    }
+      if (!isFileUrlOrNodeStyleSpecifier(parsed)) {
+        return entrypointFallback(defer);
+      }
 
-    if (protocol !== null && protocol !== 'file:') {
-      return entrypointFallback(defer);
-    }
+      if (protocol !== null && protocol !== 'file:') {
+        return entrypointFallback(defer);
+      }
 
-    // Malformed file:// URL?  We should always see `null` or `''`
-    if (hostname) {
-      // TODO file://./foo sets `hostname` to `'.'`.  Perhaps we should special-case this.
-      return entrypointFallback(defer);
-    }
+      // Malformed file:// URL?  We should always see `null` or `''`
+      if (hostname) {
+        // TODO file://./foo sets `hostname` to `'.'`.  Perhaps we should special-case this.
+        return entrypointFallback(defer);
+      }
 
-    // pathname is the path to be resolved
+      // pathname is the path to be resolved
 
-    return entrypointFallback(() =>
-      nodeResolveImplementation.defaultResolve(
-        specifier,
-        context,
-        defaultResolve
-      )
-    );
+      return entrypointFallback(() =>
+        nodeResolveImplementation.defaultResolve(
+          specifier,
+          context,
+          defaultResolve
+        )
+      );
+    });
   }
 
   // `load` from new loader hook API (See description at the top of this file)
@@ -245,47 +252,49 @@ export function createEsmHooks(tsNodeService: Service) {
     format: NodeLoaderHooksFormat;
     source: string | Buffer | undefined;
   }> {
-    // If we get a format hint from resolve() on the context then use it
-    // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
-    const format =
-      context.format ??
-      (await getFormat(url, context, defaultGetFormat)).format;
+    return addShortCircuitFlag(async () => {
+      // If we get a format hint from resolve() on the context then use it
+      // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
+      const format =
+        context.format ??
+        (await getFormat(url, context, defaultGetFormat)).format;
 
-    let source = undefined;
-    if (format !== 'builtin' && format !== 'commonjs') {
-      // Call the new defaultLoad() to get the source
-      const { source: rawSource } = await defaultLoad(
-        url,
-        {
-          ...context,
-          format,
-        },
-        defaultLoad
-      );
-
-      if (rawSource === undefined || rawSource === null) {
-        throw new Error(
-          `Failed to load raw source: Format was '${format}' and url was '${url}''.`
+      let source = undefined;
+      if (format !== 'builtin' && format !== 'commonjs') {
+        // Call the new defaultLoad() to get the source
+        const { source: rawSource } = await defaultLoad(
+          url,
+          {
+            ...context,
+            format,
+          },
+          defaultLoad
         );
+
+        if (rawSource === undefined || rawSource === null) {
+          throw new Error(
+            `Failed to load raw source: Format was '${format}' and url was '${url}''.`
+          );
+        }
+
+        // Emulate node's built-in old defaultTransformSource() so we can re-use the old transformSource() hook
+        const defaultTransformSource: typeof transformSource = async (
+          source,
+          _context,
+          _defaultTransformSource
+        ) => ({ source });
+
+        // Call the old hook
+        const { source: transformedSource } = await transformSource(
+          rawSource,
+          { url, format },
+          defaultTransformSource
+        );
+        source = transformedSource;
       }
 
-      // Emulate node's built-in old defaultTransformSource() so we can re-use the old transformSource() hook
-      const defaultTransformSource: typeof transformSource = async (
-        source,
-        _context,
-        _defaultTransformSource
-      ) => ({ source });
-
-      // Call the old hook
-      const { source: transformedSource } = await transformSource(
-        rawSource,
-        { url, format },
-        defaultTransformSource
-      );
-      source = transformedSource;
-    }
-
-    return { format, source };
+      return { format, source };
+    });
   }
 
   async function getFormat(
@@ -383,4 +392,14 @@ export function createEsmHooks(tsNodeService: Service) {
   }
 
   return hooksAPI;
+}
+
+async function addShortCircuitFlag<T>(fn: () => Promise<T>) {
+  const ret = await fn();
+  // Not sure if this is necessary; being lazy.  Can revisit in the future.
+  if (ret == null) return ret;
+  return {
+    ...ret,
+    shortCircuit: true,
+  };
 }
