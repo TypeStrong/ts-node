@@ -4,7 +4,7 @@
 
 const {JSONParse} = require('./node-primordials');
 const path = require('path');
-const packageJsonReader = require('./node-package-json-reader');
+const packageJsonReader = require('./node-internal-modules-package_json_reader');
 const {normalizeSlashes} = require('../dist/util');
 const {createErrRequireEsm} = require('./node-internal-errors');
 

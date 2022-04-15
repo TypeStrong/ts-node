@@ -58,3 +58,9 @@ download
 compare
 
 ####
+
+path=lib/internal/modules/package_json_reader
+local=node-internal-modules-package_json_reader
+version=v15.3.0
+download
+compare
