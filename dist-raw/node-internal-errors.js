@@ -44,3 +44,7 @@ function createErrRequireEsm(filename, parentPath, packageJsonPath) {
     return msg;
   }
 }
+
+module.exports = {
+  createErrRequireEsm
+};
