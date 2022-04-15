@@ -1,8 +1,8 @@
-// downloaded from https://github.com/nodejs/node/blob/88799930794045795e8abac874730f9eba7e2300/lib/internal/repl/await.js
+// Copied from https://github.com/nodejs/node/blob/v17.0.0/lib/internal/repl/await.js
+
 'use strict';
 
 const {
-  ArrayFrom,
   ArrayPrototypeForEach,
   ArrayPrototypeIncludes,
   ArrayPrototypeJoin,
@@ -48,7 +48,7 @@ const visitorsWithoutAncestors = {
     walk.base.ForOfStatement(node, state, c);
   },
   FunctionDeclaration(node, state, c) {
-    state.prepend(node, `${node.id.name}=`);
+    state.prepend(node, `this.${node.id.name} = ${node.id.name}; `);
     ArrayPrototypePush(
       state.hoistedDeclarationStatements,
       `var ${node.id.name}; `
@@ -156,7 +156,7 @@ for (const nodeType of ObjectKeys(walk.base)) {
 function processTopLevelAwait(src) {
   const wrapPrefix = '(async () => { ';
   const wrapped = `${wrapPrefix}${src} })()`;
-  const wrappedArray = ArrayFrom(wrapped);
+  const wrappedArray = StringPrototypeSplit(wrapped, '');
   let root;
   try {
     root = parser.parse(wrapped, { ecmaVersion: 'latest' });
@@ -223,22 +223,26 @@ function processTopLevelAwait(src) {
     return null;
   }
 
-  const last = body.body[body.body.length - 1];
-  if (last.type === 'ExpressionStatement') {
-    // For an expression statement of the form
-    // ( expr ) ;
-    // ^^^^^^^^^^   // last
-    //   ^^^^       // last.expression
-    //
-    // We do not want the left parenthesis before the `return` keyword;
-    // therefore we prepend the `return (` to `last`.
-    //
-    // On the other hand, we do not want the right parenthesis after the
-    // semicolon. Since there can only be more right parentheses between
-    // last.expression.end and the semicolon, appending one more to
-    // last.expression should be fine.
-    state.prepend(last, 'return (');
-    state.append(last.expression, ')');
+  for (let i = body.body.length - 1; i >= 0; i--) {
+    const node = body.body[i];
+    if (node.type === 'EmptyStatement') continue;
+    if (node.type === 'ExpressionStatement') {
+      // For an expression statement of the form
+      // ( expr ) ;
+      // ^^^^^^^^^^   // node
+      //   ^^^^       // node.expression
+      //
+      // We do not want the left parenthesis before the `return` keyword;
+      // therefore we prepend the `return (` to `node`.
+      //
+      // On the other hand, we do not want the right parenthesis after the
+      // semicolon. Since there can only be more right parentheses between
+      // node.expression.end and the semicolon, appending one more to
+      // node.expression should be fine.
+      state.prepend(node, 'return (');
+      state.append(node.expression, ')');
+    }
+    break;
   }
 
   return (
