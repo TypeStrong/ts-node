@@ -95,7 +95,7 @@ const {
 const CJSModule = Module;
 
 // const packageJsonReader = require('internal/modules/package_json_reader');
-const packageJsonReader = require('./node-package-json-reader');
+const packageJsonReader = require('./node-internal-modules-package_json_reader');
 const userConditions = getOptionValue('--conditions');
 const DEFAULT_CONDITIONS = ObjectFreeze(['node', 'import', ...userConditions]);
 const DEFAULT_CONDITIONS_SET = new SafeSet(DEFAULT_CONDITIONS);

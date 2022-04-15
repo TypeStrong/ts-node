@@ -6,6 +6,9 @@ cd "$__dirname"
 
 # This script serves as helpful documentation for where these files came from.
 
+# TODO augment this script to update esm-resolver-diff branch
+# https://github.com/TypeStrong/ts-node/compare/esm-resolver-diff..main
+
 function download() {
   echo "// Copied from https://github.com/nodejs/node/blob/$version/$path$ext"$'\n' > "$local-$version$ext"
   curl "https://raw.githubusercontent.com/nodejs/node/$version/$path$ext" >> "$local-$version$ext"
