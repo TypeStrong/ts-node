@@ -34,3 +34,15 @@ path=lib/internal/repl/await
 local=node-internal-repl-await
 download
 compare
+
+version=88799930794045795e8abac874730f9eba7e2300
+path=lib/internal/repl/await
+local=node-internal-repl-await
+download
+compare
+
+version=v15.3.0
+path=lib/internal/modules/esm/resolve
+local=node-internal-modules-esm-resolve
+download
+compare
