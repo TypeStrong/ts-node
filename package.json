@@ -46,6 +46,7 @@
     "/transpilers/",
     "/dist/",
     "!/dist/test",
+    "/dist-raw/NODE-LICENSE.md",
     "/dist-raw/**.js",
     "/register/",
     "/esm/",

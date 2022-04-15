@@ -11,3 +11,15 @@ in a factory function, we will not indent the function body, to avoid whitespace
 One obvious problem with this approach: the code has been pulled from one version of node, whereas users of ts-node
 run multiple versions of node.
 Users running node 12 may see that ts-node behaves like node 14, for example.
+
+---
+
+## Naming convention
+
+Not used consistently, but the idea is:
+
+`node-<directory>(...-<directory>)-<filename>.js`
+
+`node-internal-errors.js` -> `github.com/nodejs/node/blob/TAG/lib/internal/errors.js`
+
+So, take the path within node's `lib/` directory, and replace slashes with hyphens.
