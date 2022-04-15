@@ -36,6 +36,6 @@ module.exports = {
 
   function remove(p) {
     // Avoid node deprecation warning triggered by rimraf
-    if(existsSync(p)) (rmSync ?? rimraf.sync)(p, {recursive: true})
+    if(existsSync(p)) (rmSync || rimraf.sync)(p, {recursive: true})
   }
 }
