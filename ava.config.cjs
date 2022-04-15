@@ -24,7 +24,7 @@ module.exports = {
    * ts-node, from either node_modules or tests/node_modules
    */
 
-  const { existsSync } = require('fs');
+  const { existsSync, rmSync } = require('fs');
   const rimraf = require('rimraf');
   const { resolve } = require('path');
 
@@ -35,6 +35,7 @@ module.exports = {
   expect(() => {createRequire(resolve(__dirname, 'tests/foo.js')).resolve('ts-node')}).toThrow();
 
   function remove(p) {
-    if(existsSync(p)) rimraf.sync(p, {recursive: true})
+    // Avoid node deprecation warning triggered by rimraf
+    if(existsSync(p)) (rmSync ?? rimraf.sync)(p, {recursive: true})
   }
 }

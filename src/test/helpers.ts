@@ -224,7 +224,11 @@ export function resetNodeEnvironment() {
 
 function captureObjectState(object: any) {
   const descriptors = Object.getOwnPropertyDescriptors(object);
-  const values = mapValues(descriptors, (_d, key) => object[key]);
+  const values = mapValues(descriptors, (_d, key) => {
+    // Avoid node deprecation warning for accessing _channel
+    if (object === process && key === '_channel') return descriptors[key].value;
+    return object[key];
+  });
   return {
     descriptors,
     values,
@@ -245,6 +249,10 @@ function resetObject(
   // Trigger nyc's setter functions
   for (const [key, value] of Object.entries(state.values)) {
     try {
+      // Avoid node deprecation warnings for setting process.config or accessing _channel
+      if (object === process && key === '_channel') continue;
+      if (object === process && key === 'config' && object[key] === value)
+        continue;
       object[key] = value;
     } catch {}
   }
