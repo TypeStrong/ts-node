@@ -72,8 +72,22 @@ download
 
 ####
 
+path=lib/internal/errors
+local=node-internal-errors
+version=2d5d77306f6dff9110c1f77fefab25f973415770
+download
+# compare
+
+version=b533fb3508009e5f567cc776daba8fbf665386a6
+download
+# compare
+
+####
+
 # Verify that -stripped.js files have only deletions, no other changes
 set -x
 
 assertStrippedIsOnlyDeletions node-internal-modules-cjs-loader-v15.3.0
 assertStrippedIsOnlyDeletions node-internal-modules-cjs-loader-v17.0.1
+assertStrippedIsOnlyDeletions node-internal-errors-2d5d77306f6dff9110c1f77fefab25f973415770
+assertStrippedIsOnlyDeletions node-internal-errors-b533fb3508009e5f567cc776daba8fbf665386a6
