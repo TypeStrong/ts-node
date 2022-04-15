@@ -12,22 +12,27 @@ import type { Readable } from 'stream';
  */
 import type * as tsNodeTypes from '../index';
 import type _createRequire from 'create-require';
-import { has, once } from 'lodash';
+import { has, mapValues, once } from 'lodash';
 import semver = require('semver');
-import * as expect from 'expect';
 const createRequire: typeof _createRequire = require('create-require');
 export { tsNodeTypes };
 
+//#region Paths
 export const ROOT_DIR = resolve(__dirname, '../..');
 export const DIST_DIR = resolve(__dirname, '..');
 export const TEST_DIR = join(__dirname, '../../tests');
 export const PROJECT = join(TEST_DIR, 'tsconfig.json');
 export const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node');
+export const BIN_PATH_JS = join(TEST_DIR, 'node_modules/ts-node/dist/bin.js');
 export const BIN_SCRIPT_PATH = join(
   TEST_DIR,
   'node_modules/.bin/ts-node-script'
 );
 export const BIN_CWD_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-cwd');
+export const BIN_ESM_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-esm');
+//#endregion
+
+//#region command lines
 /** Default `ts-node --project` invocation */
 export const CMD_TS_NODE_WITH_PROJECT_FLAG = `"${BIN_PATH}" --project "${PROJECT}"`;
 /** Default `ts-node` invocation without `--project` */
@@ -36,11 +41,32 @@ export const EXPERIMENTAL_MODULES_FLAG = semver.gte(process.version, '12.17.0')
   ? ''
   : '--experimental-modules';
 export const CMD_ESM_LOADER_WITHOUT_PROJECT = `node ${EXPERIMENTAL_MODULES_FLAG} --loader ts-node/esm`;
+//#endregion
 
 // `createRequire` does not exist on older node versions
 export const testsDirRequire = createRequire(join(TEST_DIR, 'index.js'));
 
 export const ts = testsDirRequire('typescript');
+
+//#region version checks
+export const nodeSupportsEsmHooks = semver.gte(process.version, '12.16.0');
+export const nodeSupportsSpawningChildProcess = semver.gte(
+  process.version,
+  '12.17.0'
+);
+export const nodeUsesNewHooksApi = semver.gte(process.version, '16.12.0');
+export const nodeSupportsImportAssertions = semver.gte(
+  process.version,
+  '17.1.0'
+);
+/** Supports tsconfig "extends" >= v3.2.0 */
+export const tsSupportsTsconfigInheritanceViaNodePackages = semver.gte(
+  ts.version,
+  '3.2.0'
+);
+/** Supports --showConfig: >= v3.2.0 */
+export const tsSupportsShowConfig = semver.gte(ts.version, '3.2.0');
+//#endregion
 
 export const xfs = new NodeFS(fs);
 
@@ -53,6 +79,7 @@ export const contextTsNodeUnderTest = once(async () => {
   };
 });
 
+//#region install ts-node tarball
 const ts_node_install_lock = process.env.ts_node_install_lock as string;
 const lockPath = join(__dirname, ts_node_install_lock);
 
@@ -121,6 +148,7 @@ async function lockedMemoizedOperation(
     releaseLock();
   }
 }
+//#endregion
 
 /**
  * Get a stream into a string.
@@ -158,6 +186,8 @@ export function getStream(stream: Readable, waitForPattern?: string | RegExp) {
   }
 }
 
+//#region Reset node environment
+
 const defaultRequireExtensions = captureObjectState(require.extensions);
 const defaultProcess = captureObjectState(process);
 const defaultModule = captureObjectState(require('module'));
@@ -188,25 +218,29 @@ export function resetNodeEnvironment() {
   resetObject(require('module'), defaultModule);
 
   // May be modified by REPL tests, since the REPL sets globals.
-  resetObject(global, defaultGlobal);
+  // Avoid deleting nyc's coverage data.
+  resetObject(global, defaultGlobal, ['__coverage__']);
 }
 
 function captureObjectState(object: any) {
+  const descriptors = Object.getOwnPropertyDescriptors(object);
+  const values = mapValues(descriptors, (_d, key) => object[key]);
   return {
-    descriptors: Object.getOwnPropertyDescriptors(object),
-    values: { ...object },
+    descriptors,
+    values,
   };
 }
 // Redefine all property descriptors and delete any new properties
 function resetObject(
   object: any,
-  state: ReturnType<typeof captureObjectState>
+  state: ReturnType<typeof captureObjectState>,
+  doNotDeleteTheseKeys: string[] = []
 ) {
   const currentDescriptors = Object.getOwnPropertyDescriptors(object);
   for (const key of Object.keys(currentDescriptors)) {
-    if (!has(state.descriptors, key)) {
-      delete object[key];
-    }
+    if (doNotDeleteTheseKeys.includes(key)) continue;
+    if (has(state.descriptors, key)) continue;
+    delete object[key];
   }
   // Trigger nyc's setter functions
   for (const [key, value] of Object.entries(state.values)) {
@@ -217,3 +251,7 @@ function resetObject(
   // Reset descriptors
   Object.defineProperties(object, state.descriptors);
 }
+
+//#endregion
+
+export const delay = promisify(setTimeout);

@@ -1,4 +1,4 @@
-import { diffLines } from 'diff';
+import type * as _diff from 'diff';
 import { homedir } from 'os';
 import { join } from 'path';
 import {
@@ -25,6 +25,13 @@ function getProcessTopLevelAwait() {
     } = require('../dist-raw/node-repl-await'));
   }
   return _processTopLevelAwait;
+}
+let diff: typeof _diff;
+function getDiffLines() {
+  if (diff === undefined) {
+    diff = require('diff');
+  }
+  return diff.diffLines;
 }
 
 /** @internal */
@@ -108,6 +115,7 @@ export interface ReplService {
   readonly console: Console;
 }
 
+/** @category REPL */
 export interface CreateReplOptions {
   service?: Service;
   state?: EvalState;
@@ -137,6 +145,8 @@ export interface CreateReplOptions {
  *     const service = tsNode.create({...repl.evalAwarePartialHost});
  *     repl.setService(service);
  *     repl.start();
+ *
+ * @category REPL
  */
 export function createRepl(options: CreateReplOptions = {}) {
   const { ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl = true } = options;
@@ -368,16 +378,20 @@ export function createRepl(options: CreateReplOptions = {}) {
       //   those starting with _
       //   those containing /
       //   those that already exist as globals
-      // Intentionally suppress type errors in case @types/node does not declare any of them.
-      state.input += `// @ts-ignore\n${builtinModules
-        .filter(
-          (name) =>
-            !name.startsWith('_') &&
-            !name.includes('/') &&
-            !['console', 'module', 'process'].includes(name)
-        )
-        .map((name) => `declare import ${name} = require('${name}')`)
-        .join(';')}\n`;
+      // Intentionally suppress type errors in case @types/node does not declare any of them, and because
+      // `declare import` is technically invalid syntax.
+      // Avoid this when in transpileOnly, because third-party transpilers may not handle `declare import`.
+      if (!service?.transpileOnly) {
+        state.input += `// @ts-ignore\n${builtinModules
+          .filter(
+            (name) =>
+              !name.startsWith('_') &&
+              !name.includes('/') &&
+              !['console', 'module', 'process'].includes(name)
+          )
+          .map((name) => `declare import ${name} = require('${name}')`)
+          .join(';')}\n`;
+      }
     }
 
     reset();
@@ -480,6 +494,8 @@ export function createEvalAwarePartialHost(
   return { readFile, fileExists };
 }
 
+const sourcemapCommentRe = /\/\/# ?sourceMappingURL=\S+[\s\r\n]*$/;
+
 type AppendCompileAndEvalInputResult =
   | { containsTopLevelAwait: true; valuePromise: Promise<any> }
   | { containsTopLevelAwait: false; value: any };
@@ -525,8 +541,23 @@ function appendCompileAndEvalInput(options: {
 
   output = adjustUseStrict(output);
 
+  // Note: REPL does not respect sourcemaps!
+  // To properly do that, we'd need to prefix the code we eval -- which comes
+  // from `diffLines` -- with newlines so that it's at the proper line numbers.
+  // Then we'd need to ensure each bit of eval-ed code, if there are multiples,
+  // has the sourcemap appended to it.
+  // We might also need to integrate with our sourcemap hooks' cache; I'm not sure.
+  const outputWithoutSourcemapComment = output.replace(sourcemapCommentRe, '');
+  const oldOutputWithoutSourcemapComment = state.output.replace(
+    sourcemapCommentRe,
+    ''
+  );
+
   // Use `diff` to check for new JavaScript to execute.
-  const changes = diffLines(state.output, output);
+  const changes = getDiffLines()(
+    oldOutputWithoutSourcemapComment,
+    outputWithoutSourcemapComment
+  );
 
   if (isCompletion) {
     undo();
@@ -648,17 +679,24 @@ function lineCount(value: string) {
 }
 
 /**
- * TS diagnostic codes which are recoverable, meaning that the user likely entered and incomplete line of code
+ * TS diagnostic codes which are recoverable, meaning that the user likely entered an incomplete line of code
  * and should be prompted for the next.  For example, starting a multi-line for() loop and not finishing it.
+ * null value means code is always recoverable.  `Set` means code is only recoverable when occurring alongside at least one
+ * of the other codes.
  */
-const RECOVERY_CODES: Set<number> = new Set([
-  1003, // "Identifier expected."
-  1005, // "')' expected."
-  1109, // "Expression expected."
-  1126, // "Unexpected end of text."
-  1160, // "Unterminated template literal."
-  1161, // "Unterminated regular expression literal."
-  2355, // "A function whose declared type is neither 'void' nor 'any' must return a value."
+const RECOVERY_CODES: Map<number, Set<number> | null> = new Map([
+  [1003, null], // "Identifier expected."
+  [1005, null], // "')' expected.", "'}' expected."
+  [1109, null], // "Expression expected."
+  [1126, null], // "Unexpected end of text."
+  [1160, null], // "Unterminated template literal."
+  [1161, null], // "Unterminated regular expression literal."
+  [2355, null], // "A function whose declared type is neither 'void' nor 'any' must return a value."
+  [2391, null], // "Function implementation is missing or not immediately following the declaration."
+  [
+    7010, // "Function, which lacks return-type annotation, implicitly has an 'any' return type."
+    new Set([1005]), // happens when fn signature spread across multiple lines: 'function a(\nb: any\n) {'
+  ],
 ]);
 
 /**
@@ -677,7 +715,13 @@ const topLevelAwaitDiagnosticCodes = [
  * Check if a function can recover gracefully.
  */
 function isRecoverable(error: TSError) {
-  return error.diagnosticCodes.every((code) => RECOVERY_CODES.has(code));
+  return error.diagnosticCodes.every((code) => {
+    const deps = RECOVERY_CODES.get(code);
+    return (
+      deps === null ||
+      (deps && error.diagnosticCodes.some((code) => deps.has(code)))
+    );
+  });
 }
 
 /**

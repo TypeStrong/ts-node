@@ -8,7 +8,7 @@ Assuming you are configuring AVA via your `package.json`, add one of the followi
 
 Use this configuration if your `package.json` does not have `"type": "module"`.
 
-```json title"package.json"
+```json title="package.json"
 {
   "ava": {
     "extensions": [
@@ -25,7 +25,7 @@ Use this configuration if your `package.json` does not have `"type": "module"`.
 
 This configuration is necessary if your `package.json` has `"type": "module"`.
 
-```json title"package.json"
+```json title="package.json"
 {
   "ava": {
     "extensions": {

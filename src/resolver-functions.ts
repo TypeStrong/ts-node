@@ -1,17 +1,18 @@
 import { resolve } from 'path';
-import type * as _ts from 'typescript';
+import type { TSCommon, TSInternal } from './ts-compiler-types';
+import type { ProjectLocalResolveHelper } from './util';
 
 /**
  * @internal
  * In a factory because these are shared across both CompilerHost and LanguageService codepaths
  */
 export function createResolverFunctions(kwargs: {
-  ts: typeof _ts;
-  host: _ts.ModuleResolutionHost;
+  ts: TSCommon;
+  host: TSCommon.ModuleResolutionHost;
   cwd: string;
   getCanonicalFileName: (filename: string) => string;
-  config: _ts.ParsedCommandLine;
-  configFilePath: string | undefined;
+  config: TSCommon.ParsedCommandLine;
+  projectLocalResolveHelper: ProjectLocalResolveHelper;
 }) {
   const {
     host,
@@ -19,7 +20,7 @@ export function createResolverFunctions(kwargs: {
     config,
     cwd,
     getCanonicalFileName,
-    configFilePath,
+    projectLocalResolveHelper,
   } = kwargs;
   const moduleResolutionCache = ts.createModuleResolutionCache(
     cwd,
@@ -57,7 +58,9 @@ export function createResolverFunctions(kwargs: {
    * If we need to emit JS for a file, force TS to consider it non-external
    */
   const fixupResolvedModule = (
-    resolvedModule: _ts.ResolvedModule | _ts.ResolvedTypeReferenceDirective
+    resolvedModule:
+      | TSCommon.ResolvedModule
+      | TSCommon.ResolvedTypeReferenceDirective
   ) => {
     const { resolvedFileName } = resolvedModule;
     if (resolvedFileName === undefined) return;
@@ -81,93 +84,109 @@ export function createResolverFunctions(kwargs: {
    * Older ts versions do not pass `redirectedReference` nor `options`.
    * We must pass `redirectedReference` to newer ts versions, but cannot rely on `options`, hence the weird argument name
    */
-  const resolveModuleNames: _ts.LanguageServiceHost['resolveModuleNames'] = (
-    moduleNames: string[],
-    containingFile: string,
-    reusedNames: string[] | undefined,
-    redirectedReference: _ts.ResolvedProjectReference | undefined,
-    optionsOnlyWithNewerTsVersions: _ts.CompilerOptions
-  ): (_ts.ResolvedModule | undefined)[] => {
-    return moduleNames.map((moduleName) => {
-      const { resolvedModule } = ts.resolveModuleName(
-        moduleName,
-        containingFile,
-        config.options,
-        host,
-        moduleResolutionCache,
-        redirectedReference
-      );
-      if (resolvedModule) {
-        fixupResolvedModule(resolvedModule);
-      }
-      return resolvedModule;
-    });
-  };
+  const resolveModuleNames: TSCommon.LanguageServiceHost['resolveModuleNames'] =
+    (
+      moduleNames: string[],
+      containingFile: string,
+      reusedNames: string[] | undefined,
+      redirectedReference: TSCommon.ResolvedProjectReference | undefined,
+      optionsOnlyWithNewerTsVersions: TSCommon.CompilerOptions
+    ): (TSCommon.ResolvedModule | undefined)[] => {
+      return moduleNames.map((moduleName) => {
+        const { resolvedModule } = ts.resolveModuleName(
+          moduleName,
+          containingFile,
+          config.options,
+          host,
+          moduleResolutionCache,
+          redirectedReference
+        );
+        if (resolvedModule) {
+          fixupResolvedModule(resolvedModule);
+        }
+        return resolvedModule;
+      });
+    };
 
   // language service never calls this, but TS docs recommend that we implement it
-  const getResolvedModuleWithFailedLookupLocationsFromCache: _ts.LanguageServiceHost['getResolvedModuleWithFailedLookupLocationsFromCache'] = (
-    moduleName,
-    containingFile
-  ): _ts.ResolvedModuleWithFailedLookupLocations | undefined => {
-    const ret = ts.resolveModuleNameFromCache(
+  const getResolvedModuleWithFailedLookupLocationsFromCache: TSCommon.LanguageServiceHost['getResolvedModuleWithFailedLookupLocationsFromCache'] =
+    (
       moduleName,
-      containingFile,
-      moduleResolutionCache
-    );
-    if (ret && ret.resolvedModule) {
-      fixupResolvedModule(ret.resolvedModule);
-    }
-    return ret;
-  };
-
-  const resolveTypeReferenceDirectives: _ts.LanguageServiceHost['resolveTypeReferenceDirectives'] = (
-    typeDirectiveNames: string[],
-    containingFile: string,
-    redirectedReference: _ts.ResolvedProjectReference | undefined,
-    options: _ts.CompilerOptions
-  ): (_ts.ResolvedTypeReferenceDirective | undefined)[] => {
-    // Note: seems to be called with empty typeDirectiveNames array for all files.
-    return typeDirectiveNames.map((typeDirectiveName) => {
-      let { resolvedTypeReferenceDirective } = ts.resolveTypeReferenceDirective(
-        typeDirectiveName,
+      containingFile
+    ): TSCommon.ResolvedModuleWithFailedLookupLocations | undefined => {
+      const ret = ts.resolveModuleNameFromCache(
+        moduleName,
         containingFile,
-        config.options,
-        host,
-        redirectedReference
+        moduleResolutionCache
       );
-      if (typeDirectiveName === 'node' && !resolvedTypeReferenceDirective) {
-        // Resolve @types/node relative to project first, then __dirname (copy logic from elsewhere / refactor into reusable function)
-        let typesNodePackageJsonPath: string | undefined;
-        try {
-          typesNodePackageJsonPath = require.resolve(
-            '@types/node/package.json',
-            {
-              paths: [configFilePath ?? cwd, __dirname],
-            }
-          );
-        } catch {} // gracefully do nothing when @types/node is not installed for any reason
-        if (typesNodePackageJsonPath) {
-          const typeRoots = [resolve(typesNodePackageJsonPath, '../..')];
-          ({
-            resolvedTypeReferenceDirective,
-          } = ts.resolveTypeReferenceDirective(
-            typeDirectiveName,
+      if (ret && ret.resolvedModule) {
+        fixupResolvedModule(ret.resolvedModule);
+      }
+      return ret;
+    };
+
+  const resolveTypeReferenceDirectives: TSCommon.LanguageServiceHost['resolveTypeReferenceDirectives'] =
+    (
+      typeDirectiveNames: string[] | readonly TSCommon.FileReference[],
+      containingFile: string,
+      redirectedReference: TSCommon.ResolvedProjectReference | undefined,
+      options: TSCommon.CompilerOptions,
+      containingFileMode?: TSCommon.SourceFile['impliedNodeFormat'] | undefined // new impliedNodeFormat is accepted by compilerHost
+    ): (TSCommon.ResolvedTypeReferenceDirective | undefined)[] => {
+      // Note: seems to be called with empty typeDirectiveNames array for all files.
+      // TODO consider using `ts.loadWithTypeDirectiveCache`
+      return typeDirectiveNames.map((typeDirectiveName) => {
+        // Copy-pasted from TS source:
+        const nameIsString = typeof typeDirectiveName === 'string';
+        const mode = nameIsString
+          ? undefined
+          : (ts as any as TSInternal).getModeForFileReference!(
+              typeDirectiveName,
+              containingFileMode
+            );
+        const strName = nameIsString
+          ? typeDirectiveName
+          : typeDirectiveName.fileName.toLowerCase();
+        let { resolvedTypeReferenceDirective } =
+          ts.resolveTypeReferenceDirective(
+            strName,
             containingFile,
-            {
-              ...config.options,
-              typeRoots,
-            },
+            config.options,
             host,
-            redirectedReference
-          ));
+            redirectedReference,
+            undefined,
+            mode
+          );
+        if (typeDirectiveName === 'node' && !resolvedTypeReferenceDirective) {
+          // Resolve @types/node relative to project first, then __dirname (copy logic from elsewhere / refactor into reusable function)
+          let typesNodePackageJsonPath: string | undefined;
+          try {
+            typesNodePackageJsonPath = projectLocalResolveHelper(
+              '@types/node/package.json',
+              true
+            );
+          } catch {} // gracefully do nothing when @types/node is not installed for any reason
+          if (typesNodePackageJsonPath) {
+            const typeRoots = [resolve(typesNodePackageJsonPath, '../..')];
+            ({ resolvedTypeReferenceDirective } =
+              ts.resolveTypeReferenceDirective(
+                typeDirectiveName,
+                containingFile,
+                {
+                  ...config.options,
+                  typeRoots,
+                },
+                host,
+                redirectedReference
+              ));
+          }
         }
-      }
-      if (resolvedTypeReferenceDirective) {
-        fixupResolvedModule(resolvedTypeReferenceDirective);
-      }
-      return resolvedTypeReferenceDirective;
-    });
-  };
+        if (resolvedTypeReferenceDirective) {
+          fixupResolvedModule(resolvedTypeReferenceDirective);
+        }
+        return resolvedTypeReferenceDirective;
+      });
+    };
 
   return {
     resolveModuleNames,

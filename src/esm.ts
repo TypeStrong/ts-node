@@ -15,6 +15,7 @@ import {
 import { extname } from 'path';
 import * as assert from 'assert';
 import { normalizeSlashes } from './util';
+import { createRequire } from 'module';
 const {
   createResolve,
 } = require('../dist-raw/node-esm-resolve-implementation');
@@ -62,17 +63,33 @@ export interface NodeLoaderHooksAPI2 {
 export namespace NodeLoaderHooksAPI2 {
   export type ResolveHook = (
     specifier: string,
-    context: { parentURL: string },
+    context: {
+      conditions?: NodeImportConditions;
+      importAssertions?: NodeImportAssertions;
+      parentURL: string;
+    },
     defaultResolve: ResolveHook
-  ) => Promise<{ url: string }>;
+  ) => Promise<{
+    url: string;
+    format?: NodeLoaderHooksFormat;
+    shortCircuit?: boolean;
+  }>;
   export type LoadHook = (
     url: string,
-    context: { format: NodeLoaderHooksFormat | null | undefined },
+    context: {
+      format: NodeLoaderHooksFormat | null | undefined;
+      importAssertions?: NodeImportAssertions;
+    },
     defaultLoad: NodeLoaderHooksAPI2['load']
   ) => Promise<{
     format: NodeLoaderHooksFormat;
     source: string | Buffer | undefined;
+    shortCircuit?: boolean;
   }>;
+  export type NodeImportConditions = unknown;
+  export interface NodeImportAssertions {
+    type?: 'json';
+  }
 }
 
 export type NodeLoaderHooksFormat =
@@ -82,6 +99,31 @@ export type NodeLoaderHooksFormat =
   | 'json'
   | 'module'
   | 'wasm';
+
+export type NodeImportConditions = unknown;
+export interface NodeImportAssertions {
+  type?: 'json';
+}
+
+// The hooks API changed in node version X so we need to check for backwards compatibility.
+// TODO: When the new API is backported to v12, v14, update these version checks accordingly.
+const newHooksAPI =
+  versionGteLt(process.versions.node, '17.0.0') ||
+  versionGteLt(process.versions.node, '16.12.0', '17.0.0') ||
+  versionGteLt(process.versions.node, '14.999.999', '15.0.0') ||
+  versionGteLt(process.versions.node, '12.999.999', '13.0.0');
+
+/** @internal */
+export function filterHooksByAPIVersion(
+  hooks: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2
+): NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 {
+  const { getFormat, load, resolve, transformSource } = hooks;
+  // Explicit return type to avoid TS's non-ideal inferred type
+  const hooksAPI: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 = newHooksAPI
+    ? { resolve, load, getFormat: undefined, transformSource: undefined }
+    : { resolve, getFormat, transformSource, load: undefined };
+  return hooksAPI;
+}
 
 /** @internal */
 export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
@@ -100,19 +142,12 @@ export function createEsmHooks(tsNodeService: Service) {
     preferTsExts: tsNodeService.options.preferTsExts,
   });
 
-  // The hooks API changed in node version X so we need to check for backwards compatibility.
-  // TODO: When the new API is backported to v12, v14, update these version checks accordingly.
-  const newHooksAPI =
-    versionGteLt(process.versions.node, '17.0.0') ||
-    versionGteLt(process.versions.node, '16.12.0', '17.0.0') ||
-    versionGteLt(process.versions.node, '14.999.999', '15.0.0') ||
-    versionGteLt(process.versions.node, '12.999.999', '13.0.0');
-
-  // Explicit return type to avoid TS's non-ideal inferred type
-  const hooksAPI: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 = newHooksAPI
-    ? { resolve, load, getFormat: undefined, transformSource: undefined }
-    : { resolve, getFormat, transformSource, load: undefined };
-  return hooksAPI;
+  const hooksAPI = filterHooksByAPIVersion({
+    resolve,
+    load,
+    getFormat,
+    transformSource,
+  });
 
   function isFileUrlOrNodeStyleSpecifier(parsed: UrlWithStringQuery) {
     // We only understand file:// URLs, but in node, the specifier can be a node-style `./foo` or `foo`
@@ -120,89 +155,146 @@ export function createEsmHooks(tsNodeService: Service) {
     return protocol === null || protocol === 'file:';
   }
 
+  /**
+   * Named "probably" as a reminder that this is a guess.
+   * node does not explicitly tell us if we're resolving the entrypoint or not.
+   */
+  function isProbablyEntrypoint(specifier: string, parentURL: string) {
+    return parentURL === undefined && specifier.startsWith('file://');
+  }
+  // Side-channel between `resolve()` and `load()` hooks
+  const rememberIsProbablyEntrypoint = new Set();
+  const rememberResolvedViaCommonjsFallback = new Set();
+
   async function resolve(
     specifier: string,
     context: { parentURL: string },
     defaultResolve: typeof resolve
-  ): Promise<{ url: string }> {
+  ): Promise<{ url: string; format?: NodeLoaderHooksFormat }> {
     const defer = async () => {
       const r = await defaultResolve(specifier, context, defaultResolve);
       return r;
     };
-
-    const parsed = parseUrl(specifier);
-    const { pathname, protocol, hostname } = parsed;
-
-    if (!isFileUrlOrNodeStyleSpecifier(parsed)) {
-      return defer();
+    // See: https://github.com/nodejs/node/discussions/41711
+    // nodejs will likely implement a similar fallback.  Till then, we can do our users a favor and fallback today.
+    async function entrypointFallback(
+      cb: () => ReturnType<typeof resolve>
+    ): ReturnType<typeof resolve> {
+      try {
+        const resolution = await cb();
+        if (
+          resolution?.url &&
+          isProbablyEntrypoint(specifier, context.parentURL)
+        )
+          rememberIsProbablyEntrypoint.add(resolution.url);
+        return resolution;
+      } catch (esmResolverError) {
+        if (!isProbablyEntrypoint(specifier, context.parentURL))
+          throw esmResolverError;
+        try {
+          let cjsSpecifier = specifier;
+          // Attempt to convert from ESM file:// to CommonJS path
+          try {
+            if (specifier.startsWith('file://'))
+              cjsSpecifier = fileURLToPath(specifier);
+          } catch {}
+          const resolution = pathToFileURL(
+            createRequire(process.cwd()).resolve(cjsSpecifier)
+          ).toString();
+          rememberIsProbablyEntrypoint.add(resolution);
+          rememberResolvedViaCommonjsFallback.add(resolution);
+          return { url: resolution, format: 'commonjs' };
+        } catch (commonjsResolverError) {
+          throw esmResolverError;
+        }
+      }
     }
 
-    if (protocol !== null && protocol !== 'file:') {
-      return defer();
-    }
+    return addShortCircuitFlag(async () => {
+      const parsed = parseUrl(specifier);
+      const { pathname, protocol, hostname } = parsed;
 
-    // Malformed file:// URL?  We should always see `null` or `''`
-    if (hostname) {
-      // TODO file://./foo sets `hostname` to `'.'`.  Perhaps we should special-case this.
-      return defer();
-    }
+      if (!isFileUrlOrNodeStyleSpecifier(parsed)) {
+        return entrypointFallback(defer);
+      }
 
-    // pathname is the path to be resolved
+      if (protocol !== null && protocol !== 'file:') {
+        return entrypointFallback(defer);
+      }
 
-    return nodeResolveImplementation.defaultResolve(
-      specifier,
-      context,
-      defaultResolve
-    );
+      // Malformed file:// URL?  We should always see `null` or `''`
+      if (hostname) {
+        // TODO file://./foo sets `hostname` to `'.'`.  Perhaps we should special-case this.
+        return entrypointFallback(defer);
+      }
+
+      // pathname is the path to be resolved
+
+      return entrypointFallback(() =>
+        nodeResolveImplementation.defaultResolve(
+          specifier,
+          context,
+          defaultResolve
+        )
+      );
+    });
   }
 
   // `load` from new loader hook API (See description at the top of this file)
   async function load(
     url: string,
-    context: { format: NodeLoaderHooksFormat | null | undefined },
+    context: {
+      format: NodeLoaderHooksFormat | null | undefined;
+      importAssertions?: NodeLoaderHooksAPI2.NodeImportAssertions;
+    },
     defaultLoad: typeof load
   ): Promise<{
     format: NodeLoaderHooksFormat;
     source: string | Buffer | undefined;
   }> {
-    // If we get a format hint from resolve() on the context then use it
-    // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
-    const format =
-      context.format ??
-      (await getFormat(url, context, defaultGetFormat)).format;
+    return addShortCircuitFlag(async () => {
+      // If we get a format hint from resolve() on the context then use it
+      // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
+      const format =
+        context.format ??
+        (await getFormat(url, context, defaultGetFormat)).format;
 
-    let source = undefined;
-    if (format !== 'builtin' && format !== 'commonjs') {
-      // Call the new defaultLoad() to get the source
-      const { source: rawSource } = await defaultLoad(
-        url,
-        { format },
-        defaultLoad
-      );
-
-      if (rawSource === undefined || rawSource === null) {
-        throw new Error(
-          `Failed to load raw source: Format was '${format}' and url was '${url}''.`
+      let source = undefined;
+      if (format !== 'builtin' && format !== 'commonjs') {
+        // Call the new defaultLoad() to get the source
+        const { source: rawSource } = await defaultLoad(
+          url,
+          {
+            ...context,
+            format,
+          },
+          defaultLoad
         );
+
+        if (rawSource === undefined || rawSource === null) {
+          throw new Error(
+            `Failed to load raw source: Format was '${format}' and url was '${url}''.`
+          );
+        }
+
+        // Emulate node's built-in old defaultTransformSource() so we can re-use the old transformSource() hook
+        const defaultTransformSource: typeof transformSource = async (
+          source,
+          _context,
+          _defaultTransformSource
+        ) => ({ source });
+
+        // Call the old hook
+        const { source: transformedSource } = await transformSource(
+          rawSource,
+          { url, format },
+          defaultTransformSource
+        );
+        source = transformedSource;
       }
 
-      // Emulate node's built-in old defaultTransformSource() so we can re-use the old transformSource() hook
-      const defaultTransformSource: typeof transformSource = async (
-        source,
-        _context,
-        _defaultTransformSource
-      ) => ({ source });
-
-      // Call the old hook
-      const { source: transformedSource } = await transformSource(
-        rawSource,
-        { url, format },
-        defaultTransformSource
-      );
-      source = transformedSource;
-    }
-
-    return { format, source };
+      return { format, source };
+    });
   }
 
   async function getFormat(
@@ -213,10 +305,23 @@ export function createEsmHooks(tsNodeService: Service) {
     const defer = (overrideUrl: string = url) =>
       defaultGetFormat(overrideUrl, context, defaultGetFormat);
 
+    // See: https://github.com/nodejs/node/discussions/41711
+    // nodejs will likely implement a similar fallback.  Till then, we can do our users a favor and fallback today.
+    async function entrypointFallback(
+      cb: () => ReturnType<typeof getFormat>
+    ): ReturnType<typeof getFormat> {
+      try {
+        return await cb();
+      } catch (getFormatError) {
+        if (!rememberIsProbablyEntrypoint.has(url)) throw getFormatError;
+        return { format: 'commonjs' };
+      }
+    }
+
     const parsed = parseUrl(url);
 
     if (!isFileUrlOrNodeStyleSpecifier(parsed)) {
-      return defer();
+      return entrypointFallback(defer);
     }
 
     const { pathname } = parsed;
@@ -231,9 +336,11 @@ export function createEsmHooks(tsNodeService: Service) {
     const ext = extname(nativePath);
     let nodeSays: { format: NodeLoaderHooksFormat };
     if (ext !== '.js' && !tsNodeService.ignored(nativePath)) {
-      nodeSays = await defer(formatUrl(pathToFileURL(nativePath + '.js')));
+      nodeSays = await entrypointFallback(() =>
+        defer(formatUrl(pathToFileURL(nativePath + '.js')))
+      );
     } else {
-      nodeSays = await defer();
+      nodeSays = await entrypointFallback(defer);
     }
     // For files compiled by ts-node that node believes are either CJS or ESM, check if we should override that classification
     if (
@@ -283,4 +390,16 @@ export function createEsmHooks(tsNodeService: Service) {
 
     return { source: emittedJs };
   }
+
+  return hooksAPI;
+}
+
+async function addShortCircuitFlag<T>(fn: () => Promise<T>) {
+  const ret = await fn();
+  // Not sure if this is necessary; being lazy.  Can revisit in the future.
+  if (ret == null) return ret;
+  return {
+    ...ret,
+    shortCircuit: true,
+  };
 }

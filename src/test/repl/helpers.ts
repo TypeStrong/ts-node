@@ -2,6 +2,7 @@ import * as promisify from 'util.promisify';
 import { PassThrough } from 'stream';
 import { getStream, TEST_DIR, tsNodeTypes } from '../helpers';
 import type { ExecutionContext } from 'ava';
+import { expect, TestInterface } from '../testlib';
 
 export interface ContextWithTsNodeUnderTest {
   tsNodeUnderTest: Pick<
@@ -10,10 +11,22 @@ export interface ContextWithTsNodeUnderTest {
   >;
 }
 
+export type ContextWithReplHelpers = ContextWithTsNodeUnderTest &
+  Awaited<ReturnType<typeof contextReplHelpers>>;
+
 export interface CreateReplViaApiOptions {
-  registerHooks: true;
+  registerHooks: boolean;
   createReplOpts?: Partial<tsNodeTypes.CreateReplOptions>;
   createServiceOpts?: Partial<tsNodeTypes.CreateOptions>;
+}
+
+export interface ExecuteInReplOptions extends CreateReplViaApiOptions {
+  waitMs?: number;
+  waitPattern?: string | RegExp;
+  /** When specified, calls `startInternal` instead of `start` and passes options */
+  startInternalOptions?: Parameters<
+    tsNodeTypes.ReplService['startInternal']
+  >[0];
 }
 
 /**
@@ -39,9 +52,9 @@ export async function contextReplHelpers(
       stderr,
       ...createReplOpts,
     });
-    const service = (registerHooks
-      ? tsNodeUnderTest.register
-      : tsNodeUnderTest.create)({
+    const service = (
+      registerHooks ? tsNodeUnderTest.register : tsNodeUnderTest.create
+    )({
       ...replService.evalAwarePartialHost,
       project: `${TEST_DIR}/tsconfig.json`,
       ...createServiceOpts,
@@ -55,18 +68,7 @@ export async function contextReplHelpers(
     return { stdin, stdout, stderr, replService, service };
   }
 
-  // Todo combine with replApiMacro
-  async function executeInRepl(
-    input: string,
-    options: CreateReplViaApiOptions & {
-      waitMs?: number;
-      waitPattern?: string | RegExp;
-      /** When specified, calls `startInternal` instead of `start` and passes options */
-      startInternalOptions?: Parameters<
-        tsNodeTypes.ReplService['startInternal']
-      >[0];
-    }
-  ) {
+  async function executeInRepl(input: string, options: ExecuteInReplOptions) {
     const {
       waitPattern,
       // Wait longer if there's a signal to end it early
@@ -100,5 +102,55 @@ export async function contextReplHelpers(
       stdout: await stdoutPromise,
       stderr: await stderrPromise,
     };
+  }
+}
+
+export function replMacros<T extends ContextWithReplHelpers>(
+  _test: TestInterface<T>
+) {
+  return { noErrorsAndStdoutContains, stderrContains };
+
+  function noErrorsAndStdoutContains(
+    title: string,
+    script: string,
+    contains: string,
+    options?: Partial<ExecuteInReplOptions>
+  ) {
+    testReplInternal(title, script, contains, undefined, contains, options);
+  }
+  function stderrContains(
+    title: string,
+    script: string,
+    errorContains: string,
+    options?: Partial<ExecuteInReplOptions>
+  ) {
+    testReplInternal(
+      title,
+      script,
+      undefined,
+      errorContains,
+      errorContains,
+      options
+    );
+  }
+  function testReplInternal(
+    title: string,
+    script: string,
+    stdoutContains: string | undefined,
+    stderrContains: string | undefined,
+    waitPattern: string,
+    options?: Partial<ExecuteInReplOptions>
+  ) {
+    _test(title, async (t) => {
+      const { stdout, stderr } = await t.context.executeInRepl(script, {
+        registerHooks: true,
+        startInternalOptions: { useGlobal: false },
+        waitPattern,
+        ...options,
+      });
+      if (stderrContains) expect(stderr).toContain(stderrContains);
+      else expect(stderr).toBe('');
+      if (stdoutContains) expect(stdout).toContain(stdoutContains);
+    });
   }
 }

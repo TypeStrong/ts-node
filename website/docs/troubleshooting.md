@@ -2,10 +2,10 @@
 title: Troubleshooting
 ---
 
-## Understanding configuration
+## Configuration
 
 ts-node uses sensible default configurations to reduce boilerplate while still respecting `tsconfig.json` if you
-have one.  If you are unsure which configuration is used, you can log it with `ts-node --show-config`.  This is similar to
+have one.  If you are unsure which configuration is used, you can log it with `ts-node --showConfig`.  This is similar to
 `tsc --showConfig` but includes `"ts-node"` options as well.
 
 ts-node also respects your locally-installed `typescript` version, but global installations fallback to the globally-installed
@@ -17,7 +17,7 @@ ts-node v10.0.0
 node v16.1.0
 compiler v4.2.2
 
-$ ts-node --show-config
+$ ts-node --showConfig
 {
   "compilerOptions": {
     "target": "es6",
@@ -52,7 +52,7 @@ $ ts-node --show-config
 }
 ```
 
-## Understanding Errors
+## Common errors
 
 It is important to differentiate between errors from ts-node, errors from the TypeScript compiler, and errors from `node`.  It is also important to understand when errors are caused by a type error in your code, a bug in your code, or a flaw in your configuration.
 
@@ -71,7 +71,10 @@ the [tsconfig `"target"` option](https://www.typescriptlang.org/tsconfig#target)
 
 For example, `node` 12 does not understand the `?.` optional chaining operator.  If you use `"target": "esnext"`, then the following TypeScript syntax:
 
-```typescript
+```typescript twoslash
+export {};
+var foo: {bar: string} | undefined;
+// ---cut---
 const bar: string | undefined = foo?.bar;
 ```
 
@@ -82,3 +85,95 @@ const a = foo?.bar;
 ```
 
 When you try to run this code, node 12 will throw a `SyntaxError`.  To fix this, you must switch to `"target": "es2019"` or lower so TypeScript transforms `?.` into something `node` can understand.
+
+### `ERR_REQUIRE_ESM`
+
+This error is thrown by node when a module is `require()`d, but node believes it should execute as native ESM.  This can happen for a few reasons:
+
+- You have installed an ESM dependency but your own code compiles to CommonJS.
+  - Solution: configure your project to compile and execute as native ESM. [Docs](./commonjs-vs-native-ecmascript-modules.md#native-ecmascript-modules)
+  - Solution: downgrade the dependency to an older, CommonJS version.
+- You have moved your project to ESM but still have a config file, such as `webpack.config.js`, which must be executed as CommonJS
+  - Solution: if supported by the relevant tool, rename your config file to `.cjs`
+  - Solution: Configure a module type override. [Docs](./module-type-overrides.md)
+- You have a mix of CommonJS and native ESM in your project
+  - Solution: double-check all package.json "type" and tsconfig.json "module" configuration [Docs](./commonjs-vs-native-ecmascript-modules.md)
+  - Solution: consider simplifying and switch to all CommonJS or all native ESM
+
+### `ERR_UNKNOWN_FILE_EXTENSION`
+
+This error is thrown by node when a module has an unrecognized file extension, or no extension at all, and is being executed as native ESM.  This can happen for a few reasons:
+
+- You are using a tool which has an extensionless binary, such as `mocha`.
+  - CommonJS supports extensionless files but native ESM does not.
+  - Solution: upgrade to ts-node >=[v10.6.0](https://github.com/TypeStrong/ts-node/releases/tag/v10.6.0), which implements a workaround.
+- Our ESM loader is not installed.
+  - Solution: Use `ts-node-esm`, `ts-node --esm`, or add `"ts-node": {"esm": true}` to your tsconfig.json.  [Docs](./commonjs-vs-native-ecmascript-modules.md#native-ecmascript-modules)
+
+## Missing Types
+
+ts-node does _not_ eagerly load `files`, `include` or `exclude` by default. This is because a large majority of projects do not use all of the files in a project directory (e.g. `Gulpfile.ts`, runtime vs tests) and parsing every file for types slows startup time. Instead, ts-node starts with the script file (e.g. `ts-node index.ts`) and TypeScript resolves dependencies based on imports and references.
+
+Occasionally, this optimization leads to missing types. Fortunately, there are other ways to include them in typechecking.
+
+For global definitions, you can use the `typeRoots` compiler option.  This requires that your type definitions be structured as type packages (not loose TypeScript definition files). More details on how this works can be found in the [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#types-typeroots-and-types).
+
+Example `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "typeRoots" : ["./node_modules/@types", "./typings"]
+  }
+}
+```
+
+Example project structure:
+
+```text
+<project_root>/
+-- tsconfig.json
+-- typings/
+  -- <module_name>/
+    -- index.d.ts
+```
+
+Example module declaration file:
+
+```typescript twoslash
+declare module '<module_name>' {
+    // module definitions go here
+}
+```
+
+For module definitions, you can use [`paths`](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping):
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "custom-module-type": ["types/custom-module-type"]
+    }
+  }
+}
+```
+
+Another option is [triple-slash directives](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html). This may be helpful if you prefer not to change your `compilerOptions` or structure your type definitions for `typeRoots`. Below is an example of a triple-slash directive as a relative path within your project:
+
+```typescript twoslash
+/// <reference path="./types/lib_greeter" />
+import {Greeter} from "lib_greeter"
+const g = new Greeter();
+g.sayHello();
+```
+
+If none of the above work, and you _must_ use `files`, `include`, or `exclude`, enable our [`files`](./options.md#files) option.
+
+## npx, yarn dlx, and node_modules
+
+When executing TypeScript with `npx` or `yarn dlx`, the code resides within a temporary `node_modules` directory.
+
+The contents of `node_modules` are ignored by default.  If execution fails, enable [`skipIgnore`](./options.md#skipignore).
+
+<!--See also: [npx and yarn dlx](./recipes/npx-and-yarn-dlx.md)-->
