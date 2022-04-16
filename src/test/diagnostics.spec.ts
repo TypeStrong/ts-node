@@ -23,15 +23,10 @@ test.suite('TSError diagnostics', ({ context }) => {
   });
 
   // TS 2.7 does not have the union type for some reason.
-  const diagnosticMessageRegexp = semver.lte(ts.version, '2.7.0')
-    ? new RegExp(
-        "TS2345: Argument of type '123' " +
-          "is not assignable to parameter of type 'string'\\."
-      )
-    : new RegExp(
-        "TS2345: Argument of type '123' " +
-          "is not assignable to parameter of type 'string \\| undefined'\\."
-      );
+  const diagnosticMessageRegexp = new RegExp(
+    "TS2345: Argument of type '123' " +
+      "is not assignable to parameter of type 'string'\\."
+  );
 
   test('should throw errors', ({ context: { threw, err } }) => {
     expect(threw).toBe(true);
