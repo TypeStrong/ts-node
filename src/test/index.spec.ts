@@ -31,7 +31,6 @@ import {
   CMD_ESM_LOADER_WITHOUT_PROJECT,
   EXPERIMENTAL_MODULES_FLAG,
 } from './helpers';
-import type { TSError } from '..';
 
 const exec = createExec({
   cwd: TEST_DIR,
@@ -973,96 +972,6 @@ test.suite('ts-node', (test) => {
     }) => {
       const output = service.compile('const x = 10', 'test.ts');
       expect(output).toMatch('var x = 10;');
-    });
-
-    test('should throw errors', ({ context: { service } }) => {
-      let err: unknown = null;
-
-      try {
-        service.compile('new Error(123)', 'test.ts');
-      } catch (error) {
-        err = error;
-      }
-
-      if (err === null) {
-        throw new Error('Command was expected to fail, but it succeeded.');
-      }
-
-      expect((err as Error).message).toMatch(
-        new RegExp(
-          "TS2345: Argument of type '123' " +
-            "is not assignable to parameter of type 'string | undefined'\\."
-        )
-      );
-    });
-
-    test('should throw errors with diagnostic text', ({
-      context: { service },
-    }) => {
-      let err: unknown = null;
-
-      try {
-        service.compile('new Error(123)', 'test.ts');
-      } catch (error) {
-        err = error;
-      }
-
-      if (err === null) {
-        throw new Error('Command was expected to fail, but it succeeded.');
-      }
-
-      expect((err as TSError).diagnosticText).toMatch(
-        new RegExp(
-          "TS2345: Argument of type '123' " +
-            "is not assignable to parameter of type 'string | undefined'\\."
-        )
-      );
-    });
-
-    test('should throw errors with diagnostic codes', ({
-      context: { service },
-    }) => {
-      let err: unknown = null;
-
-      try {
-        service.compile('new Error(123)', 'test.ts');
-      } catch (error) {
-        err = error;
-      }
-
-      if (err === null) {
-        throw new Error('Command was expected to fail, but it succeeded.');
-      }
-
-      expect((err as TSError).diagnosticCodes).toEqual([2345]);
-    });
-
-    test('should throw errors with complete diagnostic information', ({
-      context: { service },
-    }) => {
-      let err: unknown = null;
-
-      try {
-        service.compile('new Error(123)', 'test.ts');
-      } catch (error) {
-        err = error;
-      }
-
-      if (err === null) {
-        throw new Error('Command was expected to fail, but it succeeded.');
-      }
-
-      const diagnostics = (err as TSError).diagnostics;
-
-      expect(diagnostics).toHaveLength(1);
-      expect(diagnostics[0]).toMatchObject({
-        code: 2345,
-        start: 10,
-        length: 3,
-        messageText:
-          "Argument of type '123' " +
-          "is not assignable to parameter of type 'string | undefined'.",
-      });
     });
 
     test.suite('should get type information', (test) => {
