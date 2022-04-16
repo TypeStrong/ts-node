@@ -42,16 +42,16 @@ jobs:
           name: ts-node-packed.tgz
           path: tests/ts-node-packed.tgz
 
-  test:
+  test-1: &test-1
     needs: lint-build
     name: "Test: ${{ matrix.os }}, node ${{ matrix.node }}, TS ${{ matrix.typescript }}"
     runs-on: ${{ matrix.os }}-latest
-    strategy:
+    strategy: &test-strategy
       fail-fast: false
-      matrix:
+      matrix: &test-strategy-matrix
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+        flavor: [12]
         include:
           # Node 12.15
           # TODO Add comments about why we test 12.15; I think git blame says it's because of an ESM behavioral change that happened at 12.16
@@ -206,3 +206,11 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           flags: ${{ matrix.os }},node_${{ matrix.nodeFlag }},typescript_${{ matrix.typescriptFlag }}
+  test-2:
+    <<: *test-1
+    needs: test-1
+    strategy:
+      <<: *test-strategy
+      matrix:
+        <<: *test-strategy-matrix
+        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13]
