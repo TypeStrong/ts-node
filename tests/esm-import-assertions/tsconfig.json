@@ -1,4 +1,7 @@
 {
+  "ts-node": {
+    "transpileOnly": true
+  },
   "compilerOptions": {
     "module": "ESNext",
     "target": "ESNext",
