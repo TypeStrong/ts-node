@@ -15,9 +15,9 @@ test.suite('TSError diagnostics', ({ context }) => {
       try {
         service.compile('new Error(123)', 'test.ts');
       } catch (err) {
-        return { service, threw: true, err };
+        return { service, err };
       }
-      return { service, threw: false, err: undefined };
+      return { service, err: undefined };
     })
   );
 
@@ -29,15 +29,12 @@ test.suite('TSError diagnostics', ({ context }) => {
       "is not assignable to parameter of type 'string | undefined'.";
   const diagnosticErrorMessage = `TS${diagnosticCode}: ${diagnosticMessage}`;
 
-  test('should throw errors', ({ log, context: { threw, err, service } }) => {
-    log(service.ts.version);
-    log(ts.version);
-    expect(threw).toBe(true);
+  test('should throw errors', ({ context: { err } }) => {
+    expect(err).toBeDefined();
     expect((err as Error).message).toMatch(diagnosticErrorMessage);
   });
 
   test('should throw errors with diagnostic text', ({
-    log,
     context: { err },
   }) => {
     expect((err as TSError).diagnosticText).toMatch(diagnosticErrorMessage);
