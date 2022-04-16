@@ -2,39 +2,43 @@ import type { TSError } from '..';
 import { contextTsNodeUnderTest, ts } from './helpers';
 import { context, expect } from './testlib';
 import * as semver from 'semver';
-import { assert } from 'console';
+import { once } from 'lodash';
 const test = context(contextTsNodeUnderTest);
 
 test.suite('TSError diagnostics', ({ context }) => {
-  const test = context(async (t) => {
-    return {
-      service: t.context.tsNodeUnderTest.create({
+  const test = context(
+    once(async (t) => {
+      const service = t.context.tsNodeUnderTest.create({
         compilerOptions: { target: 'es5' },
         skipProject: true,
-      }),
-    };
-  }).context(async (t) => {
-    try {
-      t.context.service.compile('new Error(123)', 'test.ts');
-    } catch (err) {
-      return { threw: true, err };
-    }
-    return { threw: false, err: undefined };
-  });
-
-  // TS 2.7 does not have the union type for some reason.
-  const diagnosticMessageRegexp = new RegExp(
-    "TS2345: Argument of type '123' " +
-      "is not assignable to parameter of type 'string'\\."
+      });
+      try {
+        service.compile('new Error(123)', 'test.ts');
+      } catch (err) {
+        return { service, threw: true, err };
+      }
+      return { service, threw: false, err: undefined };
+    })
   );
 
-  test('should throw errors', ({ context: { threw, err } }) => {
+  const diagnosticCode = 2345;
+  const diagnosticMessage = semver.lte(ts.version, '2.7.0')
+    ? "Argument of type 'number' " +
+      "is not assignable to parameter of type 'string'."
+    : "Argument of type '123' " +
+      "is not assignable to parameter of type 'string | undefined'.";
+  const diagnosticErrorMessage = `TS${diagnosticCode}: ${diagnosticMessage}`;
+
+  test('should throw errors', ({ log, context: { threw, err } }) => {
     expect(threw).toBe(true);
-    expect((err as Error).message).toMatch(diagnosticMessageRegexp);
+    expect((err as Error).message).toMatch(diagnosticErrorMessage);
   });
 
-  test('should throw errors with diagnostic text', ({ context: { err } }) => {
-    expect((err as TSError).diagnosticText).toMatch(diagnosticMessageRegexp);
+  test('should throw errors with diagnostic text', ({
+    log,
+    context: { err },
+  }) => {
+    expect((err as TSError).diagnosticText).toMatch(diagnosticErrorMessage);
   });
 
   test('should throw errors with diagnostic codes', ({ context: { err } }) => {
@@ -51,9 +55,7 @@ test.suite('TSError diagnostics', ({ context }) => {
       code: 2345,
       start: 10,
       length: 3,
-      messageText:
-        "Argument of type '123' " +
-        "is not assignable to parameter of type 'string | undefined'.",
+      messageText: expect.stringMatching(diagnosticMessage),
     });
   });
 });
