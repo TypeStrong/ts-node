@@ -144,7 +144,10 @@ test.suite('ts-node', (test) => {
 
     test('should execute cli with absolute path', async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} "${join(TEST_DIR, 'hello-world')}"`
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} "${join(
+          TEST_DIR,
+          'hello-world'
+        )}"`
       );
       expect(err).toBe(null);
       expect(stdout).toBe('Hello, world!\n');
@@ -158,18 +161,10 @@ test.suite('ts-node', (test) => {
       expect(stdout).toBe('example\n');
     });
 
-    test('should provide registered information globally', async () => {
+    test("should expose ts-node Service as a symbol property on Node's `process` object", async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} env`
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} env`
       );
-      expect(err).toBe(null);
-      expect(stdout).toBe('object\n');
-    });
-
-    test('should provide registered information on register', async () => {
-      const { err, stdout } = await exec(`node -r ts-node/register env.ts`, {
-        cwd: TEST_DIR,
-      });
       expect(err).toBe(null);
       expect(stdout).toBe('object\n');
     });
@@ -177,7 +172,7 @@ test.suite('ts-node', (test) => {
     test('should allow js', async () => {
       const { err, stdout } = await exec(
         [
-          CMD_TS_NODE_WITH_PROJECT_FLAG,
+          CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
           '-O "{\\"allowJs\\":true}"',
           '-pe "import { main } from \'./allow-js/run\';main()"',
         ].join(' ')
@@ -189,7 +184,7 @@ test.suite('ts-node', (test) => {
     test('should include jsx when `allow-js` true', async () => {
       const { err, stdout } = await exec(
         [
-          CMD_TS_NODE_WITH_PROJECT_FLAG,
+          CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
           '-O "{\\"allowJs\\":true}"',
           '-pe "import { Foo2 } from \'./allow-js/with-jsx\'; Foo2.sayHi()"',
         ].join(' ')
@@ -200,7 +195,7 @@ test.suite('ts-node', (test) => {
 
     test('should eval code', async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} -e "import * as m from './module';console.log(m.example('test'))"`
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} -e "import * as m from './module';console.log(m.example('test'))"`
       );
       expect(err).toBe(null);
       expect(stdout).toBe('TEST\n');
@@ -208,13 +203,13 @@ test.suite('ts-node', (test) => {
 
     test('should import empty files', async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} -e "import './empty'"`
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} -e "import './empty'"`
       );
       expect(err).toBe(null);
       expect(stdout).toBe('');
     });
 
-    test('should throw errors', async () => {
+    test('should throw typechecking errors', async () => {
       const { err } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} -e "import * as m from './module';console.log(m.example(123))"`
       );
