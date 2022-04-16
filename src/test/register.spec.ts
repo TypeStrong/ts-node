@@ -1,7 +1,7 @@
 import { once } from 'lodash';
 import {
   contextTsNodeUnderTest,
-  PROJECT,
+  PROJECT_TRANSPILE_ONLY,
   resetNodeEnvironment,
   TEST_DIR,
   tsNodeTypes,
@@ -16,7 +16,7 @@ const SOURCE_MAP_REGEXP =
   /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/;
 
 const createOptions: tsNodeTypes.CreateOptions = {
-  project: PROJECT,
+  project: PROJECT_TRANSPILE_ONLY,
   compilerOptions: {
     jsx: 'preserve',
   },

@@ -22,6 +22,10 @@ export const ROOT_DIR = resolve(__dirname, '../..');
 export const DIST_DIR = resolve(__dirname, '..');
 export const TEST_DIR = join(__dirname, '../../tests');
 export const PROJECT = join(TEST_DIR, 'tsconfig.json');
+export const PROJECT_TRANSPILE_ONLY = join(
+  TEST_DIR,
+  'tsconfig-transpile-only.json'
+);
 export const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node');
 export const BIN_PATH_JS = join(TEST_DIR, 'node_modules/ts-node/dist/bin.js');
 export const BIN_SCRIPT_PATH = join(
@@ -35,6 +39,8 @@ export const BIN_ESM_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-esm');
 //#region command lines
 /** Default `ts-node --project` invocation */
 export const CMD_TS_NODE_WITH_PROJECT_FLAG = `"${BIN_PATH}" --project "${PROJECT}"`;
+/** Default `ts-node --project` invocation with transpile-only */
+export const CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG = `"${BIN_PATH}" --project "${PROJECT_TRANSPILE_ONLY}"`;
 /** Default `ts-node` invocation without `--project` */
 export const CMD_TS_NODE_WITHOUT_PROJECT_FLAG = `"${BIN_PATH}"`;
 export const EXPERIMENTAL_MODULES_FLAG = semver.gte(process.version, '12.17.0')
