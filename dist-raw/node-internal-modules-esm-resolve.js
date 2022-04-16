@@ -1,10 +1,4 @@
 // Copied from https://raw.githubusercontent.com/nodejs/node/v15.3.0/lib/internal/modules/esm/resolve.js
-// Then modified to suite our needs.
-// Formatting is intentionally bad to keep the diff as small as possible, to make it easier to merge
-// upstream changes and understand our modifications.
-//
-// Github diff to easily view the changes:
-//   https://github.com/TypeStrong/ts-node/compare/esm-resolver-diff..main
 'use strict';
 
 const [nodeMajor, nodeMinor, nodePatch] = process.versions.node.split('.').map(s => parseInt(s, 10))

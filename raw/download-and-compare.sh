@@ -52,6 +52,14 @@ download
 
 ####
 
+path=lib/internal/modules/esm/get_format
+local=node-internal-modules-esm-get_format
+version=v15.3.0
+download
+# compare
+
+####
+
 path=lib/internal/repl/await
 local=node-internal-repl-await
 version=v17.0.0

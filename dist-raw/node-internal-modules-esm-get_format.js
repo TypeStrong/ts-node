@@ -1,7 +1,4 @@
 // Copied from https://raw.githubusercontent.com/nodejs/node/v15.3.0/lib/internal/modules/esm/get_format.js
-// Then modified to suite our needs.
-// Formatting is intentionally bad to keep the diff as small as possible, to make it easier to merge
-// upstream changes and understand our modifications.
 
 'use strict';
 const {
