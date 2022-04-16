@@ -42,13 +42,13 @@ jobs:
           name: ts-node-packed.tgz
           path: tests/ts-node-packed.tgz
 
-  test-1: &test-1
+  test-1:
     needs: lint-build
     name: "Test: ${{ matrix.os }}, node ${{ matrix.node }}, TS ${{ matrix.typescript }}"
     runs-on: ${{ matrix.os }}-latest
-    strategy: &test-strategy
+    strategy:
       fail-fast: false
-      matrix: &test-strategy-matrix
+      matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
         flavor: [12]
@@ -207,10 +207,166 @@ jobs:
         with:
           flags: ${{ matrix.os }},node_${{ matrix.nodeFlag }},typescript_${{ matrix.typescriptFlag }}
   test-2:
-    <<: *test-1
     needs: test-1
+    name: "Test: ${{ matrix.os }}, node ${{ matrix.node }}, TS ${{ matrix.typescript }}"
+    runs-on: ${{ matrix.os }}-latest
     strategy:
-      <<: *test-strategy
+      fail-fast: false
       matrix:
-        <<: *test-strategy-matrix
+        os: [ubuntu, windows]
+        # Don't forget to add all new flavors to this list!
         flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13]
+        include:
+          # Node 12.15
+          # TODO Add comments about why we test 12.15; I think git blame says it's because of an ESM behavioral change that happened at 12.16
+          - flavor: 1
+            node: 12.15
+            nodeFlag: 12_15
+            typescript: latest
+            typescriptFlag: latest
+          # Node 12.16
+          # Earliest version that supports getFormat, etc hooks: https://github.com/nodejs/node/blob/master/doc/changelogs/CHANGELOG_V12.md#12.16.0
+          - flavor: 2
+            node: 12.16
+            nodeFlag: 12_16
+            typescript: latest
+            typescriptFlag: latest
+          # Node 12
+          - flavor: 3
+            node: 12
+            nodeFlag: 12
+            typescript: latest
+            typescriptFlag: latest
+          # Node 14.13.0
+          # To test ESM builtin module resolution immediately before a node behavioral change: https://github.com/TypeStrong/ts-node/issues/1130
+          - flavor: 4
+            node: 14.13.0
+            nodeFlag: 14_13_0
+            typescript: latest
+            typescriptFlag: latest
+          # Node 14
+          - flavor: 5
+            node: 14
+            nodeFlag: 14
+            typescript: latest
+            typescriptFlag: latest
+          - flavor: 6
+            node: 14
+            nodeFlag: 14
+            typescript: 2.7
+            typescriptFlag: 2_7
+          - flavor: 7
+            node: 14
+            nodeFlag: 14
+            typescript: next
+            typescriptFlag: next
+          # Node 16
+          # Node 16.11.1
+          # Earliest version that supports old ESM Loader Hooks API: https://github.com/TypeStrong/ts-node/pull/1522
+          - flavor: 8
+            node: 16.11.1
+            nodeFlag: 16_11_1
+            typescript: latest
+            typescriptFlag: latest
+          - flavor: 9
+            node: 16
+            nodeFlag: 16
+            typescript: latest
+            typescriptFlag: latest
+            downgradeNpm: true
+          - flavor: 10
+            node: 16
+            nodeFlag: 16
+            typescript: 2.7
+            typescriptFlag: 2_7
+            downgradeNpm: true
+          - flavor: 11
+            node: 16
+            nodeFlag: 16
+            typescript: next
+            typescriptFlag: next
+            downgradeNpm: true
+          # Node 17
+          - flavor: 12
+            node: 17
+            nodeFlag: 17
+            typescript: latest
+            typescriptFlag: latest
+            downgradeNpm: true
+          # Node nightly
+          - flavor: 13
+            node: nightly
+            nodeFlag: nightly
+            typescript: latest
+            typescriptFlag: latest
+            downgradeNpm: true
+    steps:
+      # checkout code
+      - uses: actions/checkout@v2
+      # install node
+      - name: Use Node.js ${{ matrix.node }}
+        if: matrix.node != 'nightly'
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Use Node.js 16, will be subsequently overridden by download of nightly
+        if: matrix.node == 'nightly'
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16
+      - name: Download Node.js nightly
+        if: matrix.node == 'nightly' && matrix.os == 'ubuntu'
+        run: |
+          export N_PREFIX=$(pwd)/n
+          npm install -g n
+          n nightly
+          sudo cp "${N_PREFIX}/bin/node" "$(which node)"
+          node --version
+      - name: Download Node.js nightly
+        if: matrix.node == 'nightly' && matrix.os == 'windows'
+        run: |
+          $version = (Invoke-WebRequest https://nodejs.org/download/nightly/index.json | ConvertFrom-json)[0].version
+          $url = "https://nodejs.org/download/nightly/$version/win-x64/node.exe"
+          $targetPath = (Get-Command node.exe).Source
+          Invoke-WebRequest -Uri $url -OutFile $targetPath -UserAgent ([Microsoft.PowerShell.Commands.PSUserAgent]::Chrome)
+          node --version
+      # lint, build, test
+        # Downgrade from npm 7 to 6 because 7 still seems buggy to me
+      - if: ${{ matrix.downgradeNpm }}
+        run: npm install -g npm@6
+      - run: |
+          npm config set cache "$( node -p "process.cwd()" )/temp/npm-cache"
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: temp/npm-cache
+          key: npm-cache-${{ matrix.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-cache-${{matrix.os }}-
+      - run: npm ci --ignore-scripts
+      - name: Upload npm logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: npm-logs
+          path: temp/npm-cache/_logs
+      - run: npm run build-tsc
+      - name: Download package artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: ts-node-packed.tgz
+          path: tests/
+      - run: npm install typescript@${{ matrix.typescript }} --force
+      - run: npm run test-cov
+      - name: Upload npm logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: npm-logs-${{ matrix.os }}-node-${{ matrix.nodeFlag }}-typescript-${{ matrix.typescriptFlag }}
+          path: temp/npm-cache/_logs
+      - run: npm run coverage-report
+        if: ${{ always() }}
+      - name: Codecov
+        if: ${{ always() }}
+        uses: codecov/codecov-action@v1
+        with:
+          flags: ${{ matrix.os }},node_${{ matrix.nodeFlag }},typescript_${{ matrix.typescriptFlag }}
