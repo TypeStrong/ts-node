@@ -34,9 +34,7 @@ test.suite('TSError diagnostics', ({ context }) => {
     expect((err as Error).message).toMatch(diagnosticErrorMessage);
   });
 
-  test('should throw errors with diagnostic text', ({
-    context: { err },
-  }) => {
+  test('should throw errors with diagnostic text', ({ context: { err } }) => {
     expect((err as TSError).diagnosticText).toMatch(diagnosticErrorMessage);
   });
 
