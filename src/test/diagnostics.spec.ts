@@ -22,14 +22,17 @@ test.suite('TSError diagnostics', ({ context }) => {
   );
 
   const diagnosticCode = 2345;
-  const diagnosticMessage = semver.lte(ts.version, '2.7.0')
-    ? "Argument of type 'number' " +
-      "is not assignable to parameter of type 'string'."
-    : "Argument of type '123' " +
-      "is not assignable to parameter of type 'string | undefined'.";
+  const diagnosticMessage =
+    semver.lte(ts.version, '2.7.0')
+      ? "Argument of type 'number' " +
+        "is not assignable to parameter of type 'string'."
+      : "Argument of type '123' " +
+        "is not assignable to parameter of type 'string | undefined'.";
   const diagnosticErrorMessage = `TS${diagnosticCode}: ${diagnosticMessage}`;
 
-  test('should throw errors', ({ log, context: { threw, err } }) => {
+  test('should throw errors', ({ log, context: { threw, err, service } }) => {
+    log(service.ts.version);
+    log(ts.version);
     expect(threw).toBe(true);
     expect((err as Error).message).toMatch(diagnosticErrorMessage);
   });
