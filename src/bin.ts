@@ -27,7 +27,7 @@ import {
   DEFAULTS,
 } from './index';
 import type { TSInternal } from './ts-compiler-types';
-import { addBuiltinLibsToObject } from '../dist-raw/node-cjs-helpers';
+import { addBuiltinLibsToObject } from '../dist-raw/node-internal-modules-cjs-helpers';
 import { callInChild } from './child/spawn-child';
 import { findAndReadConfig } from './configuration';
 

@@ -46,6 +46,7 @@
     "/transpilers/",
     "/dist/",
     "!/dist/test",
+    "/dist-raw/NODE-LICENSE.md",
     "/dist-raw/**.js",
     "/register/",
     "/esm/",
@@ -169,7 +170,7 @@
     "create-require": "^1.1.0",
     "diff": "^4.0.1",
     "make-error": "^1.1.1",
-    "v8-compile-cache-lib": "^3.0.0",
+    "v8-compile-cache-lib": "^3.0.1",
     "yn": "3.1.1"
   },
   "prettier": {
