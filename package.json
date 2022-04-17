@@ -139,7 +139,7 @@
     "semver": "^7.1.3",
     "throat": "^6.0.1",
     "typedoc": "^0.22.10",
-    "typescript": "4.5.5",
+    "typescript": "4.6.3",
     "typescript-json-schema": "^0.53.0",
     "util.promisify": "^1.0.1"
   },
