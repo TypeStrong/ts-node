@@ -246,13 +246,13 @@ test.suite('top level await', (_test) => {
       'should error with typing information when importing a file with type errors',
       async (t) => {
         const { stdout, stderr } = await t.context.executeInTlaRepl(
-          `const {foo} = await import('./tests/repl/tla-import');`,
+          `const {foo} = await import('./repl/tla-import');`,
           'error'
         );
 
         expect(stdout).toBe('> > ');
         expect(stderr.replace(/\r\n/g, '\n')).toBe(
-          'tests/repl/tla-import.ts(1,14): error TS2322: ' +
+          'repl/tla-import.ts(1,14): error TS2322: ' +
             (semver.gte(ts.version, '4.0.0')
               ? `Type 'number' is not assignable to type 'string'.\n`
               : `Type '1' is not assignable to type 'string'.\n`) +
