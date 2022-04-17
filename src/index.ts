@@ -471,13 +471,23 @@ export const DEFAULTS: RegisterOptions = {
 export class TSError extends BaseError {
   name = 'TSError';
   diagnosticText!: string;
+  diagnostics!: ReadonlyArray<_ts.Diagnostic>;
 
-  constructor(diagnosticText: string, public diagnosticCodes: number[]) {
+  constructor(
+    diagnosticText: string,
+    public diagnosticCodes: number[],
+    diagnostics: ReadonlyArray<_ts.Diagnostic> = []
+  ) {
     super(`⨯ Unable to compile TypeScript:\n${diagnosticText}`);
     Object.defineProperty(this, 'diagnosticText', {
       configurable: true,
       writable: true,
       value: diagnosticText,
+    });
+    Object.defineProperty(this, 'diagnostics', {
+      configurable: true,
+      writable: true,
+      value: diagnostics,
     });
   }
 
@@ -830,7 +840,7 @@ export function createFromPreloadedConfig(
   function createTSError(diagnostics: ReadonlyArray<_ts.Diagnostic>) {
     const diagnosticText = formatDiagnostics(diagnostics, diagnosticHost);
     const diagnosticCodes = diagnostics.map((x) => x.code);
-    return new TSError(diagnosticText, diagnosticCodes);
+    return new TSError(diagnosticText, diagnosticCodes, diagnostics);
   }
 
   function reportTSError(configDiagnosticList: _ts.Diagnostic[]) {

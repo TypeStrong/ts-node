@@ -62,7 +62,7 @@
   ],
   "scripts": {
     "lint": "prettier --check .",
-    "lint-fix": "prettier --write .",
+    "lint-fix": "prettier --loglevel warn --write .",
     "clean": "rimraf dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz",
     "rebuild": "npm run clean && npm run build",
     "build": "npm run build-nopack && npm run build-pack",
@@ -140,7 +140,7 @@
     "semver": "^7.1.3",
     "throat": "^6.0.1",
     "typedoc": "^0.22.10",
-    "typescript": "4.5.5",
+    "typescript": "4.6.3",
     "typescript-json-schema": "^0.53.0",
     "util.promisify": "^1.0.1"
   },

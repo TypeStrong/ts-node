@@ -137,7 +137,6 @@ test.suite(
 
     /** Every possible ./node_modules directory ascending upwards starting with ./tests/node_modules */
     const modulePaths = createModulePaths(TEST_DIR);
-    const rootModulePaths = createModulePaths(ROOT_DIR);
     function createModulePaths(dir: string) {
       const modulePaths: string[] = [];
       for (let path = dir; ; path = dirname(path)) {
@@ -430,7 +429,7 @@ test.suite(
 
             // Note: vanilla node uses different name. See #1360
             stackTest: expect.stringContaining(
-              `    at ${join(ROOT_DIR, '<repl>.ts')}:1:`
+              `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
             ),
           },
         });
@@ -455,13 +454,13 @@ test.suite(
             modulePath: '.',
             moduleFilename: null,
             modulePaths: expect.objectContaining({
-              ...[join(ROOT_DIR, `repl/node_modules`), ...rootModulePaths],
+              ...[join(TEST_DIR, `repl/node_modules`), ...modulePaths],
             }),
             // Note: vanilla node REPL does not set exports
             exportsTest: true,
             // Note: vanilla node uses different name. See #1360
             stackTest: expect.stringContaining(
-              `    at ${join(ROOT_DIR, '<repl>.ts')}:1:`
+              `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
             ),
             moduleAccessorsTest: true,
           },
