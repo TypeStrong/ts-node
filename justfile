@@ -2,11 +2,10 @@
 # If you're like me, this justfile is for you.
 # If you are not, you can safely ignore this file.
 
-set positional-arguments := true
+set positional-arguments
 export PATH := justfile_directory() + "/node_modules/.bin:" + env_var('PATH')
 
-default *ARGS:
-  just regenerate
+default: test-local
 
 regenerate:
   #!/usr/bin/env sh
@@ -14,7 +13,7 @@ regenerate:
     const fs = require("fs");
     let acc = fs.readFileSync("justfile", "utf8").replace(/(# CUT\n)[\s\S]+/, "$1\n");
     for(const [key, value] of Object.entries(require("./package.json").scripts)) {
-      acc += `${key} *ARGS:\n  ${value.replace(/npm run /g, "just ")} "$@"\n`;
+      acc += `${key} *ARGS:\n  ${value.replace(/npm run /g, "just ").replace(/ --$/, "")} "$@"\n`;
     }
     fs.writeFileSync("justfile", acc);
   '
@@ -50,9 +49,9 @@ test-spec *ARGS:
 test-cov *ARGS:
   nyc ava "$@"
 test *ARGS:
-  just build && just lint && just test-cov -- "$@"
+  just build && just lint && just test-cov "$@"
 test-local *ARGS:
-  just lint-fix && just build-tsc && just build-pack && just test-spec -- "$@"
+  just lint-fix && just build-tsc && just build-pack && just test-spec "$@"
 pre-debug *ARGS:
   just build-tsc && just build-pack "$@"
 coverage-report *ARGS:
