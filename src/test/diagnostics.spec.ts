@@ -3,7 +3,6 @@ import { contextTsNodeUnderTest, ts } from './helpers';
 import { context, expect } from './testlib';
 import * as semver from 'semver';
 import { once } from 'lodash';
-import { servicesVersion } from 'typescript';
 const test = context(contextTsNodeUnderTest);
 
 test.suite('TSError diagnostics', ({ context }) => {
@@ -30,11 +29,15 @@ test.suite('TSError diagnostics', ({ context }) => {
       "is not assignable to parameter of type 'string | undefined'.";
   const diagnosticErrorMessage = `TS${diagnosticCode}: ${diagnosticMessage}`;
 
+  const cwdBefore = process.cwd();
   test('should throw errors', ({ log, context: { err, service } }) => {
     log({
       version: ts.version,
       serviceVersion: service.ts.version,
+      cwdBefore,
       cwd: process.cwd(),
+      configFilePath: service.configFilePath,
+      config: service.config.options,
     });
     expect(err).toBeDefined();
     expect((err as Error).message).toMatch(diagnosticErrorMessage);
