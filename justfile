@@ -27,7 +27,7 @@ install:
 # CUT
 
 lint *ARGS:
-  dprint check . "$@"
+  dprint check "$@"
 lint-fix *ARGS:
   dprint fmt "$@"
 clean *ARGS:
