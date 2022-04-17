@@ -1,0 +1,51 @@
+{
+  "incremental": true,
+  "typescript": {
+  },
+  "json": {
+  },
+  "markdown": {
+  },
+  // "includes": [
+  //   "**/*.{ts,tsx,js,jsx,cjs,mjs,json,md}"
+  // ],
+  // "excludes": [
+  //   "**/node_modules",
+  //   "**/*-lock.json"
+  // ],
+  "includes": [
+    "/*.js",
+    "/*.mjs",
+    "/esm",
+    "/register",
+    "/scripts",
+    "/src",
+    "/tests",
+    "/website"
+    // "/esm/**/*.{ts,tsx,js,jsx,json}",
+    // "/register/**/*.{ts,tsx,js,jsx,json}",
+    // "/scripts/**/*.{ts,tsx,js,jsx,json}",
+    // "/src/**/*.{ts,tsx,js,jsx,json}",
+    // "/tests/**/*.{ts,tsx,js,jsx,json}",
+    // "/website/**/*.{ts,tsx,js,jsx,json}",
+    // "**/*.{ts,tsx,js,jsx,json}"
+  ],
+  "excludes": [
+    "/website/.docusaurus",
+    "/website/build",
+    "/website/docs",
+    "/website/readme-sources",
+    "/website/static",
+    "tests/main-realpath/symlink/tsconfig.json",
+    "tests/throw error.ts",
+    "tests/throw error react tsx.tsx",
+    "tests/esm/throw error.ts",
+    "tests/legacy-source-map-support-interop/index.ts",
+    "tests/main-realpath/symlink/symlink.tsx"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/typescript-0.67.1.wasm",
+    "https://plugins.dprint.dev/json-0.15.1.wasm",
+    "https://plugins.dprint.dev/markdown-0.13.1.wasm"
+  ]
+}
