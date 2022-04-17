@@ -27,9 +27,9 @@ install:
 # CUT
 
 lint *ARGS:
-  prettier --check . "$@"
+  dprint check . "$@"
 lint-fix *ARGS:
-  prettier --write . "$@"
+  dprint fmt "$@"
 clean *ARGS:
   rimraf dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz "$@"
 rebuild *ARGS:

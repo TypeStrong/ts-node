@@ -1,34 +1,22 @@
 {
   "incremental": true,
-  "typescript": {
+  "lineWidth": 80,
+  "prettier": {
+    "associations": [
+      "**/*.{ts,tsx,js,mjs,cjs,jsx,json,md}"
+    ],
+    "singleQuote": true
   },
-  "json": {
-  },
-  "markdown": {
-  },
-  // "includes": [
-  //   "**/*.{ts,tsx,js,jsx,cjs,mjs,json,md}"
-  // ],
-  // "excludes": [
-  //   "**/node_modules",
-  //   "**/*-lock.json"
-  // ],
   "includes": [
     "/*.js",
     "/*.mjs",
-    "/esm",
-    "/register",
-    "/scripts",
-    "/src",
-    "/tests",
-    "/website"
-    // "/esm/**/*.{ts,tsx,js,jsx,json}",
-    // "/register/**/*.{ts,tsx,js,jsx,json}",
-    // "/scripts/**/*.{ts,tsx,js,jsx,json}",
-    // "/src/**/*.{ts,tsx,js,jsx,json}",
-    // "/tests/**/*.{ts,tsx,js,jsx,json}",
-    // "/website/**/*.{ts,tsx,js,jsx,json}",
-    // "**/*.{ts,tsx,js,jsx,json}"
+    "/esm/**",
+    "/register/**",
+    "/scripts/**",
+    "/src/**",
+    "/tests/**",
+    "/website/**",
+    "/website/**/*.md"
   ],
   "excludes": [
     "/website/.docusaurus",
@@ -44,8 +32,6 @@
     "tests/main-realpath/symlink/symlink.tsx"
   ],
   "plugins": [
-    "https://plugins.dprint.dev/typescript-0.67.1.wasm",
-    "https://plugins.dprint.dev/json-0.15.1.wasm",
-    "https://plugins.dprint.dev/markdown-0.13.1.wasm"
+    "https://plugins.dprint.dev/prettier-0.6.2.exe-plugin@36dd4f8b9710ab323c471017ecd00a20cf1dca2728c12242c7dabb8dfacad0e2"
   ]
 }
