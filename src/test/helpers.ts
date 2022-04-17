@@ -34,6 +34,8 @@ export const BIN_SCRIPT_PATH = join(
 );
 export const BIN_CWD_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-cwd');
 export const BIN_ESM_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-esm');
+
+process.chdir(TEST_DIR);
 //#endregion
 
 //#region command lines

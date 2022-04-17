@@ -15,6 +15,9 @@ import * as expect from 'expect';
 
 export { ExecutionContext, expect };
 
+// HACK ensure ts-node-specific bootstrapping is executed
+import './helpers';
+
 // NOTE: this limits concurrency within a single process, but AVA launches
 // each .spec file in its own process, so actual concurrency is higher.
 const concurrencyLimiter = throat(16);
