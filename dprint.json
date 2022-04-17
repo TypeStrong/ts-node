@@ -7,16 +7,15 @@
     ],
     "singleQuote": true
   },
+  // Run `dprint output-file-paths` to see which files are being matched
   "includes": [
-    "/*.js",
-    "/*.mjs",
+    "/*.{js,mjs}",
     "/esm/**",
     "/register/**",
     "/scripts/**",
     "/src/**",
     "/tests/**",
-    "/website/**",
-    "/website/**/*.md"
+    "/website/**"
   ],
   "excludes": [
     "/website/.docusaurus",
