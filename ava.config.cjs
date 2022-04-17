@@ -12,7 +12,7 @@ module.exports = {
     // their behavior.
     FORCE_COLOR: '3',
   },
-  require: ['./dist/test/init.js'],
+  require: ['./src/test/remove-env-var-force-color.js'],
   timeout: '300s',
   concurrency: 1,
 };

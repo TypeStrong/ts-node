@@ -192,7 +192,7 @@ jobs:
           name: ts-node-packed.tgz
           path: tests/
       - run: npm install typescript@${{ matrix.typescript }} --force
-      - run: npm run test-cov -- --match '*TSError*'
+      - run: npm run test-cov
       - name: Upload npm logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
