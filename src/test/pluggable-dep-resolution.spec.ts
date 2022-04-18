@@ -2,6 +2,7 @@ import { context } from './testlib';
 import {
   contextTsNodeUnderTest,
   resetNodeEnvironment,
+  TEST_DIR,
   tsSupportsTsconfigInheritanceViaNodePackages,
 } from './helpers';
 import * as expect from 'expect';
@@ -87,7 +88,7 @@ test.suite(
 
         const output = t.context.tsNodeUnderTest
           .create({
-            project: resolve('tests/pluggable-dep-resolution', config),
+            project: resolve(TEST_DIR, 'pluggable-dep-resolution', config),
           })
           .compile('', 'index.ts');
 

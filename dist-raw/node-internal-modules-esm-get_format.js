@@ -1,7 +1,4 @@
 // Copied from https://raw.githubusercontent.com/nodejs/node/v15.3.0/lib/internal/modules/esm/get_format.js
-// Then modified to suite our needs.
-// Formatting is intentionally bad to keep the diff as small as possible, to make it easier to merge
-// upstream changes and understand our modifications.
 
 'use strict';
 const {
@@ -19,7 +16,7 @@ const experimentalJsonModules =
 const experimentalSpeciferResolution =
   getOptionValue('--experimental-specifier-resolution');
 const experimentalWasmModules = getOptionValue('--experimental-wasm-modules');
-const { getPackageType } = require('./node-esm-resolve-implementation.js').createResolve({tsExtensions: [], jsExtensions: []});
+const { getPackageType } = require('./node-internal-modules-esm-resolve').createResolve({tsExtensions: [], jsExtensions: []});
 const { URL, fileURLToPath } = require('url');
 const { ERR_UNKNOWN_FILE_EXTENSION } = require('./node-errors').codes;
 

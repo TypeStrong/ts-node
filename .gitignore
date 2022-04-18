@@ -4,7 +4,7 @@
 coverage/
 .DS_Store
 npm-debug.log
-dist/
+/dist/
 tsconfig.schema.json
 tsconfig.schemastore-schema.json
 .idea/

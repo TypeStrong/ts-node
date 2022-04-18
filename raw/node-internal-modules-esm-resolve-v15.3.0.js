@@ -1,29 +1,6 @@
-// Copied from https://raw.githubusercontent.com/nodejs/node/v15.3.0/lib/internal/modules/esm/resolve.js
-// Then modified to suite our needs.
-// Formatting is intentionally bad to keep the diff as small as possible, to make it easier to merge
-// upstream changes and understand our modifications.
-//
-// Github diff to easily view the changes:
-//   https://github.com/TypeStrong/ts-node/compare/esm-resolver-diff..main
-'use strict';
+// Copied from https://github.com/nodejs/node/blob/v15.3.0/lib/internal/modules/esm/resolve.js
 
-const [nodeMajor, nodeMinor, nodePatch] = process.versions.node.split('.').map(s => parseInt(s, 10))
-// Test for node >14.13.1 || (>=12.20.0 && <13)
-const builtinModuleProtocol = nodeMajor > 14 || (
-    nodeMajor === 14 && (
-      nodeMinor > 13 || (
-        nodeMinor === 13 && nodePatch > 0
-      )
-    )
-  ) || (
-    nodeMajor === 12 && (
-      nodeMinor > 20 || (
-        nodeMinor === 20
-      )
-    )
-  )
-    ? 'node:'
-    : 'nodejs:';
+'use strict';
 
 const {
   ArrayIsArray,
@@ -34,11 +11,11 @@ const {
   ObjectFreeze,
   ObjectGetOwnPropertyNames,
   ObjectPrototypeHasOwnProperty,
-  // RegExp,
+  RegExp,
   RegExpPrototypeTest,
   SafeMap,
   SafeSet,
-  // String,
+  String,
   StringPrototypeEndsWith,
   StringPrototypeIndexOf,
   StringPrototypeLastIndexOf,
@@ -47,35 +24,24 @@ const {
   StringPrototypeSplit,
   StringPrototypeStartsWith,
   StringPrototypeSubstr,
-} = require('./node-primordials');
-
-// const internalFS = require('internal/fs/utils');
-// const { NativeModule } = require('internal/bootstrap/loaders');
-const Module = require('module')
-const NativeModule = {
-  canBeRequiredByUsers(specifier) {
-    return Module.builtinModules.includes(specifier)
-  }
-}
+} = primordials;
+const internalFS = require('internal/fs/utils');
+const { NativeModule } = require('internal/bootstrap/loaders');
 const {
   realpathSync,
   statSync,
   Stats,
 } = require('fs');
-// const { getOptionValue } = require('internal/options');
-const { getOptionValue } = require('./node-options');
-// // Do not eagerly grab .manifest, it may be in TDZ
-// const policy = getOptionValue('--experimental-policy') ?
-//   require('internal/process/policy') :
-//   null;
-// disabled for now.  I am not sure if/how we should support this
-const policy = null;
+const { getOptionValue } = require('internal/options');
+// Do not eagerly grab .manifest, it may be in TDZ
+const policy = getOptionValue('--experimental-policy') ?
+  require('internal/process/policy') :
+  null;
 const { sep, relative } = require('path');
 const preserveSymlinks = getOptionValue('--preserve-symlinks');
 const preserveSymlinksMain = getOptionValue('--preserve-symlinks-main');
 const typeFlag = getOptionValue('--input-type');
-// const { URL, pathToFileURL, fileURLToPath } = require('internal/url');
-const { URL, pathToFileURL, fileURLToPath } = require('url');
+const { URL, pathToFileURL, fileURLToPath } = require('internal/url');
 const {
   ERR_INPUT_TYPE_NOT_ALLOWED,
   ERR_INVALID_ARG_VALUE,
@@ -88,24 +54,15 @@ const {
   ERR_PACKAGE_PATH_NOT_EXPORTED,
   ERR_UNSUPPORTED_DIR_IMPORT,
   ERR_UNSUPPORTED_ESM_URL_SCHEME,
-// } = require('internal/errors').codes;
-} = require('./node-errors').codes;
+} = require('internal/errors').codes;
+const { Module: CJSModule } = require('internal/modules/cjs/loader');
 
-// const { Module: CJSModule } = require('internal/modules/cjs/loader');
-const CJSModule = Module;
-
-// const packageJsonReader = require('internal/modules/package_json_reader');
-const packageJsonReader = require('./node-package-json-reader');
+const packageJsonReader = require('internal/modules/package_json_reader');
 const userConditions = getOptionValue('--conditions');
 const DEFAULT_CONDITIONS = ObjectFreeze(['node', 'import', ...userConditions]);
 const DEFAULT_CONDITIONS_SET = new SafeSet(DEFAULT_CONDITIONS);
 
 const pendingDeprecation = getOptionValue('--pending-deprecation');
-
-function createResolve(opts) {
-// TODO receive cached fs implementations here
-const {tsExtensions, jsExtensions, preferTsExts} = opts;
-
 const emittedPackageWarnings = new SafeSet();
 function emitFolderMapDeprecation(match, pjsonUrl, isExports, base) {
   const pjsonPath = fileURLToPath(pjsonUrl);
@@ -304,43 +261,15 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
 
 function resolveExtensionsWithTryExactName(search) {
   if (fileExists(search)) return search;
-  const resolvedReplacementExtension = resolveReplacementExtensions(search);
-  if(resolvedReplacementExtension) return resolvedReplacementExtension;
   return resolveExtensions(search);
 }
 
-const extensions = Array.from(new Set([
-  ...(preferTsExts ? tsExtensions : []),
-  '.js',
-  ...jsExtensions,
-  '.json', '.node', '.mjs',
-  ...tsExtensions
-]));
-
+const extensions = ['.js', '.json', '.node', '.mjs'];
 function resolveExtensions(search) {
   for (let i = 0; i < extensions.length; i++) {
     const extension = extensions[i];
     const guess = new URL(`${search.pathname}${extension}`, search);
     if (fileExists(guess)) return guess;
-  }
-  return undefined;
-}
-
-/**
- * TS's resolver can resolve foo.js to foo.ts, by replacing .js extension with several source extensions.
- * IMPORTANT: preserve ordering according to preferTsExts; this affects resolution behavior!
- */
-const replacementExtensions = extensions.filter(ext => ['.js', '.jsx', '.ts', '.tsx'].includes(ext));
-
-function resolveReplacementExtensions(search) {
-  if (search.pathname.match(/\.js$/)) {
-    const pathnameWithoutExtension = search.pathname.slice(0, search.pathname.length - 3);
-    for (let i = 0; i < replacementExtensions.length; i++) {
-      const extension = replacementExtensions[i];
-      const guess = new URL(search.toString());
-      guess.pathname = `${pathnameWithoutExtension}${extension}`;
-      if (fileExists(guess)) return guess;
-    }
   }
   return undefined;
 }
@@ -356,8 +285,8 @@ function finalizeResolution(resolved, base) {
       resolved.pathname, 'must not include encoded "/" or "\\" characters',
       fileURLToPath(base));
 
+  const path = fileURLToPath(resolved);
   if (getOptionValue('--experimental-specifier-resolution') === 'node') {
-    const path = fileURLToPath(resolved);
     let file = resolveExtensionsWithTryExactName(resolved);
     if (file !== undefined) return file;
     if (!StringPrototypeEndsWith(path, '/')) {
@@ -370,9 +299,6 @@ function finalizeResolution(resolved, base) {
       resolved.pathname, fileURLToPath(base), 'module');
   }
 
-  const file = resolveReplacementExtensions(resolved) || resolved;
-  const path = fileURLToPath(file);
-
   const stats = tryStatSync(StringPrototypeEndsWith(path, '/') ?
     StringPrototypeSlice(path, -1) : path);
   if (stats.isDirectory()) {
@@ -381,10 +307,10 @@ function finalizeResolution(resolved, base) {
     throw err;
   } else if (!stats.isFile()) {
     throw new ERR_MODULE_NOT_FOUND(
-      path || resolved.pathname, fileURLToPath(base), 'module');
+      path || resolved.pathname, base && fileURLToPath(base), 'module');
   }
 
-  return file;
+  return resolved;
 }
 
 function throwImportNotDefined(specifier, packageJSONUrl, base) {
@@ -865,7 +791,7 @@ function resolveAsCommonJS(specifier, parentURL) {
 
 function defaultResolve(specifier, context = {}, defaultResolveUnused) {
   let { parentURL, conditions } = context;
-  if (parentURL && policy != null && policy.manifest) {
+  if (parentURL && policy?.manifest) {
     const redirects = policy.manifest.getDependencyMapper(parentURL);
     if (redirects) {
       const { resolve, reaction } = redirects;
@@ -895,13 +821,13 @@ function defaultResolve(specifier, context = {}, defaultResolveUnused) {
       };
     }
   } catch {}
-  if (parsed && parsed.protocol === builtinModuleProtocol)
+  if (parsed && parsed.protocol === 'node:')
     return { url: specifier };
   if (parsed && parsed.protocol !== 'file:' && parsed.protocol !== 'data:')
     throw new ERR_UNSUPPORTED_ESM_URL_SCHEME(parsed);
   if (NativeModule.canBeRequiredByUsers(specifier)) {
     return {
-      url: builtinModuleProtocol + specifier
+      url: 'node:' + specifier
     };
   }
   if (parentURL && StringPrototypeStartsWith(parentURL, 'data:')) {
@@ -953,7 +879,7 @@ function defaultResolve(specifier, context = {}, defaultResolveUnused) {
   if (isMain ? !preserveSymlinksMain : !preserveSymlinks) {
     const urlPath = fileURLToPath(url);
     const real = realpathSync(urlPath, {
-      // [internalFS.realpathCacheKey]: realpathCache
+      [internalFS.realpathCacheKey]: realpathCache
     });
     const old = url;
     url = pathToFileURL(
@@ -965,15 +891,11 @@ function defaultResolve(specifier, context = {}, defaultResolveUnused) {
   return { url: `${url}` };
 }
 
-return {
+module.exports = {
   DEFAULT_CONDITIONS,
   defaultResolve,
   encodedSepRegEx,
   getPackageType,
   packageExportsResolve,
   packageImportsResolve
-};
-}
-module.exports = {
-  createResolve
 };

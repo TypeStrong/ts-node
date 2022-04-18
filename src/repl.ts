@@ -22,7 +22,7 @@ function getProcessTopLevelAwait() {
   if (_processTopLevelAwait === undefined) {
     ({
       processTopLevelAwait: _processTopLevelAwait,
-    } = require('../dist-raw/node-repl-await'));
+    } = require('../dist-raw/node-internal-repl-await'));
   }
   return _processTopLevelAwait;
 }

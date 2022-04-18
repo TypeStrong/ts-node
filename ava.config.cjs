@@ -30,7 +30,7 @@ module.exports = {
    * An error will be thrown when trying to run tests with NODE_PATH set to paths with ts-node installed.
    */
 
-  const { existsSync, realpathSync } = require('fs');
+  const { existsSync, rmSync } = require('fs');
   const rimraf = require('rimraf');
   const { resolve } = require('path');
 
@@ -54,6 +54,7 @@ module.exports = {
   })();
 
   function remove(p) {
-    if (existsSync(p)) rimraf.sync(p, {recursive: true});
+    // Avoid node deprecation warning triggered by rimraf
+    if(existsSync(p)) (rmSync || rimraf.sync)(p, {recursive: true})
   }
 }
