@@ -11,6 +11,7 @@ module.exports = {
     // This avoids passing it to spawned processes under test, which would negatively affect
     // their behavior.
     FORCE_COLOR: '3',
+    NODE_PATH: ''
   },
   require: ['./src/test/remove-env-var-force-color.js'],
   timeout: '300s',
@@ -22,7 +23,7 @@ module.exports = {
    * Tests *must* install and use our most recent ts-node tarball.
    * We must prevent them from accidentally require-ing a different version of
    * ts-node, from either node_modules or tests/node_modules.
-   * 
+   *
    * Another possibility of interference is NODE_PATH environment variable being set,
    * and ts-node being installed in any of the paths listed on NODE_PATH, to fix this,
    * the NODE_PATH variable must be removed from the environment *BEFORE* running ava.
@@ -31,31 +32,26 @@ module.exports = {
 
   const { existsSync, realpathSync } = require('fs');
   const rimraf = require('rimraf');
-  const { resolve, delimiter } = require('path');
+  const { resolve } = require('path');
 
   remove(resolve(__dirname, 'node_modules/ts-node'));
   remove(resolve(__dirname, 'tests/node_modules/ts-node'));
 
   // Prove that we did it correctly
-  let resolved;
-  try {
-    expect(() => { resolved = createRequire(resolve(__dirname, 'tests/foo.js')).resolve('ts-node'); }).toThrow();
-  } catch (err) {
-    err.message = err.message.split('\n').slice(0, -1).join('\n') + `\nts-node unexpectedly resolved to external location: ${resolved}`;
+  (() => {
+    let resolved;
+    try {
+      resolved = createRequire(resolve(__dirname, 'tests/foo.js')).resolve('ts-node');
+    } catch(err) {return}
 
-    // Check for NODE_PATH interference. See comment on line 26.
-    if (process.env.NODE_PATH) {
-      const NODE_PATH = process.env.NODE_PATH.split(delimiter).filter(f => f).map(f => realpathSync(resolve(__dirname, f)));
-      for (const path of NODE_PATH) {
-        if (resolved.includes(path)) {
-          err.message += `\n! WARNING: NODE_PATH is set and contains ts-node at ${path}`;
-          err.message += `\n! This can cause problems with tests. Please clear the NODE_PATH environment variable before running tests.\n`;
-        }
-      }
+    // require.resolve() found ts-node; this should not happen.
+    let errorMessage = `require.resolve('ts-node') unexpectedly resolved to ${resolved}\n`;
+    // Check for NODE_PATH interference. See comments above.
+    if(process.env.NODE_PATH) {
+      errorMessage += `NODE_PATH environment variable is set.  This test suite does not support running with NODE_PATH.  Unset it before running the tests.`;
     }
-
-    throw err;
-  }
+    throw new Error(errorMessage);
+  })();
 
   function remove(p) {
     if (existsSync(p)) rimraf.sync(p, {recursive: true});
