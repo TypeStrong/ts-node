@@ -1,6 +1,6 @@
 import { context } from './testlib';
 import {
-  contextTsNodeUnderTest,
+  ctxTsNode,
   resetNodeEnvironment,
   TEST_DIR,
   tsSupportsTsconfigInheritanceViaNodePackages,
@@ -8,7 +8,7 @@ import {
 import * as expect from 'expect';
 import { resolve } from 'path';
 
-const test = context(contextTsNodeUnderTest);
+const test = context(ctxTsNode);
 
 test.suite(
   'Pluggable dependency (compiler, transpiler, swc backend) is require()d relative to the tsconfig file that declares it',
@@ -26,64 +26,9 @@ test.suite(
     // ts-node should resolve ts-patch or @swc/core relative to the extended tsconfig
     // to ensure we use the known working versions.
 
-    const macro = _macro.bind(null, test);
-
-    macro('tsconfig-custom-compiler.json', 'root custom compiler');
-    macro('tsconfig-custom-transpiler.json', 'root custom transpiler');
-    macro('tsconfig-swc-custom-backend.json', 'root custom swc backend');
-    macro('tsconfig-swc-core.json', 'root @swc/core');
-    macro('tsconfig-swc-wasm.json', 'root @swc/wasm');
-    macro('tsconfig-swc.json', 'root @swc/core');
-
-    macro(
-      'node_modules/shared-config/tsconfig-custom-compiler.json',
-      'shared-config custom compiler'
-    );
-    macro(
-      'node_modules/shared-config/tsconfig-custom-transpiler.json',
-      'shared-config custom transpiler'
-    );
-    macro(
-      'node_modules/shared-config/tsconfig-swc-custom-backend.json',
-      'shared-config custom swc backend'
-    );
-    macro(
-      'node_modules/shared-config/tsconfig-swc-core.json',
-      'shared-config @swc/core'
-    );
-    macro(
-      'node_modules/shared-config/tsconfig-swc-wasm.json',
-      'shared-config @swc/wasm'
-    );
-    macro(
-      'node_modules/shared-config/tsconfig-swc.json',
-      'shared-config @swc/core'
-    );
-
-    test.suite('"extends"', (test) => {
-      test.runIf(tsSupportsTsconfigInheritanceViaNodePackages);
-
-      const macro = _macro.bind(null, test);
-
-      macro(
-        'tsconfig-extend-custom-compiler.json',
-        'shared-config custom compiler'
-      );
-      macro(
-        'tsconfig-extend-custom-transpiler.json',
-        'shared-config custom transpiler'
-      );
-      macro(
-        'tsconfig-extend-swc-custom-backend.json',
-        'shared-config custom swc backend'
-      );
-      macro('tsconfig-extend-swc-core.json', 'shared-config @swc/core');
-      macro('tsconfig-extend-swc-wasm.json', 'shared-config @swc/wasm');
-      macro('tsconfig-extend-swc.json', 'shared-config @swc/core');
-    });
-
-    function _macro(_test: typeof test, config: string, expected: string) {
-      _test(`${config} uses ${expected}`, async (t) => {
+    const macro = test.macro((config: string, expected: string) => [
+      `${config} uses ${expected}`,
+      async (t) => {
         t.teardown(resetNodeEnvironment);
 
         const output = t.context.tsNodeUnderTest
@@ -93,7 +38,68 @@ test.suite(
           .compile('', 'index.ts');
 
         expect(output).toContain(`emit from ${expected}\n`);
-      });
-    }
+      },
+    ]);
+
+    test(macro, 'tsconfig-custom-compiler.json', 'root custom compiler');
+    test(macro, 'tsconfig-custom-transpiler.json', 'root custom transpiler');
+    test(macro, 'tsconfig-swc-custom-backend.json', 'root custom swc backend');
+    test(macro, 'tsconfig-swc-core.json', 'root @swc/core');
+    test(macro, 'tsconfig-swc-wasm.json', 'root @swc/wasm');
+    test(macro, 'tsconfig-swc.json', 'root @swc/core');
+
+    test(
+      macro,
+      'node_modules/shared-config/tsconfig-custom-compiler.json',
+      'shared-config custom compiler'
+    );
+    test(
+      macro,
+      'node_modules/shared-config/tsconfig-custom-transpiler.json',
+      'shared-config custom transpiler'
+    );
+    test(
+      macro,
+      'node_modules/shared-config/tsconfig-swc-custom-backend.json',
+      'shared-config custom swc backend'
+    );
+    test(
+      macro,
+      'node_modules/shared-config/tsconfig-swc-core.json',
+      'shared-config @swc/core'
+    );
+    test(
+      macro,
+      'node_modules/shared-config/tsconfig-swc-wasm.json',
+      'shared-config @swc/wasm'
+    );
+    test(
+      macro,
+      'node_modules/shared-config/tsconfig-swc.json',
+      'shared-config @swc/core'
+    );
+
+    test.suite('"extends"', (test) => {
+      test.runIf(tsSupportsTsconfigInheritanceViaNodePackages);
+
+      test(
+        macro,
+        'tsconfig-extend-custom-compiler.json',
+        'shared-config custom compiler'
+      );
+      test(
+        macro,
+        'tsconfig-extend-custom-transpiler.json',
+        'shared-config custom transpiler'
+      );
+      test(
+        macro,
+        'tsconfig-extend-swc-custom-backend.json',
+        'shared-config custom swc backend'
+      );
+      test(macro, 'tsconfig-extend-swc-core.json', 'shared-config @swc/core');
+      test(macro, 'tsconfig-extend-swc-wasm.json', 'shared-config @swc/wasm');
+      test(macro, 'tsconfig-extend-swc.json', 'shared-config @swc/core');
+    });
   }
 );

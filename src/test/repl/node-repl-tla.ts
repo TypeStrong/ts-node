@@ -3,10 +3,10 @@ import type { Key } from 'readline';
 import { Stream } from 'stream';
 import semver = require('semver');
 import { ts } from '../helpers';
-import type { ContextWithTsNodeUnderTest } from './helpers';
+import type { ctxTsNode } from '../helpers';
 import { nodeSupportsEsmHooks } from '../helpers';
 
-interface SharedObjects extends ContextWithTsNodeUnderTest {
+interface SharedObjects extends ctxTsNode.Ctx {
   TEST_DIR: string;
 }
 

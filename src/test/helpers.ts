@@ -14,6 +14,7 @@ import type * as tsNodeTypes from '../index';
 import type _createRequire from 'create-require';
 import { has, mapValues, once } from 'lodash';
 import semver = require('semver');
+import type { ExecutionContext } from './testlib';
 const createRequire: typeof _createRequire = require('create-require');
 export { tsNodeTypes };
 
@@ -79,13 +80,17 @@ export const tsSupportsShowConfig = semver.gte(ts.version, '3.2.0');
 export const xfs = new NodeFS(fs);
 
 /** Pass to `test.context()` to get access to the ts-node API under test */
-export const contextTsNodeUnderTest = once(async () => {
+export const ctxTsNode = once(async () => {
   await installTsNode();
   const tsNodeUnderTest: typeof tsNodeTypes = testsDirRequire('ts-node');
   return {
     tsNodeUnderTest,
   };
 });
+export namespace ctxTsNode {
+  export type Ctx = Awaited<ReturnType<typeof ctxTsNode>>;
+  export type T = ExecutionContext<Ctx>;
+}
 
 //#region install ts-node tarball
 const ts_node_install_lock = process.env.ts_node_install_lock as string;
