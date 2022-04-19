@@ -89,17 +89,17 @@ export interface TestInterface<
     ...rest: T
   ): void;
 
-  macro<Args extends any[]>(
+  macro<Args extends any[], Ctx = Context>(
     cb: (
       ...args: Args
     ) =>
       | [
           (title: string | undefined) => string | undefined,
-          (t: ExecutionContext<Context>) => Promise<void>
+          (t: ExecutionContext<Ctx>) => Promise<void>
         ]
-      | ((t: ExecutionContext<Context>) => Promise<void>)
+      | ((t: ExecutionContext<Ctx>) => Promise<void>)
   ): (
-    test: ExecutionContext<Context>,
+    test: ExecutionContext<Ctx>,
     ...args: Args
   ) => Promise<void> & {
     title(givenTitle: string | undefined, ...args: Args): string;

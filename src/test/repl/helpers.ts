@@ -2,7 +2,7 @@ import * as promisify from 'util.promisify';
 import { PassThrough } from 'stream';
 import { getStream, TEST_DIR, tsNodeTypes } from '../helpers';
 import type { ExecutionContext } from 'ava';
-import { expect, TestInterface } from '../testlib';
+import { test, expect, TestInterface } from '../testlib';
 
 export interface ContextWithTsNodeUnderTest {
   tsNodeUnderTest: Pick<
@@ -13,6 +13,7 @@ export interface ContextWithTsNodeUnderTest {
 
 export type ContextWithReplHelpers = ContextWithTsNodeUnderTest &
   Awaited<ReturnType<typeof contextReplHelpers>>;
+export type ReplExecutionContext = ExecutionContext<ContextWithReplHelpers>;
 
 export interface CreateReplViaApiOptions {
   registerHooks: boolean;
@@ -154,3 +155,47 @@ export function replMacros<T extends ContextWithReplHelpers>(
     });
   }
 }
+
+const noErrorsAndStdoutContains = test.macro(
+  (script: string, contains: string, options?: Partial<ExecuteInReplOptions>) =>
+    async (t: ExecutionContext<ContextWithReplHelpers>) => {
+      testReplInternal(t, script, contains, undefined, contains, options);
+    }
+);
+const stderrContains = test.macro(
+  (
+      script: string,
+      errorContains: string,
+      options?: Partial<ExecuteInReplOptions>
+    ) =>
+    async (t: ReplExecutionContext) => {
+      testReplInternal(
+        t,
+        script,
+        undefined,
+        errorContains,
+        errorContains,
+        options
+      );
+    }
+);
+
+async function testReplInternal(
+  t: ExecutionContext<ContextWithReplHelpers>,
+  script: string,
+  stdoutContains: string | undefined,
+  stderrContains: string | undefined,
+  waitPattern: string,
+  options?: Partial<ExecuteInReplOptions>
+) {
+  const { stdout, stderr } = await t.context.executeInRepl(script, {
+    registerHooks: true,
+    startInternalOptions: { useGlobal: false },
+    waitPattern,
+    ...options,
+  });
+  if (stderrContains) expect(stderr).toContain(stderrContains);
+  else expect(stderr).toBe('');
+  if (stdoutContains) expect(stdout).toContain(stdoutContains);
+}
+export const replMacros_ = { noErrorsAndStdoutContains, stderrContains };
