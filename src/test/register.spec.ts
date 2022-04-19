@@ -6,8 +6,7 @@ import {
   TEST_DIR,
   tsNodeTypes,
 } from './helpers';
-import { context } from './testlib';
-import { expect } from 'chai';
+import { context, expect } from './testlib';
 import * as exp from 'expect';
 import { join, resolve } from 'path';
 import proxyquire = require('proxyquire');
@@ -74,7 +73,7 @@ test.suite('register(create(options))', (test) => {
   }) => {
     const m = require(moduleTestPath);
 
-    expect(m.example('foo')).to.equal('FOO');
+    expect(m.example('foo')).toBe('FOO');
   });
 
   test('should support dynamically disabling', ({
@@ -82,29 +81,29 @@ test.suite('register(create(options))', (test) => {
   }) => {
     delete require.cache[moduleTestPath];
 
-    expect(service.enabled(false)).to.equal(false);
-    expect(() => require(moduleTestPath)).to.throw(/Unexpected token/);
+    expect(service.enabled(false)).toBe(false);
+    expect(() => require(moduleTestPath)).toThrow(/Unexpected token/);
 
     delete require.cache[moduleTestPath];
 
-    expect(service.enabled()).to.equal(false);
-    expect(() => require(moduleTestPath)).to.throw(/Unexpected token/);
+    expect(service.enabled()).toBe(false);
+    expect(() => require(moduleTestPath)).toThrow(/Unexpected tokeen/);
 
     delete require.cache[moduleTestPath];
 
-    expect(service.enabled(true)).to.equal(true);
-    expect(() => require(moduleTestPath)).to.not.throw();
+    expect(service.enabled(true)).toBe(true);
+    expect(() => require(moduleTestPath)).not.toThrow();
 
     delete require.cache[moduleTestPath];
 
-    expect(service.enabled()).to.equal(true);
-    expect(() => require(moduleTestPath)).to.not.throw();
+    expect(service.enabled()).toBe(true);
+    expect(() => require(moduleTestPath)).not.toThrow();
   });
 
   test('should compile through js and ts', () => {
     const m = require('../../tests/complex');
 
-    expect(m.example()).to.equal('example');
+    expect(m.example()).toBe('example');
   });
 
   test('should work with proxyquire', () => {
@@ -112,13 +111,13 @@ test.suite('register(create(options))', (test) => {
       './example': 'hello',
     });
 
-    expect(m.example()).to.equal('hello');
+    expect(m.example()).toBe('hello');
   });
 
   test('should work with `require.cache`', () => {
     const { example1, example2 } = require('../../tests/require-cache');
 
-    expect(example1).to.not.equal(example2);
+    expect(example1).not.toBe(example2);
   });
 
   test('should use source maps', async () => {
@@ -155,10 +154,10 @@ test.suite('register(create(options))', (test) => {
       try {
         require('../../tests/with-jsx.tsx');
       } catch (error: any) {
-        expect(error.stack).to.contain('SyntaxError: Unexpected token');
+        expect(error.stack).toMatch('SyntaxError: Unexpected token');
       }
 
-      expect(compiled).to.match(SOURCE_MAP_REGEXP);
+      expect(compiled).toMatch(SOURCE_MAP_REGEXP);
     });
   });
 });
@@ -190,18 +189,18 @@ test('should support compiler scopes w/multiple registered compiler services at 
   });
 
   try {
-    expect(require('../../tests/scope/a').ext).to.equal('.ts');
-    expect(require('../../tests/scope/b').ext).to.equal('.ts');
+    expect(require('../../tests/scope/a').ext).toBe('.ts');
+    expect(require('../../tests/scope/b').ext).toBe('.ts');
   } finally {
     compilers.forEach((c) => c.enabled(false));
   }
 
-  expect(calls).to.deep.equal([
+  expect(calls).toEqual([
     join(TEST_DIR, 'scope/a/index.ts'),
     join(TEST_DIR, 'scope/b/index.ts'),
   ]);
 
   delete require.cache[moduleTestPath];
 
-  expect(() => require(moduleTestPath)).to.throw();
+  expect(() => require(moduleTestPath)).toThrow();
 });
