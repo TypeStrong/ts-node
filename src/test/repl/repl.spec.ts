@@ -17,6 +17,9 @@ test.runSerially();
 test.beforeEach(async (t) => {
   t.teardown(() => {
     resetNodeEnvironment();
+    // Useful for debugging memory leaks.  Leaving in case I need it again.
+    // global.gc(); // Requires adding nodeArguments: ['--expose-gc'] to ava config
+    // console.dir(process.memoryUsage().heapUsed / 1000 / 1000);
   });
 });
 
@@ -540,120 +543,93 @@ test.suite('REPL declares types for node built-ins within REPL', (test) => {
 });
 
 test.suite('REPL treats object literals and block scopes correctly', (test) => {
-  const basic = test.macro(
-    (input: string, output?: string, errorOutput?: string) => async (t) => {
-      const { stdout, stderr } = await t.context.executeInRepl(`${input}\n`, {
-        registerHooks: true,
-        waitPattern: output ?? errorOutput,
-        waitMs: 5000,
-        startInternalOptions: { useGlobal: false },
-      });
-      if (output) expect(stdout).toContain(output);
-      if (errorOutput) expect(stderr).toContain(errorOutput);
-    }
-  );
-  test(
-    'FOOBAR repl should treat { key: 123 } as object literal',
-    basic,
+  const macros = replMacros(test);
+  macros.noErrorsAndStdoutContains(
+    'repl should treat { key: 123 } as object literal',
     '{ key: 123 }',
     '{ key: 123 }'
   );
-  test(
+  macros.noErrorsAndStdoutContains(
     'repl should treat ({ key: 123 }) as object literal',
-    basic,
     '({ key: 123 })',
     '{ key: 123 }'
   );
-  test(
+  macros.stderrContains(
     'repl should treat ({ let v = 0; v; }) as object literal and error',
-    basic,
     '({ let v = 0; v; })',
-    undefined,
     semver.satisfies(ts.version, '2.7')
       ? 'error TS2304'
       : 'No value exists in scope for the shorthand property'
   );
-  test(
+  macros.noErrorsAndStdoutContains(
     'repl should treat { let v = 0; v; } as block scope',
-    basic,
     '{ let v = 0; v; }',
     '0'
   );
   test.suite('extra', (test) => {
     test.skipIf(semver.satisfies(ts.version, '2.7'));
-    test(
+    const macros = replMacros(test);
+    macros.noErrorsAndStdoutContains(
       'repl should treat { key: 123 }; as block scope',
-      basic,
       '{ key: 123 };',
       '123'
     );
-    test(
+    macros.noErrorsAndStdoutContains(
       'repl should treat {\\nkey: 123\\n}; as block scope',
-      basic,
       '{\nkey: 123\n};',
       '123'
     );
-    test(
+    macros.noErrorsAndStdoutContains(
       'repl should treat { key: 123 }[] as block scope (edge case)',
-      basic,
       '{ key: 123 }[]',
       '[]'
     );
   });
   test.suite('multiline', (test) => {
-    test(
+    const macros = replMacros(test);
+    macros.noErrorsAndStdoutContains(
       'repl should treat {\\nkey: 123\\n} as object literal',
-      basic,
       '{\nkey: 123\n}',
       '{ key: 123 }'
     );
-    test(
+    macros.noErrorsAndStdoutContains(
       'repl should treat ({\\nkey: 123\\n}) as object literal',
-      basic,
       '({\nkey: 123\n})',
       '{ key: 123 }'
     );
-    test(
+    macros.stderrContains(
       'repl should treat ({\\nlet v = 0;\\nv;\\n}) as object literal and error',
-      basic,
       '({\nlet v = 0;\nv;\n})',
-      undefined,
       semver.satisfies(ts.version, '2.7')
         ? 'error TS2304'
         : 'No value exists in scope for the shorthand property'
     );
-    test(
+    macros.noErrorsAndStdoutContains(
       'repl should treat {\\nlet v = 0;\\nv;\\n} as block scope',
-      basic,
       '{\nlet v = 0;\nv;\n}',
       '0'
     );
   });
   test.suite('property access', (test) => {
-    test(
+    const macros = replMacros(test);
+    macros.noErrorsAndStdoutContains(
       'repl should treat { key: 123 }.key as object literal property access',
-      basic,
       '{ key: 123 }.key',
       '123'
     );
-    test(
+    macros.noErrorsAndStdoutContains(
       'repl should treat { key: 123 }["key"] as object literal indexed access',
-      basic,
       '{ key: 123 }["key"]',
       '123'
     );
-    test(
+    macros.stderrContains(
       'repl should treat { key: 123 }.foo as object literal non-existent property access',
-      basic,
       '{ key: 123 }.foo',
-      undefined,
       "Property 'foo' does not exist on type"
     );
-    test(
+    macros.stderrContains(
       'repl should treat { key: 123 }["foo"] as object literal non-existent indexed access',
-      basic,
       '{ key: 123 }["foo"]',
-      undefined,
       semver.satisfies(ts.version, '2.7')
         ? 'error TS7017'
         : "Property 'foo' does not exist on type"

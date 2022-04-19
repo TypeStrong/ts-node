@@ -173,6 +173,9 @@
     "v8-compile-cache-lib": "^3.0.1",
     "yn": "3.1.1"
   },
+  "prettier": {
+    "singleQuote": true
+  },
   "volta": {
     "node": "17.5.0",
     "npm": "6.14.15"
