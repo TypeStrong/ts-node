@@ -1,9 +1,9 @@
 import type { TSError } from '..';
-import { contextTsNodeUnderTest, ts } from './helpers';
+import { ctxTsNode, ts } from './helpers';
 import { context, expect } from './testlib';
 import * as semver from 'semver';
 import { once } from 'lodash';
-const test = context(contextTsNodeUnderTest);
+const test = context(ctxTsNode);
 
 test.suite('TSError diagnostics', ({ context }) => {
   const test = context(

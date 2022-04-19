@@ -55,9 +55,7 @@ export const test = createTestInterface({
   separator: ' \u203a ',
   titlePrefix: undefined,
 });
-// In case someone wants to `const test = _test.context()`
-export { test as _test };
-// Or import `context`
+// In case someone wants to `const test = context()`
 export const context = test.context;
 
 export interface TestInterface<
@@ -94,16 +92,11 @@ export interface TestInterface<
       ...args: Args
     ) =>
       | [
-          (title: string | undefined) => string | undefined,
+          ((title: string | undefined) => string | undefined) | string,
           (t: ExecutionContext<Ctx>) => Promise<void>
         ]
       | ((t: ExecutionContext<Ctx>) => Promise<void>)
-  ): (
-    test: ExecutionContext<Ctx>,
-    ...args: Args
-  ) => Promise<void> & {
-    title(givenTitle: string | undefined, ...args: Args): string;
-  };
+  ): AvaMacro<Args, Ctx>;
 
   beforeAll(cb: (t: ExecutionContext<Context>) => Promise<void>): void;
   beforeEach(cb: (t: ExecutionContext<Context>) => Promise<void>): void;
@@ -123,6 +116,11 @@ export interface TestInterface<
 
   // TODO add teardownEach
 }
+export interface AvaMacro<Args extends any[] = any[], Ctx = unknown> {
+  (test: ExecutionContext<Ctx>, ...args: Args): Promise<void>;
+  title?(givenTitle: string | undefined, ...args: Args): string;
+}
+
 function createTestInterface<Context>(opts: {
   titlePrefix: string | undefined;
   separator: string | undefined;
@@ -136,7 +134,16 @@ function createTestInterface<Context>(opts: {
   let { mustDoSerial, automaticallyDoSerial, automaticallySkip } = opts;
   let hookDeclared = false;
   let suiteOrTestDeclared = false;
-  function computeTitle(title: string | undefined) {
+  function computeTitle<Args extends any[]>(
+    title: string | undefined,
+    macros?: AvaMacro<Args, any>[],
+    ...args: Args
+  ) {
+    for (const macro of macros ?? []) {
+      if (macro.title) {
+        title = macro.title(title, ...args);
+      }
+    }
     assert(title);
     // return `${ titlePrefix }${ separator }${ title }`;
     if (titlePrefix != null && title != null) {
@@ -151,9 +158,9 @@ function createTestInterface<Context>(opts: {
       typeof args[0] === 'string' ? (args.shift() as string) : undefined;
     const macros =
       typeof args[0] === 'function'
-        ? [args.shift() as Function]
+        ? [args.shift() as AvaMacro]
         : Array.isArray(args[0])
-        ? (args.shift() as Function[])
+        ? (args.shift() as AvaMacro[])
         : [];
     return { title, macros, args };
   }
@@ -180,7 +187,7 @@ function createTestInterface<Context>(opts: {
    */
   function declareTest(
     title: string | undefined,
-    macros: Function[],
+    macros: AvaMacro<any[], Context>[],
     avaDeclareFunction: Function & { skip: Function },
     args: any[]
   ) {
@@ -198,7 +205,7 @@ function createTestInterface<Context>(opts: {
         );
       };
     });
-    const computedTitle = computeTitle(title);
+    const computedTitle = computeTitle(title, macros, ...args);
     (automaticallySkip ? avaDeclareFunction.skip : avaDeclareFunction)(
       computedTitle,
       wrappedMacros,
@@ -253,7 +260,7 @@ function createTestInterface<Context>(opts: {
       ...args: Args
     ) =>
       | [
-          (title: string | undefined) => string,
+          ((title: string | undefined) => string | undefined) | string,
           (t: ExecutionContext<Context>) => Promise<void>
         ]
       | ((t: ExecutionContext<Context>) => Promise<void>)
@@ -265,7 +272,11 @@ function createTestInterface<Context>(opts: {
     }
     macro.title = function (givenTitle: string | undefined, ...args: Args) {
       const ret = cb(...args);
-      return Array.isArray(ret) ? ret[0](givenTitle) : givenTitle;
+      return Array.isArray(ret)
+        ? typeof ret[0] === 'string'
+          ? ret[0]
+          : ret[0](givenTitle)
+        : givenTitle;
     };
     return macro;
   };

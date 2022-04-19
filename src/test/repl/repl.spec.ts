@@ -1,18 +1,21 @@
-import { _test, expect } from '../testlib';
-import { resetNodeEnvironment, ts } from '../helpers';
+import { context, expect } from '../testlib';
+import { delay, resetNodeEnvironment, ts } from '../helpers';
 import semver = require('semver');
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
-  contextTsNodeUnderTest,
+  ctxTsNode,
   getStream,
   TEST_DIR,
 } from '../helpers';
 import { createExec, createExecTester } from '../exec-helpers';
 import { upstreamTopLevelAwaitTests } from './node-repl-tla';
-import { contextReplHelpers, replMacros } from './helpers';
-import { promisify } from 'util';
+import {
+  ctxRepl,
+  macroReplNoErrorsAndStdoutContains,
+  macroReplStderrContains,
+} from './helpers';
 
-const test = _test.context(contextTsNodeUnderTest).context(contextReplHelpers);
+const test = context(ctxTsNode).context(ctxRepl);
 test.beforeEach(async (t) => {
   t.teardown(() => {
     resetNodeEnvironment();
@@ -114,11 +117,11 @@ test.serial('REPL can be created via API', async (t) => {
   );
 });
 
-test.suite('top level await', (_test) => {
+test.suite('top level await', ({ context }) => {
   const compilerOptions = {
     target: 'es2018',
   };
-  const test = _test.context(async (t) => {
+  const test = context(async (t) => {
     return { executeInTlaRepl };
 
     function executeInTlaRepl(input: string, waitPattern?: string | RegExp) {
@@ -417,10 +420,9 @@ test.suite(
 
 test.suite('Multiline inputs and RECOVERY_CODES', (test) => {
   test.runSerially();
-  const macros = replMacros(test);
-
-  macros.noErrorsAndStdoutContains(
+  test(
     'multiline function args declaration',
+    macroReplNoErrorsAndStdoutContains,
     `
       function myFn(
         a: string,
@@ -433,8 +435,9 @@ test.suite('Multiline inputs and RECOVERY_CODES', (test) => {
     'test !'
   );
 
-  macros.stderrContains(
+  test(
     'Conditional recovery codes: this one-liner *should* raise an error; should not be recoverable',
+    macroReplStderrContains,
     `
       (a: any) => a = null;
     `,
@@ -450,7 +453,7 @@ test.suite('REPL works with traceResolution', (test) => {
     'startup traces should print before the prompt appears when traceResolution is enabled',
     async (t) => {
       const repl = t.context.createReplViaApi({
-        registerHooks: false as true,
+        registerHooks: false,
         createServiceOpts: {
           compilerOptions: {
             traceResolution: true,
@@ -462,7 +465,7 @@ test.suite('REPL works with traceResolution', (test) => {
 
       repl.stdin.end();
 
-      await promisify(setTimeout)(3e3);
+      await delay(3e3);
 
       repl.stdout.end();
       const stdout = await getStream(repl.stdout);

@@ -1,19 +1,7 @@
-import * as promisify from 'util.promisify';
 import { PassThrough } from 'stream';
-import { getStream, TEST_DIR, tsNodeTypes } from '../helpers';
+import { delay, getStream, TEST_DIR, tsNodeTypes, ctxTsNode } from '../helpers';
 import type { ExecutionContext } from 'ava';
-import { test, expect, TestInterface } from '../testlib';
-
-export interface ContextWithTsNodeUnderTest {
-  tsNodeUnderTest: Pick<
-    typeof tsNodeTypes,
-    'create' | 'register' | 'createRepl'
-  >;
-}
-
-export type ContextWithReplHelpers = ContextWithTsNodeUnderTest &
-  Awaited<ReturnType<typeof contextReplHelpers>>;
-export type ReplExecutionContext = ExecutionContext<ContextWithReplHelpers>;
+import { test, expect } from '../testlib';
 
 export interface CreateReplViaApiOptions {
   registerHooks: boolean;
@@ -30,12 +18,15 @@ export interface ExecuteInReplOptions extends CreateReplViaApiOptions {
   >[0];
 }
 
+export namespace ctxRepl {
+  export type Ctx = ctxTsNode.Ctx & Awaited<ReturnType<typeof ctxRepl>>;
+  export type T = ExecutionContext<Ctx>;
+}
+
 /**
  * pass to test.context() to get REPL testing helper functions
  */
-export async function contextReplHelpers(
-  t: ExecutionContext<ContextWithTsNodeUnderTest>
-) {
+export async function ctxRepl(t: ctxTsNode.T) {
   const { tsNodeUnderTest } = t.context;
   return { createReplViaApi, executeInRepl };
 
@@ -90,11 +81,7 @@ export async function contextReplHelpers(
     const stdoutPromise = getStream(stdout, waitPattern);
     const stderrPromise = getStream(stderr, waitPattern);
     // Wait for expected output pattern or timeout, whichever comes first
-    await Promise.race([
-      promisify(setTimeout)(waitMs),
-      stdoutPromise,
-      stderrPromise,
-    ]);
+    await Promise.race([delay(waitMs), stdoutPromise, stderrPromise]);
     stdout.end();
     stderr.end();
 
@@ -106,70 +93,20 @@ export async function contextReplHelpers(
   }
 }
 
-export function replMacros<T extends ContextWithReplHelpers>(
-  _test: TestInterface<T>
-) {
-  return { noErrorsAndStdoutContains, stderrContains };
-
-  function noErrorsAndStdoutContains(
-    title: string,
-    script: string,
-    contains: string,
-    options?: Partial<ExecuteInReplOptions>
-  ) {
-    testReplInternal(title, script, contains, undefined, contains, options);
-  }
-  function stderrContains(
-    title: string,
-    script: string,
-    errorContains: string,
-    options?: Partial<ExecuteInReplOptions>
-  ) {
-    testReplInternal(
-      title,
-      script,
-      undefined,
-      errorContains,
-      errorContains,
-      options
-    );
-  }
-  function testReplInternal(
-    title: string,
-    script: string,
-    stdoutContains: string | undefined,
-    stderrContains: string | undefined,
-    waitPattern: string,
-    options?: Partial<ExecuteInReplOptions>
-  ) {
-    _test(title, async (t) => {
-      const { stdout, stderr } = await t.context.executeInRepl(script, {
-        registerHooks: true,
-        startInternalOptions: { useGlobal: false },
-        waitPattern,
-        ...options,
-      });
-      if (stderrContains) expect(stderr).toContain(stderrContains);
-      else expect(stderr).toBe('');
-      if (stdoutContains) expect(stdout).toContain(stdoutContains);
-    });
-  }
-}
-
-const noErrorsAndStdoutContains = test.macro(
+export const macroReplNoErrorsAndStdoutContains = test.macro(
   (script: string, contains: string, options?: Partial<ExecuteInReplOptions>) =>
-    async (t: ExecutionContext<ContextWithReplHelpers>) => {
-      testReplInternal(t, script, contains, undefined, contains, options);
+    async (t: ctxRepl.T) => {
+      macroReplInternal(t, script, contains, undefined, contains, options);
     }
 );
-const stderrContains = test.macro(
+export const macroReplStderrContains = test.macro(
   (
       script: string,
       errorContains: string,
       options?: Partial<ExecuteInReplOptions>
     ) =>
-    async (t: ReplExecutionContext) => {
-      testReplInternal(
+    async (t: ctxRepl.T) => {
+      macroReplInternal(
         t,
         script,
         undefined,
@@ -180,8 +117,8 @@ const stderrContains = test.macro(
     }
 );
 
-async function testReplInternal(
-  t: ExecutionContext<ContextWithReplHelpers>,
+async function macroReplInternal(
+  t: ctxRepl.T,
   script: string,
   stdoutContains: string | undefined,
   stderrContains: string | undefined,
@@ -198,4 +135,3 @@ async function testReplInternal(
   else expect(stderr).toBe('');
   if (stdoutContains) expect(stdout).toContain(stdoutContains);
 }
-export const replMacros_ = { noErrorsAndStdoutContains, stderrContains };

@@ -3,21 +3,20 @@
  * globals, __filename, builtin module accessors.
  */
 
-import { test as _test, expect } from '../testlib';
-import * as promisify from 'util.promisify';
+import { context, expect } from '../testlib';
 import * as getStream from 'get-stream';
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
-  contextTsNodeUnderTest,
-  ROOT_DIR,
+  ctxTsNode,
+  delay,
   TEST_DIR,
 } from '../helpers';
 import { dirname, join } from 'path';
 import { createExec, createExecTester } from '../exec-helpers';
 import { homedir } from 'os';
-import { contextReplHelpers } from './helpers';
+import { ctxRepl } from './helpers';
 
-const test = _test.context(contextTsNodeUnderTest).context(contextReplHelpers);
+const test = context(ctxTsNode).context(ctxRepl);
 
 const exec = createExec({
   cwd: TEST_DIR,
@@ -75,10 +74,10 @@ test.suite(
           stdin.end();
           let done = false;
           await Promise.race([
-            promisify(setTimeout)(20e3),
+            delay(20e3),
             (async () => {
               while (!done && !waitFor?.()) {
-                await promisify(setTimeout)(1e3);
+                await delay(1e3);
               }
             })(),
           ]);
