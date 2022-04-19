@@ -87,7 +87,7 @@ test.suite('register(create(options))', (test) => {
     delete require.cache[moduleTestPath];
 
     expect(service.enabled()).toBe(false);
-    expect(() => require(moduleTestPath)).toThrow(/Unexpected tokeen/);
+    expect(() => require(moduleTestPath)).toThrow(/Unexpected token/);
 
     delete require.cache[moduleTestPath];
 
