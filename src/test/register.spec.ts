@@ -1,6 +1,6 @@
 import { once } from 'lodash';
 import {
-  contextTsNodeUnderTest,
+  ctxTsNode,
   PROJECT_TRANSPILE_ONLY,
   resetNodeEnvironment,
   TEST_DIR,
@@ -22,7 +22,7 @@ const createOptions: tsNodeTypes.CreateOptions = {
   },
 };
 
-const test = context(contextTsNodeUnderTest).context(
+const test = context(ctxTsNode).context(
   once(async (t) => {
     return {
       moduleTestPath: resolve(__dirname, '../../tests/module.ts'),

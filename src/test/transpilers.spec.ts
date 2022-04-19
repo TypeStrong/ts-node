@@ -3,10 +3,10 @@
 // Should consolidate them here.
 
 import { context } from './testlib';
-import { contextTsNodeUnderTest, testsDirRequire } from './helpers';
+import { ctxTsNode, testsDirRequire } from './helpers';
 import * as expect from 'expect';
 
-const test = context(contextTsNodeUnderTest);
+const test = context(ctxTsNode);
 
 test.suite('swc', (test) => {
   test('verify that TS->SWC target mappings suppport all possible values from both TS and SWC', async (t) => {

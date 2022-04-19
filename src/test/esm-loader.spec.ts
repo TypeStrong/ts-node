@@ -10,7 +10,7 @@ import {
   BIN_PATH_JS,
   CMD_ESM_LOADER_WITHOUT_PROJECT,
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
-  contextTsNodeUnderTest,
+  ctxTsNode,
   delay,
   EXPERIMENTAL_MODULES_FLAG,
   nodeSupportsEsmHooks,
@@ -26,7 +26,7 @@ import * as expect from 'expect';
 import type { NodeLoaderHooksAPI2 } from '../';
 import { pathToFileURL } from 'url';
 
-const test = context(contextTsNodeUnderTest);
+const test = context(ctxTsNode);
 
 const exec = createExec({
   cwd: TEST_DIR,
@@ -233,8 +233,8 @@ test.suite('esm', (test) => {
       });
     });
 
-    test.suite('unit test hooks', (_test) => {
-      const test = _test.context(async (t) => {
+    test.suite('unit test hooks', ({ context }) => {
+      const test = context(async (t) => {
         const service = t.context.tsNodeUnderTest.create({
           cwd: TEST_DIR,
         });

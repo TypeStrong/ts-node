@@ -5,12 +5,12 @@ import { join } from 'path';
 import { createExec, createExecTester } from './exec-helpers';
 import {
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
-  contextTsNodeUnderTest,
+  ctxTsNode,
   TEST_DIR,
 } from './helpers';
-import { test as _test } from './testlib';
+import { context } from './testlib';
 
-const test = _test.context(contextTsNodeUnderTest);
+const test = context(ctxTsNode);
 const exec = createExecTester({
   exec: createExec({
     cwd: TEST_DIR,
