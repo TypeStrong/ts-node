@@ -1,4 +1,4 @@
-// Copied from https://github.com/nodejs/node/blob/v17.0.1/lib/internal/modules/cjs/loader.js
+// Copied from https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/modules/cjs/loader.js
 
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -25,103 +25,84 @@
 
 const {
   ArrayIsArray,
-  ArrayPrototypeConcat,
-  ArrayPrototypeFilter,
-  ArrayPrototypeIncludes,
-  ArrayPrototypeIndexOf,
-  ArrayPrototypeJoin,
-  ArrayPrototypePush,
-  ArrayPrototypeSlice,
-  ArrayPrototypeSplice,
-  ArrayPrototypeUnshift,
-  ArrayPrototypeUnshiftApply,
-  Boolean,
   Error,
   JSONParse,
+  Map,
+  Number,
   ObjectCreate,
   ObjectDefineProperty,
   ObjectFreeze,
   ObjectGetOwnPropertyDescriptor,
   ObjectGetPrototypeOf,
+  ObjectIs,
   ObjectKeys,
-  ObjectPrototype,
   ObjectPrototypeHasOwnProperty,
   ObjectSetPrototypeOf,
-  Proxy,
-  ReflectApply,
   ReflectSet,
-  RegExpPrototypeExec,
   RegExpPrototypeTest,
   SafeMap,
-  SafeWeakMap,
   String,
-  StringPrototypeCharAt,
-  StringPrototypeCharCodeAt,
-  StringPrototypeEndsWith,
-  StringPrototypeLastIndexOf,
   StringPrototypeIndexOf,
   StringPrototypeMatch,
-  StringPrototypeRepeat,
   StringPrototypeSlice,
-  StringPrototypeSplit,
   StringPrototypeStartsWith,
 } = primordials;
-
-// Map used to store CJS parsing data.
-const cjsParseCache = new SafeWeakMap();
-
-// Set first due to cycle with ESM loader functions.
-module.exports = {
-  wrapSafe, Module, toRealPath, readPackageScope, cjsParseCache,
-  get hasLoadedAnyUserCJSModule() { return hasLoadedAnyUserCJSModule; }
-};
 
 const { NativeModule } = require('internal/bootstrap/loaders');
 const {
   maybeCacheSourceMap,
+  rekeySourceMap
 } = require('internal/source_map/source_map_cache');
-const { pathToFileURL, fileURLToPath, isURLInstance } = require('internal/url');
+const { pathToFileURL, fileURLToPath, URL } = require('internal/url');
 const { deprecate } = require('internal/util');
 const vm = require('vm');
 const assert = require('internal/assert');
 const fs = require('fs');
 const internalFS = require('internal/fs/utils');
 const path = require('path');
-const { sep } = path;
-const { internalModuleStat } = internalBinding('fs');
-const packageJsonReader = require('internal/modules/package_json_reader');
+const { emitWarningSync } = require('internal/process/warning');
+const {
+  internalModuleReadJSON,
+  internalModuleStat
+} = internalBinding('fs');
 const { safeGetenv } = internalBinding('credentials');
 const {
-  cjsConditions,
-  hasEsmSyntax,
-  loadNativeModule,
   makeRequireFunction,
   normalizeReferrerURL,
   stripBOM,
+  loadNativeModule
 } = require('internal/modules/cjs/helpers');
 const { getOptionValue } = require('internal/options');
+const enableSourceMaps = getOptionValue('--enable-source-maps');
 const preserveSymlinks = getOptionValue('--preserve-symlinks');
 const preserveSymlinksMain = getOptionValue('--preserve-symlinks-main');
-// Do not eagerly grab .manifest, it may be in TDZ
-const policy = getOptionValue('--experimental-policy') ?
-  require('internal/process/policy') :
+const manifest = getOptionValue('--experimental-policy') ?
+  require('internal/process/policy').manifest :
   null;
+const { compileFunction } = internalBinding('contextify');
 
 // Whether any user-provided CJS modules had been loaded (executed).
 // Used for internal assertions.
 let hasLoadedAnyUserCJSModule = false;
 
 const {
-  codes: {
-    ERR_INVALID_ARG_VALUE,
-    ERR_INVALID_MODULE_SPECIFIER,
-    ERR_REQUIRE_ESM,
-    ERR_UNKNOWN_BUILTIN_MODULE,
-  },
-  setArrowMessage,
-} = require('internal/errors');
+  ERR_INVALID_ARG_VALUE,
+  ERR_INVALID_OPT_VALUE,
+  ERR_INVALID_PACKAGE_CONFIG,
+  ERR_INVALID_PACKAGE_TARGET,
+  ERR_INVALID_MODULE_SPECIFIER,
+  ERR_PACKAGE_PATH_NOT_EXPORTED,
+  ERR_REQUIRE_ESM
+} = require('internal/errors').codes;
 const { validateString } = require('internal/validators');
 const pendingDeprecation = getOptionValue('--pending-deprecation');
+
+module.exports = {
+  wrapSafe, Module, toRealPath, readPackageScope,
+  get hasLoadedAnyUserCJSModule() { return hasLoadedAnyUserCJSModule; }
+};
+
+let asyncESM, ModuleJob, ModuleWrap, kInstantiated;
 
 const {
   CHAR_FORWARD_SLASH,
@@ -129,18 +110,10 @@ const {
   CHAR_COLON
 } = require('internal/constants');
 
+
 const {
   isProxy
 } = require('internal/util/types');
-
-const asyncESM = require('internal/process/esm_loader');
-const { enrichCJSError } = require('internal/modules/esm/translators');
-const { kEvaluated } = internalBinding('module_wrap');
-const {
-  encodedSepRegEx,
-  packageExportsResolve,
-  packageImportsResolve
-} = require('internal/modules/esm/resolve');
 
 const isWindows = process.platform === 'win32';
 
@@ -148,7 +121,28 @@ const relativeResolveCache = ObjectCreate(null);
 
 let requireDepth = 0;
 let statCache = null;
-let isPreloading = false;
+
+function enrichCJSError(err) {
+  const stack = err.stack.split('\n');
+
+  const lineWithErr = stack[1];
+
+  /*
+    The regular expression below targets the most common import statement
+    usage. However, some cases are not matching, cases like import statement
+    after a comment block and/or after a variable definition.
+  */
+  if (err.message.startsWith('Unexpected token \'export\'') ||
+    (RegExpPrototypeTest(/^\s*import(?=[ {'"*])\s*(?![ (])/, lineWithErr))) {
+    // Emit the warning synchronously because we are in the middle of handling
+    // a SyntaxError that will throw and likely terminate the process before an
+    // asynchronous warning would be emitted.
+    emitWarningSync(
+      'To load an ES module, set "type": "module" in the package.json or use ' +
+      'the .mjs extension.'
+    );
+  }
+}
 
 function stat(filename) {
   filename = path.toNamespacedPath(filename);
@@ -157,25 +151,21 @@ function stat(filename) {
     if (result !== undefined) return result;
   }
   const result = internalModuleStat(filename);
-  if (statCache !== null && result >= 0) {
-    // Only set cache when `internalModuleStat(filename)` succeeds.
-    statCache.set(filename, result);
-  }
+  if (statCache !== null) statCache.set(filename, result);
   return result;
 }
 
 function updateChildren(parent, child, scan) {
-  const children = parent?.children;
-  if (children && !(scan && ArrayPrototypeIncludes(children, child)))
-    ArrayPrototypePush(children, child);
+  const children = parent && parent.children;
+  if (children && !(scan && children.includes(child)))
+    children.push(child);
 }
 
-const moduleParentCache = new SafeWeakMap();
 function Module(id = '', parent) {
   this.id = id;
   this.path = path.dirname(id);
   this.exports = {};
-  moduleParentCache.set(this, parent);
+  this.parent = parent;
   updateChildren(parent, this, false);
   this.filename = null;
   this.loaded = false;
@@ -183,9 +173,9 @@ function Module(id = '', parent) {
 }
 
 const builtinModules = [];
-for (const { 0: id, 1: mod } of NativeModule.map) {
+for (const [id, mod] of NativeModule.map) {
   if (mod.canBeRequiredByUsers) {
-    ArrayPrototypePush(builtinModules, id);
+    builtinModules.push(id);
   }
 }
 
@@ -207,7 +197,7 @@ let wrap = function(script) {
 
 const wrapper = [
   '(function (exports, require, module, __filename, __dirname) { ',
-  '\n});',
+  '\n});'
 ];
 
 let wrapperProxy = new Proxy(wrapper, {
@@ -244,36 +234,7 @@ ObjectDefineProperty(Module, 'wrapper', {
   }
 });
 
-const isPreloadingDesc = { get() { return isPreloading; } };
-ObjectDefineProperty(Module.prototype, 'isPreloading', isPreloadingDesc);
-ObjectDefineProperty(NativeModule.prototype, 'isPreloading', isPreloadingDesc);
-
-function getModuleParent() {
-  return moduleParentCache.get(this);
-}
-
-function setModuleParent(value) {
-  moduleParentCache.set(this, value);
-}
-
-ObjectDefineProperty(Module.prototype, 'parent', {
-  get: pendingDeprecation ? deprecate(
-    getModuleParent,
-    'module.parent is deprecated due to accuracy issues. Please use ' +
-      'require.main to find program entry point instead.',
-    'DEP0144'
-  ) : getModuleParent,
-  set: pendingDeprecation ? deprecate(
-    setModuleParent,
-    'module.parent is deprecated due to accuracy issues. Please use ' +
-      'require.main to find program entry point instead.',
-    'DEP0144'
-  ) : setModuleParent,
-});
-
-let debug = require('internal/util/debuglog').debuglog('module', (fn) => {
-  debug = fn;
-});
+const debug = require('internal/util/debuglog').debuglog('module');
 Module._debug = deprecate(debug, 'Module._debug is deprecated.', 'DEP0077');
 
 // Given a module name, and a list of paths to test, returns the first
@@ -295,11 +256,15 @@ function readPackage(requestPath) {
   const existing = packageJsonCache.get(jsonPath);
   if (existing !== undefined) return existing;
 
-  const result = packageJsonReader.read(jsonPath);
-  const json = result.containsKeys === false ? '{}' : result.string;
+  const json = internalModuleReadJSON(path.toNamespacedPath(jsonPath));
   if (json === undefined) {
     packageJsonCache.set(jsonPath, false);
     return false;
+  }
+
+  if (manifest) {
+    const jsonURL = pathToFileURL(jsonPath);
+    manifest.assertIntegrity(jsonURL, json);
   }
 
   try {
@@ -308,7 +273,6 @@ function readPackage(requestPath) {
       name: parsed.name,
       main: parsed.main,
       exports: parsed.exports,
-      imports: parsed.imports,
       type: parsed.type
     };
     packageJsonCache.set(jsonPath, filtered);
@@ -321,24 +285,35 @@ function readPackage(requestPath) {
 }
 
 function readPackageScope(checkPath) {
-  const rootSeparatorIndex = StringPrototypeIndexOf(checkPath, sep);
+  const rootSeparatorIndex = checkPath.indexOf(path.sep);
   let separatorIndex;
-  do {
-    separatorIndex = StringPrototypeLastIndexOf(checkPath, sep);
-    checkPath = StringPrototypeSlice(checkPath, 0, separatorIndex);
-    if (StringPrototypeEndsWith(checkPath, sep + 'node_modules'))
+  while (
+    (separatorIndex = checkPath.lastIndexOf(path.sep)) > rootSeparatorIndex
+  ) {
+    checkPath = checkPath.slice(0, separatorIndex);
+    if (checkPath.endsWith(path.sep + 'node_modules'))
       return false;
-    const pjson = readPackage(checkPath + sep);
+    const pjson = readPackage(checkPath);
     if (pjson) return {
-      data: pjson,
       path: checkPath,
+      data: pjson
     };
-  } while (separatorIndex > rootSeparatorIndex);
+  }
   return false;
 }
 
+function readPackageMain(requestPath) {
+  const pkg = readPackage(requestPath);
+  return pkg ? pkg.main : undefined;
+}
+
+function readPackageExports(requestPath) {
+  const pkg = readPackage(requestPath);
+  return pkg ? pkg.exports : undefined;
+}
+
 function tryPackage(requestPath, exts, isMain, originalPath) {
-  const pkg = readPackage(requestPath)?.main;
+  const pkg = readPackageMain(requestPath);
 
   if (!pkg) {
     return tryExtensions(path.resolve(requestPath, 'index'), exts, isMain);
@@ -361,7 +336,7 @@ function tryPackage(requestPath, exts, isMain, originalPath) {
       err.requestPath = originalPath;
       // TODO(BridgeAR): Add the requireStack as well.
       throw err;
-    } else {
+    } else if (pendingDeprecation) {
       const jsonPath = path.resolve(requestPath, 'package.json');
       process.emitWarning(
         `Invalid 'main' field in '${jsonPath}' of '${pkg}'. ` +
@@ -377,7 +352,7 @@ function tryPackage(requestPath, exts, isMain, originalPath) {
 // In order to minimize unnecessary lstat() calls,
 // this cache is a list of known-real paths.
 // Set to an empty Map to reset.
-const realpathCache = new SafeMap();
+const realpathCache = new Map();
 
 // Check if the file exists and is not a directory
 // if using --preserve-symlinks and isMain is false,
@@ -417,54 +392,111 @@ function findLongestRegisteredExtension(filename) {
   let currentExtension;
   let index;
   let startIndex = 0;
-  while ((index = StringPrototypeIndexOf(name, '.', startIndex)) !== -1) {
+  while ((index = name.indexOf('.', startIndex)) !== -1) {
     startIndex = index + 1;
     if (index === 0) continue; // Skip dotfiles like .gitignore
-    currentExtension = StringPrototypeSlice(name, index);
+    currentExtension = name.slice(index);
     if (Module._extensions[currentExtension]) return currentExtension;
   }
   return '.js';
 }
 
-function trySelfParentPath(parent) {
-  if (!parent) return false;
-
-  if (parent.filename) {
-    return parent.filename;
-  } else if (parent.id === '<repl>' || parent.id === 'internal/preload') {
-    try {
-      return process.cwd() + path.sep;
-    } catch {
-      return false;
-    }
-  }
-}
-
 function trySelf(parentPath, request) {
-  if (!parentPath) return false;
-
-  const { data: pkg, path: pkgPath } = readPackageScope(parentPath) || {};
+  const { data: pkg, path: basePath } = readPackageScope(parentPath) || {};
   if (!pkg || pkg.exports === undefined) return false;
   if (typeof pkg.name !== 'string') return false;
 
   let expansion;
   if (request === pkg.name) {
-    expansion = '.';
+    expansion = '';
   } else if (StringPrototypeStartsWith(request, `${pkg.name}/`)) {
-    expansion = '.' + StringPrototypeSlice(request, pkg.name.length);
+    expansion = StringPrototypeSlice(request, pkg.name.length);
   } else {
     return false;
   }
 
-  try {
-    return finalizeEsmResolution(packageExportsResolve(
-      pathToFileURL(pkgPath + '/package.json'), expansion, pkg,
-      pathToFileURL(parentPath), cjsConditions), parentPath, pkgPath);
-  } catch (e) {
-    if (e.code === 'ERR_MODULE_NOT_FOUND')
-      throw createEsmNotFoundErr(request, pkgPath + '/package.json');
-    throw e;
+  const fromExports = applyExports(basePath, expansion);
+  if (fromExports) {
+    return tryFile(fromExports, false);
   }
+  assert(fromExports !== false);
+}
+
+function isConditionalDotExportSugar(exports, basePath) {
+  if (typeof exports === 'string')
+    return true;
+  if (ArrayIsArray(exports))
+    return true;
+  if (typeof exports !== 'object')
+    return false;
+  let isConditional = false;
+  let firstCheck = true;
+  for (const key of ObjectKeys(exports)) {
+    const curIsConditional = key[0] !== '.';
+    if (firstCheck) {
+      firstCheck = false;
+      isConditional = curIsConditional;
+    } else if (isConditional !== curIsConditional) {
+      throw new ERR_INVALID_PACKAGE_CONFIG(basePath, '"exports" cannot ' +
+          'contain some keys starting with \'.\' and some not. The exports ' +
+          'object must either be an object of package subpath keys or an ' +
+          'object of main entry condition name keys only.');
+    }
+  }
+  return isConditional;
+}
+
+function applyExports(basePath, expansion) {
+  const mappingKey = `.${expansion}`;
+
+  let pkgExports = readPackageExports(basePath);
+  if (pkgExports === undefined || pkgExports === null)
+    return false;
+
+  if (isConditionalDotExportSugar(pkgExports, basePath))
+    pkgExports = { '.': pkgExports };
+
+  if (typeof pkgExports === 'object') {
+    if (ObjectPrototypeHasOwnProperty(pkgExports, mappingKey)) {
+      const mapping = pkgExports[mappingKey];
+      return resolveExportsTarget(pathToFileURL(basePath + '/'), mapping, '',
+                                  mappingKey);
+    }
+
+    let dirMatch = '';
+    for (const candidateKey of ObjectKeys(pkgExports)) {
+      if (candidateKey[candidateKey.length - 1] !== '/') continue;
+      if (candidateKey.length > dirMatch.length &&
+          StringPrototypeStartsWith(mappingKey, candidateKey)) {
+        dirMatch = candidateKey;
+      }
+    }
+
+    if (dirMatch !== '') {
+      const mapping = pkgExports[dirMatch];
+      const subpath = StringPrototypeSlice(mappingKey, dirMatch.length);
+      const resolved = resolveExportsTarget(pathToFileURL(basePath + '/'),
+                                            mapping, subpath, mappingKey);
+      // Extension searching for folder exports only
+      const rc = stat(resolved);
+      if (rc === 0) return resolved;
+      if (!(RegExpPrototypeTest(trailingSlashRegex, resolved))) {
+        const exts = ObjectKeys(Module._extensions);
+        const filename = tryExtensions(resolved, exts, false);
+        if (filename) return filename;
+      }
+      if (rc === 1) {
+        const exts = ObjectKeys(Module._extensions);
+        const filename = tryPackage(resolved, exts, false,
+                                    basePath + expansion);
+        if (filename) return filename;
+      }
+      // Undefined means not found
+      return;
+    }
+  }
+
+  throw new ERR_PACKAGE_PATH_NOT_EXPORTED(basePath, mappingKey);
 }
 
 // This only applies to requests of a specific form:
@@ -473,23 +505,110 @@ function trySelf(parentPath, request) {
 const EXPORTS_PATTERN = /^((?:@[^/\\%]+\/)?[^./\\%][^/\\%]*)(\/.*)?$/;
 function resolveExports(nmPath, request) {
   // The implementation's behavior is meant to mirror resolution in ESM.
-  const { 1: name, 2: expansion = '' } =
+  const [, name, expansion = ''] =
     StringPrototypeMatch(request, EXPORTS_PATTERN) || [];
-  if (!name)
-    return;
-  const pkgPath = path.resolve(nmPath, name);
-  const pkg = readPackage(pkgPath);
-  if (pkg?.exports != null) {
-    try {
-      return finalizeEsmResolution(packageExportsResolve(
-        pathToFileURL(pkgPath + '/package.json'), '.' + expansion, pkg, null,
-        cjsConditions), null, pkgPath);
-    } catch (e) {
-      if (e.code === 'ERR_MODULE_NOT_FOUND')
-        throw createEsmNotFoundErr(request, pkgPath + '/package.json');
-      throw e;
-    }
+  if (!name) {
+    return false;
   }
+
+  const basePath = path.resolve(nmPath, name);
+  const fromExports = applyExports(basePath, expansion);
+  if (fromExports) {
+    return tryFile(fromExports, false);
+  }
+  return fromExports;
+}
+
+function isArrayIndex(p) {
+  assert(typeof p === 'string');
+  const n = Number(p);
+  if (String(n) !== p)
+    return false;
+  if (ObjectIs(n, +0))
+    return true;
+  if (!Number.isInteger(n))
+    return false;
+  return n >= 0 && n < (2 ** 32) - 1;
+}
+
+function resolveExportsTarget(baseUrl, target, subpath, mappingKey) {
+  if (typeof target === 'string') {
+    let resolvedTarget, resolvedTargetPath;
+    const pkgPathPath = baseUrl.pathname;
+    if (StringPrototypeStartsWith(target, './')) {
+      resolvedTarget = new URL(target, baseUrl);
+      resolvedTargetPath = resolvedTarget.pathname;
+      if (!StringPrototypeStartsWith(resolvedTargetPath, pkgPathPath) ||
+          StringPrototypeIndexOf(resolvedTargetPath, '/node_modules/',
+                                 pkgPathPath.length - 1) !== -1)
+        resolvedTarget = undefined;
+    }
+    if (subpath.length > 0 && target[target.length - 1] !== '/')
+      resolvedTarget = undefined;
+    if (resolvedTarget === undefined)
+      throw new ERR_INVALID_PACKAGE_TARGET(StringPrototypeSlice(baseUrl.pathname
+        , 0, -1), mappingKey, subpath, target);
+    const resolved = new URL(subpath, resolvedTarget);
+    const resolvedPath = resolved.pathname;
+    if (StringPrototypeStartsWith(resolvedPath, resolvedTargetPath) &&
+        StringPrototypeIndexOf(resolvedPath, '/node_modules/',
+                               pkgPathPath.length - 1) === -1) {
+      return fileURLToPath(resolved);
+    }
+    throw new ERR_INVALID_MODULE_SPECIFIER(StringPrototypeSlice(baseUrl.pathname
+      , 0, -1), mappingKey);
+  } else if (ArrayIsArray(target)) {
+    if (target.length === 0)
+      throw new ERR_PACKAGE_PATH_NOT_EXPORTED(
+        StringPrototypeSlice(baseUrl.pathname, 0, -1), mappingKey + subpath);
+    let lastException;
+    for (const targetValue of target) {
+      try {
+        return resolveExportsTarget(baseUrl, targetValue, subpath, mappingKey);
+      } catch (e) {
+        lastException = e;
+        if (e.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED' &&
+            e.code !== 'ERR_INVALID_PACKAGE_TARGET')
+          throw e;
+      }
+    }
+    // Throw last fallback error
+    assert(lastException !== undefined);
+    throw lastException;
+  } else if (typeof target === 'object' && target !== null) {
+    const keys = ObjectKeys(target);
+    if (keys.some(isArrayIndex)) {
+      throw new ERR_INVALID_PACKAGE_CONFIG(baseUrl, '"exports" cannot ' +
+          'contain numeric property keys.');
+    }
+    for (const p of keys) {
+      switch (p) {
+        case 'node':
+        case 'require':
+          try {
+            return resolveExportsTarget(baseUrl, target[p], subpath,
+                                        mappingKey);
+          } catch (e) {
+            if (e.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') throw e;
+          }
+          break;
+        case 'default':
+          try {
+            return resolveExportsTarget(baseUrl, target.default, subpath,
+                                        mappingKey);
+          } catch (e) {
+            if (e.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') throw e;
+          }
+      }
+    }
+    throw new ERR_PACKAGE_PATH_NOT_EXPORTED(
+      StringPrototypeSlice(baseUrl.pathname, 0, -1), mappingKey + subpath);
+  } else if (target === null) {
+    throw new ERR_PACKAGE_PATH_NOT_EXPORTED(
+      StringPrototypeSlice(baseUrl.pathname, 0, -1), mappingKey + subpath);
+  }
+  throw new ERR_INVALID_PACKAGE_TARGET(
+    StringPrototypeSlice(baseUrl.pathname, 0, -1), mappingKey, subpath, target);
 }
 
 const trailingSlashRegex = /(?:^|\/)\.?\.$/;
@@ -501,15 +620,15 @@ Module._findPath = function(request, paths, isMain) {
     return false;
   }
 
-  const cacheKey = request + '\x00' + ArrayPrototypeJoin(paths, '\x00');
+  const cacheKey = request + '\x00' +
+                (paths.length === 1 ? paths[0] : paths.join('\x00'));
   const entry = Module._pathCache[cacheKey];
   if (entry)
     return entry;
 
   let exts;
   let trailingSlash = request.length > 0 &&
-    StringPrototypeCharCodeAt(request, request.length - 1) ===
-    CHAR_FORWARD_SLASH;
+    request.charCodeAt(request.length - 1) === CHAR_FORWARD_SLASH;
   if (!trailingSlash) {
     trailingSlash = RegExpPrototypeTest(trailingSlashRegex, request);
   }
@@ -522,8 +641,12 @@ Module._findPath = function(request, paths, isMain) {
 
     if (!absoluteRequest) {
       const exportsResolved = resolveExports(curPath, request);
-      if (exportsResolved)
+      // Undefined means not found, false means no exports
+      if (exportsResolved === undefined)
+        break;
+      if (exportsResolved) {
         return exportsResolved;
+      }
     }
 
     const basePath = path.resolve(curPath, request);
@@ -592,14 +715,13 @@ if (isWindows) {
 
     // return root node_modules when path is 'D:\\'.
     // path.resolve will make sure from.length >=3 in Windows.
-    if (StringPrototypeCharCodeAt(from, from.length - 1) ===
-          CHAR_BACKWARD_SLASH &&
-        StringPrototypeCharCodeAt(from, from.length - 2) === CHAR_COLON)
+    if (from.charCodeAt(from.length - 1) === CHAR_BACKWARD_SLASH &&
+        from.charCodeAt(from.length - 2) === CHAR_COLON)
       return [from + 'node_modules'];
 
     const paths = [];
     for (let i = from.length - 1, p = 0, last = from.length; i >= 0; --i) {
-      const code = StringPrototypeCharCodeAt(from, i);
+      const code = from.charCodeAt(i);
       // The path segment separator check ('\' and '/') was used to get
       // node_modules path for every path segment.
       // Use colon as an extra condition since we can get node_modules
@@ -609,10 +731,7 @@ if (isWindows) {
           code === CHAR_FORWARD_SLASH ||
           code === CHAR_COLON) {
         if (p !== nmLen)
-          ArrayPrototypePush(
-            paths,
-            StringPrototypeSlice(from, 0, last) + '\\node_modules'
-          );
+          paths.push(from.slice(0, last) + '\\node_modules');
         last = i;
         p = 0;
       } else if (p !== -1) {
@@ -641,13 +760,10 @@ if (isWindows) {
     // that works on both Windows and Posix is non-trivial.
     const paths = [];
     for (let i = from.length - 1, p = 0, last = from.length; i >= 0; --i) {
-      const code = StringPrototypeCharCodeAt(from, i);
+      const code = from.charCodeAt(i);
       if (code === CHAR_FORWARD_SLASH) {
         if (p !== nmLen)
-          ArrayPrototypePush(
-            paths,
-            StringPrototypeSlice(from, 0, last) + '/node_modules'
-          );
+          paths.push(from.slice(0, last) + '/node_modules');
         last = i;
         p = 0;
       } else if (p !== -1) {
@@ -660,7 +776,7 @@ if (isWindows) {
     }
 
     // Append /node_modules to handle root paths.
-    ArrayPrototypePush(paths, '/node_modules');
+    paths.push('/node_modules');
 
     return paths;
   };
@@ -673,15 +789,15 @@ Module._resolveLookupPaths = function(request, parent) {
   }
 
   // Check for node modules paths.
-  if (StringPrototypeCharAt(request, 0) !== '.' ||
+  if (request.charAt(0) !== '.' ||
       (request.length > 1 &&
-      StringPrototypeCharAt(request, 1) !== '.' &&
-      StringPrototypeCharAt(request, 1) !== '/' &&
-      (!isWindows || StringPrototypeCharAt(request, 1) !== '\\'))) {
+      request.charAt(1) !== '.' &&
+      request.charAt(1) !== '/' &&
+      (!isWindows || request.charAt(1) !== '\\'))) {
 
     let paths = modulePaths;
-    if (parent?.paths?.length) {
-      paths = ArrayPrototypeConcat(parent.paths, paths);
+    if (parent != null && parent.paths && parent.paths.length) {
+      paths = parent.paths.concat(paths);
     }
 
     debug('looking for %j in %j', request, paths);
@@ -732,10 +848,14 @@ const CircularRequirePrototypeWarningProxy = new Proxy({}, {
   }
 });
 
+// Object.prototype and ObjectPrototype refer to our 'primordials' versions
+// and are not identical to the versions on the global object.
+const PublicObjectPrototype = global.Object.prototype;
+
 function getExportsForCircularRequire(module) {
   if (module.exports &&
       !isProxy(module.exports) &&
-      ObjectGetPrototypeOf(module.exports) === ObjectPrototype &&
+      ObjectGetPrototypeOf(module.exports) === PublicObjectPrototype &&
       // Exclude transpiled ES6 modules / TypeScript code because those may
       // employ unusual patterns for accessing 'module.exports'. That should
       // be okay because ES6 modules have a different approach to circular
@@ -778,36 +898,20 @@ Module._load = function(request, parent, isMain) {
   }
 
   const filename = Module._resolveFilename(request, parent, isMain);
-  if (StringPrototypeStartsWith(filename, 'node:')) {
-    // Slice 'node:' prefix
-    const id = StringPrototypeSlice(filename, 5);
-
-    const module = loadNativeModule(id, request);
-    if (!module?.canBeRequiredByUsers) {
-      throw new ERR_UNKNOWN_BUILTIN_MODULE(filename);
-    }
-
-    return module.exports;
-  }
 
   const cachedModule = Module._cache[filename];
   if (cachedModule !== undefined) {
     updateChildren(parent, cachedModule, true);
-    if (!cachedModule.loaded) {
-      const parseCachedModule = cjsParseCache.get(cachedModule);
-      if (!parseCachedModule || parseCachedModule.loaded)
-        return getExportsForCircularRequire(cachedModule);
-      parseCachedModule.loaded = true;
-    } else {
-      return cachedModule.exports;
-    }
+    if (!cachedModule.loaded)
+      return getExportsForCircularRequire(cachedModule);
+    return cachedModule.exports;
   }
 
   const mod = loadNativeModule(filename, request);
-  if (mod?.canBeRequiredByUsers) return mod.exports;
+  if (mod && mod.canBeRequiredByUsers) return mod.exports;
 
   // Don't call updateChildren(), Module constructor already does.
-  const module = cachedModule || new Module(filename, parent);
+  const module = new Module(filename, parent);
 
   if (isMain) {
     process.mainModule = module;
@@ -821,18 +925,30 @@ Module._load = function(request, parent, isMain) {
 
   let threw = true;
   try {
-    module.load(filename);
+    // Intercept exceptions that occur during the first tick and rekey them
+    // on error instance rather than module instance (which will immediately be
+    // garbage collected).
+    if (enableSourceMaps) {
+      try {
+        module.load(filename);
+      } catch (err) {
+        rekeySourceMap(Module._cache[filename], err);
+        throw err; /* node-do-not-add-exception-line */
+      }
+    } else {
+      module.load(filename);
+    }
     threw = false;
   } finally {
     if (threw) {
       delete Module._cache[filename];
       if (parent !== undefined) {
         delete relativeResolveCache[relResolveCacheIdentifier];
-        const children = parent?.children;
+        const children = parent && parent.children;
         if (ArrayIsArray(children)) {
-          const index = ArrayPrototypeIndexOf(children, module);
+          const index = children.indexOf(module);
           if (index !== -1) {
-            ArrayPrototypeSplice(children, index, 1);
+            children.splice(index, 1);
           }
         }
       }
@@ -840,7 +956,7 @@ Module._load = function(request, parent, isMain) {
                !isProxy(module.exports) &&
                ObjectGetPrototypeOf(module.exports) ===
                  CircularRequirePrototypeWarningProxy) {
-      ObjectSetPrototypeOf(module.exports, ObjectPrototype);
+      ObjectSetPrototypeOf(module.exports, PublicObjectPrototype);
     }
   }
 
@@ -848,8 +964,7 @@ Module._load = function(request, parent, isMain) {
 };
 
 Module._resolveFilename = function(request, parent, isMain, options) {
-  if (StringPrototypeStartsWith(request, 'node:') ||
-      NativeModule.canBeRequiredByUsers(request)) {
+  if (NativeModule.canBeRequiredByUsers(request)) {
     return request;
   }
 
@@ -857,10 +972,10 @@ Module._resolveFilename = function(request, parent, isMain, options) {
 
   if (typeof options === 'object' && options !== null) {
     if (ArrayIsArray(options.paths)) {
-      const isRelative = StringPrototypeStartsWith(request, './') ||
-          StringPrototypeStartsWith(request, '../') ||
-          ((isWindows && StringPrototypeStartsWith(request, '.\\')) ||
-          StringPrototypeStartsWith(request, '..\\'));
+      const isRelative = request.startsWith('./') ||
+          request.startsWith('../') ||
+          ((isWindows && request.startsWith('.\\')) ||
+          request.startsWith('..\\'));
 
       if (isRelative) {
         paths = options.paths;
@@ -875,46 +990,28 @@ Module._resolveFilename = function(request, parent, isMain, options) {
           const lookupPaths = Module._resolveLookupPaths(request, fakeParent);
 
           for (let j = 0; j < lookupPaths.length; j++) {
-            if (!ArrayPrototypeIncludes(paths, lookupPaths[j]))
-              ArrayPrototypePush(paths, lookupPaths[j]);
+            if (!paths.includes(lookupPaths[j]))
+              paths.push(lookupPaths[j]);
           }
         }
       }
     } else if (options.paths === undefined) {
       paths = Module._resolveLookupPaths(request, parent);
     } else {
-      throw new ERR_INVALID_ARG_VALUE('options.paths', options.paths);
+      throw new ERR_INVALID_OPT_VALUE('options.paths', options.paths);
     }
   } else {
     paths = Module._resolveLookupPaths(request, parent);
   }
 
-  if (parent?.filename) {
-    if (request[0] === '#') {
-      const pkg = readPackageScope(parent.filename) || {};
-      if (pkg.data?.imports != null) {
-        try {
-          return finalizeEsmResolution(
-            packageImportsResolve(request, pathToFileURL(parent.filename),
-                                  cjsConditions), parent.filename,
-            pkg.path);
-        } catch (e) {
-          if (e.code === 'ERR_MODULE_NOT_FOUND')
-            throw createEsmNotFoundErr(request);
-          throw e;
-        }
-      }
+  if (parent && parent.filename) {
+    const filename = trySelf(parent.filename, request);
+    if (filename) {
+      const cacheKey = request + '\x00' +
+          (paths.length === 1 ? paths[0] : paths.join('\x00'));
+      Module._pathCache[cacheKey] = filename;
+      return filename;
     }
-  }
-
-  // Try module self resolution first
-  const parentPath = trySelfParentPath(parent);
-  const selfResolved = trySelf(parentPath, request);
-  if (selfResolved) {
-    const cacheKey = request + '\x00' +
-         (paths.length === 1 ? paths[0] : ArrayPrototypeJoin(paths, '\x00'));
-    Module._pathCache[cacheKey] = selfResolved;
-    return selfResolved;
   }
 
   // Look up the filename first, since that's the cache key.
@@ -923,13 +1020,12 @@ Module._resolveFilename = function(request, parent, isMain, options) {
   const requireStack = [];
   for (let cursor = parent;
     cursor;
-    cursor = moduleParentCache.get(cursor)) {
-    ArrayPrototypePush(requireStack, cursor.filename || cursor.id);
+    cursor = cursor.parent) {
+    requireStack.push(cursor.filename || cursor.id);
   }
   let message = `Cannot find module '${request}'`;
   if (requireStack.length > 0) {
-    message = message + '\nRequire stack:\n- ' +
-              ArrayPrototypeJoin(requireStack, '\n- ');
+    message = message + '\nRequire stack:\n- ' + requireStack.join('\n- ');
   }
   // eslint-disable-next-line no-restricted-syntax
   const err = new Error(message);
@@ -938,28 +1034,6 @@ Module._resolveFilename = function(request, parent, isMain, options) {
   throw err;
 };
 
-function finalizeEsmResolution(resolved, parentPath, pkgPath) {
-  if (RegExpPrototypeTest(encodedSepRegEx, resolved))
-    throw new ERR_INVALID_MODULE_SPECIFIER(
-      resolved, 'must not include encoded "/" or "\\" characters', parentPath);
-  const filename = fileURLToPath(resolved);
-  const actual = tryFile(filename);
-  if (actual)
-    return actual;
-  const err = createEsmNotFoundErr(filename,
-                                   path.resolve(pkgPath, 'package.json'));
-  throw err;
-}
-
-function createEsmNotFoundErr(request, path) {
-  // eslint-disable-next-line no-restricted-syntax
-  const err = new Error(`Cannot find module '${request}'`);
-  err.code = 'MODULE_NOT_FOUND';
-  if (path)
-    err.path = path;
-  // TODO(BridgeAR): Add the requireStack as well.
-  return err;
-}
 
 // Given a file name, pass it to the proper extension handler.
 Module.prototype.load = function(filename) {
@@ -971,20 +1045,36 @@ Module.prototype.load = function(filename) {
 
   const extension = findLongestRegisteredExtension(filename);
   // allow .mjs to be overridden
-  if (StringPrototypeEndsWith(filename, '.mjs') && !Module._extensions['.mjs'])
-    throw new ERR_REQUIRE_ESM(filename, true);
-
+  if (filename.endsWith('.mjs') && !Module._extensions['.mjs']) {
+    throw new ERR_REQUIRE_ESM(filename);
+  }
   Module._extensions[extension](this, filename);
   this.loaded = true;
 
-  const esmLoader = asyncESM.esmLoader;
+  const ESMLoader = asyncESM.ESMLoader;
+  const url = `${pathToFileURL(filename)}`;
+  const module = ESMLoader.moduleMap.get(url);
   // Create module entry at load time to snapshot exports correctly
   const exports = this.exports;
-  // Preemptively cache
-  if ((module?.module === undefined ||
-       module.module.getStatus() < kEvaluated) &&
-      !esmLoader.cjsCache.has(this))
-    esmLoader.cjsCache.set(this, exports);
+  // Called from cjs translator
+  if (module !== undefined && module.module !== undefined) {
+    if (module.module.getStatus() >= kInstantiated)
+      module.module.setExport('default', exports);
+  } else {
+    // Preemptively cache
+    // We use a function to defer promise creation for async hooks.
+    ESMLoader.moduleMap.set(
+      url,
+      // Module job creation will start promises.
+      // We make it a function to lazily trigger those promises
+      // for async hooks compatibility.
+      () => new ModuleJob(ESMLoader, url, () =>
+        new ModuleWrap(url, undefined, ['default'], function() {
+          this.setExport('default', exports);
+        })
+      , false /* isMain */, false /* inspectBrk */)
+    );
+  }
 };
 
 
@@ -1018,30 +1108,45 @@ function wrapSafe(filename, content, cjsModuleInstance) {
       lineOffset: 0,
       displayErrors: true,
       importModuleDynamically: async (specifier) => {
-        const loader = asyncESM.esmLoader;
+        const loader = asyncESM.ESMLoader;
         return loader.import(specifier, normalizeReferrerURL(filename));
       },
     });
   }
+  let compiled;
   try {
-    return vm.compileFunction(content, [
-      'exports',
-      'require',
-      'module',
-      '__filename',
-      '__dirname',
-    ], {
+    compiled = compileFunction(
+      content,
       filename,
-      importModuleDynamically(specifier) {
-        const loader = asyncESM.esmLoader;
-        return loader.import(specifier, normalizeReferrerURL(filename));
-      },
-    });
+      0,
+      0,
+      undefined,
+      false,
+      undefined,
+      [],
+      [
+        'exports',
+        'require',
+        'module',
+        '__filename',
+        '__dirname',
+      ]
+    );
   } catch (err) {
     if (process.mainModule === cjsModuleInstance)
-      enrichCJSError(err, content);
+      enrichCJSError(err);
     throw err;
   }
+
+  const { callbackMap } = internalBinding('module_wrap');
+  callbackMap.set(compiled.cacheKey, {
+    importModuleDynamically: async (specifier) => {
+      const loader = asyncESM.ESMLoader;
+      return loader.import(specifier, normalizeReferrerURL(filename));
+    }
+  });
+
+  return compiled.function;
 }
 
 // Run the file contents in the correct scope or sandbox. Expose
@@ -1051,10 +1156,10 @@ function wrapSafe(filename, content, cjsModuleInstance) {
 Module.prototype._compile = function(content, filename) {
   let moduleURL;
   let redirects;
-  if (policy?.manifest) {
+  if (manifest) {
     moduleURL = pathToFileURL(filename);
-    redirects = policy.manifest.getDependencyMapper(moduleURL);
-    policy.manifest.assertIntegrity(moduleURL, content);
+    redirects = manifest.getRedirector(moduleURL);
+    manifest.assertIntegrity(moduleURL, content);
   }
 
   maybeCacheSourceMap(filename, content, this);
@@ -1089,13 +1194,13 @@ Module.prototype._compile = function(content, filename) {
   const exports = this.exports;
   const thisValue = exports;
   const module = this;
-  if (requireDepth === 0) statCache = new SafeMap();
+  if (requireDepth === 0) statCache = new Map();
   if (inspectorWrapper) {
     result = inspectorWrapper(compiledWrapper, thisValue, exports,
                               require, module, filename, dirname);
   } else {
-    result = ReflectApply(compiledWrapper, thisValue,
-                          [exports, require, module, filename, dirname]);
+    result = compiledWrapper.call(thisValue, exports, require, module,
+                                  filename, dirname);
   }
   hasLoadedAnyUserCJSModule = true;
   if (requireDepth === 0) statCache = null;
@@ -1104,48 +1209,16 @@ Module.prototype._compile = function(content, filename) {
 
 // Native extension for .js
 Module._extensions['.js'] = function(module, filename) {
-  // If already analyzed the source, then it will be cached.
-  const cached = cjsParseCache.get(module);
-  let content;
-  if (cached?.source) {
-    content = cached.source;
-    cached.source = undefined;
-  } else {
-    content = fs.readFileSync(filename, 'utf8');
-  }
-  if (StringPrototypeEndsWith(filename, '.js')) {
+  if (filename.endsWith('.js')) {
     const pkg = readPackageScope(filename);
     // Function require shouldn't be used in ES modules.
-    if (pkg?.data?.type === 'module') {
-      const parent = moduleParentCache.get(module);
-      const parentPath = parent?.filename;
+    if (pkg && pkg.data && pkg.data.type === 'module') {
+      const parentPath = module.parent && module.parent.filename;
       const packageJsonPath = path.resolve(pkg.path, 'package.json');
-      const usesEsm = hasEsmSyntax(content);
-      const err = new ERR_REQUIRE_ESM(filename, usesEsm, parentPath,
-                                      packageJsonPath);
-      // Attempt to reconstruct the parent require frame.
-      if (Module._cache[parentPath]) {
-        let parentSource;
-        try {
-          parentSource = fs.readFileSync(parentPath, 'utf8');
-        } catch {}
-        if (parentSource) {
-          const errLine = StringPrototypeSplit(
-            StringPrototypeSlice(err.stack, StringPrototypeIndexOf(
-              err.stack, '    at ')), '\n', 1)[0];
-          const { 1: line, 2: col } =
-              RegExpPrototypeExec(/(\d+):(\d+)\)/, errLine) || [];
-          if (line && col) {
-            const srcLine = StringPrototypeSplit(parentSource, '\n')[line - 1];
-            const frame = `${parentPath}:${line}\n${srcLine}\n${
-              StringPrototypeRepeat(' ', col - 1)}^\n`;
-            setArrowMessage(err, frame);
-          }
-        }
-      }
-      throw err;
+      throw new ERR_REQUIRE_ESM(filename, parentPath, packageJsonPath);
     }
   }
+  const content = fs.readFileSync(filename, 'utf8');
   module._compile(content, filename);
 };
 
@@ -1154,9 +1227,9 @@ Module._extensions['.js'] = function(module, filename) {
 Module._extensions['.json'] = function(module, filename) {
   const content = fs.readFileSync(filename, 'utf8');
 
-  if (policy?.manifest) {
+  if (manifest) {
     const moduleURL = pathToFileURL(filename);
-    policy.manifest.assertIntegrity(moduleURL, content);
+    manifest.assertIntegrity(moduleURL, content);
   }
 
   try {
@@ -1170,10 +1243,10 @@ Module._extensions['.json'] = function(module, filename) {
 
 // Native extension for .node
 Module._extensions['.node'] = function(module, filename) {
-  if (policy?.manifest) {
+  if (manifest) {
     const content = fs.readFileSync(filename);
     const moduleURL = pathToFileURL(filename);
-    policy.manifest.assertIntegrity(moduleURL, content);
+    manifest.assertIntegrity(moduleURL, content);
   }
   // Be aware this doesn't use `content`
   return process.dlopen(module, path.toNamespacedPath(filename));
@@ -1182,8 +1255,7 @@ Module._extensions['.node'] = function(module, filename) {
 function createRequireFromPath(filename) {
   // Allow a directory to be passed as the filename
   const trailingSlash =
-    StringPrototypeEndsWith(filename, '/') ||
-    (isWindows && StringPrototypeEndsWith(filename, '\\'));
+    filename.endsWith('/') || (isWindows && filename.endsWith('\\'));
 
   const proxyPath = trailingSlash ?
     path.join(filename, 'noop.js') :
@@ -1196,13 +1268,20 @@ function createRequireFromPath(filename) {
   return makeRequireFunction(m, null);
 }
 
+Module.createRequireFromPath = deprecate(
+  createRequireFromPath,
+  'Module.createRequireFromPath() is deprecated. ' +
+  'Use Module.createRequire() instead.',
+  'DEP0130'
+);
+
 const createRequireError = 'must be a file URL object, file URL string, or ' +
   'absolute path string';
 
 function createRequire(filename) {
   let filepath;
 
-  if (isURLInstance(filename) ||
+  if (filename instanceof URL ||
       (typeof filename === 'string' && !path.isAbsolute(filename))) {
     try {
       filepath = fileURLToPath(filename);
@@ -1230,31 +1309,28 @@ Module._initPaths = function() {
     path.resolve(process.execPath, '..') :
     path.resolve(process.execPath, '..', '..');
 
-  const paths = [path.resolve(prefixDir, 'lib', 'node')];
+  let paths = [path.resolve(prefixDir, 'lib', 'node')];
 
   if (homeDir) {
-    ArrayPrototypeUnshift(paths, path.resolve(homeDir, '.node_libraries'));
-    ArrayPrototypeUnshift(paths, path.resolve(homeDir, '.node_modules'));
+    paths.unshift(path.resolve(homeDir, '.node_libraries'));
+    paths.unshift(path.resolve(homeDir, '.node_modules'));
   }
 
   if (nodePath) {
-    ArrayPrototypeUnshiftApply(paths, ArrayPrototypeFilter(
-      StringPrototypeSplit(nodePath, path.delimiter),
-      Boolean
-    ));
+    paths = nodePath.split(path.delimiter).filter(function pathsFilterCB(path) {
+      return !!path;
+    }).concat(paths);
   }
 
   modulePaths = paths;
 
   // Clone as a shallow copy, for introspection.
-  Module.globalPaths = ArrayPrototypeSlice(modulePaths);
+  Module.globalPaths = modulePaths.slice(0);
 };
 
 Module._preloadModules = function(requests) {
   if (!ArrayIsArray(requests))
     return;
-
-  isPreloading = true;
 
   // Preloaded modules have a dummy parent module which is deemed to exist
   // in the current working directory. This seeds the search path for
@@ -1264,13 +1340,11 @@ Module._preloadModules = function(requests) {
     parent.paths = Module._nodeModulePaths(process.cwd());
   } catch (e) {
     if (e.code !== 'ENOENT') {
-      isPreloading = false;
       throw e;
     }
   }
   for (let n = 0; n < requests.length; n++)
     parent.require(requests[n]);
-  isPreloading = false;
 };
 
 Module.syncBuiltinESMExports = function syncBuiltinESMExports() {
@@ -1283,3 +1357,8 @@ Module.syncBuiltinESMExports = function syncBuiltinESMExports() {
 
 // Backwards compatibility
 Module.Module = Module;
+
+// We have to load the esm things after module.exports!
+asyncESM = require('internal/process/esm_loader');
+ModuleJob = require('internal/modules/esm/module_job');
+({ ModuleWrap, kInstantiated } = internalBinding('module_wrap'));

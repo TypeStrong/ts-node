@@ -18,8 +18,10 @@ import { normalizeSlashes } from './util';
 import { createRequire } from 'module';
 const {
   createResolve,
-} = require('../dist-raw/node-esm-resolve-implementation');
-const { defaultGetFormat } = require('../dist-raw/node-esm-default-get-format');
+} = require('../dist-raw/node-internal-modules-esm-resolve');
+const {
+  defaultGetFormat,
+} = require('../dist-raw/node-internal-modules-esm-get_format');
 
 // Note: On Windows, URLs look like this: file:///D:/dev/@TypeStrong/ts-node-examples/foo.ts
 

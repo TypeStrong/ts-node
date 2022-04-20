@@ -1,3 +1,5 @@
+// TODO Sync this with node-internal-errors?
+
 exports.codes = {
   ERR_INPUT_TYPE_NOT_ALLOWED: createErrorCtor(joinArgs('ERR_INPUT_TYPE_NOT_ALLOWED')),
   ERR_INVALID_ARG_VALUE: createErrorCtor(joinArgs('ERR_INVALID_ARG_VALUE')),

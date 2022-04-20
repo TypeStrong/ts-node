@@ -1,4 +1,5 @@
 // Copied from https://github.com/nodejs/node/blob/v13.12.0/lib/internal/modules/esm/resolve.js
+
 'use strict';
 
 const {
@@ -662,4 +663,3 @@ module.exports = {
   defaultResolve,
   getPackageType
 };
-

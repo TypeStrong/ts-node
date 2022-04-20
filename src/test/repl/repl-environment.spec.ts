@@ -3,21 +3,20 @@
  * globals, __filename, builtin module accessors.
  */
 
-import { test as _test, expect } from '../testlib';
-import * as promisify from 'util.promisify';
+import { context, expect } from '../testlib';
 import * as getStream from 'get-stream';
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
-  contextTsNodeUnderTest,
-  ROOT_DIR,
+  ctxTsNode,
+  delay,
   TEST_DIR,
 } from '../helpers';
 import { dirname, join } from 'path';
 import { createExec, createExecTester } from '../exec-helpers';
 import { homedir } from 'os';
-import { contextReplHelpers } from './helpers';
+import { ctxRepl } from './helpers';
 
-const test = _test.context(contextTsNodeUnderTest).context(contextReplHelpers);
+const test = context(ctxTsNode).context(ctxRepl);
 
 const exec = createExec({
   cwd: TEST_DIR,
@@ -75,10 +74,10 @@ test.suite(
           stdin.end();
           let done = false;
           await Promise.race([
-            promisify(setTimeout)(20e3),
+            delay(20e3),
             (async () => {
               while (!done && !waitFor?.()) {
-                await promisify(setTimeout)(1e3);
+                await delay(1e3);
               }
             })(),
           ]);
@@ -137,7 +136,6 @@ test.suite(
 
     /** Every possible ./node_modules directory ascending upwards starting with ./tests/node_modules */
     const modulePaths = createModulePaths(TEST_DIR);
-    const rootModulePaths = createModulePaths(ROOT_DIR);
     function createModulePaths(dir: string) {
       const modulePaths: string[] = [];
       for (let path = dir; ; path = dirname(path)) {
@@ -430,7 +428,7 @@ test.suite(
 
             // Note: vanilla node uses different name. See #1360
             stackTest: expect.stringContaining(
-              `    at ${join(ROOT_DIR, '<repl>.ts')}:1:`
+              `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
             ),
           },
         });
@@ -455,13 +453,13 @@ test.suite(
             modulePath: '.',
             moduleFilename: null,
             modulePaths: expect.objectContaining({
-              ...[join(ROOT_DIR, `repl/node_modules`), ...rootModulePaths],
+              ...[join(TEST_DIR, `repl/node_modules`), ...modulePaths],
             }),
             // Note: vanilla node REPL does not set exports
             exportsTest: true,
             // Note: vanilla node uses different name. See #1360
             stackTest: expect.stringContaining(
-              `    at ${join(ROOT_DIR, '<repl>.ts')}:1:`
+              `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
             ),
             moduleAccessorsTest: true,
           },

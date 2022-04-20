@@ -173,6 +173,7 @@ jobs:
       - run: |
           npm config set cache "$( node -p "process.cwd()" )/temp/npm-cache"
       - name: Cache dependencies
+        if: ${{ matrix.os != 'windows' }}
         uses: actions/cache@v2
         with:
           path: temp/npm-cache

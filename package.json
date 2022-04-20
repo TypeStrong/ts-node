@@ -61,8 +61,8 @@
     "/node16/"
   ],
   "scripts": {
-    "lint": "prettier --check .",
-    "lint-fix": "prettier --write .",
+    "lint": "dprint check",
+    "lint-fix": "dprint fmt",
     "clean": "rimraf dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz",
     "rebuild": "npm run clean && npm run build",
     "build": "npm run build-nopack && npm run build-pack",
@@ -114,7 +114,6 @@
     "@microsoft/api-extractor": "^7.19.4",
     "@swc/core": ">=1.2.50",
     "@swc/wasm": ">=1.2.50",
-    "@types/chai": "^4.0.4",
     "@types/diff": "^4.0.2",
     "@types/lodash": "^4.14.151",
     "@types/node": "13.13.5",
@@ -126,13 +125,12 @@
     "@yarnpkg/fslib": "^2.4.0",
     "ava": "^3.15.0",
     "axios": "^0.21.1",
-    "chai": "^4.0.1",
+    "dprint": "^0.25.0",
     "expect": "^27.0.2",
     "get-stream": "^6.0.0",
     "lodash": "^4.17.15",
     "ntypescript": "^1.201507091536.1",
     "nyc": "^15.0.1",
-    "prettier": "^2.5.1",
     "proper-lockfile": "^4.1.2",
     "proxyquire": "^2.0.0",
     "react": "^16.14.0",
@@ -140,7 +138,7 @@
     "semver": "^7.1.3",
     "throat": "^6.0.1",
     "typedoc": "^0.22.10",
-    "typescript": "4.5.5",
+    "typescript": "4.6.3",
     "typescript-json-schema": "^0.53.0",
     "util.promisify": "^1.0.1"
   },
@@ -170,7 +168,7 @@
     "create-require": "^1.1.0",
     "diff": "^4.0.1",
     "make-error": "^1.1.1",
-    "v8-compile-cache-lib": "^3.0.0",
+    "v8-compile-cache-lib": "^3.0.1",
     "yn": "3.1.1"
   },
   "prettier": {

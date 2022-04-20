@@ -171,82 +171,10 @@ function updateChildren(parent, child, scan) {
 }
 
 const moduleParentCache = new SafeWeakMap();
-function Module(id = '', parent) {
-  this.id = id;
-  this.path = path.dirname(id);
-  this.exports = {};
-  moduleParentCache.set(this, parent);
-  updateChildren(parent, this, false);
-  this.filename = null;
-  this.loaded = false;
-  this.children = [];
-}
 
-const builtinModules = [];
-for (const { 0: id, 1: mod } of NativeModule.map) {
-  if (mod.canBeRequiredByUsers) {
-    ArrayPrototypePush(builtinModules, id);
-  }
-}
-
-ObjectFreeze(builtinModules);
-Module.builtinModules = builtinModules;
-
-Module._cache = ObjectCreate(null);
-Module._pathCache = ObjectCreate(null);
-Module._extensions = ObjectCreate(null);
 let modulePaths = [];
-Module.globalPaths = [];
 
 let patched = false;
-
-// eslint-disable-next-line func-style
-let wrap = function(script) {
-  return Module.wrapper[0] + script + Module.wrapper[1];
-};
-
-const wrapper = [
-  '(function (exports, require, module, __filename, __dirname) { ',
-  '\n});',
-];
-
-let wrapperProxy = new Proxy(wrapper, {
-  set(target, property, value, receiver) {
-    patched = true;
-    return ReflectSet(target, property, value, receiver);
-  },
-
-  defineProperty(target, property, descriptor) {
-    patched = true;
-    return ObjectDefineProperty(target, property, descriptor);
-  }
-});
-
-ObjectDefineProperty(Module, 'wrap', {
-  get() {
-    return wrap;
-  },
-
-  set(value) {
-    patched = true;
-    wrap = value;
-  }
-});
-
-ObjectDefineProperty(Module, 'wrapper', {
-  get() {
-    return wrapperProxy;
-  },
-
-  set(value) {
-    patched = true;
-    wrapperProxy = value;
-  }
-});
-
-const isPreloadingDesc = { get() { return isPreloading; } };
-ObjectDefineProperty(Module.prototype, 'isPreloading', isPreloadingDesc);
-ObjectDefineProperty(NativeModule.prototype, 'isPreloading', isPreloadingDesc);
 
 function getModuleParent() {
   return moduleParentCache.get(this);
@@ -256,25 +184,9 @@ function setModuleParent(value) {
   moduleParentCache.set(this, value);
 }
 
-ObjectDefineProperty(Module.prototype, 'parent', {
-  get: pendingDeprecation ? deprecate(
-    getModuleParent,
-    'module.parent is deprecated due to accuracy issues. Please use ' +
-      'require.main to find program entry point instead.',
-    'DEP0144'
-  ) : getModuleParent,
-  set: pendingDeprecation ? deprecate(
-    setModuleParent,
-    'module.parent is deprecated due to accuracy issues. Please use ' +
-      'require.main to find program entry point instead.',
-    'DEP0144'
-  ) : setModuleParent,
-});
-
 let debug = require('internal/util/debuglog').debuglog('module', (fn) => {
   debug = fn;
 });
-Module._debug = deprecate(debug, 'Module._debug is deprecated.', 'DEP0077');
 
 // Given a module name, and a list of paths to test, returns the first
 // matching file in the following precedence.
