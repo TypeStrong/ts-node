@@ -16,9 +16,13 @@ import {
 } from './helpers';
 
 const test = context(ctxTsNode).context(ctxRepl);
+test.runSerially();
 test.beforeEach(async (t) => {
   t.teardown(() => {
     resetNodeEnvironment();
+    // Useful for debugging memory leaks.  Leaving in case I need it again.
+    // global.gc(); // Requires adding nodeArguments: ['--expose-gc'] to ava config
+    // console.dir(process.memoryUsage().heapUsed / 1000 / 1000);
   });
 });
 
@@ -538,5 +542,111 @@ test.suite('REPL declares types for node built-ins within REPL', (test) => {
     // Assert that we do not get errors about `declare import` syntax from swc
     expect(stdout).toBe("> undefined\n> undefined\n> 'done'\n");
     expect(stderr).toBe('');
+  });
+});
+
+test.suite('REPL treats object literals and block scopes correctly', (test) => {
+  test(
+    'repl should treat { key: 123 } as object literal',
+    macroReplNoErrorsAndStdoutContains,
+    '{ key: 123 }',
+    '{ key: 123 }'
+  );
+  test(
+    'repl should treat ({ key: 123 }) as object literal',
+    macroReplNoErrorsAndStdoutContains,
+    '({ key: 123 })',
+    '{ key: 123 }'
+  );
+  test(
+    'repl should treat ({ let v = 0; v; }) as object literal and error',
+    macroReplStderrContains,
+    '({ let v = 0; v; })',
+    semver.satisfies(ts.version, '2.7')
+      ? 'error TS2304'
+      : 'No value exists in scope for the shorthand property'
+  );
+  test(
+    'repl should treat { let v = 0; v; } as block scope',
+    macroReplNoErrorsAndStdoutContains,
+    '{ let v = 0; v; }',
+    '0'
+  );
+  test.suite('extra', (test) => {
+    test.skipIf(semver.satisfies(ts.version, '2.7'));
+    test(
+      'repl should treat { key: 123 }; as block scope',
+      macroReplNoErrorsAndStdoutContains,
+      '{ key: 123 };',
+      '123'
+    );
+    test(
+      'repl should treat {\\nkey: 123\\n}; as block scope',
+      macroReplNoErrorsAndStdoutContains,
+      '{\nkey: 123\n};',
+      '123'
+    );
+    test(
+      'repl should treat { key: 123 }[] as block scope (edge case)',
+      macroReplNoErrorsAndStdoutContains,
+      '{ key: 123 }[]',
+      '[]'
+    );
+  });
+  test.suite('multiline', (test) => {
+    test(
+      'repl should treat {\\nkey: 123\\n} as object literal',
+      macroReplNoErrorsAndStdoutContains,
+      '{\nkey: 123\n}',
+      '{ key: 123 }'
+    );
+    test(
+      'repl should treat ({\\nkey: 123\\n}) as object literal',
+      macroReplNoErrorsAndStdoutContains,
+      '({\nkey: 123\n})',
+      '{ key: 123 }'
+    );
+    test(
+      'repl should treat ({\\nlet v = 0;\\nv;\\n}) as object literal and error',
+      macroReplStderrContains,
+      '({\nlet v = 0;\nv;\n})',
+      semver.satisfies(ts.version, '2.7')
+        ? 'error TS2304'
+        : 'No value exists in scope for the shorthand property'
+    );
+    test(
+      'repl should treat {\\nlet v = 0;\\nv;\\n} as block scope',
+      macroReplNoErrorsAndStdoutContains,
+      '{\nlet v = 0;\nv;\n}',
+      '0'
+    );
+  });
+  test.suite('property access', (test) => {
+    test(
+      'repl should treat { key: 123 }.key as object literal property access',
+      macroReplNoErrorsAndStdoutContains,
+      '{ key: 123 }.key',
+      '123'
+    );
+    test(
+      'repl should treat { key: 123 }["key"] as object literal indexed access',
+      macroReplNoErrorsAndStdoutContains,
+      '{ key: 123 }["key"]',
+      '123'
+    );
+    test(
+      'repl should treat { key: 123 }.foo as object literal non-existent property access',
+      macroReplStderrContains,
+      '{ key: 123 }.foo',
+      "Property 'foo' does not exist on type"
+    );
+    test(
+      'repl should treat { key: 123 }["foo"] as object literal non-existent indexed access',
+      macroReplStderrContains,
+      '{ key: 123 }["foo"]',
+      semver.satisfies(ts.version, '2.7')
+        ? 'error TS7017'
+        : "Property 'foo' does not exist on type"
+    );
   });
 });

@@ -202,7 +202,8 @@ export function getStream(stream: Readable, waitForPattern?: string | RegExp) {
 //#region Reset node environment
 
 const defaultRequireExtensions = captureObjectState(require.extensions);
-const defaultProcess = captureObjectState(process);
+// Avoid node deprecation warning for accessing _channel
+const defaultProcess = captureObjectState(process, ['_channel']);
 const defaultModule = captureObjectState(require('module'));
 const defaultError = captureObjectState(Error);
 const defaultGlobal = captureObjectState(global);
@@ -214,15 +215,20 @@ const defaultGlobal = captureObjectState(global);
  * Must also play nice with `nyc`'s environmental mutations.
  */
 export function resetNodeEnvironment() {
+  const sms =
+    require('@cspotcode/source-map-support') as typeof import('@cspotcode/source-map-support');
   // We must uninstall so that it resets its internal state; otherwise it won't know it needs to reinstall in the next test.
-  require('@cspotcode/source-map-support').uninstall();
+  sms.uninstall();
+  // Must remove handlers to avoid a memory leak
+  sms.resetRetrieveHandlers();
 
   // Modified by ts-node hooks
   resetObject(require.extensions, defaultRequireExtensions);
 
   // ts-node attaches a property when it registers an instance
   // source-map-support monkey-patches the emit function
-  resetObject(process, defaultProcess);
+  // Avoid node deprecation warnings for setting process.config or accessing _channel
+  resetObject(process, defaultProcess, undefined, ['_channel'], ['config']);
 
   // source-map-support swaps out the prepareStackTrace function
   resetObject(Error, defaultError);
@@ -235,11 +241,10 @@ export function resetNodeEnvironment() {
   resetObject(global, defaultGlobal, ['__coverage__']);
 }
 
-function captureObjectState(object: any) {
+function captureObjectState(object: any, avoidGetters: string[] = []) {
   const descriptors = Object.getOwnPropertyDescriptors(object);
   const values = mapValues(descriptors, (_d, key) => {
-    // Avoid node deprecation warning for accessing _channel
-    if (object === process && key === '_channel') return descriptors[key].value;
+    if (avoidGetters.includes(key)) return descriptors[key].value;
     return object[key];
   });
   return {
@@ -251,7 +256,9 @@ function captureObjectState(object: any) {
 function resetObject(
   object: any,
   state: ReturnType<typeof captureObjectState>,
-  doNotDeleteTheseKeys: string[] = []
+  doNotDeleteTheseKeys: string[] = [],
+  doNotSetTheseKeys: string[] = [],
+  avoidSetterIfUnchanged: string[] = []
 ) {
   const currentDescriptors = Object.getOwnPropertyDescriptors(object);
   for (const key of Object.keys(currentDescriptors)) {
@@ -262,9 +269,8 @@ function resetObject(
   // Trigger nyc's setter functions
   for (const [key, value] of Object.entries(state.values)) {
     try {
-      // Avoid node deprecation warnings for setting process.config or accessing _channel
-      if (object === process && key === '_channel') continue;
-      if (object === process && key === 'config' && object[key] === value)
+      if (doNotSetTheseKeys.includes(key)) continue;
+      if (avoidSetterIfUnchanged.includes(key) && object[key] === value)
         continue;
       object[key] = value;
     } catch {}
