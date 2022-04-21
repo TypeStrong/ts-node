@@ -48,13 +48,15 @@ test.suite('esm', (test) => {
       expect(err).toBe(null);
       expect(stdout).toBe('foo bar baz biff libfoo\n');
     });
-    test('should use source maps', async () => {
-      const { err, stdout } = await exec(
+    test('should use source maps', async (t) => {
+      const { err, stdout, stderr } = await exec(
         `${CMD_ESM_LOADER_WITHOUT_PROJECT} "throw error.ts"`,
         {
           cwd: join(TEST_DIR, './esm'),
         }
       );
+      t.log(stdout);
+      t.log(stderr);
       expect(err).not.toBe(null);
       expect(err!.message).toMatch(
         [
@@ -64,6 +66,11 @@ test.suite('esm', (test) => {
           "  bar() { throw new Error('this is a demo'); }",
           '                ^',
           'Error: this is a demo',
+          `    at Foo.bar (${pathToFileURL(
+            join(TEST_DIR, './esm/throw error.ts')
+          )
+            .toString()
+            .replace(/%20/g, ' ')}:\d+)`,
         ].join('\n')
       );
     });
