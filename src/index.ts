@@ -795,7 +795,8 @@ export function createFromPreloadedConfig(
   installSourceMapSupport();
   function installSourceMapSupport() {
     const sourceMapSupport =
-      require('@cspotcode/source-map-support') as typeof _sourceMapSupport;
+      // require('@cspotcode/source-map-support') as typeof _sourceMapSupport;
+      require('source-map-support-old') as typeof _sourceMapSupport;
     sourceMapSupport.install({
       environment: 'node',
       retrieveFile(pathOrUrl: string) {
