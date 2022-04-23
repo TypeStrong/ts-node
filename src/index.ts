@@ -1551,7 +1551,6 @@ function updateSourceMap(sourceMapText: string, fileName: string) {
   sourceMap.file = fileName;
   sourceMap.sources = [fileName];
   delete sourceMap.sourceRoot;
-  console.dir(sourceMap);
   return JSON.stringify(sourceMap);
 }
 
