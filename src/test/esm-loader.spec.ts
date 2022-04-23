@@ -58,19 +58,18 @@ test.suite('esm', (test) => {
       t.log(stdout);
       t.log(stderr);
       expect(err).not.toBe(null);
+      const expectedModuleUrl = pathToFileURL(
+        join(TEST_DIR, './esm/throw error.ts')
+      )
+        .toString()
+        .replace(/%20/g, ' ');
       expect(err!.message).toMatch(
         [
-          `${pathToFileURL(join(TEST_DIR, './esm/throw error.ts'))
-            .toString()
-            .replace(/%20/g, ' ')}:100`,
+          `${expectedModuleUrl}:100`,
           "  bar() { throw new Error('this is a demo'); }",
           '                ^',
           'Error: this is a demo',
-          `    at Foo.bar (${pathToFileURL(
-            join(TEST_DIR, './esm/throw error.ts')
-          )
-            .toString()
-            .replace(/%20/g, ' ')}:\d+)`,
+          `    at Foo.bar (${expectedModuleUrl}:100:17)`,
         ].join('\n')
       );
     });
