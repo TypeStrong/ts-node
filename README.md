@@ -309,7 +309,7 @@ All command-line flags support both `--camelCase` and `--hyphen-case`.
 
 ## TSConfig
 
-*   `-P, --project [path]`   Path to TypeScript JSON project file <br/>*Environment:* `TS_NODE_PROJECT`
+*   `-P, --project [path]`   Path to TypeScript JSON project file. (Note the uppercase - this is different from `tsc`'s `-p/--project` option.) <br/>*Environment:* `TS_NODE_PROJECT`
 *   `--skipProject`   Skip project config resolution and loading <br/>*Default:* `false` <br/>*Environment:* `TS_NODE_SKIP_PROJECT`
 *   `-c, --cwdMode`   Resolve config relative to the current directory instead of the directory of the entrypoint script
 *   `-O, --compilerOptions [opts]`   JSON object to merge with compiler options <br/>*Environment:* `TS_NODE_COMPILER_OPTIONS`
