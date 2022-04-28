@@ -81,6 +81,8 @@ ts-node --project <path/to/tsconfig>
 
 Path to tsconfig file.
 
+*Note the uppercase `-P`. This is different from `tsc`'s `-p/--project` option.*
+
 *Environment:* `TS_NODE_PROJECT`
 
 ### skipProject
