@@ -60,9 +60,7 @@ test.suite('esm', (test) => {
       expect(err).not.toBe(null);
       const expectedModuleUrl = pathToFileURL(
         join(TEST_DIR, './esm/throw error.ts')
-      )
-        .toString()
-        .replace(/%20/g, ' ');
+      ).toString();
       expect(err!.message).toMatch(
         [
           `${expectedModuleUrl}:100`,
