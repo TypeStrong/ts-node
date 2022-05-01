@@ -11,6 +11,18 @@
       "skipFiles": [
         "<node_internals>/**/*.js"
       ],
+    },
+    {
+      "name": "Debug Example: running a test fixture against local ts-node/esm loader",
+      "type": "pwa-node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/tests/esm",
+      "runtimeArgs": ["--loader", "../../ts-node/esm"],
+      "program": "throw error.ts",
+      "outputCapture": "std",
+      "skipFiles": [
+        "<node_internals>/**/*.js"
+      ],
     }
   ],
 }
