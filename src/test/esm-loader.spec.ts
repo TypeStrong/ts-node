@@ -55,8 +55,6 @@ test.suite('esm', (test) => {
           cwd: join(TEST_DIR, './esm'),
         }
       );
-      t.log(stdout);
-      t.log(stderr);
       expect(err).not.toBe(null);
       const expectedModuleUrl = pathToFileURL(
         join(TEST_DIR, './esm/throw error.ts')

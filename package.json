@@ -157,7 +157,7 @@
     }
   },
   "dependencies": {
-    "@cspotcode/source-map-support": "git+https://github.com/cspotcode/node-source-map-support.git#trace-mapping",
+    "@cspotcode/source-map-support": "^0.8.0",
     "@tsconfig/node10": "^1.0.7",
     "@tsconfig/node12": "^1.0.7",
     "@tsconfig/node14": "^1.0.0",
@@ -168,7 +168,6 @@
     "create-require": "^1.1.0",
     "diff": "^4.0.1",
     "make-error": "^1.1.1",
-    "source-map-support-old": "npm:@cspotcode/source-map-support@^0.7.0",
     "v8-compile-cache-lib": "^3.0.1",
     "yn": "3.1.1"
   },
