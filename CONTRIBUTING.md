@@ -54,6 +54,30 @@ We have a debug configuration for VSCode.
 Note that some tests might misbehave in the debugger.  REPL tests in particular.  I'm not sure why, but I think it is related to how `console` does not write to
 stdout when in a debug session.
 
+### Test Context
+
+Ava has the concept of test "context", an object which can store reusable fields common across many tests.
+
+By convention, any functions that setup reusable context start with `ctx`, making them easier to tab-complete and auto-import while writing tests.
+
+See `ctxTsNode` for an example.
+
+Context setup functions are re-executed for each test case.  If you don't want this, wrap the context function in lodash `once()`.  Each test will still get a unique context object, but the values placed onto each context will be identical.
+
+Every `ctx*` function has a namespace with `Ctx` and `T` types.  These make it easier/cleaner to write tests.
+
+### Test Macros
+
+Ava has the concept of test "macros", reusable functions which can declare a type of test many times with different inputs.
+
+Macro functions are created with `test.macro()`.
+
+By convention, if a macro function is meant to be imported and reused in multiple files, its name should start with `macro`.
+
+Macros can also be declared to require a certain "context," thanks to the namespace types described in "Test Context" above.
+
+See examples in `helpers.ts`.
+
 ## Documentation
 
 Documentation is written in markdown in `website/docs` and rendered into a website by Docusaurus.  The README is also generated from these markdown files.

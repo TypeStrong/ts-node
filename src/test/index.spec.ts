@@ -1,4 +1,4 @@
-import { _test } from './testlib';
+import { context } from './testlib';
 import * as expect from 'expect';
 import { join, resolve, sep as pathSep } from 'path';
 import { tmpdir } from 'os';
@@ -14,7 +14,6 @@ import {
 import { lstatSync, mkdtempSync } from 'fs';
 import { npath } from '@yarnpkg/fslib';
 import type _createRequire from 'create-require';
-import { pathToFileURL } from 'url';
 import { createExec } from './exec-helpers';
 import {
   BIN_CWD_PATH,
@@ -26,18 +25,17 @@ import {
   testsDirRequire,
   tsNodeTypes,
   xfs,
-  contextTsNodeUnderTest,
+  ctxTsNode,
   CMD_TS_NODE_WITH_PROJECT_FLAG,
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   CMD_ESM_LOADER_WITHOUT_PROJECT,
-  EXPERIMENTAL_MODULES_FLAG,
 } from './helpers';
 
 const exec = createExec({
   cwd: TEST_DIR,
 });
 
-const test = _test.context(contextTsNodeUnderTest);
+const test = context(ctxTsNode);
 
 test.suite('ts-node', (test) => {
   test('should export the correct version', (t) => {
@@ -709,8 +707,8 @@ test.suite('ts-node', (test) => {
 
     test.suite(
       'should use implicit @tsconfig/bases config when one is not loaded from disk',
-      (_test) => {
-        const test = _test.context(async (t) => ({
+      ({ context }) => {
+        const test = context(async (t) => ({
           tempDir: mkdtempSync(join(tmpdir(), 'ts-node-spec')),
         }));
         if (
@@ -941,8 +939,8 @@ test.suite('ts-node', (test) => {
     });
   });
 
-  test.suite('create', (_test) => {
-    const test = _test.context(async (t) => {
+  test.suite('create', ({ context }) => {
+    const test = context(async (t) => {
       return {
         service: t.context.tsNodeUnderTest.create({
           compilerOptions: { target: 'es5' },

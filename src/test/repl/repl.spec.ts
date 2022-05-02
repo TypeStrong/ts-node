@@ -1,21 +1,28 @@
-import { _test, expect } from '../testlib';
-import { resetNodeEnvironment, ts } from '../helpers';
+import { context, expect } from '../testlib';
+import { delay, resetNodeEnvironment, ts } from '../helpers';
 import semver = require('semver');
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
-  contextTsNodeUnderTest,
+  ctxTsNode,
   getStream,
   TEST_DIR,
 } from '../helpers';
 import { createExec, createExecTester } from '../exec-helpers';
 import { upstreamTopLevelAwaitTests } from './node-repl-tla';
-import { contextReplHelpers, replMacros } from './helpers';
-import { promisify } from 'util';
+import {
+  ctxRepl,
+  macroReplNoErrorsAndStdoutContains,
+  macroReplStderrContains,
+} from './helpers';
 
-const test = _test.context(contextTsNodeUnderTest).context(contextReplHelpers);
+const test = context(ctxTsNode).context(ctxRepl);
+test.runSerially();
 test.beforeEach(async (t) => {
   t.teardown(() => {
     resetNodeEnvironment();
+    // Useful for debugging memory leaks.  Leaving in case I need it again.
+    // global.gc(); // Requires adding nodeArguments: ['--expose-gc'] to ava config
+    // console.dir(process.memoryUsage().heapUsed / 1000 / 1000);
   });
 });
 
@@ -114,11 +121,11 @@ test.serial('REPL can be created via API', async (t) => {
   );
 });
 
-test.suite('top level await', (_test) => {
+test.suite('top level await', ({ context }) => {
   const compilerOptions = {
     target: 'es2018',
   };
-  const test = _test.context(async (t) => {
+  const test = context(async (t) => {
     return { executeInTlaRepl };
 
     function executeInTlaRepl(input: string, waitPattern?: string | RegExp) {
@@ -246,13 +253,13 @@ test.suite('top level await', (_test) => {
       'should error with typing information when importing a file with type errors',
       async (t) => {
         const { stdout, stderr } = await t.context.executeInTlaRepl(
-          `const {foo} = await import('./tests/repl/tla-import');`,
+          `const {foo} = await import('./repl/tla-import');`,
           'error'
         );
 
         expect(stdout).toBe('> > ');
         expect(stderr.replace(/\r\n/g, '\n')).toBe(
-          'tests/repl/tla-import.ts(1,14): error TS2322: ' +
+          'repl/tla-import.ts(1,14): error TS2322: ' +
             (semver.gte(ts.version, '4.0.0')
               ? `Type 'number' is not assignable to type 'string'.\n`
               : `Type '1' is not assignable to type 'string'.\n`) +
@@ -417,10 +424,9 @@ test.suite(
 
 test.suite('Multiline inputs and RECOVERY_CODES', (test) => {
   test.runSerially();
-  const macros = replMacros(test);
-
-  macros.noErrorsAndStdoutContains(
+  test(
     'multiline function args declaration',
+    macroReplNoErrorsAndStdoutContains,
     `
       function myFn(
         a: string,
@@ -433,8 +439,9 @@ test.suite('Multiline inputs and RECOVERY_CODES', (test) => {
     'test !'
   );
 
-  macros.stderrContains(
+  test(
     'Conditional recovery codes: this one-liner *should* raise an error; should not be recoverable',
+    macroReplStderrContains,
     `
       (a: any) => a = null;
     `,
@@ -450,7 +457,7 @@ test.suite('REPL works with traceResolution', (test) => {
     'startup traces should print before the prompt appears when traceResolution is enabled',
     async (t) => {
       const repl = t.context.createReplViaApi({
-        registerHooks: false as true,
+        registerHooks: false,
         createServiceOpts: {
           compilerOptions: {
             traceResolution: true,
@@ -462,7 +469,7 @@ test.suite('REPL works with traceResolution', (test) => {
 
       repl.stdin.end();
 
-      await promisify(setTimeout)(3e3);
+      await delay(3e3);
 
       repl.stdout.end();
       const stdout = await getStream(repl.stdout);
@@ -535,5 +542,111 @@ test.suite('REPL declares types for node built-ins within REPL', (test) => {
     // Assert that we do not get errors about `declare import` syntax from swc
     expect(stdout).toBe("> undefined\n> undefined\n> 'done'\n");
     expect(stderr).toBe('');
+  });
+});
+
+test.suite('REPL treats object literals and block scopes correctly', (test) => {
+  test(
+    'repl should treat { key: 123 } as object literal',
+    macroReplNoErrorsAndStdoutContains,
+    '{ key: 123 }',
+    '{ key: 123 }'
+  );
+  test(
+    'repl should treat ({ key: 123 }) as object literal',
+    macroReplNoErrorsAndStdoutContains,
+    '({ key: 123 })',
+    '{ key: 123 }'
+  );
+  test(
+    'repl should treat ({ let v = 0; v; }) as object literal and error',
+    macroReplStderrContains,
+    '({ let v = 0; v; })',
+    semver.satisfies(ts.version, '2.7')
+      ? 'error TS2304'
+      : 'No value exists in scope for the shorthand property'
+  );
+  test(
+    'repl should treat { let v = 0; v; } as block scope',
+    macroReplNoErrorsAndStdoutContains,
+    '{ let v = 0; v; }',
+    '0'
+  );
+  test.suite('extra', (test) => {
+    test.skipIf(semver.satisfies(ts.version, '2.7'));
+    test(
+      'repl should treat { key: 123 }; as block scope',
+      macroReplNoErrorsAndStdoutContains,
+      '{ key: 123 };',
+      '123'
+    );
+    test(
+      'repl should treat {\\nkey: 123\\n}; as block scope',
+      macroReplNoErrorsAndStdoutContains,
+      '{\nkey: 123\n};',
+      '123'
+    );
+    test(
+      'repl should treat { key: 123 }[] as block scope (edge case)',
+      macroReplNoErrorsAndStdoutContains,
+      '{ key: 123 }[]',
+      '[]'
+    );
+  });
+  test.suite('multiline', (test) => {
+    test(
+      'repl should treat {\\nkey: 123\\n} as object literal',
+      macroReplNoErrorsAndStdoutContains,
+      '{\nkey: 123\n}',
+      '{ key: 123 }'
+    );
+    test(
+      'repl should treat ({\\nkey: 123\\n}) as object literal',
+      macroReplNoErrorsAndStdoutContains,
+      '({\nkey: 123\n})',
+      '{ key: 123 }'
+    );
+    test(
+      'repl should treat ({\\nlet v = 0;\\nv;\\n}) as object literal and error',
+      macroReplStderrContains,
+      '({\nlet v = 0;\nv;\n})',
+      semver.satisfies(ts.version, '2.7')
+        ? 'error TS2304'
+        : 'No value exists in scope for the shorthand property'
+    );
+    test(
+      'repl should treat {\\nlet v = 0;\\nv;\\n} as block scope',
+      macroReplNoErrorsAndStdoutContains,
+      '{\nlet v = 0;\nv;\n}',
+      '0'
+    );
+  });
+  test.suite('property access', (test) => {
+    test(
+      'repl should treat { key: 123 }.key as object literal property access',
+      macroReplNoErrorsAndStdoutContains,
+      '{ key: 123 }.key',
+      '123'
+    );
+    test(
+      'repl should treat { key: 123 }["key"] as object literal indexed access',
+      macroReplNoErrorsAndStdoutContains,
+      '{ key: 123 }["key"]',
+      '123'
+    );
+    test(
+      'repl should treat { key: 123 }.foo as object literal non-existent property access',
+      macroReplStderrContains,
+      '{ key: 123 }.foo',
+      "Property 'foo' does not exist on type"
+    );
+    test(
+      'repl should treat { key: 123 }["foo"] as object literal non-existent indexed access',
+      macroReplStderrContains,
+      '{ key: 123 }["foo"]',
+      semver.satisfies(ts.version, '2.7')
+        ? 'error TS7017'
+        : "Property 'foo' does not exist on type"
+    );
   });
 });
