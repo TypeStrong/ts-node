@@ -1,10 +1,13 @@
-import { cachedLookup, normalizeSlashes } from "./util";
+import { cachedLookup, normalizeSlashes } from './util';
 import type * as _ts from 'typescript';
-import { dirname, resolve } from "path";
+import { dirname, resolve } from 'path';
 import { getPatternFromSpec } from './ts-internals';
-import type { TSInternal } from "./ts-compiler-types";
-import { getDefaultTsconfigJsonForNodeVersion } from "./tsconfigs";
-import { getTsConfigDefaults, ComputeAsCommonRootOfFiles } from "./configuration";
+import type { TSInternal } from './ts-compiler-types';
+import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs';
+import {
+  getTsConfigDefaults,
+  ComputeAsCommonRootOfFiles,
+} from './configuration';
 
 interface SrcOutPair {
   preferSrc: boolean;
@@ -19,9 +22,7 @@ function contains(parentDirWithTrailingSlash: string, childDir: string) {
   return childDir.startsWith(parentDirWithTrailingSlash);
 }
 
-class SolutionResolver {
-
-}
+class SolutionResolver {}
 
 class ProjectResolver {
   files: string[];
@@ -38,25 +39,40 @@ class ProjectResolver {
     exclude: string[] | undefined
   ) {
     // const configBaseDir = normalizeSlashes(dirname(configFilePathOrCwd));
-    const {rootDir, include: includeSpecs, files: filesArray, exclude: excludeSpecs} = getTsConfigDefaults(tsconfig, basePath, files, include, exclude);
-    if(rootDir === ComputeAsCommonRootOfFiles) {
-      throw new Error('Cannot determine rootDir if composite is not set.  Either enable composite or set explicit rootDir');
+    const {
+      rootDir,
+      include: includeSpecs,
+      files: filesArray,
+      exclude: excludeSpecs,
+    } = getTsConfigDefaults(tsconfig, basePath, files, include, exclude);
+    if (rootDir === ComputeAsCommonRootOfFiles) {
+      throw new Error(
+        'Cannot determine rootDir if composite is not set.  Either enable composite or set explicit rootDir'
+      );
     }
 
-    this.files = filesArray.map(f => normalizeSlashes(resolve(basePath, f)));
-    const reString = ts.getRegularExpressionForWildcard(includeSpecs, basePath, 'files');
+    this.files = filesArray.map((f) => normalizeSlashes(resolve(basePath, f)));
+    const reString = ts.getRegularExpressionForWildcard(
+      includeSpecs,
+      basePath,
+      'files'
+    );
     this.includeRe = new RegExp(reString ?? '$^');
-    const reString2 = ts.getRegularExpressionForWildcard(excludeSpecs as string[], basePath, 'exclude');
+    const reString2 = ts.getRegularExpressionForWildcard(
+      excludeSpecs as string[],
+      basePath,
+      'exclude'
+    );
     this.excludeRe = new RegExp(reString2 ?? '$^');
   }
 }
 
 function createNodeResolverFunctions(opts: {
-  allowJs: boolean,
-  jsx: boolean,
-  cjsMjs: boolean
+  allowJs: boolean;
+  jsx: boolean;
+  cjsMjs: boolean;
 }) {
-  const {allowJs, cjsMjs, jsx} = opts;
+  const { allowJs, cjsMjs, jsx } = opts;
 
   const rootOutPairs: SrcOutPair[] = [];
   // const rootDirsSets: RootDirsSet[] = [];
@@ -68,12 +84,13 @@ function createNodeResolverFunctions(opts: {
   function addRootOutPair(root: string, out: string, preferSrc = true) {
     root = ensureTrailingSlash(root);
     out = ensureTrailingSlash(out);
-    rootOutPairs.push({root, out, preferSrc});
+    rootOutPairs.push({ root, out, preferSrc });
   }
 
   function ensureTrailingSlash(str: string) {
-    if(str.includes('\\')) throw new Error('String must have normalized slashes');
-    if(!str.endsWith('/')) str += '/';
+    if (str.includes('\\'))
+      throw new Error('String must have normalized slashes');
+    if (!str.endsWith('/')) str += '/';
     return str;
   }
 
@@ -88,8 +105,8 @@ function createNodeResolverFunctions(opts: {
   // }
   function mapFromRootToOut(directory: string) {
     directory = ensureTrailingSlash(directory);
-    for(const {out, root} of rootOutPairs) {
-      if(directory.startsWith(root)) {
+    for (const { out, root } of rootOutPairs) {
+      if (directory.startsWith(root)) {
         // TODO how to exclude node_modules from this mapping??
         // Check regexp patterns to see if this file is included?
         return out + directory.slice(root.length);
@@ -105,22 +122,24 @@ function createNodeResolverFunctions(opts: {
   //   });
   // }
 
-  const getAlternativeDirectoriesCached = cachedLookup(getAlternativeDirectories);
+  const getAlternativeDirectoriesCached = cachedLookup(
+    getAlternativeDirectories
+  );
 
   /** Get array of alternative directories to check because they're overlaid over each other */
   function* getAlternativeDirectories(directory: string) {
     directory = ensureTrailingSlash(directory);
-    for(const {out, preferSrc, root} of rootOutPairs) {
-      if(contains(root, directory)) {
-        if(preferSrc) {
+    for (const { out, preferSrc, root } of rootOutPairs) {
+      if (contains(root, directory)) {
+        if (preferSrc) {
           yield directory; // directory is in src; preferred
-          yield out + directory.slice(root.length)
+          yield out + directory.slice(root.length);
         } else {
           yield out + directory.slice(root.length);
           yield directory;
         }
-      } else if(contains(out, directory)) {
-        if(preferSrc) {
+      } else if (contains(out, directory)) {
+        if (preferSrc) {
           yield root + directory.slice(out.length);
           yield directory; // directory is in out
         } else {
@@ -160,23 +179,14 @@ function createNodeResolverFunctions(opts: {
     'ts',
     'cts',
     'mts',
-    jsx && 'tsx'
+    jsx && 'tsx',
   ];
   // If extension already specified, and is recognized, attempt these replacements
-  const jsExtensions = [
-    'js',
-    jsx && 'jsx',
-    'ts',
-    jsx && 'tsx'
-  ].filter(v => v) as string[];
-  const cjsExtensions = [
-    'cjs',
-    'cts',
-  ];
-  const mjsExtensions = [
-    'mjs',
-    'mts',
-  ];
+  const jsExtensions = ['js', jsx && 'jsx', 'ts', jsx && 'tsx'].filter(
+    (v) => v
+  ) as string[];
+  const cjsExtensions = ['cjs', 'cts'];
+  const mjsExtensions = ['mjs', 'mts'];
 
   /**
    * Get alternative filenames to check because they're equivalent.
@@ -185,27 +195,40 @@ function createNodeResolverFunctions(opts: {
    * -- rootDir, if was able to map root<==>out
    * -- otherwise attempt in dir, whatever it is.
    */
-  function* getAlternativeFilenames(filename: string, allowOmitFileExtension: boolean) {
+  function* getAlternativeFilenames(
+    filename: string,
+    allowOmitFileExtension: boolean
+  ) {
     // TODO be sure to avoid .d.ts, .d.mts, and .d.cts
     const lastDotIndex = filename.lastIndexOf('.');
     let emittedReplacements = false;
-    if(lastDotIndex > 0) {
-      const endsInDts = filename.endsWith('.d.ts') || filename.endsWith('.d.cts') || filename.endsWith('.d.mts');
-      if(!endsInDts) {
+    if (lastDotIndex > 0) {
+      const endsInDts =
+        filename.endsWith('.d.ts') ||
+        filename.endsWith('.d.cts') ||
+        filename.endsWith('.d.mts');
+      if (!endsInDts) {
         const name = filename.slice(0, lastDotIndex);
         const extension = filename.slice(lastDotIndex + 1);
-        const replacements = extension === 'js' ? jsExtensions : extension === 'cjs' ? cjsExtensions : extension === 'mjs' ? mjsExtensions : undefined;
-        if(replacements) {
+        const replacements =
+          extension === 'js'
+            ? jsExtensions
+            : extension === 'cjs'
+            ? cjsExtensions
+            : extension === 'mjs'
+            ? mjsExtensions
+            : undefined;
+        if (replacements) {
           emittedReplacements = true;
-          for(const replacement of replacements) {
+          for (const replacement of replacements) {
             yield name + '.' + replacement;
           }
         }
       }
     }
-    if(!emittedReplacements) yield filename;
-    if(allowOmitFileExtension) {
-      for(const replacement of extensionlessExtensions) {
+    if (!emittedReplacements) yield filename;
+    if (allowOmitFileExtension) {
+      for (const replacement of extensionlessExtensions) {
         yield filename + '.' + replacement;
       }
     }
@@ -215,7 +238,7 @@ function createNodeResolverFunctions(opts: {
     addRootOutPair,
     getAlternativeDirectories,
     getAlternativeDirectoriesCached,
-    getAlternativeFilenames
+    getAlternativeFilenames,
   };
 }
 
