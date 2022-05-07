@@ -1117,7 +1117,7 @@ test('Detect when typescript adds new ModuleKind values; flag as a failure so we
     expect(ts.ModuleKind[99]).toBeUndefined();
   }
   check(7, 'ES2022', false);
-  check(100, 'Node12', false);
+  check(100, 'Node16', false);
   check(199, 'NodeNext', false);
   const actualKeys = Object.keys(ts.ModuleKind);
   actualKeys.sort();
