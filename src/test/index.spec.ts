@@ -1117,7 +1117,7 @@ test('Detect when typescript adds new ModuleKind values; flag as a failure so we
     expect(ts.ModuleKind[99]).toBeUndefined();
   }
   check(7, 'ES2022', false);
-  if(ts.version.startsWith('4.8.') || semver.gte(ts.version, '4.8.0')) {
+  if (ts.version.startsWith('4.8.') || semver.gte(ts.version, '4.8.0')) {
     check(100, 'Node16', false);
   } else {
     check(100, 'Node12', false);
