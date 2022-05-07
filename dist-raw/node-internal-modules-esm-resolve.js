@@ -296,6 +296,7 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
     fileURLToPath(new URL('.', packageJSONUrl)), fileURLToPath(base));
 }
 
+/** tries exact name, then attempts replacement extensions, then attempts appending extensions */
 function resolveExtensionsWithTryExactName(search) {
   if (fileExists(search)) return search;
   const resolvedReplacementExtension = resolveReplacementExtensions(search);
@@ -311,6 +312,7 @@ const extensions = Array.from(new Set([
   ...tsExtensions
 ]));
 
+// This appends missing extensions
 function resolveExtensions(search) {
   for (let i = 0; i < extensions.length; i++) {
     const extension = extensions[i];
@@ -326,6 +328,7 @@ function resolveExtensions(search) {
  */
 const replacementExtensions = extensions.filter(ext => ['.js', '.jsx', '.ts', '.tsx'].includes(ext));
 
+/** This replaces JS with TS extensions */
 function resolveReplacementExtensions(search) {
   if (search.pathname.match(/\.js$/)) {
     const pathnameWithoutExtension = search.pathname.slice(0, search.pathname.length - 3);

@@ -30,5 +30,7 @@ module.exports = {
   StringPrototypeSplit: (str, ...rest) => String.prototype.split.apply(str, rest),
   StringPrototypeStartsWith: (str, ...rest) => String.prototype.startsWith.apply(str, rest),
   StringPrototypeSubstr: (str, ...rest) => String.prototype.substr.apply(str, rest),
+  StringPrototypeCharCodeAt: (str, ...rest) => String.prototype.charCodeAt.apply(str, rest),
+  StringPrototypeMatch: (str, ...rest) => String.prototype.match.apply(str, rest),
   SyntaxError: SyntaxError
 };

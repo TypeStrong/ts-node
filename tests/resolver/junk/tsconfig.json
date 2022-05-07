@@ -1,0 +1,9 @@
+{
+  "ts-node": {
+    "preferTsExts": false
+  },
+  "compilerOptions": {
+    "outDir": "junk/dist",
+    "rootDir": "src"
+  }
+}

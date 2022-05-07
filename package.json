@@ -175,7 +175,7 @@
     "singleQuote": true
   },
   "volta": {
-    "node": "17.5.0",
+    "node": "17.9.0",
     "npm": "6.14.15"
   }
 }

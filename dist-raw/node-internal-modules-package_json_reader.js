@@ -13,7 +13,7 @@ let manifest;
 
 /**
  * @param {string} jsonPath
- * @return {[string, boolean]}
+ * @return {{string: string, containsKeys: boolean}}
  */
 function read(jsonPath) {
   if (cache.has(jsonPath)) {

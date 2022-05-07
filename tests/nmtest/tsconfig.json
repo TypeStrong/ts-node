@@ -1,0 +1,13 @@
+{
+  "include": ["**/*", "node_modules"],
+  "references": [
+    {
+      "path": "packageFoo/tsconfig.json"
+    }
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": ".",
+    "outDir": "out"
+  }
+}

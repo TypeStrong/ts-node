@@ -1,0 +1,11 @@
+{
+  "ts-node": {
+    "experimentalResolver": true,
+    "preferSrc": false,
+    "transpileOnly": true
+  },
+  "compilerOptions": {
+    "allowJs": true,
+    "skipLibCheck": true
+  }
+}

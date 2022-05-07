@@ -17,6 +17,19 @@ function internalModuleReadJSON(path) {
   return [string, containsKeys]
 }
 
+// In node's core, this is implemented in C
+// https://github.com/nodejs/node/blob/63e7dc1e5c71b70c80ed9eda230991edb00811e2/src/node_file.cc#L987-L1005
+function internalModuleStat(path) {
+  try {
+    const stat = fs.statSync(path);
+    if(stat.isFile()) return 0;
+    if(stat.isDirectory()) return 1;
+  } catch(e) {
+    return -e.errno || -1;
+  }
+}
+
 module.exports = {
-  internalModuleReadJSON
+  internalModuleReadJSON,
+  internalModuleStat
 };
