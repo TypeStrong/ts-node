@@ -233,7 +233,7 @@ export function resetNodeEnvironment() {
   // source-map-support swaps out the prepareStackTrace function
   resetObject(Error, defaultError);
 
-  // _resolveFilename is modified by tsconfig-paths, future versions of source-map-support, and maybe future versions of ts-node
+  // _resolveFilename et.al. are modified by ts-node, tsconfig-paths, source-map-support, yarn, maybe other things?
   resetObject(require('module'), defaultModule);
 
   // May be modified by REPL tests, since the REPL sets globals.

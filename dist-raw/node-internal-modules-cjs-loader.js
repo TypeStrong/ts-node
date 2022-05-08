@@ -45,13 +45,6 @@ const {
 } = require('./node-internal-constants');
 
 
-function createCjsLoader(nodeInternalModulesEsmResolver) {
-const {
-  encodedSepRegEx,
-  packageExportsResolve,
-  // packageImportsResolve
-} = nodeInternalModulesEsmResolver;
-
 let statCache = null;
 
 function stat(filename) {
@@ -67,8 +60,6 @@ function stat(filename) {
   }
   return result;
 }
-
-
 
 // Copied from https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/modules/cjs/loader.js#L249
 const packageJsonCache = new SafeMap();
@@ -121,6 +112,13 @@ function readPackageScope(checkPath) {
   } while (separatorIndex > rootSeparatorIndex);
   return false;
 }
+
+function createCjsLoader(nodeInternalModulesEsmResolver) {
+const {
+  encodedSepRegEx,
+  packageExportsResolve,
+  // packageImportsResolve
+} = nodeInternalModulesEsmResolver;
 
 function tryPackage(requestPath, exts, isMain, originalPath) {
   const pkg = readPackage(requestPath)?.main;
@@ -517,6 +515,12 @@ function createEsmNotFoundErr(request, path) {
 //   return err;
 // }
 
+return {
+  Module_findPath
+}
+
+}
+
 /**
  * copied from Module._extensions['.js']
  * https://github.com/nodejs/node/blob/v15.3.0/lib/internal/modules/cjs/loader.js#L1113-L1120
@@ -539,13 +543,8 @@ function assertScriptCanLoadAsCJSImpl(service, module, filename) {
   }
 }
 
-return {
-  assertScriptCanLoadAsCJSImpl,
-  Module_findPath
-}
-
-}
 
 module.exports = {
-  createCjsLoader
+  createCjsLoader,
+  assertScriptCanLoadAsCJSImpl
 };

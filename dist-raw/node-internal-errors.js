@@ -3,7 +3,12 @@
 const path = require('path');
 
 module.exports = {
-  createErrRequireEsm
+  createErrRequireEsm,
+  codes: {
+    // TODO
+    ERR_INVALID_MODULE_SPECIFIER: class ERR_INVALID_MODULE_SPECIFIER extends Error {
+    }
+  }
 };
 
 // Native ERR_REQUIRE_ESM Error is declared here:

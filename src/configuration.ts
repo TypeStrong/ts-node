@@ -424,24 +424,31 @@ export const ComputeAsCommonRootOfFiles = Symbol();
  * This function centralizes the logic for computing those defaults.
  * @internal
  */
-export function getTsConfigDefaults(config: _ts.ParsedCommandLine, basePath: string, _files: string[] | undefined, _include: string[] | undefined, _exclude: string[] | undefined) {
-    const {composite = false} = config.options;
-    let rootDir: string | typeof ComputeAsCommonRootOfFiles = config.options.rootDir!;
-    if(rootDir == null) {
-      if(composite) rootDir = basePath;
-      // Return this symbol to avoid computing from `files`, which would require fs calls
-      else rootDir = ComputeAsCommonRootOfFiles;
-    }
-    const {outDir = rootDir} = config.options;
-    // Docs are wrong: https://www.typescriptlang.org/tsconfig#include
-    // Docs say **, but it's actually **/*; compiler throws error for **
-    const include = _files ? [] : ['**/*'];
-    const files = _files ?? [];
-    // Docs are misleading: https://www.typescriptlang.org/tsconfig#exclude
-    // Docs say it excludes node_modules, bower_components, jspm_packages, but actually those are excluded via behavior of "include"
-    const exclude = _exclude ?? [outDir]; // TODO technically, outDir is absolute path, but exclude should be relative glob pattern?
+export function getTsConfigDefaults(
+  config: _ts.ParsedCommandLine,
+  basePath: string,
+  _files: string[] | undefined,
+  _include: string[] | undefined,
+  _exclude: string[] | undefined
+) {
+  const { composite = false } = config.options;
+  let rootDir: string | typeof ComputeAsCommonRootOfFiles =
+    config.options.rootDir!;
+  if (rootDir == null) {
+    if (composite) rootDir = basePath;
+    // Return this symbol to avoid computing from `files`, which would require fs calls
+    else rootDir = ComputeAsCommonRootOfFiles;
+  }
+  const { outDir = rootDir } = config.options;
+  // Docs are wrong: https://www.typescriptlang.org/tsconfig#include
+  // Docs say **, but it's actually **/*; compiler throws error for **
+  const include = _files ? [] : ['**/*'];
+  const files = _files ?? [];
+  // Docs are misleading: https://www.typescriptlang.org/tsconfig#exclude
+  // Docs say it excludes node_modules, bower_components, jspm_packages, but actually those are excluded via behavior of "include"
+  const exclude = _exclude ?? [outDir]; // TODO technically, outDir is absolute path, but exclude should be relative glob pattern?
 
-    // TODO compute baseUrl
+  // TODO compute baseUrl
 
-    return {rootDir, outDir, include, files, exclude, composite};
+  return { rootDir, outDir, include, files, exclude, composite };
 }
