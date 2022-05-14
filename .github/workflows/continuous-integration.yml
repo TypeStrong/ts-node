@@ -122,10 +122,10 @@ jobs:
             typescript: next
             typescriptFlag: next
             downgradeNpm: true
-          # Node 17
+          # Node 18
           - flavor: 12
-            node: 17
-            nodeFlag: 17
+            node: 18
+            nodeFlag: 18
             typescript: latest
             typescriptFlag: latest
             downgradeNpm: true
