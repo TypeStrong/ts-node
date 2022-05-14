@@ -41,7 +41,7 @@ export function tempdirProject(name = '') {
   const tmpdir = fs.mkdtempSync(`${TEST_DIR}/tmp/${name}`);
   return projectInternal(tmpdir);
 }
-
+export type Project = ReturnType<typeof project>;
 export function project(name: string) {
   return projectInternal(`${TEST_DIR}/tmp/${name}`);
 }

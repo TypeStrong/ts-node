@@ -3,6 +3,10 @@ const {ArrayPrototypeForEach, StringPrototypeStartsWith, ObjectPrototypeHasOwnPr
 exports.addBuiltinLibsToObject = addBuiltinLibsToObject;
 
 // Copied from https://github.com/nodejs/node/blob/21f5a56914a3b24ad77535ef369b93c6b1c11d18/lib/internal/modules/cjs/helpers.js#L133-L178
+/**
+ * @param {any} object
+ * @return {void}
+ */
 function addBuiltinLibsToObject(object) {
   // Make built-in modules available directly (loaded lazily).
   const { builtinModules } = require('module').Module;

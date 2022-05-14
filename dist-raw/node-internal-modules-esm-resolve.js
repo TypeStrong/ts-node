@@ -98,7 +98,8 @@ const pendingDeprecation = getOptionValue('--pending-deprecation');
 
 function createResolve(opts) {
 // TODO receive cached fs implementations here
-const {tsExtensions, jsExtensions, preferTsExts} = opts;
+const {compiledExtensions, preferTsExts, tsNodeExperimentalSpecifierResolution} = opts;
+const experimentalSpecifierResolution = tsNodeExperimentalSpecifierResolution ?? getOptionValue('--experimental-specifier-resolution');
 
 const emittedPackageWarnings = new SafeSet();
 function emitFolderMapDeprecation(match, pjsonUrl, isExports, base) {
@@ -251,65 +252,49 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
   let guess;
   if (packageConfig.main !== undefined) {
     // Note: fs check redundances will be handled by Descriptor cache here.
+    if(guess = resolveReplacementExtensions(new URL(`./${packageConfig.main}`, packageJSONUrl))) {
+      return guess;
+    }
     if (fileExists(guess = new URL(`./${packageConfig.main}`,
                                    packageJSONUrl))) {
       return guess;
     }
-    if (fileExists(guess = new URL(`./${packageConfig.main}.js`,
-                                   packageJSONUrl))) {
-      return guess;
+    for(const extension of extensions) {
+      if (fileExists(guess = new URL(`./${packageConfig.main}${extension}`,
+                                    packageJSONUrl))) {
+        return guess;
+      }
     }
-    if (fileExists(guess = new URL(`./${packageConfig.main}.json`,
-                                   packageJSONUrl))) {
-      return guess;
-    }
-    if (fileExists(guess = new URL(`./${packageConfig.main}.node`,
-                                   packageJSONUrl))) {
-      return guess;
-    }
-    if (fileExists(guess = new URL(`./${packageConfig.main}/index.js`,
-                                   packageJSONUrl))) {
-      return guess;
-    }
-    if (fileExists(guess = new URL(`./${packageConfig.main}/index.json`,
-                                   packageJSONUrl))) {
-      return guess;
-    }
-    if (fileExists(guess = new URL(`./${packageConfig.main}/index.node`,
-                                   packageJSONUrl))) {
-      return guess;
+    for(const extension of extensions) {
+      if (fileExists(guess = new URL(`./${packageConfig.main}/index${extension}`,
+                                    packageJSONUrl))) {
+        return guess;
+      }
     }
     // Fallthrough.
   }
-  if (fileExists(guess = new URL('./index.js', packageJSONUrl))) {
-    return guess;
-  }
-  // So fs.
-  if (fileExists(guess = new URL('./index.json', packageJSONUrl))) {
-    return guess;
-  }
-  if (fileExists(guess = new URL('./index.node', packageJSONUrl))) {
-    return guess;
+  for(const extension of extensions) {
+    if (fileExists(guess = new URL(`./index${extension}`, packageJSONUrl))) {
+      return guess;
+    }
   }
   // Not found.
   throw new ERR_MODULE_NOT_FOUND(
     fileURLToPath(new URL('.', packageJSONUrl)), fileURLToPath(base));
 }
 
-/** tries exact name, then attempts replacement extensions, then attempts appending extensions */
+/** attempts replacement extensions, then tries exact name, then attempts appending extensions */
 function resolveExtensionsWithTryExactName(search) {
-  if (fileExists(search)) return search;
   const resolvedReplacementExtension = resolveReplacementExtensions(search);
   if(resolvedReplacementExtension) return resolvedReplacementExtension;
+  if (fileExists(search)) return search;
   return resolveExtensions(search);
 }
 
 const extensions = Array.from(new Set([
-  ...(preferTsExts ? tsExtensions : []),
-  '.js',
-  ...jsExtensions,
-  '.json', '.node', '.mjs',
-  ...tsExtensions
+  ...(preferTsExts ? compiledExtensions : []),
+  '.js', '.json', '.node', '.mjs',
+  ...compiledExtensions
 ]));
 
 // This appends missing extensions
@@ -326,15 +311,22 @@ function resolveExtensions(search) {
  * TS's resolver can resolve foo.js to foo.ts, by replacing .js extension with several source extensions.
  * IMPORTANT: preserve ordering according to preferTsExts; this affects resolution behavior!
  */
-const replacementExtensions = extensions.filter(ext => ['.js', '.jsx', '.ts', '.tsx'].includes(ext));
+const replacementExtensions = {
+  '.js': extensions.filter(ext => ['.js', '.jsx', '.ts', '.tsx'].includes(ext)),
+  '.cjs': extensions.filter(ext => ['.cjs', '.cts'].includes(ext)),
+  '.mjs': extensions.filter(ext => ['.mjs', '.mts'].includes(ext)),
+};
 
+const replacableExtensionRe = /(\.(?:js|cjs|mjs))$/;
 /** This replaces JS with TS extensions */
 function resolveReplacementExtensions(search) {
-  if (search.pathname.match(/\.js$/)) {
-    const pathnameWithoutExtension = search.pathname.slice(0, search.pathname.length - 3);
-    for (let i = 0; i < replacementExtensions.length; i++) {
-      const extension = replacementExtensions[i];
-      const guess = new URL(search.toString());
+  const match = search.pathname.match(replacableExtensionRe);
+  if (match) {
+    const replacementExts = replacementExtensions[match[1]];
+    const pathnameWithoutExtension = search.pathname.slice(0, -match[1].length);
+    const guess = new URL(search.toString());
+    for (let i = 0; i < replacementExts.length; i++) {
+      const extension = replacementExts[i];
       guess.pathname = `${pathnameWithoutExtension}${extension}`;
       if (fileExists(guess)) return guess;
     }
@@ -353,7 +345,7 @@ function finalizeResolution(resolved, base) {
       resolved.pathname, 'must not include encoded "/" or "\\" characters',
       fileURLToPath(base));
 
-  if (getOptionValue('--experimental-specifier-resolution') === 'node') {
+  if (experimentalSpecifierResolution === 'node') {
     const path = fileURLToPath(resolved);
     let file = resolveExtensionsWithTryExactName(resolved);
     if (file !== undefined) return file;
@@ -566,7 +558,7 @@ function isConditionalExportsMainSugar(exports, packageJSONUrl, base) {
  * @param {object} packageConfig
  * @param {string} base
  * @param {Set<string>} conditions
- * @returns {URL}
+ * @returns {{resolved: URL, exact: boolean}}
  */
 function packageExportsResolve(
   packageJSONUrl, packageSubpath, packageConfig, base, conditions) {

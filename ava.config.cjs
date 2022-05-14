@@ -14,6 +14,7 @@ module.exports = {
     NODE_PATH: ''
   },
   require: ['./src/test/remove-env-var-force-color.js'],
+  nodeArguments: ['--loader', './src/test/test-loader.mjs', '--no-warnings'],
   timeout: '300s',
   concurrency: 1,
 };

@@ -13,10 +13,8 @@ const experimentalJsonModules =
   nodeMajor > 17
   || (nodeMajor === 17 && nodeMinor >= 5)
   || getOptionValue('--experimental-json-modules');
-const experimentalSpeciferResolution =
-  getOptionValue('--experimental-specifier-resolution');
 const experimentalWasmModules = getOptionValue('--experimental-wasm-modules');
-const { getPackageType } = require('./node-internal-modules-esm-resolve').createResolve({tsExtensions: [], jsExtensions: []});
+const { getPackageType } = require('./node-internal-modules-esm-resolve').createResolve({compiledExtensions: []});
 const { URL, fileURLToPath } = require('url');
 const { ERR_UNKNOWN_FILE_EXTENSION } = require('./node-errors').codes;
 
@@ -42,6 +40,17 @@ if (experimentalWasmModules)
 if (experimentalJsonModules)
   extensionFormatMap['.json'] = legacyExtensionFormatMap['.json'] = 'json';
 
+/**
+ * @param {'node' | 'explicit'} [tsNodeExperimentalSpecifierResolution] */
+function createGetFormat(tsNodeExperimentalSpecifierResolution) {
+const experimentalSpeciferResolution = tsNodeExperimentalSpecifierResolution ?? getOptionValue('--experimental-specifier-resolution');
+
+/**
+ * @param {string} url
+ * @param {{}} context
+ * @param {any} defaultGetFormatUnused
+ * @returns {ReturnType<import('../src/esm').NodeLoaderHooksAPI1.GetFormatHook>}
+ */
 function defaultGetFormat(url, context, defaultGetFormatUnused) {
   if (StringPrototypeStartsWith(url, 'node:')) {
     return { format: 'builtin' };
@@ -81,4 +90,10 @@ function defaultGetFormat(url, context, defaultGetFormatUnused) {
   }
   return { format: null };
 }
-exports.defaultGetFormat = defaultGetFormat;
+
+return {defaultGetFormat};
+}
+
+module.exports = {
+  createGetFormat
+};

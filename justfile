@@ -39,7 +39,7 @@ build *ARGS:
 build-nopack *ARGS:
   just build-tsc && just build-configSchema "$@"
 build-tsc *ARGS:
-  tsc "$@"
+  tsc -b ./tsconfig.build-dist.json "$@"
 build-configSchema *ARGS:
   typescript-json-schema --topRef --refs --validationKeywords allOf --out tsconfig.schema.json tsconfig.build-schema.json TsConfigSchema && node --require ./register ./scripts/create-merged-schema "$@"
 build-pack *ARGS:

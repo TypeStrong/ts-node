@@ -11,6 +11,7 @@ export type ModuleConstructorWithInternals = typeof Module & {
     ...rest: any[]
   ): string;
   _preloadModules(requests?: string[]): void;
+  _findPath(request: string, paths: string[], isMain: boolean): string;
 };
 
 interface ModuleResolveFilenameOptions {
@@ -20,12 +21,13 @@ interface ModuleResolveFilenameOptions {
 /**
  * @internal
  */
-export function installCommonjsResolveHookIfNecessary(tsNodeService: Service) {
+export function installCommonjsResolveHooksIfNecessary(tsNodeService: Service) {
   const Module = require('module') as ModuleConstructorWithInternals;
   const originalResolveFilename = Module._resolveFilename;
-  const shouldInstallHook = tsNodeService.options.experimentalResolverFeatures;
+  const shouldInstallHook = tsNodeService.options.experimentalResolver;
   if (shouldInstallHook) {
     Module._resolveFilename = _resolveFilename;
+    Module._findPath = tsNodeService.getNodeCjsLoader().Module_findPath;
   }
   function _resolveFilename(
     this: any,

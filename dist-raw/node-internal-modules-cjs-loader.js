@@ -1,7 +1,8 @@
-//@ts-check
 // Copied from several files in node's source code.
 // https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/modules/cjs/loader.js
 // Each function and variable below must have a comment linking to the source in node's github repo.
+
+'use strict';
 
 const {
   JSONParse,
@@ -32,18 +33,15 @@ const {normalizeSlashes} = require('../dist/util');
 const {createErrRequireEsm} = require('./node-internal-errors');
 const {
   codes: {
-    // ERR_INVALID_ARG_VALUE,
     ERR_INVALID_MODULE_SPECIFIER,
-    // ERR_REQUIRE_ESM,
-    // ERR_UNKNOWN_BUILTIN_MODULE,
   },
-  // setArrowMessage,
 } = require('./node-internal-errors');
 
 const {
   CHAR_FORWARD_SLASH,
 } = require('./node-internal-constants');
 
+const Module = require('module');
 
 let statCache = null;
 
@@ -61,10 +59,20 @@ function stat(filename) {
   return result;
 }
 
-// Copied from https://github.com/nodejs/node/blob/2d5d77306f6dff9110c1f77fefab25f973415770/lib/internal/modules/cjs/loader.js#L249
+
+// Given a module name, and a list of paths to test, returns the first
+// matching file in the following precedence.
+//
+// require("a.<ext>")
+//   -> a.<ext>
+//
+// require("a")
+//   -> a
+//   -> a.<ext>
+//   -> a/index.<ext>
+
 const packageJsonCache = new SafeMap();
 
-// Copied from https://github.com/nodejs/node/blob/v15.3.0/lib/internal/modules/cjs/loader.js#L275-L304
 function readPackage(requestPath) {
   const jsonPath = path.resolve(requestPath, 'package.json');
 
@@ -113,12 +121,21 @@ function readPackageScope(checkPath) {
   return false;
 }
 
-function createCjsLoader(nodeInternalModulesEsmResolver) {
+/**
+ * @param {{
+ *   nodeEsmResolver: ReturnType<typeof import('./node-internal-modules-esm-resolve').createResolve>,
+ *   compiledExtensions: string[],
+ *   preferTsExts
+ * }} opts
+ */
+function createCjsLoader(opts) {
+  // TODO don't need this if we get it from Object.keys(module.extensions) always?
+  const {nodeEsmResolver, compiledExtensions, preferTsExts} = opts;
 const {
   encodedSepRegEx,
   packageExportsResolve,
   // packageImportsResolve
-} = nodeInternalModulesEsmResolver;
+} = nodeEsmResolver;
 
 function tryPackage(requestPath, exts, isMain, originalPath) {
   const pkg = readPackage(requestPath)?.main;
@@ -128,7 +145,8 @@ function tryPackage(requestPath, exts, isMain, originalPath) {
   }
 
   const filename = path.resolve(requestPath, pkg);
-  let actual = tryFile(filename, isMain) ||
+  let actual = tryReplacementExtensions(filename, isMain) ||
+    tryFile(filename, isMain) ||
     tryExtensions(filename, exts, isMain) ||
     tryExtensions(path.resolve(filename, 'index'), exts, isMain);
   if (actual === false) {
@@ -181,6 +199,53 @@ function toRealPath(requestPath) {
   });
 }
 
+/**
+ * TS's resolver can resolve foo.js to foo.ts, by replacing .js extension with several source extensions.
+ * IMPORTANT: preserve ordering according to preferTsExts; this affects resolution behavior!
+ */
+const extensions = Array.from(new Set([
+  ...(preferTsExts ? compiledExtensions : []),
+  '.js', '.json', '.node', '.mjs', '.cjs',
+  ...compiledExtensions
+]));
+const replacementExtensions = {
+  '.js': extensions.filter(ext => ['.js', '.jsx', '.ts', '.tsx'].includes(ext)),
+  '.cjs': extensions.filter(ext => ['.cjs', '.cts'].includes(ext)),
+  '.mjs': extensions.filter(ext => ['.mjs', '.mts'].includes(ext)),
+};
+
+const replacableExtensionRe = /(\.(?:js|cjs|mjs))$/;
+
+function statReplacementExtensions(p) {
+  const match = p.match(replacableExtensionRe);
+  if (match) {
+    const replacementExts = replacementExtensions[match[1]];
+    const pathnameWithoutExtension = p.slice(0, -match[1].length);
+    for (let i = 0; i < replacementExts.length; i++) {
+      const filename = pathnameWithoutExtension + replacementExts[i];
+      const rc = stat(filename);
+      if (rc === 0) {
+        return [rc, filename];
+      }
+    }
+  }
+  return [stat(p), p];
+}
+function tryReplacementExtensions(p, isMain) {
+  const match = p.match(replacableExtensionRe);
+  if (match) {
+    const replacementExts = replacementExtensions[match[1]];
+    const pathnameWithoutExtension = p.slice(0, -match[1].length);
+    for (let i = 0; i < replacementExts.length; i++) {
+      const filename = tryFile(pathnameWithoutExtension + replacementExts[i], isMain);
+      if (filename) {
+        return filename;
+      }
+    }
+  }
+  return false;
+}
+
 // Given a path, check if the file exists with any of the set extensions
 function tryExtensions(p, exts, isMain) {
   for (let i = 0; i < exts.length; i++) {
@@ -209,7 +274,7 @@ function resolveExports(nmPath, request) {
     try {
       return finalizeEsmResolution(packageExportsResolve(
         pathToFileURL(pkgPath + '/package.json'), '.' + expansion, pkg, null,
-        cjsConditions), null, pkgPath);
+        cjsConditions).resolved, null, pkgPath);
     } catch (e) {
       if (e.code === 'ERR_MODULE_NOT_FOUND')
         throw createEsmNotFoundErr(request, pkgPath + '/package.json');
@@ -217,75 +282,6 @@ function resolveExports(nmPath, request) {
     }
   }
 }
-
-
-
-
-// function trySelfParentPath(parent) {
-//   if (!parent) return false;
-
-//   if (parent.filename) {
-//     return parent.filename;
-//   } else if (parent.id === '<repl>' || parent.id === 'internal/preload') {
-//     try {
-//       return process.cwd() + path.sep;
-//     } catch {
-//       return false;
-//     }
-//   }
-// }
-
-// function trySelf(parentPath, request) {
-//   if (!parentPath) return false;
-
-//   const { data: pkg, path: pkgPath } = readPackageScope(parentPath) || {};
-//   if (!pkg || pkg.exports === undefined) return false;
-//   if (typeof pkg.name !== 'string') return false;
-
-//   let expansion;
-//   if (request === pkg.name) {
-//     expansion = '.';
-//   } else if (StringPrototypeStartsWith(request, `${pkg.name}/`)) {
-//     expansion = '.' + StringPrototypeSlice(request, pkg.name.length);
-//   } else {
-//     return false;
-//   }
-
-//   try {
-//     return finalizeEsmResolution(packageExportsResolve(
-//       pathToFileURL(pkgPath + '/package.json'), expansion, pkg,
-//       pathToFileURL(parentPath), cjsConditions), parentPath, pkgPath);
-//   } catch (e) {
-//     if (e.code === 'ERR_MODULE_NOT_FOUND')
-//       throw createEsmNotFoundErr(request, pkgPath + '/package.json');
-//     throw e;
-//   }
-// }
-
-// // This only applies to requests of a specific form:
-// // 1. name/.*
-// // 2. @scope/name/.*
-// const EXPORTS_PATTERN = /^((?:@[^/\\%]+\/)?[^./\\%][^/\\%]*)(\/.*)?$/;
-// function resolveExports(nmPath, request) {
-//   // The implementation's behavior is meant to mirror resolution in ESM.
-//   const { 1: name, 2: expansion = '' } =
-//     StringPrototypeMatch(request, EXPORTS_PATTERN) || [];
-//   if (!name)
-//     return;
-//   const pkgPath = path.resolve(nmPath, name);
-//   const pkg = readPackage(pkgPath);
-//   if (pkg?.exports != null) {
-//     try {
-//       return finalizeEsmResolution(packageExportsResolve(
-//         pathToFileURL(pkgPath + '/package.json'), '.' + expansion, pkg, null,
-//         cjsConditions), null, pkgPath);
-//     } catch (e) {
-//       if (e.code === 'ERR_MODULE_NOT_FOUND')
-//         throw createEsmNotFoundErr(request, pkgPath + '/package.json');
-//       throw e;
-//     }
-//   }
-// }
 
 // Backwards compat for old node versions
 const hasModulePathCache = !!require('module')._pathCache;
@@ -327,10 +323,10 @@ const Module_findPath = function _findPath(request, paths, isMain) {
         return exportsResolved;
     }
 
-    const basePath = path.resolve(curPath, request);
+    const _basePath = path.resolve(curPath, request);
     let filename;
 
-    const rc = stat(basePath);
+    const [rc, basePath] = statReplacementExtensions(_basePath);
     if (!trailingSlash) {
       if (rc === 0) {  // File.
         if (!isMain) {
@@ -383,7 +379,7 @@ function finalizeEsmResolution(resolved, parentPath, pkgPath) {
     throw new ERR_INVALID_MODULE_SPECIFIER(
       resolved, 'must not include encoded "/" or "\\" characters', parentPath);
   const filename = fileURLToPath(resolved);
-  const actual = tryFile(filename);
+  const actual = tryReplacementExtensions(filename) || tryFile(filename);
   if (actual)
     return actual;
   const err = createEsmNotFoundErr(filename,
@@ -401,119 +397,6 @@ function createEsmNotFoundErr(request, path) {
   return err;
 }
 
-// Module._resolveFilename = function(request, parent, isMain, options) {
-//   if (StringPrototypeStartsWith(request, 'node:') ||
-//       NativeModule.canBeRequiredByUsers(request)) {
-//     return request;
-//   }
-
-//   let paths;
-
-//   if (typeof options === 'object' && options !== null) {
-//     if (ArrayIsArray(options.paths)) {
-//       const isRelative = StringPrototypeStartsWith(request, './') ||
-//           StringPrototypeStartsWith(request, '../') ||
-//           ((isWindows && StringPrototypeStartsWith(request, '.\\')) ||
-//           StringPrototypeStartsWith(request, '..\\'));
-
-//       if (isRelative) {
-//         paths = options.paths;
-//       } else {
-//         const fakeParent = new Module('', null);
-
-//         paths = [];
-
-//         for (let i = 0; i < options.paths.length; i++) {
-//           const path = options.paths[i];
-//           fakeParent.paths = Module._nodeModulePaths(path);
-//           const lookupPaths = Module._resolveLookupPaths(request, fakeParent);
-
-//           for (let j = 0; j < lookupPaths.length; j++) {
-//             if (!ArrayPrototypeIncludes(paths, lookupPaths[j]))
-//               ArrayPrototypePush(paths, lookupPaths[j]);
-//           }
-//         }
-//       }
-//     } else if (options.paths === undefined) {
-//       paths = Module._resolveLookupPaths(request, parent);
-//     } else {
-//       throw new ERR_INVALID_ARG_VALUE('options.paths', options.paths);
-//     }
-//   } else {
-//     paths = Module._resolveLookupPaths(request, parent);
-//   }
-
-//   if (parent?.filename) {
-//     if (request[0] === '#') {
-//       const pkg = readPackageScope(parent.filename) || {};
-//       if (pkg.data?.imports != null) {
-//         try {
-//           return finalizeEsmResolution(
-//             packageImportsResolve(request, pathToFileURL(parent.filename),
-//                                   cjsConditions), parent.filename,
-//             pkg.path);
-//         } catch (e) {
-//           if (e.code === 'ERR_MODULE_NOT_FOUND')
-//             throw createEsmNotFoundErr(request);
-//           throw e;
-//         }
-//       }
-//     }
-//   }
-
-//   // Try module self resolution first
-//   const parentPath = trySelfParentPath(parent);
-//   const selfResolved = trySelf(parentPath, request);
-//   if (selfResolved) {
-//     const cacheKey = request + '\x00' +
-//          (paths.length === 1 ? paths[0] : ArrayPrototypeJoin(paths, '\x00'));
-//     Module._pathCache[cacheKey] = selfResolved;
-//     return selfResolved;
-//   }
-
-//   // Look up the filename first, since that's the cache key.
-//   const filename = Module._findPath(request, paths, isMain, false);
-//   if (filename) return filename;
-//   const requireStack = [];
-//   for (let cursor = parent;
-//     cursor;
-//     cursor = moduleParentCache.get(cursor)) {
-//     ArrayPrototypePush(requireStack, cursor.filename || cursor.id);
-//   }
-//   let message = `Cannot find module '${request}'`;
-//   if (requireStack.length > 0) {
-//     message = message + '\nRequire stack:\n- ' +
-//               ArrayPrototypeJoin(requireStack, '\n- ');
-//   }
-//   // eslint-disable-next-line no-restricted-syntax
-//   const err = new Error(message);
-//   err.code = 'MODULE_NOT_FOUND';
-//   err.requireStack = requireStack;
-//   throw err;
-// };
-
-// function finalizeEsmResolution(resolved, parentPath, pkgPath) {
-//   if (RegExpPrototypeTest(encodedSepRegEx, resolved))
-//     throw new ERR_INVALID_MODULE_SPECIFIER(
-//       resolved, 'must not include encoded "/" or "\\" characters', parentPath);
-//   const filename = fileURLToPath(resolved);
-//   const actual = tryFile(filename);
-//   if (actual)
-//     return actual;
-//   const err = createEsmNotFoundErr(filename,
-//                                    path.resolve(pkgPath, 'package.json'));
-//   throw err;
-// }
-
-// function createEsmNotFoundErr(request, path) {
-//   // eslint-disable-next-line no-restricted-syntax
-//   const err = new Error(`Cannot find module '${request}'`);
-//   err.code = 'MODULE_NOT_FOUND';
-//   if (path)
-//     err.path = path;
-//   // TODO(BridgeAR): Add the requireStack as well.
-//   return err;
-// }
 
 return {
   Module_findPath

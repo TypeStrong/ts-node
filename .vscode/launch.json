@@ -11,6 +11,16 @@
       "skipFiles": [
         "<node_internals>/**/*.js"
       ],
+    },
+    {
+      "name": "Debug resolver tests (example)",
+      "type": "pwa-node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/tests/tmp/resolver-0015-preferSrc-typeModule-allowJs-experimentalSpecifierResolutionNode",
+      "runtimeArgs": [
+        "--loader", "../../../esm.mjs"
+      ],
+      "program": "./src/entrypoint-0054-src-to-src.mjs"
     }
   ],
 }

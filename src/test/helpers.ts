@@ -239,6 +239,9 @@ export function resetNodeEnvironment() {
   // May be modified by REPL tests, since the REPL sets globals.
   // Avoid deleting nyc's coverage data.
   resetObject(global, defaultGlobal, ['__coverage__']);
+
+  // Reset our ESM hooks
+  process.__test_setloader__?.(undefined);
 }
 
 function captureObjectState(object: any, avoidGetters: string[] = []) {

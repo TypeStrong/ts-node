@@ -16,12 +16,6 @@ import { extname } from 'path';
 import * as assert from 'assert';
 import { normalizeSlashes } from './util';
 import { createRequire } from 'module';
-const {
-  createResolve,
-} = require('../dist-raw/node-internal-modules-esm-resolve');
-const {
-  defaultGetFormat,
-} = require('../dist-raw/node-internal-modules-esm-get_format');
 
 // Note: On Windows, URLs look like this: file:///D:/dev/@TypeStrong/ts-node-examples/foo.ts
 
@@ -139,10 +133,8 @@ export function createEsmHooks(tsNodeService: Service) {
   tsNodeService.enableExperimentalEsmLoaderInterop();
 
   // Custom implementation that considers additional file extensions and automatically adds file extensions
-  const nodeResolveImplementation = createResolve({
-    ...getExtensions(tsNodeService.config),
-    preferTsExts: tsNodeService.options.preferTsExts,
-  });
+  const nodeResolveImplementation = tsNodeService.getNodeEsmResolver();
+  const nodeGetFormatImplementation = tsNodeService.getNodeEsmGetFormat();
 
   const hooksAPI = filterHooksByAPIVersion({
     resolve,
@@ -180,7 +172,7 @@ export function createEsmHooks(tsNodeService: Service) {
     // See: https://github.com/nodejs/node/discussions/41711
     // nodejs will likely implement a similar fallback.  Till then, we can do our users a favor and fallback today.
     async function entrypointFallback(
-      cb: () => ReturnType<typeof resolve>
+      cb: () => ReturnType<typeof resolve> | Awaited<ReturnType<typeof resolve>>
     ): ReturnType<typeof resolve> {
       try {
         const resolution = await cb();
@@ -259,7 +251,13 @@ export function createEsmHooks(tsNodeService: Service) {
       // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
       const format =
         context.format ??
-        (await getFormat(url, context, defaultGetFormat)).format;
+        (
+          await getFormat(
+            url,
+            context,
+            nodeGetFormatImplementation.defaultGetFormat
+          )
+        ).format;
 
       let source = undefined;
       if (format !== 'builtin' && format !== 'commonjs') {

@@ -12,6 +12,7 @@ import {
   cachedLookup,
   createProjectLocalResolveHelper,
   normalizeSlashes,
+  once,
   parse,
   ProjectLocalResolveHelper,
   split,
@@ -26,9 +27,12 @@ import {
 import { createResolverFunctions } from './resolver-functions';
 import type { createEsmHooks as createEsmHooksFn } from './esm';
 import {
-  installCommonjsResolveHookIfNecessary,
+  installCommonjsResolveHooksIfNecessary,
   ModuleConstructorWithInternals,
-} from './cjs-resolve-filename-hook';
+} from './cjs-resolve-hooks';
+import type * as _nodeInternalModulesEsmResolve from '../dist-raw/node-internal-modules-esm-resolve';
+import type * as _nodeInternalModulesEsmGetFormat from '../dist-raw/node-internal-modules-esm-get_format';
+import type * as _nodeInternalModulesCjsLoader from '../dist-raw/node-internal-modules-cjs-loader';
 
 export { TSCommon };
 export {
@@ -96,8 +100,9 @@ let assertScriptCanLoadAsCJS: (
   module: NodeJS.Module,
   filename: string
 ) => void = engineSupportsPackageTypeField
-  ? require('../dist-raw/node-internal-modules-cjs-loader')
-      .assertScriptCanLoadAsCJSImpl
+  ? (
+      require('../dist-raw/node-internal-modules-cjs-loader') as typeof _nodeInternalModulesCjsLoader
+    ).assertScriptCanLoadAsCJSImpl
   : () => {
       /* noop */
     };
@@ -408,7 +413,10 @@ export interface RegisterOptions extends CreateOptions {
    *
    * For details, see https://github.com/TypeStrong/ts-node/issues/1514
    */
-  experimentalResolverFeatures?: boolean;
+  experimentalResolver?: boolean;
+
+  /** @internal */
+  experimentalSpecifierResolution?: 'node' | 'explicit';
 }
 
 /**
@@ -532,6 +540,18 @@ export interface Service {
   transpileOnly: boolean;
   /** @internal */
   projectLocalResolveHelper: ProjectLocalResolveHelper;
+  /** @internal */
+  getNodeEsmResolver: () => ReturnType<
+    typeof import('../dist-raw/node-internal-modules-esm-resolve').createResolve
+  >;
+  /** @internal */
+  getNodeEsmGetFormat: () => ReturnType<
+    typeof import('../dist-raw/node-internal-modules-esm-get_format').createGetFormat
+  >;
+  /** @internal */
+  getNodeCjsLoader: () => ReturnType<
+    typeof import('../dist-raw/node-internal-modules-cjs-loader').createCjsLoader
+  >;
 }
 
 /**
@@ -552,15 +572,28 @@ export interface DiagnosticFilter {
 }
 
 /** @internal */
-export function getExtensions(config: _ts.ParsedCommandLine) {
-  const tsExtensions = ['.ts'];
-  const jsExtensions = [];
+export function getExtensions(
+  config: _ts.ParsedCommandLine,
+  options: RegisterOptions
+) {
+  const compiledExtensions = [];
+
+  // .js, .cjs, .mjs take precedence if preferTsExts is off
+  if (!options.preferTsExts && config.options.allowJs)
+    compiledExtensions.push('.js');
+
+  compiledExtensions.push('.ts');
 
   // Enable additional extensions when JSX or `allowJs` is enabled.
-  if (config.options.jsx) tsExtensions.push('.tsx');
-  if (config.options.allowJs) jsExtensions.push('.js');
-  if (config.options.jsx && config.options.allowJs) jsExtensions.push('.jsx');
-  return { tsExtensions, jsExtensions };
+  if (config.options.jsx) compiledExtensions.push('.tsx');
+  if (config.options.jsx && config.options.allowJs)
+    compiledExtensions.push('.jsx');
+  if (config.options.preferTsExt && config.options.allowJs)
+    compiledExtensions.push('.js');
+  return {
+    /** All file extensions we transform, ordered by resolution preference according to preferTsExts */
+    compiledExtensions,
+  };
 }
 
 /**
@@ -586,8 +619,7 @@ export function register(
   }
 
   const originalJsHandler = require.extensions['.js'];
-  const { tsExtensions, jsExtensions } = getExtensions(service.config);
-  const extensions = [...tsExtensions, ...jsExtensions];
+  const { compiledExtensions } = getExtensions(service.config, service.options);
 
   // Expose registered instance globally.
   process[REGISTER_INSTANCE] = service;
@@ -595,12 +627,12 @@ export function register(
   // Register the extensions.
   registerExtensions(
     service.options.preferTsExts,
-    extensions,
+    compiledExtensions,
     service,
     originalJsHandler
   );
 
-  installCommonjsResolveHookIfNecessary(service);
+  installCommonjsResolveHooksIfNecessary(service);
 
   // Require specified modules before start-up.
   (Module as ModuleConstructorWithInternals)._preloadModules(
@@ -1364,14 +1396,11 @@ export function createFromPreloadedConfig(
   let active = true;
   const enabled = (enabled?: boolean) =>
     enabled === undefined ? active : (active = !!enabled);
-  const extensions = getExtensions(config);
+  const extensions = getExtensions(config, options);
   const ignored = (fileName: string) => {
     if (!active) return true;
     const ext = extname(fileName);
-    if (
-      extensions.tsExtensions.includes(ext) ||
-      extensions.jsExtensions.includes(ext)
-    ) {
+    if (extensions.compiledExtensions.includes(ext)) {
       return !isScoped(fileName) || shouldIgnore(fileName);
     }
     return true;
@@ -1385,6 +1414,31 @@ export function createFromPreloadedConfig(
       ),
     });
   }
+
+  const getNodeEsmResolver = once(() =>
+    (
+      require('../dist-raw/node-internal-modules-esm-resolve') as typeof _nodeInternalModulesEsmResolve
+    ).createResolve({
+      ...extensions,
+      preferTsExts: options.preferTsExts,
+      tsNodeExperimentalSpecifierResolution:
+        options.experimentalSpecifierResolution,
+    })
+  );
+  const getNodeEsmGetFormat = once(() =>
+    (
+      require('../dist-raw/node-internal-modules-esm-get_format') as typeof _nodeInternalModulesEsmGetFormat
+    ).createGetFormat(options.experimentalSpecifierResolution)
+  );
+  const getNodeCjsLoader = once(() =>
+    (
+      require('../dist-raw/node-internal-modules-cjs-loader') as typeof _nodeInternalModulesCjsLoader
+    ).createCjsLoader({
+      ...extensions,
+      preferTsExts: options.preferTsExts,
+      nodeEsmResolver: getNodeEsmResolver(),
+    })
+  );
 
   return {
     [TS_NODE_SERVICE_BRAND]: true,
@@ -1404,6 +1458,9 @@ export function createFromPreloadedConfig(
     enableExperimentalEsmLoaderInterop,
     transpileOnly,
     projectLocalResolveHelper,
+    getNodeEsmResolver,
+    getNodeEsmGetFormat,
+    getNodeCjsLoader,
   };
 }
 
