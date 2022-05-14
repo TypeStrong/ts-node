@@ -69,11 +69,13 @@ test.suite('ts-node', (test) => {
     testsDirRequire.resolve('ts-node/register/transpile-only');
     testsDirRequire.resolve('ts-node/register/type-check');
 
-    // `node --loader ts-node/esm`
-    testsDirRequire.resolve('ts-node/esm');
-    testsDirRequire.resolve('ts-node/esm.mjs');
-    testsDirRequire.resolve('ts-node/esm/transpile-only');
-    testsDirRequire.resolve('ts-node/esm/transpile-only.mjs');
+    if(semver.gte(process.version, '12.17.0')) {
+      // `node --loader ts-node/esm`
+      testsDirRequire.resolve('ts-node/esm');
+      testsDirRequire.resolve('ts-node/esm.mjs');
+      testsDirRequire.resolve('ts-node/esm/transpile-only');
+      testsDirRequire.resolve('ts-node/esm/transpile-only.mjs');
+    }
 
     testsDirRequire.resolve('ts-node/transpilers/swc');
     testsDirRequire.resolve('ts-node/transpilers/swc-experimental');
