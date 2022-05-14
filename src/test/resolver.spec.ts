@@ -1,9 +1,10 @@
 import { context, ExecutionContext, TestInterface } from './testlib';
-import { ctxTsNode, resetNodeEnvironment } from './helpers';
+import { ctxTsNode, resetNodeEnvironment, ts } from './helpers';
 import { project as fsProject, Project as FsProject } from './fs-helpers';
 import { join } from 'path';
 import * as semver from 'semver';
 import { padStart } from 'lodash';
+import _ = require('lodash');
 
 // TODO with skipIgnore turned off, `node_modules` imports of output extension should not resolve to src extension
 
@@ -63,7 +64,7 @@ interface Target {
 }
 test.suite('Resolver hooks', (test) => {
   test.runSerially();
-  test.runIf(semver.gte(process.version, '14.0.0'));
+  test.runIf(semver.gte(process.version, '14.0.0') && !semver.satisfies(ts.version, '2.7.x'));
 
   //
   // Generate all permutations of projects
