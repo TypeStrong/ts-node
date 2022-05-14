@@ -5,6 +5,7 @@ import { join } from 'path';
 import * as semver from 'semver';
 import { padStart } from 'lodash';
 import _ = require('lodash');
+import { pathToFileURL } from 'url';
 
 // TODO with skipIgnore turned off, `node_modules` imports of output extension should not resolve to src extension
 
@@ -556,7 +557,7 @@ async function execute(t: T, p: FsProject, entrypoints: Entrypoint[]) {
 
   for (const entrypoint of entrypoints) {
     try {
-      await dynamicImport(join(p.cwd, entrypoint));
+      await dynamicImport(pathToFileURL(join(p.cwd, entrypoint)));
     } catch (e) {
       throw new Error(
         [
