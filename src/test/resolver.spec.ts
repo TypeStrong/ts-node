@@ -2,6 +2,7 @@ import { context, ExecutionContext, TestInterface } from './testlib';
 import { ctxTsNode, resetNodeEnvironment } from './helpers';
 import { project as fsProject, Project as FsProject } from './fs-helpers';
 import { join } from 'path';
+import * as semver from 'semver';
 import { padStart } from 'lodash';
 import { isIndexedAccessTypeNode, isWhiteSpaceLike } from 'typescript';
 
@@ -63,6 +64,7 @@ interface Target {
 }
 test.suite('Resolver hooks', (test) => {
   test.runSerially();
+  test.runIf(semver.gte(process.version, '14.0.0'));
 
   //
   // Generate all permutations of projects

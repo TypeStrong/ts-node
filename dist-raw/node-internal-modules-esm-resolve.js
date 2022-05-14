@@ -99,7 +99,8 @@ const pendingDeprecation = getOptionValue('--pending-deprecation');
 function createResolve(opts) {
 // TODO receive cached fs implementations here
 const {compiledExtensions, preferTsExts, tsNodeExperimentalSpecifierResolution} = opts;
-const experimentalSpecifierResolution = tsNodeExperimentalSpecifierResolution ?? getOptionValue('--experimental-specifier-resolution');
+// const experimentalSpecifierResolution = tsNodeExperimentalSpecifierResolution ?? getOptionValue('--experimental-specifier-resolution');
+const experimentalSpecifierResolution = tsNodeExperimentalSpecifierResolution != null ? tsNodeExperimentalSpecifierResolution : getOptionValue('--experimental-specifier-resolution');
 
 const emittedPackageWarnings = new SafeSet();
 function emitFolderMapDeprecation(match, pjsonUrl, isExports, base) {

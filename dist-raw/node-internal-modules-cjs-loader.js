@@ -138,7 +138,9 @@ const {
 } = nodeEsmResolver;
 
 function tryPackage(requestPath, exts, isMain, originalPath) {
-  const pkg = readPackage(requestPath)?.main;
+  // const pkg = readPackage(requestPath)?.main;
+  const tmp = readPackage(requestPath)
+  const pkg = tmp != null ? tmp.main : undefined;
 
   if (!pkg) {
     return tryExtensions(path.resolve(requestPath, 'index'), exts, isMain);
@@ -270,7 +272,8 @@ function resolveExports(nmPath, request) {
     return;
   const pkgPath = path.resolve(nmPath, name);
   const pkg = readPackage(pkgPath);
-  if (pkg?.exports != null) {
+  // if (pkg?.exports != null) {
+  if (pkg != null && pkg.exports != null) {
     try {
       return finalizeEsmResolution(packageExportsResolve(
         pathToFileURL(pkgPath + '/package.json'), '.' + expansion, pkg, null,

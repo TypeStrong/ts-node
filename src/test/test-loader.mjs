@@ -5,11 +5,11 @@ process.__test_setloader__ = function (_hooks) {
   hooks = _hooks;
 };
 function resolve(a, b, c) {
-  const target = hooks?.resolve ?? c;
+  const target = (hooks && hooks.resolve) || c;
   return target(...arguments);
 }
 function load(a, b, c) {
-  const target = hooks?.load ?? c;
+  const target = (hooks && hooks.load) || c;
   return target(...arguments);
 }
 

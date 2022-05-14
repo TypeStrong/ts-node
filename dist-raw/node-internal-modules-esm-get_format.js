@@ -43,7 +43,8 @@ if (experimentalJsonModules)
 /**
  * @param {'node' | 'explicit'} [tsNodeExperimentalSpecifierResolution] */
 function createGetFormat(tsNodeExperimentalSpecifierResolution) {
-const experimentalSpeciferResolution = tsNodeExperimentalSpecifierResolution ?? getOptionValue('--experimental-specifier-resolution');
+// const experimentalSpeciferResolution = tsNodeExperimentalSpecifierResolution ?? getOptionValue('--experimental-specifier-resolution');
+let experimentalSpeciferResolution = tsNodeExperimentalSpecifierResolution != null ? tsNodeExperimentalSpecifierResolution : getOptionValue('--experimental-specifier-resolution');
 
 /**
  * @param {string} url
