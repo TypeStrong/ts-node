@@ -1,7 +1,0 @@
-{
-  "compilerOptions": {
-    "composite": true,
-    "rootDir": ".",
-    "outDir": "out"
-  }
-}
