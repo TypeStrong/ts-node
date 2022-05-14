@@ -4,7 +4,6 @@ import { project as fsProject, Project as FsProject } from './fs-helpers';
 import { join } from 'path';
 import * as semver from 'semver';
 import { padStart } from 'lodash';
-import { isIndexedAccessTypeNode, isWhiteSpaceLike } from 'typescript';
 
 // TODO with skipIgnore turned off, `node_modules` imports of output extension should not resolve to src extension
 
@@ -557,7 +556,8 @@ async function execute(t: T, p: FsProject, entrypoints: Entrypoint[]) {
     } catch (e) {
       throw new Error(
         [
-          (e as Error).toString(),
+          (e as Error).message,
+          (e as Error).stack,
           '',
           'This is an error in a resolver test. It might be easier to investigate by running outside of the test suite.',
           'To do that, try pasting this into your bash shell (windows invocation will be similar but maybe not identical):',
