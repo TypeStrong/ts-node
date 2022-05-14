@@ -31,7 +31,7 @@ lint *ARGS:
 lint-fix *ARGS:
   dprint fmt "$@"
 clean *ARGS:
-  rimraf dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz "$@"
+  rimraf temp dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz tests/tmp "$@"
 rebuild *ARGS:
   just clean && just build "$@"
 build *ARGS:
