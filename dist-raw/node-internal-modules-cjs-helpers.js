@@ -1,6 +1,18 @@
-const {ArrayPrototypeForEach, StringPrototypeStartsWith, ObjectPrototypeHasOwnProperty, StringPrototypeIncludes, ObjectDefineProperty} = require('./node-primordials');
+const {ArrayPrototypeForEach, StringPrototypeStartsWith, ObjectPrototypeHasOwnProperty, StringPrototypeIncludes, ObjectDefineProperty, SafeSet} = require('./node-primordials');
 
-exports.addBuiltinLibsToObject = addBuiltinLibsToObject;
+
+const { getOptionValue } = require('./node-options');
+const userConditions = getOptionValue('--conditions');
+const noAddons = getOptionValue('--no-addons');
+const addonConditions = noAddons ? [] : ['node-addons'];
+
+// TODO: Use this set when resolving pkg#exports conditions in loader.js.
+const cjsConditions = new SafeSet([
+  'require',
+  'node',
+  ...addonConditions,
+  ...userConditions,
+]);
 
 // Copied from https://github.com/nodejs/node/blob/21f5a56914a3b24ad77535ef369b93c6b1c11d18/lib/internal/modules/cjs/helpers.js#L133-L178
 /**
@@ -53,3 +65,6 @@ function addBuiltinLibsToObject(object) {
     });
   });
 }
+
+exports.addBuiltinLibsToObject = addBuiltinLibsToObject;
+exports.cjsConditions = cjsConditions;
