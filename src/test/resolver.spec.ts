@@ -557,7 +557,9 @@ async function execute(t: T, p: FsProject, entrypoints: Entrypoint[]) {
     } catch (e) {
       throw new Error(
         [
-          'Error in resolver test. It might be easier to investigate by running outside of the test suite.',
+          (e as Error).message,
+          '',
+          'This is an error in a resolver test. It might be easier to investigate by running outside of the test suite.',
           'To do that, try pasting this into your bash shell (windows invocation will be similar but maybe not identical):',
           `( cd ${p.cwd} ; node --loader ../../../esm.mjs ./${entrypoint} )`,
         ].join('\n')
