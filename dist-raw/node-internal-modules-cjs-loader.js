@@ -468,10 +468,15 @@ const Module_resolveFilename = function _resolveFilename(request, parent, isMain
     paths = Module._resolveLookupPaths(request, parent);
   }
 
-  if (parent?.filename) {
+  // if (parent?.filename) {
+  // node 12 hack
+  if (parent != null && parent.filename) {
     if (request[0] === '#') {
       const pkg = readPackageScope(parent.filename) || {};
-      if (pkg.data?.imports != null) {
+
+      // if (pkg.data?.imports != null) {
+      // node 12 hack
+      if (pkg.data != null && pkg.data.imports != null) {
         try {
           return finalizeEsmResolution(
             packageImportsResolve(request, pathToFileURL(parent.filename),
