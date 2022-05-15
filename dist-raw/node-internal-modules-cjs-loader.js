@@ -5,18 +5,20 @@
 'use strict';
 
 const {
+  ArrayPrototypeJoin,
   JSONParse,
+  ObjectKeys,
+  RegExpPrototypeTest,
   SafeMap,
+  StringPrototypeCharCodeAt,
   StringPrototypeEndsWith,
   StringPrototypeLastIndexOf,
   StringPrototypeIndexOf,
-  StringPrototypeSlice,
-  ArrayPrototypeJoin,
-  StringPrototypeCharCodeAt,
-  RegExpPrototypeTest,
-  ObjectKeys,
   StringPrototypeMatch,
+  StringPrototypeSlice,
+  StringPrototypeStartsWith,
 } = require('./node-primordials');
+const { NativeModule } = require('./node-nativemodule');
 const { pathToFileURL, fileURLToPath } = require('url');
 const fs = require('fs');
 const path = require('path');
@@ -59,6 +61,12 @@ function stat(filename) {
   return result;
 }
 
+// Note:
+// we cannot get access to node's internal cache, which is populated from
+// within node's Module constructor.  So the cache here will always be empty.
+// It's possible we could approximate our own cache by building it up with
+// hacky workarounds, but it's not worth the complexity and flakiness.
+const moduleParentCache = new SafeWeakMap();
 
 // Given a module name, and a list of paths to test, returns the first
 // matching file in the following precedence.
@@ -133,7 +141,7 @@ function createCjsLoader(opts) {
 const {
   encodedSepRegEx,
   packageExportsResolve,
-  // packageImportsResolve
+  packageImportsResolve
 } = nodeEsmResolver;
 
 function tryPackage(requestPath, exts, isMain, originalPath) {
@@ -259,6 +267,47 @@ function tryExtensions(p, exts, isMain) {
   return false;
 }
 
+function trySelfParentPath(parent) {
+  if (!parent) return false;
+
+  if (parent.filename) {
+    return parent.filename;
+  } else if (parent.id === '<repl>' || parent.id === 'internal/preload') {
+    try {
+      return process.cwd() + path.sep;
+    } catch {
+      return false;
+    }
+  }
+}
+
+function trySelf(parentPath, request) {
+  if (!parentPath) return false;
+
+  const { data: pkg, path: pkgPath } = readPackageScope(parentPath) || {};
+  if (!pkg || pkg.exports === undefined) return false;
+  if (typeof pkg.name !== 'string') return false;
+
+  let expansion;
+  if (request === pkg.name) {
+    expansion = '.';
+  } else if (StringPrototypeStartsWith(request, `${pkg.name}/`)) {
+    expansion = '.' + StringPrototypeSlice(request, pkg.name.length);
+  } else {
+    return false;
+  }
+
+  try {
+    return finalizeEsmResolution(packageExportsResolve(
+      pathToFileURL(pkgPath + '/package.json'), expansion, pkg,
+      pathToFileURL(parentPath), cjsConditions).resolved, parentPath, pkgPath);
+  } catch (e) {
+    if (e.code === 'ERR_MODULE_NOT_FOUND')
+      throw createEsmNotFoundErr(request, pkgPath + '/package.json');
+    throw e;
+  }
+}
+
 // This only applies to requests of a specific form:
 // 1. name/.*
 // 2. @scope/name/.*
@@ -376,6 +425,97 @@ const Module_findPath = function _findPath(request, paths, isMain) {
   return false;
 };
 
+const Module_resolveFilename = function _resolveFilename(request, parent, isMain, options) {
+  if (StringPrototypeStartsWith(request, 'node:') ||
+      NativeModule.canBeRequiredByUsers(request)) {
+    return request;
+  }
+
+  let paths;
+
+  if (typeof options === 'object' && options !== null) {
+    if (ArrayIsArray(options.paths)) {
+      const isRelative = StringPrototypeStartsWith(request, './') ||
+          StringPrototypeStartsWith(request, '../') ||
+          ((isWindows && StringPrototypeStartsWith(request, '.\\')) ||
+          StringPrototypeStartsWith(request, '..\\'));
+
+      if (isRelative) {
+        paths = options.paths;
+      } else {
+        const fakeParent = new Module('', null);
+
+        paths = [];
+
+        for (let i = 0; i < options.paths.length; i++) {
+          const path = options.paths[i];
+          fakeParent.paths = Module._nodeModulePaths(path);
+          const lookupPaths = Module._resolveLookupPaths(request, fakeParent);
+
+          for (let j = 0; j < lookupPaths.length; j++) {
+            if (!ArrayPrototypeIncludes(paths, lookupPaths[j]))
+              ArrayPrototypePush(paths, lookupPaths[j]);
+          }
+        }
+      }
+    } else if (options.paths === undefined) {
+      paths = Module._resolveLookupPaths(request, parent);
+    } else {
+      throw new ERR_INVALID_ARG_VALUE('options.paths', options.paths);
+    }
+  } else {
+    paths = Module._resolveLookupPaths(request, parent);
+  }
+
+  if (parent?.filename) {
+    if (request[0] === '#') {
+      const pkg = readPackageScope(parent.filename) || {};
+      if (pkg.data?.imports != null) {
+        try {
+          return finalizeEsmResolution(
+            packageImportsResolve(request, pathToFileURL(parent.filename),
+                                  cjsConditions), parent.filename,
+            pkg.path);
+        } catch (e) {
+          if (e.code === 'ERR_MODULE_NOT_FOUND')
+            throw createEsmNotFoundErr(request);
+          throw e;
+        }
+      }
+    }
+  }
+
+  // Try module self resolution first
+  const parentPath = trySelfParentPath(parent);
+  const selfResolved = trySelf(parentPath, request);
+  if (selfResolved) {
+    const cacheKey = request + '\x00' +
+         (paths.length === 1 ? paths[0] : ArrayPrototypeJoin(paths, '\x00'));
+    Module._pathCache[cacheKey] = selfResolved;
+    return selfResolved;
+  }
+
+  // Look up the filename first, since that's the cache key.
+  const filename = Module._findPath(request, paths, isMain, false);
+  if (filename) return filename;
+  const requireStack = [];
+  for (let cursor = parent;
+    cursor;
+    cursor = moduleParentCache.get(cursor)) {
+    ArrayPrototypePush(requireStack, cursor.filename || cursor.id);
+  }
+  let message = `Cannot find module '${request}'`;
+  if (requireStack.length > 0) {
+    message = message + '\nRequire stack:\n- ' +
+              ArrayPrototypeJoin(requireStack, '\n- ');
+  }
+  // eslint-disable-next-line no-restricted-syntax
+  const err = new Error(message);
+  err.code = 'MODULE_NOT_FOUND';
+  err.requireStack = requireStack;
+  throw err;
+};
+
 function finalizeEsmResolution(resolved, parentPath, pkgPath) {
   if (RegExpPrototypeTest(encodedSepRegEx, resolved))
     throw new ERR_INVALID_MODULE_SPECIFIER(
@@ -401,7 +541,8 @@ function createEsmNotFoundErr(request, path) {
 
 
 return {
-  Module_findPath
+  Module_findPath,
+  Module_resolveFilename
 }
 
 }
