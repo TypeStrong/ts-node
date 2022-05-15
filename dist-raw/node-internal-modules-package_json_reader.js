@@ -2,7 +2,7 @@
 'use strict';
 
 const { SafeMap } = require('./node-primordials');
-const { internalModuleReadJSON } = require('./node-internal-fs');
+const { internalModuleReadJSON } = require('./node-internalBinding-fs');
 const { pathToFileURL } = require('url');
 const { toNamespacedPath } = require('path');
 // const { getOptionValue } = require('./node-options');

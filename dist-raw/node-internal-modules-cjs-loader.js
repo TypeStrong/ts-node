@@ -21,7 +21,7 @@ const { pathToFileURL, fileURLToPath } = require('url');
 const fs = require('fs');
 const path = require('path');
 const { sep } = path;
-const { internalModuleStat } = require('./node-internal-fs');
+const { internalModuleStat } = require('./node-internalBinding-fs');
 const packageJsonReader = require('./node-internal-modules-package_json_reader');
 const {
   cjsConditions,
@@ -129,7 +129,6 @@ function readPackageScope(checkPath) {
  * }} opts
  */
 function createCjsLoader(opts) {
-  // TODO don't need this if we get it from Object.keys(module.extensions) always?
   const {nodeEsmResolver, compiledExtensions, preferTsExts} = opts;
 const {
   encodedSepRegEx,
