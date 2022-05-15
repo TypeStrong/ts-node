@@ -82,7 +82,22 @@ interface Project {
   experimentalSpecifierResolutionNode: boolean;
   skipIgnore: boolean;
 }
+interface EntrypointPermutation {
+  entrypointExt: 'cjs' | 'mjs';
+  withExt: boolean;
+  entrypointLocation: 'src' | 'out';
+  entrypointTargetting: 'src' | 'out';
+}
 type Entrypoint = string;
+interface GenerateTargetOptions {
+  inSrc: boolean;
+  inOut: boolean;
+  srcExt: string;
+  /** If true, is an index.* file within a directory */
+  isIndex: boolean;
+  targetPackageStyle: TargetPackageStyle;
+  packageTypeModule: boolean;
+}
 interface Target {
   /** If true, is an index.* file within a directory */
   isIndex: boolean;
@@ -95,9 +110,34 @@ interface Target {
   inOut: boolean;
   /** If true, should be imported as an npm package, not relative import */
   isPackage: boolean;
-  packageFlavor: ExternalPackageFlavor;
+  packageStyle: TargetPackageStyle;
   typeModule: boolean;
 }
+
+/** When target is actually a mini node_modules package */
+type TargetPackageStyle = typeof targetPackageStyles[number];
+const targetPackageStyles = [
+  false,
+  // test that the package contains /index.*
+  'empty-manifest',
+  // "main": "src/target.<ext>"
+  'main-src-with-extension',
+  // "main": "src/target.<output ext>"
+  'main-src-with-out-extension',
+  // "main": "out/target.<output ext>"
+  'main-out-with-extension',
+  // "main": "src/target"
+  'main-src-extensionless',
+  // "main": "out/target"
+  'main-out-extensionless',
+  // "exports": {".": "src/target.<ext>"}
+  'exports-src-with-extension',
+  // "exports": {".": "src/target.<output ext>"}
+  'exports-src-with-out-extension',
+  // "exports": {".": "out/target.<output ext>"}
+  'exports-out-with-extension',
+] as const;
+
 test.suite('Resolver hooks', (test) => {
   test.runSerially();
   test.runIf(
@@ -183,33 +223,11 @@ function declareProject(test: Test, project: Project) {
     await execute(t, p, entrypoints);
   });
 }
-type ExternalPackageFlavor = typeof externalPackageFlavors[number];
-const externalPackageFlavors = [
-  false,
-  // test that the package contains /index.*
-  'empty-manifest',
-  // "main": "src/target.<ext>"
-  'main-src-with-extension',
-  // "main": "src/target.<output ext>"
-  'main-src-with-out-extension',
-  // "main": "out/target.<output ext>"
-  'main-out-with-extension',
-  // "main": "src/target"
-  'main-src-extensionless',
-  // "main": "out/target"
-  'main-out-extensionless',
-  // "exports": {".": "src/target.<ext>"}
-  'exports-src-with-extension',
-  // "exports": {".": "src/target.<output ext>"}
-  'exports-src-with-out-extension',
-  // "exports": {".": "out/target.<output ext>"}
-  'exports-out-with-extension',
-] as const;
-function generateTargets(project: Project, p: FsProject) {
-  //
-  // Generate all target-* files
-  //
 
+//
+// Generate all target-* files
+//
+function generateTargets(project: Project, p: FsProject) {
   /** Array of metadata about target files to be imported */
   const targets: Array<Target> = [];
   // TODO does allowJs matter?
@@ -225,12 +243,12 @@ function generateTargets(project: Project, p: FsProject) {
         'cjs',
         'mjs',
       ]) {
-        for (const externalPackageFlavor of externalPackageFlavors) {
-          const targetPackageTypeModulePermutations = externalPackageFlavor
+        for (const targetPackageStyle of targetPackageStyles) {
+          const packageTypeModulePermutations = targetPackageStyle
             ? [true, false]
             : [project.typeModule];
-          for (const targetPackageTypeModule of targetPackageTypeModulePermutations) {
-            const isIndexPermutations = externalPackageFlavor
+          for (const packageTypeModule of packageTypeModulePermutations) {
+            const isIndexPermutations = targetPackageStyle
               ? [false]
               : [true, false];
             // TODO test main pointing to a directory containing an `index.` file?
@@ -248,7 +266,7 @@ function generateTargets(project: Project, p: FsProject) {
               // TODO re-enable with src <-> out mapping
               if (
                 !inOut &&
-                isOneOf(externalPackageFlavor, [
+                isOneOf(targetPackageStyle, [
                   'main-out-with-extension',
                   'main-out-extensionless',
                   'exports-out-with-extension',
@@ -257,7 +275,7 @@ function generateTargets(project: Project, p: FsProject) {
                 continue;
               if (
                 !inSrc &&
-                isOneOf(externalPackageFlavor, [
+                isOneOf(targetPackageStyle, [
                   'main-src-with-extension',
                   'main-src-extensionless',
                   'exports-src-with-extension',
@@ -265,7 +283,7 @@ function generateTargets(project: Project, p: FsProject) {
               )
                 continue;
               if (
-                isOneOf(externalPackageFlavor, [
+                isOneOf(targetPackageStyle, [
                   'main-out-with-extension',
                   'main-out-extensionless',
                   'exports-out-with-extension',
@@ -274,159 +292,14 @@ function generateTargets(project: Project, p: FsProject) {
                 continue;
               //#endregion
 
-              const outExt = srcExt.replace('ts', 'js').replace('x', '');
-              let targetIdentifier = `target-${targetSeq()}-${
-                inOut && inSrc ? 'inboth' : inOut ? 'onlyout' : 'onlysrc'
-              }-${srcExt}`;
-
-              if (externalPackageFlavor)
-                targetIdentifier = `${targetIdentifier}-${externalPackageFlavor}-${
-                  targetPackageTypeModule ? 'module' : 'commonjs'
-                }`;
-              let prefix = externalPackageFlavor
-                ? `node_modules/${targetIdentifier}/`
-                : '';
-              let suffix =
-                externalPackageFlavor === 'empty-manifest'
-                  ? 'index'
-                  : externalPackageFlavor
-                  ? 'target'
-                  : targetIdentifier;
-              if (isIndex) suffix += '-dir/index';
-              const srcDirInfix =
-                externalPackageFlavor === 'empty-manifest' ? '' : 'src/';
-              const outDirInfix =
-                externalPackageFlavor === 'empty-manifest' ? '' : 'out/';
-              const srcName = `${prefix}${srcDirInfix}${suffix}.${srcExt}`;
-              const srcDirOutExtName = `${prefix}${srcDirInfix}${suffix}.${outExt}`;
-              const outName = `${prefix}${outDirInfix}${suffix}.${outExt}`;
-              const selfImporterCjsName = `${prefix}self-import-cjs.cjs`;
-              const selfImporterMjsName = `${prefix}self-import-mjs.mjs`;
-              const target: Target = {
-                srcName,
-                outName,
-                srcExt,
-                outExt,
+              generateTarget(project, p, {
                 inSrc,
                 inOut,
+                srcExt,
+                targetPackageStyle,
+                packageTypeModule,
                 isIndex,
-                targetIdentifier,
-                isPackage: !!externalPackageFlavor,
-                packageFlavor: externalPackageFlavor,
-                typeModule: targetPackageTypeModule,
-              };
-              targets.push(target);
-              const { isMjs: targetIsMjs } = fileInfo(
-                '.' + srcExt,
-                targetPackageTypeModule,
-                project.allowJs
-              );
-              function targetContent(loc: string) {
-                let content = '';
-                if (targetIsMjs) {
-                  content += String.raw`
-                              const {fileURLToPath} = await import('url');
-                              const filenameNative = fileURLToPath(import.meta.url);
-                              export const directory = filenameNative.replace(/.*[\\\/](.*?)[\\\/]/, '$1');
-                              export const filename = filenameNative.replace(/.*[\\\/]/, '');
-                              export const targetIdentifier = '${targetIdentifier}';
-                              export const ext = filenameNative.replace(/.*\./, '');
-                              export const loc = '${loc}';
-                            `;
-                } else {
-                  content += String.raw`
-                              const filenameNative = __filename;
-                              exports.filename = filenameNative.replace(/.*[\\\/]/, '');
-                              exports.directory = filenameNative.replace(/.*[\\\/](.*?)[\\\/].*/, '$1');
-                              exports.targetIdentifier = '${targetIdentifier}';
-                              exports.ext = filenameNative.replace(/.*\./, '');
-                              exports.loc = '${loc}';
-                            `;
-                }
-                return content;
-              }
-              if (inOut) {
-                p.addFile(outName, targetContent('out'));
-                // TODO so we can test multiple file extensions in a single directory, preferTsExt
-                p.addFile(srcDirOutExtName, targetContent('out'));
-              }
-              if (inSrc) {
-                p.addFile(srcName, targetContent('src'));
-              }
-              if (externalPackageFlavor) {
-                p.addFile(
-                  selfImporterCjsName,
-                  `
-                  module.exports = require("${targetIdentifier}");
-                `
-                );
-                p.addFile(
-                  selfImporterMjsName,
-                  `
-                  export * from "${targetIdentifier}";
-                `
-                );
-                function writePackageJson(obj: any) {
-                  p.addJsonFile(`${prefix}/package.json`, {
-                    name: targetIdentifier,
-                    type: targetPackageTypeModule ? 'module' : undefined,
-                    ...obj,
-                  });
-                }
-                switch (externalPackageFlavor) {
-                  case 'empty-manifest':
-                    writePackageJson({});
-                    break;
-                  case 'exports-src-with-extension':
-                    writePackageJson({
-                      exports: {
-                        '.': `./src/${suffix}.${srcExt}`,
-                      },
-                    });
-                    break;
-                  case 'exports-src-with-out-extension':
-                    writePackageJson({
-                      exports: {
-                        '.': `./src/${suffix}.${outExt}`,
-                      },
-                    });
-                    break;
-                  case 'exports-out-with-extension':
-                    writePackageJson({
-                      exports: {
-                        '.': `./out/${suffix}.${outExt}`,
-                      },
-                    });
-                    break;
-                  case 'main-src-extensionless':
-                    writePackageJson({
-                      main: `src/${suffix}`,
-                    });
-                    break;
-                  case 'main-out-extensionless':
-                    writePackageJson({
-                      main: `out/${suffix}`,
-                    });
-                    break;
-                  case 'main-src-with-extension':
-                    writePackageJson({
-                      main: `src/${suffix}.${srcExt}`,
-                    });
-                    break;
-                  case 'main-src-with-out-extension':
-                    writePackageJson({
-                      main: `src/${suffix}.${outExt}`,
-                    });
-                    break;
-                  case 'main-out-with-extension':
-                    writePackageJson({
-                      main: `src/${suffix}.${outExt}`,
-                    });
-                    break;
-                  default:
-                    const _assert: never = externalPackageFlavor;
-                }
-              }
+              });
             }
           }
         }
@@ -434,6 +307,171 @@ function generateTargets(project: Project, p: FsProject) {
     }
   }
   return targets;
+}
+
+function generateTarget(
+  project: Project,
+  p: FsProject,
+  options: GenerateTargetOptions
+) {
+  const {
+    inSrc,
+    inOut,
+    srcExt,
+    targetPackageStyle,
+    packageTypeModule,
+    isIndex,
+  } = options;
+
+  const outExt = srcExt.replace('ts', 'js').replace('x', '');
+  let targetIdentifier = `target-${targetSeq()}-${
+    inOut && inSrc ? 'inboth' : inOut ? 'onlyout' : 'onlysrc'
+  }-${srcExt}`;
+
+  if (targetPackageStyle)
+    targetIdentifier = `${targetIdentifier}-${targetPackageStyle}-${
+      packageTypeModule ? 'module' : 'commonjs'
+    }`;
+  let prefix = targetPackageStyle ? `node_modules/${targetIdentifier}/` : '';
+  let suffix =
+    targetPackageStyle === 'empty-manifest'
+      ? 'index'
+      : targetPackageStyle
+      ? 'target'
+      : targetIdentifier;
+  if (isIndex) suffix += '-dir/index';
+  const srcDirInfix = targetPackageStyle === 'empty-manifest' ? '' : 'src/';
+  const outDirInfix = targetPackageStyle === 'empty-manifest' ? '' : 'out/';
+  const srcName = `${prefix}${srcDirInfix}${suffix}.${srcExt}`;
+  const srcDirOutExtName = `${prefix}${srcDirInfix}${suffix}.${outExt}`;
+  const outName = `${prefix}${outDirInfix}${suffix}.${outExt}`;
+  const selfImporterCjsName = `${prefix}self-import-cjs.cjs`;
+  const selfImporterMjsName = `${prefix}self-import-mjs.mjs`;
+  const target: Target = {
+    srcName,
+    outName,
+    srcExt,
+    outExt,
+    inSrc,
+    inOut,
+    isIndex,
+    targetIdentifier,
+    isPackage: !!targetPackageStyle,
+    packageStyle: targetPackageStyle,
+    typeModule: packageTypeModule,
+  };
+  const { isMjs: targetIsMjs } = fileInfo(
+    '.' + srcExt,
+    packageTypeModule,
+    project.allowJs
+  );
+  function targetContent(loc: string) {
+    let content = '';
+    if (targetIsMjs) {
+      content += String.raw`
+        const {fileURLToPath} = await import('url');
+        const filenameNative = fileURLToPath(import.meta.url);
+        export const directory = filenameNative.replace(/.*[\\\/](.*?)[\\\/]/, '$1');
+        export const filename = filenameNative.replace(/.*[\\\/]/, '');
+        export const targetIdentifier = '${targetIdentifier}';
+        export const ext = filenameNative.replace(/.*\./, '');
+        export const loc = '${loc}';
+      `;
+    } else {
+      content += String.raw`
+        const filenameNative = __filename;
+        exports.filename = filenameNative.replace(/.*[\\\/]/, '');
+        exports.directory = filenameNative.replace(/.*[\\\/](.*?)[\\\/].*/, '$1');
+        exports.targetIdentifier = '${targetIdentifier}';
+        exports.ext = filenameNative.replace(/.*\./, '');
+        exports.loc = '${loc}';
+      `;
+    }
+    return content;
+  }
+  if (inOut) {
+    p.addFile(outName, targetContent('out'));
+    // TODO so we can test multiple file extensions in a single directory, preferTsExt
+    p.addFile(srcDirOutExtName, targetContent('out'));
+  }
+  if (inSrc) {
+    p.addFile(srcName, targetContent('src'));
+  }
+  if (targetPackageStyle) {
+    p.addFile(
+      selfImporterCjsName,
+      `
+        module.exports = require("${targetIdentifier}");
+      `
+    );
+    p.addFile(
+      selfImporterMjsName,
+      `
+        export * from "${targetIdentifier}";
+      `
+    );
+    function writePackageJson(obj: any) {
+      p.addJsonFile(`${prefix}/package.json`, {
+        name: targetIdentifier,
+        type: packageTypeModule ? 'module' : undefined,
+        ...obj,
+      });
+    }
+    switch (targetPackageStyle) {
+      case 'empty-manifest':
+        writePackageJson({});
+        break;
+      case 'exports-src-with-extension':
+        writePackageJson({
+          exports: {
+            '.': `./src/${suffix}.${srcExt}`,
+          },
+        });
+        break;
+      case 'exports-src-with-out-extension':
+        writePackageJson({
+          exports: {
+            '.': `./src/${suffix}.${outExt}`,
+          },
+        });
+        break;
+      case 'exports-out-with-extension':
+        writePackageJson({
+          exports: {
+            '.': `./out/${suffix}.${outExt}`,
+          },
+        });
+        break;
+      case 'main-src-extensionless':
+        writePackageJson({
+          main: `src/${suffix}`,
+        });
+        break;
+      case 'main-out-extensionless':
+        writePackageJson({
+          main: `out/${suffix}`,
+        });
+        break;
+      case 'main-src-with-extension':
+        writePackageJson({
+          main: `src/${suffix}.${srcExt}`,
+        });
+        break;
+      case 'main-src-with-out-extension':
+        writePackageJson({
+          main: `src/${suffix}.${outExt}`,
+        });
+        break;
+      case 'main-out-with-extension':
+        writePackageJson({
+          main: `src/${suffix}.${outExt}`,
+        });
+        break;
+      default:
+        const _assert: never = targetPackageStyle;
+    }
+  }
+  return target;
 }
 
 /**
@@ -457,177 +495,169 @@ function generateEntrypoints(
       for (const entrypointLocation of ['src', 'out'] as const) {
         // Target of the entrypoint's import statements
         for (const entrypointTargetting of ['src', 'out'] as const) {
-          // TODO
+          // TODO re-enable when we have out <-> src mapping
           if (entrypointLocation !== 'src') continue;
           if (entrypointTargetting !== 'src') continue;
 
-          const entrypointFilename = `entrypoint-${entrypointSeq()}-${entrypointLocation}-to-${entrypointTargetting}${
-            withExt ? '-withext' : ''
-          }.${entrypointExt}`;
-          const { isMjs: entrypointIsMjs } = fileInfo(
-            entrypointFilename,
-            project.typeModule,
-            project.allowJs
-          );
-          let entrypointContent = 'let mod;\n';
-          if (entrypointIsMjs) {
-            entrypointContent += `import assert from 'assert';\n`;
-          } else {
-            entrypointContent += `const assert = require('assert');\n`;
-          }
-
-          entrypoints.push(entrypointLocation + '/' + entrypointFilename);
-          for (const target of targets) {
-            // TODO re-enable these when we have outDir <-> rootDir mapping
-            if (
-              target.srcName.includes('onlyout') &&
-              entrypointTargetting === 'src'
-            )
-              continue;
-            if (
-              target.srcName.includes('onlysrc') &&
-              //@ts-expect-error
-              entrypointTargetting === 'out'
-            )
-              continue;
-
-            const {
-              ext: targetSrcExt,
-              isMjs: targetIsMjs,
-              isCompiled: targetIsCompiled,
-            } = fileInfo(target.srcName, target.typeModule, project.allowJs);
-            const { ext: targetOutExt } = fileInfo(
-              target.outName,
-              project.typeModule,
-              project.allowJs
-            );
-
-            let targetExtPermutations = [''];
-            if (!target.isPackage) {
-              if (
-                // @ts-expect-error
-                entrypointTargetting === 'out' &&
-                target.outExt !== target.srcExt
-              ) {
-                // TODO re-enable when we have out <-> src mapping
-                targetExtPermutations = [target.outExt];
-              } else if (target.srcExt !== target.outExt) {
-                targetExtPermutations = [target.srcExt, target.outExt];
-              } else {
-                targetExtPermutations = [target.srcExt];
-              }
-            }
-            const externalPackageSelfImportPermutations = target.isPackage
-              ? [false, true]
-              : [false];
-            for (const targetExt of targetExtPermutations) {
-              for (const externalPackageSelfImport of externalPackageSelfImportPermutations) {
-                entrypointContent += `\n// ${target.targetIdentifier}`;
-                if (target.isPackage) {
-                  entrypointContent += ` node_modules package`;
-                  if (externalPackageSelfImport) {
-                    entrypointContent += ` self-import`;
-                  }
-                } else {
-                  entrypointContent += `.${targetExt}`;
-                }
-                entrypointContent += '\n';
-
-                // should specifier be relative or absolute?
-                let specifier: string;
-                if (externalPackageSelfImport) {
-                  specifier = `../node_modules/${target.targetIdentifier}/self-import-${entrypointExt}.${entrypointExt}`;
-                } else if (target.isPackage) {
-                  specifier = target.targetIdentifier;
-                } else {
-                  if (entrypointTargetting === entrypointLocation)
-                    specifier = './';
-                  else specifier = `../${entrypointTargetting}/`;
-                  specifier += target.targetIdentifier;
-                  if (target.isIndex) specifier += '-dir';
-                  if (!target.isIndex && withExt) specifier += '.' + targetExt;
-                }
-
-                // Do not try to import mjs from cjs
-                if (targetIsMjs && entrypointExt === 'cjs') {
-                  entrypointContent += `// skipping ${specifier} because we cannot import mjs from cjs\n`;
-                  continue;
-                }
-
-                // Do not try to import mjs or cjs without extension; node always requires these extensions, even in CommonJS.
-                if (
-                  !withExt &&
-                  (targetSrcExt === 'cjs' || targetSrcExt === 'mjs')
-                ) {
-                  entrypointContent += `// skipping ${specifier} because we cannot omit extension from cjs or mjs files; node always requires them\n`;
-                  continue;
-                }
-
-                // Do not try to import a transpiled file if compiler options disagree with node's extension-based classification
-                if (targetIsCompiled && targetIsMjs && !project.typeModule) {
-                  entrypointContent += `// skipping ${specifier} because it is compiled and compiler options disagree with node's module classification: extension=${targetSrcExt}, tsconfig module=commonjs\n`;
-                  continue;
-                }
-                if (targetIsCompiled && !targetIsMjs && project.typeModule) {
-                  entrypointContent += `// skipping ${specifier} because it is compiled and compiler options disagree with node's module classification: extension=${targetSrcExt}, tsconfig module=esnext\n`;
-                  continue;
-                }
-                // Do not try to import cjs/mjs/cts/mts extensions because they are being added by a different pull request
-                if (['cts', 'mts', 'cjs', 'mjs'].includes(targetSrcExt)) {
-                  entrypointContent += `// skipping ${specifier} because it uses a file extension that requires us to merge the relevant pull request\n`;
-                  continue;
-                }
-
-                // Do not try to import index from a directory if is forbidden by node's ESM resolver
-                if (
-                  entrypointIsMjs &&
-                  target.isIndex &&
-                  !project.experimentalSpecifierResolutionNode
-                ) {
-                  entrypointContent += `// skipping ${specifier} because it relies on node automatically resolving a directory to index.*, but experimental-specifier-resolution is not enabled\n`;
-                  continue;
-                }
-
-                // NOTE: if you try to explicitly import foo.ts, we will load foo.ts, EVEN IF you have `preferTsExts` off
-                const assertIsSrcOrOut = !target.inSrc
-                  ? 'out'
-                  : !target.inOut
-                  ? 'src'
-                  : project.preferSrc ||
-                    (!target.isIndex &&
-                      targetExt === target.srcExt &&
-                      withExt) ||
-                    target.srcExt === target.outExt || // <-- TODO re-enable when we have src <-> out mapping
-                    (target.isPackage &&
-                      isOneOf(target.packageFlavor, [
-                        'main-src-with-extension',
-                        'exports-src-with-extension',
-                      ]))
-                  ? 'src'
-                  : 'out';
-                const assertHasExt =
-                  assertIsSrcOrOut === 'src' ? target.srcExt : target.outExt;
-
-                entrypointContent +=
-                  entrypointExt === 'cjs'
-                    ? `mod = require('${specifier}');\n`
-                    : `mod = await import('${specifier}');\n`;
-                entrypointContent += `assert.equal(mod.loc, '${assertIsSrcOrOut}');\n`;
-                entrypointContent += `assert.equal(mod.targetIdentifier, '${target.targetIdentifier}');\n`;
-                entrypointContent += `assert.equal(mod.ext, '${assertHasExt}');\n`;
-              }
-            }
-          }
-          function writeAssertions(specifier: string) {}
-          p.dir(entrypointLocation).addFile(
-            entrypointFilename,
-            entrypointContent
+          entrypoints.push(
+            generateEntrypoint(project, p, targets, {
+              entrypointExt,
+              withExt,
+              entrypointLocation,
+              entrypointTargetting,
+            })
           );
         }
       }
     }
   }
   return entrypoints;
+}
+
+function generateEntrypoint(
+  project: Project,
+  p: FsProject,
+  targets: Target[],
+  opts: EntrypointPermutation
+) {
+  const { entrypointExt, withExt, entrypointLocation, entrypointTargetting } =
+    opts;
+  const entrypointFilename = `entrypoint-${entrypointSeq()}-${entrypointLocation}-to-${entrypointTargetting}${
+    withExt ? '-withext' : ''
+  }.${entrypointExt}`;
+  const { isMjs: entrypointIsMjs } = fileInfo(
+    entrypointFilename,
+    project.typeModule,
+    project.allowJs
+  );
+  let entrypointContent = 'let mod;\n';
+  if (entrypointIsMjs) {
+    entrypointContent += `import assert from 'assert';\n`;
+  } else {
+    entrypointContent += `const assert = require('assert');\n`;
+  }
+
+  for (const target of targets) {
+    // TODO re-enable these when we have outDir <-> rootDir mapping
+    if (target.srcName.includes('onlyout') && entrypointTargetting === 'src')
+      continue;
+    if (target.srcName.includes('onlysrc') && entrypointTargetting === 'out')
+      continue;
+
+    const {
+      ext: targetSrcExt,
+      isMjs: targetIsMjs,
+      isCompiled: targetIsCompiled,
+    } = fileInfo(target.srcName, target.typeModule, project.allowJs);
+
+    let targetExtPermutations = [''];
+    if (!target.isPackage) {
+      if (entrypointTargetting === 'out' && target.outExt !== target.srcExt) {
+        // TODO re-enable when we have out <-> src mapping
+        targetExtPermutations = [target.outExt];
+      } else if (target.srcExt !== target.outExt) {
+        targetExtPermutations = [target.srcExt, target.outExt];
+      } else {
+        targetExtPermutations = [target.srcExt];
+      }
+    }
+    const externalPackageSelfImportPermutations = target.isPackage
+      ? [false, true]
+      : [false];
+    for (const targetExt of targetExtPermutations) {
+      for (const externalPackageSelfImport of externalPackageSelfImportPermutations) {
+        entrypointContent += `\n// ${target.targetIdentifier}`;
+        if (target.isPackage) {
+          entrypointContent += ` node_modules package`;
+          if (externalPackageSelfImport) {
+            entrypointContent += ` self-import`;
+          }
+        } else {
+          entrypointContent += `.${targetExt}`;
+        }
+        entrypointContent += '\n';
+
+        // should specifier be relative or absolute?
+        let specifier: string;
+        if (externalPackageSelfImport) {
+          specifier = `../node_modules/${target.targetIdentifier}/self-import-${entrypointExt}.${entrypointExt}`;
+        } else if (target.isPackage) {
+          specifier = target.targetIdentifier;
+        } else {
+          if (entrypointTargetting === entrypointLocation) specifier = './';
+          else specifier = `../${entrypointTargetting}/`;
+          specifier += target.targetIdentifier;
+          if (target.isIndex) specifier += '-dir';
+          if (!target.isIndex && withExt) specifier += '.' + targetExt;
+        }
+
+        // Do not try to import mjs from cjs
+        if (targetIsMjs && entrypointExt === 'cjs') {
+          entrypointContent += `// skipping ${specifier} because we cannot import mjs from cjs\n`;
+          continue;
+        }
+
+        // Do not try to import mjs or cjs without extension; node always requires these extensions, even in CommonJS.
+        if (!withExt && (targetSrcExt === 'cjs' || targetSrcExt === 'mjs')) {
+          entrypointContent += `// skipping ${specifier} because we cannot omit extension from cjs or mjs files; node always requires them\n`;
+          continue;
+        }
+
+        // Do not try to import a transpiled file if compiler options disagree with node's extension-based classification
+        if (targetIsCompiled && targetIsMjs && !project.typeModule) {
+          entrypointContent += `// skipping ${specifier} because it is compiled and compiler options disagree with node's module classification: extension=${targetSrcExt}, tsconfig module=commonjs\n`;
+          continue;
+        }
+        if (targetIsCompiled && !targetIsMjs && project.typeModule) {
+          entrypointContent += `// skipping ${specifier} because it is compiled and compiler options disagree with node's module classification: extension=${targetSrcExt}, tsconfig module=esnext\n`;
+          continue;
+        }
+        // Do not try to import cjs/mjs/cts/mts extensions because they are being added by a different pull request
+        if (['cts', 'mts', 'cjs', 'mjs'].includes(targetSrcExt)) {
+          entrypointContent += `// skipping ${specifier} because it uses a file extension that requires us to merge the relevant pull request\n`;
+          continue;
+        }
+
+        // Do not try to import index from a directory if is forbidden by node's ESM resolver
+        if (
+          entrypointIsMjs &&
+          target.isIndex &&
+          !project.experimentalSpecifierResolutionNode
+        ) {
+          entrypointContent += `// skipping ${specifier} because it relies on node automatically resolving a directory to index.*, but experimental-specifier-resolution is not enabled\n`;
+          continue;
+        }
+
+        // NOTE: if you try to explicitly import foo.ts, we will load foo.ts, EVEN IF you have `preferTsExts` off
+        const assertIsSrcOrOut = !target.inSrc
+          ? 'out'
+          : !target.inOut
+          ? 'src'
+          : project.preferSrc ||
+            (!target.isIndex && targetExt === target.srcExt && withExt) ||
+            target.srcExt === target.outExt || // <-- TODO re-enable when we have src <-> out mapping
+            (target.isPackage &&
+              isOneOf(target.packageStyle, [
+                'main-src-with-extension',
+                'exports-src-with-extension',
+              ]))
+          ? 'src'
+          : 'out';
+        const assertHasExt =
+          assertIsSrcOrOut === 'src' ? target.srcExt : target.outExt;
+
+        entrypointContent +=
+          entrypointExt === 'cjs'
+            ? `mod = require('${specifier}');\n`
+            : `mod = await import('${specifier}');\n`;
+        entrypointContent += `assert.equal(mod.loc, '${assertIsSrcOrOut}');\n`;
+        entrypointContent += `assert.equal(mod.targetIdentifier, '${target.targetIdentifier}');\n`;
+        entrypointContent += `assert.equal(mod.ext, '${assertHasExt}');\n`;
+      }
+    }
+  }
+  p.dir(entrypointLocation).addFile(entrypointFilename, entrypointContent);
+  return entrypointLocation + '/' + entrypointFilename;
 }
 
 /**
