@@ -10,6 +10,7 @@ const {
   ObjectKeys,
   RegExpPrototypeTest,
   SafeMap,
+  SafeWeakMap,
   StringPrototypeCharCodeAt,
   StringPrototypeEndsWith,
   StringPrototypeLastIndexOf,
