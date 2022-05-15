@@ -156,3 +156,16 @@ export function getBasePathForProjectLocalDependencyResolution(
   // and we attempt to resolve relative specifiers.  By the time we resolve relative specifiers,
   // should have configFilePath, so not reach this codepath.
 }
+
+/** @internal */
+export function once<Fn extends (...args: any[]) => any>(fn: Fn) {
+  let value: ReturnType<Fn>;
+  let ran = false;
+  function onceFn(...args: Parameters<Fn>): ReturnType<Fn> {
+    if (ran) return value;
+    value = fn(...args);
+    ran = true;
+    return value;
+  }
+  return onceFn;
+}

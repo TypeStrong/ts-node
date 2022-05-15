@@ -54,7 +54,6 @@ jobs:
         flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
         include:
           # Node 12.15
-          # TODO Add comments about why we test 12.15; I think git blame says it's because of an ESM behavioral change that happened at 12.16
           - flavor: 1
             node: 12.15
             nodeFlag: 12_15
@@ -122,10 +121,10 @@ jobs:
             typescript: next
             typescriptFlag: next
             downgradeNpm: true
-          # Node 17
+          # Node 18
           - flavor: 12
-            node: 17
-            nodeFlag: 17
+            node: 18
+            nodeFlag: 18
             typescript: latest
             typescriptFlag: latest
             downgradeNpm: true
@@ -173,6 +172,7 @@ jobs:
       - run: |
           npm config set cache "$( node -p "process.cwd()" )/temp/npm-cache"
       - name: Cache dependencies
+        if: ${{ matrix.os != 'windows' }}
         uses: actions/cache@v2
         with:
           path: temp/npm-cache

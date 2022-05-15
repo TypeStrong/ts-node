@@ -12,6 +12,7 @@ import {
   cachedLookup,
   createProjectLocalResolveHelper,
   normalizeSlashes,
+  once,
   parse,
   ProjectLocalResolveHelper,
   split,
@@ -26,10 +27,13 @@ import {
 import { createResolverFunctions } from './resolver-functions';
 import type { createEsmHooks as createEsmHooksFn } from './esm';
 import {
-  installCommonjsResolveHookIfNecessary,
+  installCommonjsResolveHooksIfNecessary,
   ModuleConstructorWithInternals,
-} from './cjs-resolve-filename-hook';
+} from './cjs-resolve-hooks';
 import { classifyModule } from './node-module-type-classifier';
+import type * as _nodeInternalModulesEsmResolve from '../dist-raw/node-internal-modules-esm-resolve';
+import type * as _nodeInternalModulesEsmGetFormat from '../dist-raw/node-internal-modules-esm-get_format';
+import type * as _nodeInternalModulesCjsLoader from '../dist-raw/node-internal-modules-cjs-loader';
 
 export { TSCommon };
 export {
@@ -97,7 +101,9 @@ let assertScriptCanLoadAsCJS: (
   module: NodeJS.Module,
   filename: string
 ) => void = engineSupportsPackageTypeField
-  ? require('../dist-raw/node-cjs-loader-utils').assertScriptCanLoadAsCJSImpl
+  ? (
+      require('../dist-raw/node-internal-modules-cjs-loader') as typeof _nodeInternalModulesCjsLoader
+    ).assertScriptCanLoadAsCJSImpl
   : () => {
       /* noop */
     };
@@ -409,7 +415,10 @@ export interface RegisterOptions extends CreateOptions {
    *
    * For details, see https://github.com/TypeStrong/ts-node/issues/1514
    */
-  experimentalResolverFeatures?: boolean;
+  experimentalResolver?: boolean;
+
+  /** @internal */
+  experimentalSpecifierResolution?: 'node' | 'explicit';
 }
 
 /**
@@ -472,13 +481,23 @@ export const DEFAULTS: RegisterOptions = {
 export class TSError extends BaseError {
   name = 'TSError';
   diagnosticText!: string;
+  diagnostics!: ReadonlyArray<_ts.Diagnostic>;
 
-  constructor(diagnosticText: string, public diagnosticCodes: number[]) {
+  constructor(
+    diagnosticText: string,
+    public diagnosticCodes: number[],
+    diagnostics: ReadonlyArray<_ts.Diagnostic> = []
+  ) {
     super(`⨯ Unable to compile TypeScript:\n${diagnosticText}`);
     Object.defineProperty(this, 'diagnosticText', {
       configurable: true,
       writable: true,
       value: diagnosticText,
+    });
+    Object.defineProperty(this, 'diagnostics', {
+      configurable: true,
+      writable: true,
+      value: diagnostics,
     });
   }
 
@@ -524,6 +543,18 @@ export interface Service {
   /** @internal */
   projectLocalResolveHelper: ProjectLocalResolveHelper;
   /** @internal */
+  getNodeEsmResolver: () => ReturnType<
+    typeof import('../dist-raw/node-internal-modules-esm-resolve').createResolve
+  >;
+  /** @internal */
+  getNodeEsmGetFormat: () => ReturnType<
+    typeof import('../dist-raw/node-internal-modules-esm-get_format').createGetFormat
+  >;
+  /** @internal */
+  getNodeCjsLoader: () => ReturnType<
+    typeof import('../dist-raw/node-internal-modules-cjs-loader').createCjsLoader
+  >;
+  /** @internal */
   extensions: Extensions;
 }
 
@@ -544,7 +575,13 @@ export interface DiagnosticFilter {
   diagnosticsIgnored: number[];
 }
 
-/** @internal */
+/**
+ * Centralized specification of how we deal with file extensions based on
+ * project options:
+ * which ones we do/don't support, in what situations, etc.  These rules drive
+ * logic elsewhere.
+ * @internal
+ * */
 export type Extensions = ReturnType<typeof getExtensions>;
 
 /**
@@ -553,23 +590,71 @@ export type Extensions = ReturnType<typeof getExtensions>;
  */
 export function getExtensions(
   config: _ts.ParsedCommandLine,
+  options: RegisterOptions,
   tsVersion: string
 ) {
+  const nodeEquivalentExtensions = new Map<string, string>([
+    ['.ts', '.js'],
+    ['.tsx', '.js'],
+    ['.jsx', '.js'],
+    ['.mts', '.mjs'],
+    ['.cts', '.cjs'],
+  ]);
+
   // TS 4.5 is first version to understand .cts, .mts, .cjs, and .mjs extensions
   const tsSupportsMtsCtsExts = versionGteLt(tsVersion, '4.5.0');
-  const tsExtensions = ['.ts'];
-  const jsExtensions = [];
+  const compiledExtensions: string[] = [];
+  const extensionsNodeDoesNotUnderstand = [
+    '.ts',
+    '.tsx',
+    '.jsx',
+    '.cts',
+    '.mts',
+  ];
+  const extensionsRequiringHigherTypescriptVersion: string[] = [];
 
-  if (tsSupportsMtsCtsExts) tsExtensions.push('.mts', '.cts');
-
-  // Enable additional extensions when JSX or `allowJs` is enabled.
-  if (config.options.jsx) tsExtensions.push('.tsx');
-  if (config.options.allowJs) {
-    jsExtensions.push('.js', '.mjs', '.cjs');
-    if (config.options.jsx) jsExtensions.push('.jsx');
-    if (tsSupportsMtsCtsExts) tsExtensions.push('.mjs', '.cjs');
+  function addJsExtensions() {
+    compiledExtensions.push('.js');
+    if (tsSupportsMtsCtsExts) compiledExtensions.push('.mjs', '.cjs');
+    else extensionsRequiringHigherTypescriptVersion.push('.mjs', '.cjs');
   }
-  return { tsExtensions, jsExtensions };
+
+  // .js, .cjs, .mjs take precedence if preferTsExts is off
+  if (!options.preferTsExts && config.options.allowJs) {
+    addJsExtensions();
+  }
+  compiledExtensions.push('.ts');
+  if (tsSupportsMtsCtsExts) compiledExtensions.push('.mts', '.cts');
+  else extensionsRequiringHigherTypescriptVersion.push('.mts', '.cts');
+  if (config.options.jsx) compiledExtensions.push('.tsx');
+  if (config.options.jsx && config.options.allowJs) compiledExtensions.push('.jsx');
+  if (options.preferTsExts && config.options.allowJs) {
+    addJsExtensions();
+  }
+
+  const compiledExtensionsNodeDoesNotUnderstand =
+    extensionsNodeDoesNotUnderstand.filter((ext) =>
+      compiledExtensions.includes(ext)
+    );
+
+  return {
+    /** All file extensions we transform, ordered by resolution preference according to preferTsExts */
+    compiledExtensions,
+    /** Resolved extensions that vanilla node will not understand; we should handle them */
+    extensionsNodeDoesNotUnderstand,
+    /** Like the above, but only the ones we're compiling */
+    compiledExtensionsNodeDoesNotUnderstand,
+    /**
+     *  Mapping from extensions understood by tsc to the equivalent for node,
+     * as far as getFormat is concerned.
+     */
+    nodeEquivalentExtensions,
+    /**
+     * Extensions that we can support if the user upgrades their typescript version
+     * Used when raising hints.
+     */
+    extensionsRequiringHigherTypescriptVersion
+  };
 }
 
 /**
@@ -595,8 +680,7 @@ export function register(
   }
 
   const originalJsHandler = require.extensions['.js'];
-  const { tsExtensions, jsExtensions } = service.extensions;
-  const extensions = [...tsExtensions, ...jsExtensions];
+  const { compiledExtensions } = service.extensions;
 
   // Expose registered instance globally.
   process[REGISTER_INSTANCE] = service;
@@ -604,12 +688,12 @@ export function register(
   // Register the extensions.
   registerExtensions(
     service.options.preferTsExts,
-    extensions,
+    compiledExtensions,
     service,
     originalJsHandler
   );
 
-  installCommonjsResolveHookIfNecessary(service);
+  installCommonjsResolveHooksIfNecessary(service);
 
   // Require specified modules before start-up.
   (Module as ModuleConstructorWithInternals)._preloadModules(
@@ -855,7 +939,7 @@ export function createFromPreloadedConfig(
   function createTSError(diagnostics: ReadonlyArray<_ts.Diagnostic>) {
     const diagnosticText = formatDiagnostics(diagnostics, diagnosticHost);
     const diagnosticCodes = diagnostics.map((x) => x.code);
-    return new TSError(diagnosticText, diagnosticCodes);
+    return new TSError(diagnosticText, diagnosticCodes, diagnostics);
   }
 
   function reportTSError(configDiagnosticList: _ts.Diagnostic[]) {
@@ -926,7 +1010,7 @@ export function createFromPreloadedConfig(
     const rootFileNames = new Set(config.fileNames);
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile));
 
-    // Use language services by default (TODO: invert next major version).
+    // Use language services by default
     if (!options.compilerHost) {
       let projectVersion = 1;
       const fileVersions = new Map(
@@ -1459,14 +1543,11 @@ export function createFromPreloadedConfig(
   let active = true;
   const enabled = (enabled?: boolean) =>
     enabled === undefined ? active : (active = !!enabled);
-  const extensions = getExtensions(config, ts.version);
+  const extensions = getExtensions(config, options, ts.version);
   const ignored = (fileName: string) => {
     if (!active) return true;
     const ext = extname(fileName);
-    if (
-      extensions.tsExtensions.includes(ext) ||
-      extensions.jsExtensions.includes(ext)
-    ) {
+    if (extensions.compiledExtensions.includes(ext)) {
       return !isScoped(fileName) || shouldIgnore(fileName);
     }
     return true;
@@ -1480,6 +1561,34 @@ export function createFromPreloadedConfig(
       ),
     });
   }
+
+  const getNodeEsmResolver = once(() =>
+    (
+      require('../dist-raw/node-internal-modules-esm-resolve') as typeof _nodeInternalModulesEsmResolve
+    ).createResolve({
+      ...extensions,
+      preferTsExts: options.preferTsExts,
+      tsNodeExperimentalSpecifierResolution:
+        options.experimentalSpecifierResolution,
+    })
+  );
+  const getNodeEsmGetFormat = once(() =>
+    (
+      require('../dist-raw/node-internal-modules-esm-get_format') as typeof _nodeInternalModulesEsmGetFormat
+    ).createGetFormat(
+      options.experimentalSpecifierResolution,
+      getNodeEsmResolver()
+    )
+  );
+  const getNodeCjsLoader = once(() =>
+    (
+      require('../dist-raw/node-internal-modules-cjs-loader') as typeof _nodeInternalModulesCjsLoader
+    ).createCjsLoader({
+      ...extensions,
+      preferTsExts: options.preferTsExts,
+      nodeEsmResolver: getNodeEsmResolver(),
+    })
+  );
 
   return {
     [TS_NODE_SERVICE_BRAND]: true,
@@ -1499,6 +1608,9 @@ export function createFromPreloadedConfig(
     enableExperimentalEsmLoaderInterop,
     transpileOnly,
     projectLocalResolveHelper,
+    getNodeEsmResolver,
+    getNodeEsmGetFormat,
+    getNodeCjsLoader,
     extensions,
   };
 }

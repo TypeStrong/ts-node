@@ -1,3 +1,5 @@
+// Copied from https://github.com/nodejs/node/blob/v15.3.0/lib/internal/modules/esm/resolve.js
+
 'use strict';
 
 const {
@@ -9,11 +11,9 @@ const {
   ObjectFreeze,
   ObjectGetOwnPropertyNames,
   ObjectPrototypeHasOwnProperty,
-  RegExp,
   RegExpPrototypeTest,
   SafeMap,
   SafeSet,
-  String,
   StringPrototypeEndsWith,
   StringPrototypeIndexOf,
   StringPrototypeLastIndexOf,
@@ -897,4 +897,3 @@ module.exports = {
   packageExportsResolve,
   packageImportsResolve
 };
-

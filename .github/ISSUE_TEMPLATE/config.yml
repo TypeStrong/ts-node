@@ -6,8 +6,8 @@ contact_links:
     url: "https://github.com/TypeStrong/ts-node/discussions"
   -
     name: Chat
-    about: "Alternatively, you can use the TypeScript Community Discord."
-    url: "https://discord.gg/typescript"
+    about: "Alternatively, ask on the TypeScript Community Discord."
+    url: "https://discord.gg/3rBctmf3dP"
   -
     name: "Help! My Types Are Missing!"
     about: "This is likely a configuration problem.  Check our README"

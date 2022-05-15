@@ -1,10 +1,11 @@
-import { _test } from './testlib';
+import { context } from './testlib';
 import * as expect from 'expect';
 import { join, resolve, sep as pathSep } from 'path';
 import { tmpdir } from 'os';
 import semver = require('semver');
 import {
   BIN_PATH_JS,
+  CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
   nodeSupportsEsmHooks,
   ts,
   tsSupportsShowConfig,
@@ -13,7 +14,6 @@ import {
 import { lstatSync, mkdtempSync } from 'fs';
 import { npath } from '@yarnpkg/fslib';
 import type _createRequire from 'create-require';
-import { pathToFileURL } from 'url';
 import { createExec } from './exec-helpers';
 import {
   BIN_CWD_PATH,
@@ -25,18 +25,17 @@ import {
   testsDirRequire,
   tsNodeTypes,
   xfs,
-  contextTsNodeUnderTest,
+  ctxTsNode,
   CMD_TS_NODE_WITH_PROJECT_FLAG,
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   CMD_ESM_LOADER_WITHOUT_PROJECT,
-  EXPERIMENTAL_MODULES_FLAG,
 } from './helpers';
 
 const exec = createExec({
   cwd: TEST_DIR,
 });
 
-const test = _test.context(contextTsNodeUnderTest);
+const test = context(ctxTsNode);
 
 test.suite('ts-node', (test) => {
   test('should export the correct version', (t) => {
@@ -70,11 +69,13 @@ test.suite('ts-node', (test) => {
     testsDirRequire.resolve('ts-node/register/transpile-only');
     testsDirRequire.resolve('ts-node/register/type-check');
 
-    // `node --loader ts-node/esm`
-    testsDirRequire.resolve('ts-node/esm');
-    testsDirRequire.resolve('ts-node/esm.mjs');
-    testsDirRequire.resolve('ts-node/esm/transpile-only');
-    testsDirRequire.resolve('ts-node/esm/transpile-only.mjs');
+    if (semver.gte(process.version, '12.17.0')) {
+      // `node --loader ts-node/esm`
+      testsDirRequire.resolve('ts-node/esm');
+      testsDirRequire.resolve('ts-node/esm.mjs');
+      testsDirRequire.resolve('ts-node/esm/transpile-only');
+      testsDirRequire.resolve('ts-node/esm/transpile-only.mjs');
+    }
 
     testsDirRequire.resolve('ts-node/transpilers/swc');
     testsDirRequire.resolve('ts-node/transpilers/swc-experimental');
@@ -143,7 +144,10 @@ test.suite('ts-node', (test) => {
 
     test('should execute cli with absolute path', async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} "${join(TEST_DIR, 'hello-world')}"`
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} "${join(
+          TEST_DIR,
+          'hello-world'
+        )}"`
       );
       expect(err).toBe(null);
       expect(stdout).toBe('Hello, world!\n');
@@ -157,18 +161,10 @@ test.suite('ts-node', (test) => {
       expect(stdout).toBe('example\n');
     });
 
-    test('should provide registered information globally', async () => {
+    test("should expose ts-node Service as a symbol property on Node's `process` object", async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} env`
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} env`
       );
-      expect(err).toBe(null);
-      expect(stdout).toBe('object\n');
-    });
-
-    test('should provide registered information on register', async () => {
-      const { err, stdout } = await exec(`node -r ts-node/register env.ts`, {
-        cwd: TEST_DIR,
-      });
       expect(err).toBe(null);
       expect(stdout).toBe('object\n');
     });
@@ -176,7 +172,7 @@ test.suite('ts-node', (test) => {
     test('should allow js', async () => {
       const { err, stdout } = await exec(
         [
-          CMD_TS_NODE_WITH_PROJECT_FLAG,
+          CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
           '-O "{\\"allowJs\\":true}"',
           '-pe "import { main } from \'./allow-js/run\';main()"',
         ].join(' ')
@@ -188,7 +184,7 @@ test.suite('ts-node', (test) => {
     test('should include jsx when `allow-js` true', async () => {
       const { err, stdout } = await exec(
         [
-          CMD_TS_NODE_WITH_PROJECT_FLAG,
+          CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
           '-O "{\\"allowJs\\":true}"',
           '-pe "import { Foo2 } from \'./allow-js/with-jsx\'; Foo2.sayHi()"',
         ].join(' ')
@@ -223,7 +219,7 @@ test.suite('ts-node', (test) => {
 
     test('should eval code', async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} -e "import * as m from './module';console.log(m.example('test'))"`
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} -e "import * as m from './module';console.log(m.example('test'))"`
       );
       expect(err).toBe(null);
       expect(stdout).toBe('TEST\n');
@@ -231,13 +227,13 @@ test.suite('ts-node', (test) => {
 
     test('should import empty files', async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} -e "import './empty'"`
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} -e "import './empty'"`
       );
       expect(err).toBe(null);
       expect(stdout).toBe('');
     });
 
-    test('should throw errors', async () => {
+    test('should throw typechecking errors', async () => {
       const { err } = await exec(
         `${CMD_TS_NODE_WITH_PROJECT_FLAG} -e "import * as m from './module';console.log(m.example(123))"`
       );
@@ -401,7 +397,7 @@ test.suite('ts-node', (test) => {
     }
 
     test('should pipe into `ts-node` and evaluate', async () => {
-      const execPromise = exec(CMD_TS_NODE_WITH_PROJECT_FLAG);
+      const execPromise = exec(CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG);
       execPromise.child.stdin!.end("console.log('hello')");
       const { err, stdout } = await execPromise;
       expect(err).toBe(null);
@@ -409,7 +405,9 @@ test.suite('ts-node', (test) => {
     });
 
     test('should pipe into `ts-node`', async () => {
-      const execPromise = exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} -p`);
+      const execPromise = exec(
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} -p`
+      );
       execPromise.child.stdin!.end('true');
       const { err, stdout } = await execPromise;
       expect(err).toBe(null);
@@ -428,7 +426,7 @@ test.suite('ts-node', (test) => {
 
     test('should support require flags', async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} -r ./hello-world -pe "console.log('success')"`
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} -r ./hello-world -pe "console.log('success')"`
       );
       expect(err).toBe(null);
       expect(stdout).toBe('Hello, world!\nsuccess\nundefined\n');
@@ -436,7 +434,7 @@ test.suite('ts-node', (test) => {
 
     test('should support require from node modules', async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} -r typescript -e "console.log('success')"`
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} -r typescript -e "console.log('success')"`
       );
       expect(err).toBe(null);
       expect(stdout).toBe('success\n');
@@ -482,28 +480,17 @@ test.suite('ts-node', (test) => {
       );
     });
 
-    test('should preserve `ts-node` context with child process', async () => {
-      const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} child-process`
-      );
-      expect(err).toBe(null);
-      expect(stdout).toBe('Hello, world!\n');
-    });
-
     test('should import js before ts by default', async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} import-order/compiled`
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} import-order/compiled`
       );
       expect(err).toBe(null);
       expect(stdout).toBe('Hello, JavaScript!\n');
     });
 
-    const preferTsExtsEntrypoint = semver.gte(process.version, '12.0.0')
-      ? 'import-order/compiled'
-      : 'import-order/require-compiled';
     test('should import ts before js when --prefer-ts-exts flag is present', async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} --prefer-ts-exts ${preferTsExtsEntrypoint}`
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} --prefer-ts-exts import-order/compiled`
       );
       expect(err).toBe(null);
       expect(stdout).toBe('Hello, TypeScript!\n');
@@ -511,7 +498,7 @@ test.suite('ts-node', (test) => {
 
     test('should import ts before js when TS_NODE_PREFER_TS_EXTS env is present', async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} ${preferTsExtsEntrypoint}`,
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} import-order/compiled`,
         {
           env: { ...process.env, TS_NODE_PREFER_TS_EXTS: 'true' },
         }
@@ -522,7 +509,7 @@ test.suite('ts-node', (test) => {
 
     test('should ignore .d.ts files', async () => {
       const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} import-order/importer`
+        `${CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG} import-order/importer`
       );
       expect(err).toBe(null);
       expect(stdout).toBe('Hello, World!\n');
@@ -562,63 +549,60 @@ test.suite('ts-node', (test) => {
       });
     });
 
-    if (semver.gte(ts.version, '2.7.0')) {
-      test('should locate tsconfig relative to entry-point by default', async () => {
-        const { err, stdout } = await exec(`${BIN_PATH} ../a/index`, {
+    test('should locate tsconfig relative to entry-point by default', async () => {
+      const { err, stdout } = await exec(`${BIN_PATH} ../a/index`, {
+        cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
+      });
+      expect(err).toBe(null);
+      expect(stdout).toMatch(/plugin-a/);
+    });
+    test('should locate tsconfig relative to entry-point via ts-node-script', async () => {
+      const { err, stdout } = await exec(`${BIN_SCRIPT_PATH} ../a/index`, {
+        cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
+      });
+      expect(err).toBe(null);
+      expect(stdout).toMatch(/plugin-a/);
+    });
+    test('should locate tsconfig relative to entry-point with --script-mode', async () => {
+      const { err, stdout } = await exec(
+        `${BIN_PATH} --script-mode ../a/index`,
+        {
           cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
-        });
-        expect(err).toBe(null);
-        expect(stdout).toMatch(/plugin-a/);
-      });
-      test('should locate tsconfig relative to entry-point via ts-node-script', async () => {
-        const { err, stdout } = await exec(`${BIN_SCRIPT_PATH} ../a/index`, {
-          cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
-        });
-        expect(err).toBe(null);
-        expect(stdout).toMatch(/plugin-a/);
-      });
-      test('should locate tsconfig relative to entry-point with --script-mode', async () => {
-        const { err, stdout } = await exec(
-          `${BIN_PATH} --script-mode ../a/index`,
-          {
-            cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
-          }
-        );
-        expect(err).toBe(null);
-        expect(stdout).toMatch(/plugin-a/);
-      });
-      test('should locate tsconfig relative to cwd via ts-node-cwd', async () => {
-        const { err, stdout } = await exec(`${BIN_CWD_PATH} ../a/index`, {
-          cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
-        });
-        expect(err).toBe(null);
-        expect(stdout).toMatch(/plugin-b/);
-      });
-      test('should locate tsconfig relative to cwd in --cwd-mode', async () => {
-        const { err, stdout } = await exec(
-          `${BIN_PATH} --cwd-mode ../a/index`,
-          { cwd: join(TEST_DIR, 'cwd-and-script-mode/b') }
-        );
-        expect(err).toBe(null);
-        expect(stdout).toMatch(/plugin-b/);
-      });
-      test('should locate tsconfig relative to realpath, not symlink, when entrypoint is a symlink', async (t) => {
-        if (
-          lstatSync(
-            join(TEST_DIR, 'main-realpath/symlink/symlink.tsx')
-          ).isSymbolicLink()
-        ) {
-          const { err, stdout } = await exec(
-            `${BIN_PATH} main-realpath/symlink/symlink.tsx`
-          );
-          expect(err).toBe(null);
-          expect(stdout).toBe('');
-        } else {
-          t.log('Skipping');
-          return;
         }
+      );
+      expect(err).toBe(null);
+      expect(stdout).toMatch(/plugin-a/);
+    });
+    test('should locate tsconfig relative to cwd via ts-node-cwd', async () => {
+      const { err, stdout } = await exec(`${BIN_CWD_PATH} ../a/index`, {
+        cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
       });
-    }
+      expect(err).toBe(null);
+      expect(stdout).toMatch(/plugin-b/);
+    });
+    test('should locate tsconfig relative to cwd in --cwd-mode', async () => {
+      const { err, stdout } = await exec(`${BIN_PATH} --cwd-mode ../a/index`, {
+        cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
+      });
+      expect(err).toBe(null);
+      expect(stdout).toMatch(/plugin-b/);
+    });
+    test('should locate tsconfig relative to realpath, not symlink, when entrypoint is a symlink', async (t) => {
+      if (
+        lstatSync(
+          join(TEST_DIR, 'main-realpath/symlink/symlink.tsx')
+        ).isSymbolicLink()
+      ) {
+        const { err, stdout } = await exec(
+          `${BIN_PATH} main-realpath/symlink/symlink.tsx`
+        );
+        expect(err).toBe(null);
+        expect(stdout).toBe('');
+      } else {
+        t.log('Skipping');
+        return;
+      }
+    });
 
     test.suite('should read ts-node options from tsconfig.json', (test) => {
       const BIN_EXEC = `"${BIN_PATH}" --project tsconfig-options/tsconfig.json`;
@@ -749,8 +733,8 @@ test.suite('ts-node', (test) => {
 
     test.suite(
       'should use implicit @tsconfig/bases config when one is not loaded from disk',
-      (_test) => {
-        const test = _test.context(async (t) => ({
+      ({ context }) => {
+        const test = context(async (t) => ({
           tempDir: mkdtempSync(join(tmpdir(), 'ts-node-spec')),
         }));
         if (
@@ -981,8 +965,8 @@ test.suite('ts-node', (test) => {
     });
   });
 
-  test.suite('create', (_test) => {
-    const test = _test.context(async (t) => {
+  test.suite('create', ({ context }) => {
+    const test = context(async (t) => {
       return {
         service: t.context.tsNodeUnderTest.create({
           compilerOptions: { target: 'es5' },
@@ -1159,7 +1143,11 @@ test('Detect when typescript adds new ModuleKind values; flag as a failure so we
     expect(ts.ModuleKind[99]).toBeUndefined();
   }
   check(7, 'ES2022', false);
-  check(100, 'Node12', false);
+  if (ts.version.startsWith('4.8.') || semver.gte(ts.version, '4.8.0')) {
+    check(100, 'Node16', false);
+  } else {
+    check(100, 'Node12', false);
+  }
   check(199, 'NodeNext', false);
   const actualKeys = Object.keys(ts.ModuleKind);
   actualKeys.sort();

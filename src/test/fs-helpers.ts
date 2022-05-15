@@ -42,6 +42,7 @@ export function tempdirProject(name = '') {
   return projectInternal(tmpdir);
 }
 
+export type Project = ReturnType<typeof project>;
 export function project(name: string) {
   return projectInternal(`${TEST_DIR}/tmp/${name}`);
 }
@@ -55,7 +56,11 @@ function projectInternal(cwd: string) {
     }
   }
   function rm() {
-    fs.rmdirSync(cwd, { recursive: true });
+    try {
+      fs.rmdirSync(cwd, { recursive: true });
+    } catch (err) {
+      if (fs.existsSync(cwd)) throw err;
+    }
   }
   const { add, addFile, addJsonFile, dir } = createDirectory(cwd);
   function createDirectory(

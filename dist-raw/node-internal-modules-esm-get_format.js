@@ -1,7 +1,4 @@
 // Copied from https://raw.githubusercontent.com/nodejs/node/v15.3.0/lib/internal/modules/esm/get_format.js
-// Then modified to suite our needs.
-// Formatting is intentionally bad to keep the diff as small as possible, to make it easier to merge
-// upstream changes and understand our modifications.
 
 'use strict';
 const {
@@ -16,12 +13,9 @@ const experimentalJsonModules =
   nodeMajor > 17
   || (nodeMajor === 17 && nodeMinor >= 5)
   || getOptionValue('--experimental-json-modules');
-const experimentalSpeciferResolution =
-  getOptionValue('--experimental-specifier-resolution');
 const experimentalWasmModules = getOptionValue('--experimental-wasm-modules');
-const { getPackageType } = require('./node-esm-resolve-implementation.js').createResolve({tsExtensions: [], jsExtensions: []});
 const { URL, fileURLToPath } = require('url');
-const { ERR_UNKNOWN_FILE_EXTENSION } = require('./node-errors').codes;
+const { ERR_UNKNOWN_FILE_EXTENSION } = require('./node-internal-errors').codes;
 
 const extensionFormatMap = {
   '__proto__': null,
@@ -45,6 +39,24 @@ if (experimentalWasmModules)
 if (experimentalJsonModules)
   extensionFormatMap['.json'] = legacyExtensionFormatMap['.json'] = 'json';
 
+/**
+ *
+ * @param {'node' | 'explicit'} [tsNodeExperimentalSpecifierResolution]
+ * @param {ReturnType<
+ *  typeof import('../dist-raw/node-internal-modules-esm-resolve').createResolve
+ * >} nodeEsmResolver
+ */
+function createGetFormat(tsNodeExperimentalSpecifierResolution, nodeEsmResolver) {
+// const experimentalSpeciferResolution = tsNodeExperimentalSpecifierResolution ?? getOptionValue('--experimental-specifier-resolution');
+let experimentalSpeciferResolution = tsNodeExperimentalSpecifierResolution != null ? tsNodeExperimentalSpecifierResolution : getOptionValue('--experimental-specifier-resolution');
+const { getPackageType } = nodeEsmResolver;
+
+/**
+ * @param {string} url
+ * @param {{}} context
+ * @param {any} defaultGetFormatUnused
+ * @returns {ReturnType<import('../src/esm').NodeLoaderHooksAPI1.GetFormatHook>}
+ */
 function defaultGetFormat(url, context, defaultGetFormatUnused) {
   if (StringPrototypeStartsWith(url, 'node:')) {
     return { format: 'builtin' };
@@ -84,4 +96,10 @@ function defaultGetFormat(url, context, defaultGetFormatUnused) {
   }
   return { format: null };
 }
-exports.defaultGetFormat = defaultGetFormat;
+
+return {defaultGetFormat};
+}
+
+module.exports = {
+  createGetFormat
+};

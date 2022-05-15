@@ -12,8 +12,9 @@ import type { Readable } from 'stream';
  */
 import type * as tsNodeTypes from '../index';
 import type _createRequire from 'create-require';
-import { has, once } from 'lodash';
+import { has, mapValues, once, sortBy } from 'lodash';
 import semver = require('semver');
+import type { ExecutionContext } from './testlib';
 const createRequire: typeof _createRequire = require('create-require');
 export { tsNodeTypes };
 
@@ -22,6 +23,10 @@ export const ROOT_DIR = resolve(__dirname, '../..');
 export const DIST_DIR = resolve(__dirname, '..');
 export const TEST_DIR = join(__dirname, '../../tests');
 export const PROJECT = join(TEST_DIR, 'tsconfig.json');
+export const PROJECT_TRANSPILE_ONLY = join(
+  TEST_DIR,
+  'tsconfig-transpile-only.json'
+);
 export const BIN_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node');
 export const BIN_PATH_JS = join(TEST_DIR, 'node_modules/ts-node/dist/bin.js');
 export const BIN_SCRIPT_PATH = join(
@@ -30,11 +35,15 @@ export const BIN_SCRIPT_PATH = join(
 );
 export const BIN_CWD_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-cwd');
 export const BIN_ESM_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-esm');
+
+process.chdir(TEST_DIR);
 //#endregion
 
 //#region command lines
 /** Default `ts-node --project` invocation */
 export const CMD_TS_NODE_WITH_PROJECT_FLAG = `"${BIN_PATH}" --project "${PROJECT}"`;
+/** Default `ts-node --project` invocation with transpile-only */
+export const CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG = `"${BIN_PATH}" --project "${PROJECT_TRANSPILE_ONLY}"`;
 /** Default `ts-node` invocation without `--project` */
 export const CMD_TS_NODE_WITHOUT_PROJECT_FLAG = `"${BIN_PATH}"`;
 export const EXPERIMENTAL_MODULES_FLAG = semver.gte(process.version, '12.17.0')
@@ -71,13 +80,17 @@ export const tsSupportsShowConfig = semver.gte(ts.version, '3.2.0');
 export const xfs = new NodeFS(fs);
 
 /** Pass to `test.context()` to get access to the ts-node API under test */
-export const contextTsNodeUnderTest = once(async () => {
+export const ctxTsNode = once(async () => {
   await installTsNode();
   const tsNodeUnderTest: typeof tsNodeTypes = testsDirRequire('ts-node');
   return {
     tsNodeUnderTest,
   };
 });
+export namespace ctxTsNode {
+  export type Ctx = Awaited<ReturnType<typeof ctxTsNode>>;
+  export type T = ExecutionContext<Ctx>;
+}
 
 //#region install ts-node tarball
 const ts_node_install_lock = process.env.ts_node_install_lock as string;
@@ -188,8 +201,13 @@ export function getStream(stream: Readable, waitForPattern?: string | RegExp) {
 
 //#region Reset node environment
 
+// Delete any added by nyc that aren't in vanilla nodejs
+for (const ext of Object.keys(require.extensions)) {
+  if (!['.js', '.json', '.node'].includes(ext)) delete require.extensions[ext];
+}
 const defaultRequireExtensions = captureObjectState(require.extensions);
-const defaultProcess = captureObjectState(process);
+// Avoid node deprecation warning for accessing _channel
+const defaultProcess = captureObjectState(process, ['_channel']);
 const defaultModule = captureObjectState(require('module'));
 const defaultError = captureObjectState(Error);
 const defaultGlobal = captureObjectState(global);
@@ -201,51 +219,92 @@ const defaultGlobal = captureObjectState(global);
  * Must also play nice with `nyc`'s environmental mutations.
  */
 export function resetNodeEnvironment() {
+  const sms =
+    require('@cspotcode/source-map-support') as typeof import('@cspotcode/source-map-support');
   // We must uninstall so that it resets its internal state; otherwise it won't know it needs to reinstall in the next test.
-  require('@cspotcode/source-map-support').uninstall();
+  sms.uninstall();
+  // Must remove handlers to avoid a memory leak
+  sms.resetRetrieveHandlers();
 
   // Modified by ts-node hooks
-  resetObject(require.extensions, defaultRequireExtensions);
+  resetObject(
+    require.extensions,
+    defaultRequireExtensions,
+    undefined,
+    undefined,
+    undefined,
+    true
+  );
 
   // ts-node attaches a property when it registers an instance
   // source-map-support monkey-patches the emit function
-  resetObject(process, defaultProcess);
+  // Avoid node deprecation warnings for setting process.config or accessing _channel
+  resetObject(process, defaultProcess, undefined, ['_channel'], ['config']);
 
   // source-map-support swaps out the prepareStackTrace function
   resetObject(Error, defaultError);
 
-  // _resolveFilename is modified by tsconfig-paths, future versions of source-map-support, and maybe future versions of ts-node
+  // _resolveFilename et.al. are modified by ts-node, tsconfig-paths, source-map-support, yarn, maybe other things?
   resetObject(require('module'), defaultModule);
 
   // May be modified by REPL tests, since the REPL sets globals.
-  resetObject(global, defaultGlobal);
+  // Avoid deleting nyc's coverage data.
+  resetObject(global, defaultGlobal, ['__coverage__']);
+
+  // Reset our ESM hooks
+  process.__test_setloader__?.(undefined);
 }
 
-function captureObjectState(object: any) {
+function captureObjectState(object: any, avoidGetters: string[] = []) {
+  const descriptors = Object.getOwnPropertyDescriptors(object);
+  const values = mapValues(descriptors, (_d, key) => {
+    if (avoidGetters.includes(key)) return descriptors[key].value;
+    return object[key];
+  });
   return {
-    descriptors: Object.getOwnPropertyDescriptors(object),
-    values: { ...object },
+    descriptors,
+    values,
   };
 }
 // Redefine all property descriptors and delete any new properties
 function resetObject(
   object: any,
-  state: ReturnType<typeof captureObjectState>
+  state: ReturnType<typeof captureObjectState>,
+  doNotDeleteTheseKeys: string[] = [],
+  doNotSetTheseKeys: string[] = [],
+  avoidSetterIfUnchanged: string[] = [],
+  reorderProperties = false
 ) {
   const currentDescriptors = Object.getOwnPropertyDescriptors(object);
   for (const key of Object.keys(currentDescriptors)) {
-    if (!has(state.descriptors, key)) {
-      delete object[key];
-    }
+    if (doNotDeleteTheseKeys.includes(key)) continue;
+    if (has(state.descriptors, key)) continue;
+    delete object[key];
   }
   // Trigger nyc's setter functions
   for (const [key, value] of Object.entries(state.values)) {
     try {
+      if (doNotSetTheseKeys.includes(key)) continue;
+      if (avoidSetterIfUnchanged.includes(key) && object[key] === value)
+        continue;
       object[key] = value;
     } catch {}
   }
   // Reset descriptors
   Object.defineProperties(object, state.descriptors);
+
+  if (reorderProperties) {
+    // Delete and re-define each property so that they are in original order
+    const originalOrder = Object.keys(state.descriptors);
+    const properties = Object.getOwnPropertyDescriptors(object);
+    const sortedKeys = sortBy(Object.keys(properties), (name) =>
+      originalOrder.includes(name) ? originalOrder.indexOf(name) : 999
+    );
+    for (const key of sortedKeys) {
+      delete object[key];
+      Object.defineProperty(object, key, properties[key]);
+    }
+  }
 }
 
 //#endregion
