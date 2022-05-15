@@ -16,7 +16,7 @@ const experimentalJsonModules =
 const experimentalWasmModules = getOptionValue('--experimental-wasm-modules');
 const { getPackageType } = require('./node-internal-modules-esm-resolve').createResolve({compiledExtensions: []});
 const { URL, fileURLToPath } = require('url');
-const { ERR_UNKNOWN_FILE_EXTENSION } = require('./node-errors').codes;
+const { ERR_UNKNOWN_FILE_EXTENSION } = require('./node-internal-errors').codes;
 
 const extensionFormatMap = {
   '__proto__': null,

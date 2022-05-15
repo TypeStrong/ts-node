@@ -83,7 +83,7 @@ const {
   ERR_UNSUPPORTED_DIR_IMPORT,
   ERR_UNSUPPORTED_ESM_URL_SCHEME,
 // } = require('internal/errors').codes;
-} = require('./node-errors').codes;
+} = require('./node-internal-errors').codes;
 
 // const { Module: CJSModule } = require('internal/modules/cjs/loader');
 const CJSModule = Module;
