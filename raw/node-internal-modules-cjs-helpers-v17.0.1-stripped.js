@@ -8,10 +8,11 @@ const {
   ObjectPrototypeHasOwnProperty,
   SafeSet,
   StringPrototypeIncludes,
+  StringPrototypeSlice,
   StringPrototypeStartsWith,
-} = require('./node-primordials');
+} = primordials;
 
-const { getOptionValue } = require('./node-options');
+const { getOptionValue } = require('internal/options');
 const userConditions = getOptionValue('--conditions');
 
 const noAddons = getOptionValue('--no-addons');
@@ -25,14 +26,9 @@ const cjsConditions = new SafeSet([
   ...userConditions,
 ]);
 
-/**
- * @param {any} object
- * @param {string} [dummyModuleName]
- * @return {void}
- */
 function addBuiltinLibsToObject(object, dummyModuleName) {
   // Make built-in modules available directly (loaded lazily).
-  const Module = require('module').Module;
+  const Module = require('internal/modules/cjs/loader').Module;
   const { builtinModules } = Module;
 
   // To require built-in modules in user-land and ignore modules whose
@@ -63,8 +59,7 @@ function addBuiltinLibsToObject(object, dummyModuleName) {
 
     ObjectDefineProperty(object, name, {
       get: () => {
-        // Node 12 hack; remove when we drop node12 support
-        const lib = (dummyModule.require || require)(name);
+        const lib = dummyModule.require(name);
 
         // Disable the current getter/setter and set up a new
         // non-enumerable property.
@@ -84,6 +79,3 @@ function addBuiltinLibsToObject(object, dummyModuleName) {
     });
   });
 }
-
-exports.addBuiltinLibsToObject = addBuiltinLibsToObject;
-exports.cjsConditions = cjsConditions;

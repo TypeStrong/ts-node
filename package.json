@@ -63,11 +63,11 @@
   "scripts": {
     "lint": "dprint check",
     "lint-fix": "dprint fmt",
-    "clean": "rimraf dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz",
+    "clean": "rimraf temp dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz tests/node_modules tests/tmp",
     "rebuild": "npm run clean && npm run build",
     "build": "npm run build-nopack && npm run build-pack",
     "build-nopack": "npm run build-tsc && npm run build-configSchema",
-    "build-tsc": "tsc",
+    "build-tsc": "tsc -b ./tsconfig.build-dist.json",
     "build-configSchema": "typescript-json-schema --topRef --refs --validationKeywords allOf --out tsconfig.schema.json tsconfig.build-schema.json TsConfigSchema && node --require ./register ./scripts/create-merged-schema",
     "build-pack": "node ./scripts/build-pack.js",
     "test-spec": "ava",
@@ -119,7 +119,7 @@
     "@types/node": "13.13.5",
     "@types/proper-lockfile": "^4.1.2",
     "@types/proxyquire": "^1.3.28",
-    "@types/react": "^16.0.2",
+    "@types/react": "^16.14.19",
     "@types/rimraf": "^3.0.0",
     "@types/semver": "^7.1.0",
     "@yarnpkg/fslib": "^2.4.0",
@@ -138,7 +138,7 @@
     "semver": "^7.1.3",
     "throat": "^6.0.1",
     "typedoc": "^0.22.10",
-    "typescript": "4.6.3",
+    "typescript": "4.6.4",
     "typescript-json-schema": "^0.53.0",
     "util.promisify": "^1.0.1"
   },
@@ -175,7 +175,7 @@
     "singleQuote": true
   },
   "volta": {
-    "node": "17.5.0",
+    "node": "18.1.0",
     "npm": "6.14.15"
   }
 }

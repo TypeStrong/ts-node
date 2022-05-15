@@ -1,3 +1,4 @@
 !from-node-modules/node_modules/
 package-lock.json
 ts-node-packed.tgz
+/tmp

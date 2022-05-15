@@ -12,7 +12,7 @@ import type { Readable } from 'stream';
  */
 import type * as tsNodeTypes from '../index';
 import type _createRequire from 'create-require';
-import { has, mapValues, once } from 'lodash';
+import { has, mapValues, once, sortBy } from 'lodash';
 import semver = require('semver');
 import type { ExecutionContext } from './testlib';
 const createRequire: typeof _createRequire = require('create-require');
@@ -201,6 +201,10 @@ export function getStream(stream: Readable, waitForPattern?: string | RegExp) {
 
 //#region Reset node environment
 
+// Delete any added by nyc that aren't in vanilla nodejs
+for (const ext of Object.keys(require.extensions)) {
+  if (!['.js', '.json', '.node'].includes(ext)) delete require.extensions[ext];
+}
 const defaultRequireExtensions = captureObjectState(require.extensions);
 // Avoid node deprecation warning for accessing _channel
 const defaultProcess = captureObjectState(process, ['_channel']);
@@ -223,7 +227,14 @@ export function resetNodeEnvironment() {
   sms.resetRetrieveHandlers();
 
   // Modified by ts-node hooks
-  resetObject(require.extensions, defaultRequireExtensions);
+  resetObject(
+    require.extensions,
+    defaultRequireExtensions,
+    undefined,
+    undefined,
+    undefined,
+    true
+  );
 
   // ts-node attaches a property when it registers an instance
   // source-map-support monkey-patches the emit function
@@ -233,12 +244,15 @@ export function resetNodeEnvironment() {
   // source-map-support swaps out the prepareStackTrace function
   resetObject(Error, defaultError);
 
-  // _resolveFilename is modified by tsconfig-paths, future versions of source-map-support, and maybe future versions of ts-node
+  // _resolveFilename et.al. are modified by ts-node, tsconfig-paths, source-map-support, yarn, maybe other things?
   resetObject(require('module'), defaultModule);
 
   // May be modified by REPL tests, since the REPL sets globals.
   // Avoid deleting nyc's coverage data.
   resetObject(global, defaultGlobal, ['__coverage__']);
+
+  // Reset our ESM hooks
+  process.__test_setloader__?.(undefined);
 }
 
 function captureObjectState(object: any, avoidGetters: string[] = []) {
@@ -258,7 +272,8 @@ function resetObject(
   state: ReturnType<typeof captureObjectState>,
   doNotDeleteTheseKeys: string[] = [],
   doNotSetTheseKeys: string[] = [],
-  avoidSetterIfUnchanged: string[] = []
+  avoidSetterIfUnchanged: string[] = [],
+  reorderProperties = false
 ) {
   const currentDescriptors = Object.getOwnPropertyDescriptors(object);
   for (const key of Object.keys(currentDescriptors)) {
@@ -277,6 +292,19 @@ function resetObject(
   }
   // Reset descriptors
   Object.defineProperties(object, state.descriptors);
+
+  if (reorderProperties) {
+    // Delete and re-define each property so that they are in original order
+    const originalOrder = Object.keys(state.descriptors);
+    const properties = Object.getOwnPropertyDescriptors(object);
+    const sortedKeys = sortBy(Object.keys(properties), (name) =>
+      originalOrder.includes(name) ? originalOrder.indexOf(name) : 999
+    );
+    for (const key of sortedKeys) {
+      delete object[key];
+      Object.defineProperty(object, key, properties[key]);
+    }
+  }
 }
 
 //#endregion

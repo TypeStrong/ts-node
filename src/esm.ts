@@ -16,12 +16,6 @@ import { extname } from 'path';
 import * as assert from 'assert';
 import { normalizeSlashes } from './util';
 import { createRequire } from 'module';
-const {
-  createResolve,
-} = require('../dist-raw/node-internal-modules-esm-resolve');
-const {
-  defaultGetFormat,
-} = require('../dist-raw/node-internal-modules-esm-get_format');
 
 // Note: On Windows, URLs look like this: file:///D:/dev/@TypeStrong/ts-node-examples/foo.ts
 
@@ -108,12 +102,7 @@ export interface NodeImportAssertions {
 }
 
 // The hooks API changed in node version X so we need to check for backwards compatibility.
-// TODO: When the new API is backported to v12, v14, update these version checks accordingly.
-const newHooksAPI =
-  versionGteLt(process.versions.node, '17.0.0') ||
-  versionGteLt(process.versions.node, '16.12.0', '17.0.0') ||
-  versionGteLt(process.versions.node, '14.999.999', '15.0.0') ||
-  versionGteLt(process.versions.node, '12.999.999', '13.0.0');
+const newHooksAPI = versionGteLt(process.versions.node, '16.12.0');
 
 /** @internal */
 export function filterHooksByAPIVersion(
@@ -139,10 +128,9 @@ export function createEsmHooks(tsNodeService: Service) {
   tsNodeService.enableExperimentalEsmLoaderInterop();
 
   // Custom implementation that considers additional file extensions and automatically adds file extensions
-  const nodeResolveImplementation = createResolve({
-    ...getExtensions(tsNodeService.config),
-    preferTsExts: tsNodeService.options.preferTsExts,
-  });
+  const nodeResolveImplementation = tsNodeService.getNodeEsmResolver();
+  const nodeGetFormatImplementation = tsNodeService.getNodeEsmGetFormat();
+  const extensions = tsNodeService.extensions;
 
   const hooksAPI = filterHooksByAPIVersion({
     resolve,
@@ -180,7 +168,7 @@ export function createEsmHooks(tsNodeService: Service) {
     // See: https://github.com/nodejs/node/discussions/41711
     // nodejs will likely implement a similar fallback.  Till then, we can do our users a favor and fallback today.
     async function entrypointFallback(
-      cb: () => ReturnType<typeof resolve>
+      cb: () => ReturnType<typeof resolve> | Awaited<ReturnType<typeof resolve>>
     ): ReturnType<typeof resolve> {
       try {
         const resolution = await cb();
@@ -259,7 +247,13 @@ export function createEsmHooks(tsNodeService: Service) {
       // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
       const format =
         context.format ??
-        (await getFormat(url, context, defaultGetFormat)).format;
+        (
+          await getFormat(
+            url,
+            context,
+            nodeGetFormatImplementation.defaultGetFormat
+          )
+        ).format;
 
       let source = undefined;
       if (format !== 'builtin' && format !== 'commonjs') {
@@ -337,12 +331,27 @@ export function createEsmHooks(tsNodeService: Service) {
     // If file has .ts, .tsx, or .jsx extension, then ask node how it would treat this file if it were .js
     const ext = extname(nativePath);
     let nodeSays: { format: NodeLoaderHooksFormat };
-    if (ext !== '.js' && !tsNodeService.ignored(nativePath)) {
+    const nodeDoesNotUnderstandExt =
+      extensions.extensionsNodeDoesNotUnderstand.includes(ext);
+    const tsNodeIgnored = tsNodeService.ignored(nativePath);
+    if (nodeDoesNotUnderstandExt && !tsNodeIgnored) {
       nodeSays = await entrypointFallback(() =>
         defer(formatUrl(pathToFileURL(nativePath + '.js')))
       );
     } else {
-      nodeSays = await entrypointFallback(defer);
+      try {
+        nodeSays = await entrypointFallback(defer);
+      } catch (e) {
+        if (e instanceof Error && tsNodeIgnored && nodeDoesNotUnderstandExt) {
+          e.message +=
+            `\n\n` +
+            `Hint:\n` +
+            `ts-node is configured to ignore this file.\n` +
+            `If you want ts-node to handle this file, consider enabling the "skipIgnore" option or adjusting your "ignore" patterns.\n` +
+            `https://typestrong.org/ts-node/docs/scope\n`;
+        }
+        throw e;
+      }
     }
     // For files compiled by ts-node that node believes are either CJS or ESM, check if we should override that classification
     if (

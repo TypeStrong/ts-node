@@ -13,12 +13,9 @@ const experimentalJsonModules =
   nodeMajor > 17
   || (nodeMajor === 17 && nodeMinor >= 5)
   || getOptionValue('--experimental-json-modules');
-const experimentalSpeciferResolution =
-  getOptionValue('--experimental-specifier-resolution');
 const experimentalWasmModules = getOptionValue('--experimental-wasm-modules');
-const { getPackageType } = require('./node-internal-modules-esm-resolve').createResolve({tsExtensions: [], jsExtensions: []});
 const { URL, fileURLToPath } = require('url');
-const { ERR_UNKNOWN_FILE_EXTENSION } = require('./node-errors').codes;
+const { ERR_UNKNOWN_FILE_EXTENSION } = require('./node-internal-errors').codes;
 
 const extensionFormatMap = {
   '__proto__': null,
@@ -42,6 +39,24 @@ if (experimentalWasmModules)
 if (experimentalJsonModules)
   extensionFormatMap['.json'] = legacyExtensionFormatMap['.json'] = 'json';
 
+/**
+ *
+ * @param {'node' | 'explicit'} [tsNodeExperimentalSpecifierResolution]
+ * @param {ReturnType<
+ *  typeof import('../dist-raw/node-internal-modules-esm-resolve').createResolve
+ * >} nodeEsmResolver
+ */
+function createGetFormat(tsNodeExperimentalSpecifierResolution, nodeEsmResolver) {
+// const experimentalSpeciferResolution = tsNodeExperimentalSpecifierResolution ?? getOptionValue('--experimental-specifier-resolution');
+let experimentalSpeciferResolution = tsNodeExperimentalSpecifierResolution != null ? tsNodeExperimentalSpecifierResolution : getOptionValue('--experimental-specifier-resolution');
+const { getPackageType } = nodeEsmResolver;
+
+/**
+ * @param {string} url
+ * @param {{}} context
+ * @param {any} defaultGetFormatUnused
+ * @returns {ReturnType<import('../src/esm').NodeLoaderHooksAPI1.GetFormatHook>}
+ */
 function defaultGetFormat(url, context, defaultGetFormatUnused) {
   if (StringPrototypeStartsWith(url, 'node:')) {
     return { format: 'builtin' };
@@ -81,4 +96,10 @@ function defaultGetFormat(url, context, defaultGetFormatUnused) {
   }
   return { format: null };
 }
-exports.defaultGetFormat = defaultGetFormat;
+
+return {defaultGetFormat};
+}
+
+module.exports = {
+  createGetFormat
+};

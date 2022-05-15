@@ -112,6 +112,17 @@ export interface TSInternal {
     ref: _ts.FileReference | string,
     containingFileMode: _ts.SourceFile['impliedNodeFormat']
   ) => _ts.SourceFile['impliedNodeFormat'];
+  // TODO do we need these?  Which TS version adds them?
+  getPatternFromSpec(
+    spec: string,
+    basePath: string,
+    usage: 'files' | 'directories' | 'exclude'
+  ): string | undefined;
+  getRegularExpressionForWildcard(
+    specs: readonly string[] | undefined,
+    basePath: string,
+    usage: 'files' | 'directories' | 'exclude'
+  ): string | undefined;
 }
 /** @internal */
 export namespace TSInternal {

@@ -2,7 +2,7 @@
 'use strict';
 
 const { SafeMap } = require('./node-primordials');
-const { internalModuleReadJSON } = require('./node-internal-fs');
+const { internalModuleReadJSON } = require('./node-internalBinding-fs');
 const { pathToFileURL } = require('url');
 const { toNamespacedPath } = require('path');
 // const { getOptionValue } = require('./node-options');
@@ -13,7 +13,7 @@ let manifest;
 
 /**
  * @param {string} jsonPath
- * @return {[string, boolean]}
+ * @return {{string: string, containsKeys: boolean}}
  */
 function read(jsonPath) {
   if (cache.has(jsonPath)) {
