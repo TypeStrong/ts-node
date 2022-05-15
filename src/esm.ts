@@ -102,12 +102,7 @@ export interface NodeImportAssertions {
 }
 
 // The hooks API changed in node version X so we need to check for backwards compatibility.
-// TODO: When the new API is backported to v12, v14, update these version checks accordingly.
-const newHooksAPI =
-  versionGteLt(process.versions.node, '17.0.0') ||
-  versionGteLt(process.versions.node, '16.12.0', '17.0.0') ||
-  versionGteLt(process.versions.node, '14.999.999', '15.0.0') ||
-  versionGteLt(process.versions.node, '12.999.999', '13.0.0');
+const newHooksAPI = versionGteLt(process.versions.node, '16.12.0');
 
 /** @internal */
 export function filterHooksByAPIVersion(
@@ -135,6 +130,7 @@ export function createEsmHooks(tsNodeService: Service) {
   // Custom implementation that considers additional file extensions and automatically adds file extensions
   const nodeResolveImplementation = tsNodeService.getNodeEsmResolver();
   const nodeGetFormatImplementation = tsNodeService.getNodeEsmGetFormat();
+  const extensions = tsNodeService.extensions;
 
   const hooksAPI = filterHooksByAPIVersion({
     resolve,
@@ -335,12 +331,27 @@ export function createEsmHooks(tsNodeService: Service) {
     // If file has .ts, .tsx, or .jsx extension, then ask node how it would treat this file if it were .js
     const ext = extname(nativePath);
     let nodeSays: { format: NodeLoaderHooksFormat };
-    if (ext !== '.js' && !tsNodeService.ignored(nativePath)) {
+    const nodeDoesNotUnderstandExt =
+      extensions.extensionsNodeDoesNotUnderstand.includes(ext);
+    const tsNodeIgnored = tsNodeService.ignored(nativePath);
+    if (nodeDoesNotUnderstandExt && !tsNodeIgnored) {
       nodeSays = await entrypointFallback(() =>
         defer(formatUrl(pathToFileURL(nativePath + '.js')))
       );
     } else {
-      nodeSays = await entrypointFallback(defer);
+      try {
+        nodeSays = await entrypointFallback(defer);
+      } catch (e) {
+        if (e instanceof Error && tsNodeIgnored && nodeDoesNotUnderstandExt) {
+          e.message +=
+            `\n\n` +
+            `Hint:\n` +
+            `ts-node is configured to ignore this file.\n` +
+            `If you want ts-node to handle this file, consider enabling the "skipIgnore" option or adjusting your "ignore" patterns.\n` +
+            `https://typestrong.org/ts-node/docs/scope\n`;
+        }
+        throw e;
+      }
     }
     // For files compiled by ts-node that node believes are either CJS or ESM, check if we should override that classification
     if (

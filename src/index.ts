@@ -552,6 +552,8 @@ export interface Service {
   getNodeCjsLoader: () => ReturnType<
     typeof import('../dist-raw/node-internal-modules-cjs-loader').createCjsLoader
   >;
+  /** @internal */
+  extensions: Extensions;
 }
 
 /**
@@ -571,12 +573,30 @@ export interface DiagnosticFilter {
   diagnosticsIgnored: number[];
 }
 
-/** @internal */
+/**
+ * Centralized specification of how we deal with file extensions based on
+ * project options:
+ * which ones we do/don't support, in what situations, etc.  These rules drive
+ * logic elsewhere.
+ * @internal
+ * */
+export type Extensions = ReturnType<typeof getExtensions>;
+
+/**
+ * @internal
+ */
 export function getExtensions(
   config: _ts.ParsedCommandLine,
   options: RegisterOptions
 ) {
-  const compiledExtensions = [];
+  const compiledExtensions: string[] = [];
+  const extensionsNodeDoesNotUnderstand = [
+    '.ts',
+    '.tsx',
+    '.jsx',
+    '.cts',
+    '.mts',
+  ];
 
   // .js, .cjs, .mjs take precedence if preferTsExts is off
   if (!options.preferTsExts && config.options.allowJs)
@@ -590,9 +610,19 @@ export function getExtensions(
     compiledExtensions.push('.jsx');
   if (config.options.preferTsExt && config.options.allowJs)
     compiledExtensions.push('.js');
+
+  const compiledExtensionsNodeDoesNotUnderstand =
+    extensionsNodeDoesNotUnderstand.filter((ext) =>
+      compiledExtensions.includes(ext)
+    );
+
   return {
     /** All file extensions we transform, ordered by resolution preference according to preferTsExts */
     compiledExtensions,
+    /** Resolved extensions that vanilla node will not understand; we should handle them */
+    extensionsNodeDoesNotUnderstand,
+    /** Like the above, but only the ones we're compiling */
+    compiledExtensionsNodeDoesNotUnderstand,
   };
 }
 
@@ -923,7 +953,7 @@ export function createFromPreloadedConfig(
     const rootFileNames = new Set(config.fileNames);
     const cachedReadFile = cachedLookup(debugFn('readFile', readFile));
 
-    // Use language services by default (TODO: invert next major version).
+    // Use language services by default
     if (!options.compilerHost) {
       let projectVersion = 1;
       const fileVersions = new Map(
@@ -1428,7 +1458,10 @@ export function createFromPreloadedConfig(
   const getNodeEsmGetFormat = once(() =>
     (
       require('../dist-raw/node-internal-modules-esm-get_format') as typeof _nodeInternalModulesEsmGetFormat
-    ).createGetFormat(options.experimentalSpecifierResolution, getNodeEsmResolver())
+    ).createGetFormat(
+      options.experimentalSpecifierResolution,
+      getNodeEsmResolver()
+    )
   );
   const getNodeCjsLoader = once(() =>
     (
@@ -1461,6 +1494,7 @@ export function createFromPreloadedConfig(
     getNodeEsmResolver,
     getNodeEsmGetFormat,
     getNodeCjsLoader,
+    extensions,
   };
 }
 

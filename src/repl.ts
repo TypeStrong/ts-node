@@ -124,7 +124,6 @@ export interface CreateReplOptions {
   stderr?: NodeJS.WritableStream;
   /** @internal */
   composeWithEvalAwarePartialHost?: EvalAwarePartialHost;
-  // TODO collapse both of the following two flags into a single `isInteractive` or `isLineByLine` flag.
   /**
    * @internal
    * Ignore diagnostics that are annoying when interactively entering input line-by-line.
