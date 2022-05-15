@@ -1428,7 +1428,7 @@ export function createFromPreloadedConfig(
   const getNodeEsmGetFormat = once(() =>
     (
       require('../dist-raw/node-internal-modules-esm-get_format') as typeof _nodeInternalModulesEsmGetFormat
-    ).createGetFormat(options.experimentalSpecifierResolution)
+    ).createGetFormat(options.experimentalSpecifierResolution, getNodeEsmResolver())
   );
   const getNodeCjsLoader = once(() =>
     (

@@ -14,7 +14,6 @@ const experimentalJsonModules =
   || (nodeMajor === 17 && nodeMinor >= 5)
   || getOptionValue('--experimental-json-modules');
 const experimentalWasmModules = getOptionValue('--experimental-wasm-modules');
-const { getPackageType } = require('./node-internal-modules-esm-resolve').createResolve({compiledExtensions: []});
 const { URL, fileURLToPath } = require('url');
 const { ERR_UNKNOWN_FILE_EXTENSION } = require('./node-internal-errors').codes;
 
@@ -41,10 +40,16 @@ if (experimentalJsonModules)
   extensionFormatMap['.json'] = legacyExtensionFormatMap['.json'] = 'json';
 
 /**
- * @param {'node' | 'explicit'} [tsNodeExperimentalSpecifierResolution] */
-function createGetFormat(tsNodeExperimentalSpecifierResolution) {
+ *
+ * @param {'node' | 'explicit'} [tsNodeExperimentalSpecifierResolution]
+ * @param {ReturnType<
+ *  typeof import('../dist-raw/node-internal-modules-esm-resolve').createResolve
+ * >} nodeEsmResolver
+ */
+function createGetFormat(tsNodeExperimentalSpecifierResolution, nodeEsmResolver) {
 // const experimentalSpeciferResolution = tsNodeExperimentalSpecifierResolution ?? getOptionValue('--experimental-specifier-resolution');
 let experimentalSpeciferResolution = tsNodeExperimentalSpecifierResolution != null ? tsNodeExperimentalSpecifierResolution : getOptionValue('--experimental-specifier-resolution');
+const { getPackageType } = nodeEsmResolver;
 
 /**
  * @param {string} url
