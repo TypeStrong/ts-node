@@ -564,7 +564,7 @@ function assertScriptCanLoadAsCJSImpl(service, module, filename) {
   const pkg = readPackageScope(filename);
 
   // ts-node modification: allow our configuration to override
-  const tsNodeClassification = service.moduleTypeClassifier.classifyModule(normalizeSlashes(filename));
+  const tsNodeClassification = service.moduleTypeClassifier.classifyModuleByModuleTypeOverrides(normalizeSlashes(filename));
   if(tsNodeClassification.moduleType === 'cjs') return;
 
   // ignore package.json when file extension is ESM-only or CJS-only
@@ -585,5 +585,6 @@ function assertScriptCanLoadAsCJSImpl(service, module, filename) {
 
 module.exports = {
   createCjsLoader,
-  assertScriptCanLoadAsCJSImpl
+  assertScriptCanLoadAsCJSImpl,
+  readPackageScope
 };

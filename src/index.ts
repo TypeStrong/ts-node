@@ -627,7 +627,8 @@ export function getExtensions(
   if (tsSupportsMtsCtsExts) compiledExtensions.push('.mts', '.cts');
   else extensionsRequiringHigherTypescriptVersion.push('.mts', '.cts');
   if (config.options.jsx) compiledExtensions.push('.tsx');
-  if (config.options.jsx && config.options.allowJs) compiledExtensions.push('.jsx');
+  if (config.options.jsx && config.options.allowJs)
+    compiledExtensions.push('.jsx');
   if (options.preferTsExts && config.options.allowJs) {
     addJsExtensions();
   }
@@ -653,7 +654,7 @@ export function getExtensions(
      * Extensions that we can support if the user upgrades their typescript version
      * Used when raising hints.
      */
-    extensionsRequiringHigherTypescriptVersion
+    extensionsRequiringHigherTypescriptVersion,
   };
 }
 

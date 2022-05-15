@@ -1,11 +1,11 @@
-import { readPackageScope } from '../dist-raw/node-cjs-loader-utils';
+import { readPackageScope } from '../dist-raw/node-internal-modules-cjs-loader';
 
 /**
  * TODO https://github.com/microsoft/TypeScript/issues/46452#issuecomment-1073145723
  *
  * Determine how to emit a module based on tsconfig "module" and package.json "type"
  *
- * Supports module=nodenext/node12 with transpileOnly, where we cannot ask the
+ * Supports module=nodenext/node16 with transpileOnly, where we cannot ask the
  * TS typechecker to tell us if a file is CJS or ESM.
  *
  * Return values indicate:

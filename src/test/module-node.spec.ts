@@ -4,11 +4,11 @@ import {
   resetNodeEnvironment,
 } from './helpers';
 import * as Path from 'path';
-import { contextTsNodeUnderTest } from './helpers';
+import { ctxTsNode } from './helpers';
 import { exec } from './exec-helpers';
 import { file, project, ProjectAPI as ProjectAPI } from './fs-helpers';
 
-const test = context(contextTsNodeUnderTest);
+const test = context(ctxTsNode);
 test.beforeEach(async () => {
   resetNodeEnvironment();
 });

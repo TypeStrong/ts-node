@@ -343,7 +343,11 @@ export function createEsmHooks(tsNodeService: Service) {
       try {
         nodeSays = await entrypointFallback(defer);
       } catch (e) {
-        if (e instanceof Error && tsNodeIgnored && extensions.extensionsNodeDoesNotUnderstand.includes(ext)) {
+        if (
+          e instanceof Error &&
+          tsNodeIgnored &&
+          extensions.extensionsNodeDoesNotUnderstand.includes(ext)
+        ) {
           e.message +=
             `\n\n` +
             `Hint:\n` +
