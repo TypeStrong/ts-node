@@ -601,7 +601,6 @@ export function register(
   }
 
   const originalJsHandler = require.extensions['.js'];
-  const { compiledExtensions } = service.extensions;
 
   // Expose registered instance globally.
   process[REGISTER_INSTANCE] = service;
@@ -609,7 +608,7 @@ export function register(
   // Register the extensions.
   registerExtensions(
     service.options.preferTsExts,
-    compiledExtensions,
+    service.extensions.compiled,
     service,
     originalJsHandler
   );

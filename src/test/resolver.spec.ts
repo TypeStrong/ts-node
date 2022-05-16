@@ -1,4 +1,4 @@
-import { context, ExecutionContext, TestInterface } from './testlib';
+import { context, ExecutionContext, expect, TestInterface } from './testlib';
 import { ctxTsNode, resetNodeEnvironment, ts } from './helpers';
 import { project as fsProject, Project as FsProject } from './fs-helpers';
 import { join } from 'path';
@@ -6,6 +6,9 @@ import * as semver from 'semver';
 import { padStart } from 'lodash';
 import _ = require('lodash');
 import { pathToFileURL } from 'url';
+import type { RegisterOptions } from '..';
+import * as fs from 'fs';
+import * as Path from 'path';
 
 /*
  * Each test case is a separate TS project, with a different permutation of
@@ -79,6 +82,8 @@ interface Project {
   allowJs: boolean;
   preferSrc: boolean;
   typeModule: boolean;
+  /** Use TS's new module: `nodenext` option */
+  useTsNodeNext: boolean;
   experimentalSpecifierResolutionNode: boolean;
   skipIgnore: boolean;
 }
@@ -99,8 +104,6 @@ interface GenerateTargetOptions {
   packageTypeModule: boolean;
 }
 interface Target {
-  /** If true, is an index.* file within a directory */
-  isIndex: boolean;
   targetIdentifier: string;
   outName: string;
   srcName: string;
@@ -108,6 +111,10 @@ interface Target {
   outExt: string;
   inSrc: boolean;
   inOut: boolean;
+  /** If true, is neither an index.* nor a package */
+  isNamedFile: boolean;
+  /** If true, is an index.* file within a directory */
+  isIndex: boolean;
   /** If true, should be imported as an npm package, not relative import */
   isPackage: boolean;
   packageStyle: TargetPackageStyle;
@@ -151,26 +158,31 @@ test.suite('Resolver hooks', (test) => {
   for (const allowJs of [false, true]) {
     for (const preferSrc of [false, true]) {
       for (const typeModule of [false, true]) {
-        for (const experimentalSpecifierResolutionNode of [false, true]) {
-          // TODO test against skipIgnore: false, where imports of third-party deps in `node_modules` should not get our mapping behaviors
-          for (const skipIgnore of [/*false, */ true]) {
-            const project: Project = {
-              identifier: `resolver-${projectSeq()}-${
-                preferSrc ? 'preferSrc' : 'preferOut'
-              }-${typeModule ? 'typeModule' : 'typeCommonjs'}${
-                allowJs ? '-allowJs' : ''
-              }${skipIgnore ? '-skipIgnore' : ''}${
-                experimentalSpecifierResolutionNode
-                  ? '-experimentalSpecifierResolutionNode'
-                  : ''
-              }`,
-              allowJs,
-              preferSrc,
-              typeModule,
-              experimentalSpecifierResolutionNode,
-              skipIgnore,
-            };
-            declareProject(test, project);
+        for (const useTsNodeNext of [false, true]) {
+          for (const experimentalSpecifierResolutionNode of [false, true]) {
+            // TODO test against skipIgnore: false, where imports of third-party deps in `node_modules` should not get our mapping behaviors
+            for (const skipIgnore of [/*false, */ true]) {
+              const project: Project = {
+                identifier: `resolver-${projectSeq()}-${
+                  preferSrc ? 'preferSrc' : 'preferOut'
+                }-${typeModule ? 'typeModule' : 'typeCommonjs'}${
+                  allowJs ? '-allowJs' : ''
+                }${useTsNodeNext ? '-useTsNodenext' : ''}${
+                  skipIgnore ? '-skipIgnore' : ''
+                }${
+                  experimentalSpecifierResolutionNode
+                    ? '-experimentalSpecifierResolutionNode'
+                    : ''
+                }`,
+                allowJs,
+                preferSrc,
+                typeModule,
+                useTsNodeNext,
+                experimentalSpecifierResolutionNode,
+                skipIgnore,
+              };
+              declareProject(test, project);
+            }
           }
         }
       }
@@ -179,14 +191,6 @@ test.suite('Resolver hooks', (test) => {
 });
 
 function declareProject(test: Test, project: Project) {
-  const {
-    allowJs,
-    experimentalSpecifierResolutionNode,
-    preferSrc,
-    typeModule,
-    skipIgnore,
-  } = project;
-
   test(`${project.identifier}`, async (t) => {
     t.teardown(() => {
       resetNodeEnvironment();
@@ -201,18 +205,21 @@ function declareProject(test: Test, project: Project) {
     p.addJsonFile('tsconfig.json', {
       'ts-node': {
         experimentalResolver: true,
-        preferTsExts: preferSrc,
+        preferTsExts: project.preferSrc,
         transpileOnly: true,
-        experimentalSpecifierResolution: experimentalSpecifierResolutionNode
-          ? 'node'
-          : undefined,
-        skipIgnore,
-      },
+        experimentalSpecifierResolution:
+          project.experimentalSpecifierResolutionNode ? 'node' : undefined,
+        skipIgnore: project.skipIgnore,
+      } as RegisterOptions,
       compilerOptions: {
-        allowJs,
+        allowJs: project.allowJs,
         skipLibCheck: true,
         // TODO add nodenext permutation
-        module: typeModule ? 'esnext' : 'commonjs',
+        module: project.useTsNodeNext
+          ? 'NodeNext'
+          : project.typeModule
+          ? 'esnext'
+          : 'commonjs',
         jsx: 'react',
       },
     });
@@ -292,14 +299,16 @@ function generateTargets(project: Project, p: FsProject) {
                 continue;
               //#endregion
 
-              generateTarget(project, p, {
-                inSrc,
-                inOut,
-                srcExt,
-                targetPackageStyle,
-                packageTypeModule,
-                isIndex,
-              });
+              targets.push(
+                generateTarget(project, p, {
+                  inSrc,
+                  inOut,
+                  srcExt,
+                  targetPackageStyle,
+                  packageTypeModule,
+                  isIndex,
+                })
+              );
             }
           }
         }
@@ -348,14 +357,15 @@ function generateTarget(
   const selfImporterCjsName = `${prefix}self-import-cjs.cjs`;
   const selfImporterMjsName = `${prefix}self-import-mjs.mjs`;
   const target: Target = {
+    targetIdentifier,
     srcName,
     outName,
     srcExt,
     outExt,
     inSrc,
     inOut,
+    isNamedFile: !isIndex && !targetPackageStyle,
     isIndex,
-    targetIdentifier,
     isPackage: !!targetPackageStyle,
     packageStyle: targetPackageStyle,
     typeModule: packageTypeModule,
@@ -400,9 +410,9 @@ function generateTarget(
   if (targetPackageStyle) {
     p.addFile(
       selfImporterCjsName,
-      `
-        module.exports = require("${targetIdentifier}");
-      `
+      targetIsMjs
+        ? `module.exports = import("${targetIdentifier}");`
+        : `module.exports = require("${targetIdentifier}");`
     );
     p.addFile(
       selfImporterMjsName,
@@ -485,6 +495,7 @@ function generateEntrypoints(
   /** Array of entrypoint files to be imported during the test */
   let entrypoints: string[] = [];
   for (const entrypointExt of ['cjs', 'mjs'] as const) {
+    // TODO consider removing this logic; deferring to conditionals in the generateEntrypoint which emit meaningful comments
     const withExtPermutations =
       entrypointExt == 'mjs' &&
       project.experimentalSpecifierResolutionNode === false
@@ -535,7 +546,9 @@ function generateEntrypoint(
     entrypointContent += `import assert from 'assert';\n`;
   } else {
     entrypointContent += `const assert = require('assert');\n`;
+    entrypointContent += `const dynamicImport = new Function("specifier", "return import(specifier)");\n`;
   }
+  entrypointContent += `async function main() {\n`;
 
   for (const target of targets) {
     // TODO re-enable these when we have outDir <-> rootDir mapping
@@ -591,42 +604,70 @@ function generateEntrypoint(
           if (!target.isIndex && withExt) specifier += '.' + targetExt;
         }
 
-        // Do not try to import mjs from cjs
-        if (targetIsMjs && entrypointExt === 'cjs') {
-          entrypointContent += `// skipping ${specifier} because we cannot import mjs from cjs\n`;
-          continue;
+        //#region SKIPPING
+        if (target.isNamedFile && !withExt) {
+          // Do not try to import cjs/cts without extension; node always requires these extensions
+          if (target.outExt === 'cjs') {
+            entrypointContent += `// skipping ${specifier} because we cannot omit extension from cjs / cts files; node always requires them\n`;
+            continue;
+          }
+          // Do not try to import mjs/mts unless experimental-specifier-resolution is turned on
+          if (
+            target.outExt === 'mjs' &&
+            !project.experimentalSpecifierResolutionNode
+          ) {
+            entrypointContent += `// skipping ${specifier} because we cannot omit extension from mjs/mts unless experimental-specifier-resolution=node\n`;
+            continue;
+          }
+          // Do not try to import anything extensionless via ESM loader unless experimental-specifier-resolution is turned on
+          if (
+            (targetIsMjs || entrypointIsMjs) &&
+            !project.experimentalSpecifierResolutionNode
+          ) {
+            entrypointContent += `// skipping ${specifier} because we cannot omit extension via esm loader unless experimental-specifier-resolution=node\n`;
+            continue;
+          }
         }
-
-        // Do not try to import mjs or cjs without extension; node always requires these extensions, even in CommonJS.
-        if (!withExt && (targetSrcExt === 'cjs' || targetSrcExt === 'mjs')) {
-          entrypointContent += `// skipping ${specifier} because we cannot omit extension from cjs or mjs files; node always requires them\n`;
+        if (
+          target.isPackage &&
+          isOneOf(target.packageStyle, [
+            'empty-manifest',
+            'main-out-extensionless',
+            'main-src-extensionless',
+          ]) &&
+          isOneOf(target.outExt, ['cjs', 'mjs'])
+        ) {
+          entrypointContent += `// skipping ${specifier} because it points to a node_modules package that tries to omit file extension, and node does not allow omitting cjs/mjs extension\n`;
           continue;
         }
 
         // Do not try to import a transpiled file if compiler options disagree with node's extension-based classification
-        if (targetIsCompiled && targetIsMjs && !project.typeModule) {
-          entrypointContent += `// skipping ${specifier} because it is compiled and compiler options disagree with node's module classification: extension=${targetSrcExt}, tsconfig module=commonjs\n`;
-          continue;
-        }
-        if (targetIsCompiled && !targetIsMjs && project.typeModule) {
-          entrypointContent += `// skipping ${specifier} because it is compiled and compiler options disagree with node's module classification: extension=${targetSrcExt}, tsconfig module=esnext\n`;
-          continue;
-        }
-        // Do not try to import cjs/mjs/cts/mts extensions because they are being added by a different pull request
-        if (['cts', 'mts', 'cjs', 'mjs'].includes(targetSrcExt)) {
-          entrypointContent += `// skipping ${specifier} because it uses a file extension that requires us to merge the relevant pull request\n`;
-          continue;
+        if (!project.useTsNodeNext && targetIsCompiled) {
+          if (targetIsMjs && !project.typeModule) {
+            entrypointContent += `// skipping ${specifier} because it is compiled and compiler options disagree with node's module classification: extension=${targetSrcExt}, tsconfig module=commonjs\n`;
+            continue;
+          }
+          if (!targetIsMjs && project.typeModule) {
+            entrypointContent += `// skipping ${specifier} because it is compiled and compiler options disagree with node's module classification: extension=${targetSrcExt}, tsconfig module=esnext\n`;
+            continue;
+          }
         }
 
         // Do not try to import index from a directory if is forbidden by node's ESM resolver
-        if (
-          entrypointIsMjs &&
-          target.isIndex &&
-          !project.experimentalSpecifierResolutionNode
-        ) {
-          entrypointContent += `// skipping ${specifier} because it relies on node automatically resolving a directory to index.*, but experimental-specifier-resolution is not enabled\n`;
-          continue;
+        if (target.isIndex) {
+          if (
+            (targetIsMjs || entrypointIsMjs) &&
+            !project.experimentalSpecifierResolutionNode
+          ) {
+            entrypointContent += `// skipping ${specifier} because esm loader does not allow directory ./index imports unless experimental-specifier-resolution=node\n`;
+            continue;
+          }
+          if (target.outExt === 'cjs') {
+            entrypointContent += `// skipping ${specifier} because it relies on node automatically resolving a directory to index.cjs/cts , but node does not support those extensions for index.* files, only .js (and equivalents), .node, .json\n`;
+            continue;
+          }
         }
+        //#endregion
 
         // NOTE: if you try to explicitly import foo.ts, we will load foo.ts, EVEN IF you have `preferTsExts` off
         const assertIsSrcOrOut = !target.inSrc
@@ -647,14 +688,22 @@ function generateEntrypoint(
           assertIsSrcOrOut === 'src' ? target.srcExt : target.outExt;
 
         entrypointContent +=
-          entrypointExt === 'cjs'
-            ? `mod = require('${specifier}');\n`
-            : `mod = await import('${specifier}');\n`;
-        entrypointContent += `assert.equal(mod.loc, '${assertIsSrcOrOut}');\n`;
-        entrypointContent += `assert.equal(mod.targetIdentifier, '${target.targetIdentifier}');\n`;
-        entrypointContent += `assert.equal(mod.ext, '${assertHasExt}');\n`;
+          entrypointExt === 'cjs' && (externalPackageSelfImport || !targetIsMjs)
+            ? `  mod = await require('${specifier}');\n`
+            : `  mod = await import('${specifier}');\n`;
+        entrypointContent += `  assert.equal(mod.loc, '${assertIsSrcOrOut}');\n`;
+        entrypointContent += `  assert.equal(mod.targetIdentifier, '${target.targetIdentifier}');\n`;
+        entrypointContent += `  assert.equal(mod.ext, '${assertHasExt}');\n`;
       }
     }
+  }
+  entrypointContent += `}\n`;
+  entrypointContent += `const result = main();\n`;
+  entrypointContent += `result.mark = 'marked';\n`;
+  if (entrypointIsMjs) {
+    entrypointContent += `export {result};\n`;
+  } else {
+    entrypointContent += `exports.result = result;\n`;
   }
   p.dir(entrypointLocation).addFile(entrypointFilename, entrypointContent);
   return entrypointLocation + '/' + entrypointFilename;
@@ -674,9 +723,31 @@ async function execute(t: T, p: FsProject, entrypoints: Entrypoint[]) {
   process.__test_setloader__(t.context.tsNodeUnderTest.createEsmHooks(service));
 
   for (const entrypoint of entrypoints) {
+    console.dir(join(p.cwd, entrypoint));
     try {
-      await dynamicImport(pathToFileURL(join(p.cwd, entrypoint)));
+      const { result } = await dynamicImport(
+        pathToFileURL(join(p.cwd, entrypoint))
+      );
+      expect(result).toBeInstanceOf(Promise);
+      expect(result.mark).toBe('marked');
+      await result;
     } catch (e) {
+      try {
+        const launchJsonPath = Path.resolve(
+          __dirname,
+          '../../.vscode/launch.json'
+        );
+        const launchJson = JSON.parse(fs.readFileSync(launchJsonPath, 'utf8'));
+        const config = launchJson.configurations.find(
+          (c: any) => c.name === 'Debug resolver test'
+        );
+        config.cwd = Path.join(
+          '${workspaceFolder}',
+          Path.relative(Path.resolve(__dirname, '../..'), p.cwd)
+        );
+        config.program = `./${entrypoint}`;
+        fs.writeFileSync(launchJsonPath, JSON.stringify(launchJson, null, 2));
+      } catch {}
       throw new Error(
         [
           (e as Error).message,
@@ -684,7 +755,7 @@ async function execute(t: T, p: FsProject, entrypoints: Entrypoint[]) {
           '',
           'This is an error in a resolver test. It might be easier to investigate by running outside of the test suite.',
           'To do that, try pasting this into your bash shell (windows invocation will be similar but maybe not identical):',
-          `( cd ${p.cwd} ; node --loader ../../../esm.mjs ./${entrypoint} )`,
+          `    ( cd ${p.cwd} ; node --loader ../../../esm.mjs ./${entrypoint} )`,
         ].join('\n')
       );
     }

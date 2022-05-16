@@ -66,20 +66,20 @@ export function getExtensions(
     ])
   );
 
-  const compiledUnsorted: string[] = ['.ts'];
+  const compiledJsUnsorted: string[] = ['.ts'];
   const compiledJsxUnsorted: string[] = [];
 
   if (config.options.jsx) compiledJsxUnsorted.push('.tsx');
-  if (tsSupportsMtsCtsExts) compiledUnsorted.push('.mts', '.cts');
+  if (tsSupportsMtsCtsExts) compiledJsUnsorted.push('.mts', '.cts');
   if (config.options.allowJs) {
-    compiledUnsorted.push('.js');
+    compiledJsUnsorted.push('.js');
     if (config.options.jsx) compiledJsxUnsorted.push('.jsx');
-    if (tsSupportsMtsCtsExts) compiledUnsorted.push('.mjs', '.cjs');
+    if (tsSupportsMtsCtsExts) compiledJsUnsorted.push('.mjs', '.cjs');
   }
 
-  const allUnsorted = [...compiledUnsorted, ...compiledJsxUnsorted];
+  const compiledUnsorted = [...compiledJsUnsorted, ...compiledJsxUnsorted];
   const compiled = allPossibleExtensionsSortedByPreference.filter((ext) =>
-    allUnsorted.includes(ext)
+    compiledUnsorted.includes(ext)
   );
 
   const compiledNodeDoesNotUnderstand = nodeDoesNotUnderstand.filter((ext) =>

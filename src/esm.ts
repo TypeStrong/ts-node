@@ -1,10 +1,4 @@
-import {
-  register,
-  getExtensions,
-  RegisterOptions,
-  Service,
-  versionGteLt,
-} from './index';
+import { register, RegisterOptions, Service, versionGteLt } from './index';
 import {
   parse as parseUrl,
   format as formatUrl,
