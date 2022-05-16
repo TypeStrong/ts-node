@@ -334,7 +334,7 @@ export function createEsmHooks(tsNodeService: Service) {
     // E.g. .mts compiles to .mjs, so ask node how to classify an .mjs file.
     const ext = extname(nativePath);
     const tsNodeIgnored = tsNodeService.ignored(nativePath);
-    const nodeEquivalentExt = extensions.nodeEquivalentExtensions.get(ext);
+    const nodeEquivalentExt = extensions.nodeEquivalents.get(ext);
     if (nodeEquivalentExt && !tsNodeIgnored) {
       nodeSays = await entrypointFallback(() =>
         defer(formatUrl(pathToFileURL(nativePath + nodeEquivalentExt)))
@@ -346,7 +346,7 @@ export function createEsmHooks(tsNodeService: Service) {
         if (
           e instanceof Error &&
           tsNodeIgnored &&
-          extensions.extensionsNodeDoesNotUnderstand.includes(ext)
+          extensions.nodeDoesNotUnderstand.includes(ext)
         ) {
           e.message +=
             `\n\n` +

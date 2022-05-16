@@ -34,6 +34,7 @@ import { classifyModule } from './node-module-type-classifier';
 import type * as _nodeInternalModulesEsmResolve from '../dist-raw/node-internal-modules-esm-resolve';
 import type * as _nodeInternalModulesEsmGetFormat from '../dist-raw/node-internal-modules-esm-get_format';
 import type * as _nodeInternalModulesCjsLoader from '../dist-raw/node-internal-modules-cjs-loader';
+import { Extensions, getExtensions } from './file-extensions';
 
 export { TSCommon };
 export {
@@ -421,6 +422,8 @@ export interface RegisterOptions extends CreateOptions {
   experimentalSpecifierResolution?: 'node' | 'explicit';
 }
 
+export type ExperimentalSpecifierResolution = 'node' | 'explicit';
+
 /**
  * Must be an interface to support `typescript-json-schema`.
  */
@@ -573,89 +576,6 @@ export interface DiagnosticFilter {
   filenamesAbsolute: string[];
   /** these diagnostic codes are ignored */
   diagnosticsIgnored: number[];
-}
-
-/**
- * Centralized specification of how we deal with file extensions based on
- * project options:
- * which ones we do/don't support, in what situations, etc.  These rules drive
- * logic elsewhere.
- * @internal
- * */
-export type Extensions = ReturnType<typeof getExtensions>;
-
-/**
- * [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
- * @internal
- */
-export function getExtensions(
-  config: _ts.ParsedCommandLine,
-  options: RegisterOptions,
-  tsVersion: string
-) {
-  const nodeEquivalentExtensions = new Map<string, string>([
-    ['.ts', '.js'],
-    ['.tsx', '.js'],
-    ['.jsx', '.js'],
-    ['.mts', '.mjs'],
-    ['.cts', '.cjs'],
-  ]);
-
-  // TS 4.5 is first version to understand .cts, .mts, .cjs, and .mjs extensions
-  const tsSupportsMtsCtsExts = versionGteLt(tsVersion, '4.5.0');
-  const compiledExtensions: string[] = [];
-  const extensionsNodeDoesNotUnderstand = [
-    '.ts',
-    '.tsx',
-    '.jsx',
-    '.cts',
-    '.mts',
-  ];
-  const extensionsRequiringHigherTypescriptVersion: string[] = [];
-
-  function addJsExtensions() {
-    compiledExtensions.push('.js');
-    if (tsSupportsMtsCtsExts) compiledExtensions.push('.mjs', '.cjs');
-    else extensionsRequiringHigherTypescriptVersion.push('.mjs', '.cjs');
-  }
-
-  // .js, .cjs, .mjs take precedence if preferTsExts is off
-  if (!options.preferTsExts && config.options.allowJs) {
-    addJsExtensions();
-  }
-  compiledExtensions.push('.ts');
-  if (tsSupportsMtsCtsExts) compiledExtensions.push('.mts', '.cts');
-  else extensionsRequiringHigherTypescriptVersion.push('.mts', '.cts');
-  if (config.options.jsx) compiledExtensions.push('.tsx');
-  if (config.options.jsx && config.options.allowJs)
-    compiledExtensions.push('.jsx');
-  if (options.preferTsExts && config.options.allowJs) {
-    addJsExtensions();
-  }
-
-  const compiledExtensionsNodeDoesNotUnderstand =
-    extensionsNodeDoesNotUnderstand.filter((ext) =>
-      compiledExtensions.includes(ext)
-    );
-
-  return {
-    /** All file extensions we transform, ordered by resolution preference according to preferTsExts */
-    compiledExtensions,
-    /** Resolved extensions that vanilla node will not understand; we should handle them */
-    extensionsNodeDoesNotUnderstand,
-    /** Like the above, but only the ones we're compiling */
-    compiledExtensionsNodeDoesNotUnderstand,
-    /**
-     *  Mapping from extensions understood by tsc to the equivalent for node,
-     * as far as getFormat is concerned.
-     */
-    nodeEquivalentExtensions,
-    /**
-     * Extensions that we can support if the user upgrades their typescript version
-     * Used when raising hints.
-     */
-    extensionsRequiringHigherTypescriptVersion,
-  };
 }
 
 /**
@@ -1465,11 +1385,11 @@ export function createFromPreloadedConfig(
     config.options.module === ts.ModuleKind.ESNext
   );
   /**
-   * node12 or nodenext
+   * node16 or nodenext
    * [MUST_UPDATE_FOR_NEW_MODULEKIND]
    */
   const isNodeModuleType =
-    (ts.ModuleKind.Node12 && config.options.module === ts.ModuleKind.Node12) ||
+    (ts.ModuleKind.Node16 && config.options.module === ts.ModuleKind.Node16) ||
     (ts.ModuleKind.NodeNext &&
       config.options.module === ts.ModuleKind.NodeNext);
   const getOutputForceCommonJS = createTranspileOnlyGetOutputFunction(
@@ -1548,7 +1468,7 @@ export function createFromPreloadedConfig(
   const ignored = (fileName: string) => {
     if (!active) return true;
     const ext = extname(fileName);
-    if (extensions.compiledExtensions.includes(ext)) {
+    if (extensions.compiled.includes(ext)) {
       return !isScoped(fileName) || shouldIgnore(fileName);
     }
     return true;
@@ -1567,7 +1487,7 @@ export function createFromPreloadedConfig(
     (
       require('../dist-raw/node-internal-modules-esm-resolve') as typeof _nodeInternalModulesEsmResolve
     ).createResolve({
-      ...extensions,
+      extensions,
       preferTsExts: options.preferTsExts,
       tsNodeExperimentalSpecifierResolution:
         options.experimentalSpecifierResolution,
@@ -1585,7 +1505,7 @@ export function createFromPreloadedConfig(
     (
       require('../dist-raw/node-internal-modules-cjs-loader') as typeof _nodeInternalModulesCjsLoader
     ).createCjsLoader({
-      ...extensions,
+      extensions,
       preferTsExts: options.preferTsExts,
       nodeEsmResolver: getNodeEsmResolver(),
     })
