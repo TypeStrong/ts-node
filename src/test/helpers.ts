@@ -245,7 +245,7 @@ export function resetNodeEnvironment() {
   resetObject(Error, defaultError);
 
   // _resolveFilename et.al. are modified by ts-node, tsconfig-paths, source-map-support, yarn, maybe other things?
-  resetObject(require('module'), defaultModule);
+  resetObject(require('module'), defaultModule, undefined, ['wrap', 'wrapper']);
 
   // May be modified by REPL tests, since the REPL sets globals.
   // Avoid deleting nyc's coverage data.
@@ -271,7 +271,7 @@ function resetObject(
   object: any,
   state: ReturnType<typeof captureObjectState>,
   doNotDeleteTheseKeys: string[] = [],
-  doNotSetTheseKeys: string[] = [],
+  doNotSetTheseKeys: true | string[] = [],
   avoidSetterIfUnchanged: string[] = [],
   reorderProperties = false
 ) {
@@ -284,7 +284,8 @@ function resetObject(
   // Trigger nyc's setter functions
   for (const [key, value] of Object.entries(state.values)) {
     try {
-      if (doNotSetTheseKeys.includes(key)) continue;
+      if (doNotSetTheseKeys === true || doNotSetTheseKeys.includes(key))
+        continue;
       if (avoidSetterIfUnchanged.includes(key) && object[key] === value)
         continue;
       object[key] = value;

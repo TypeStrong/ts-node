@@ -5,6 +5,8 @@
 'use strict';
 
 const {
+  ArrayIsArray,
+  ArrayPrototypeIncludes,
   ArrayPrototypeJoin,
   ArrayPrototypePush,
   JSONParse,
@@ -46,6 +48,8 @@ const {
 } = require('./node-internal-constants');
 
 const Module = require('module');
+
+const isWindows = process.platform === 'win32';
 
 let statCache = null;
 

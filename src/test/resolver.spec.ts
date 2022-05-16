@@ -68,6 +68,10 @@ import * as Path from 'path';
 
 // Side-step compiler transformation of import() into require()
 const dynamicImport = new Function('specifier', 'return import(specifier)');
+// For some reason `new Function` was triggering what *might* be a node bug,
+// where `context.parentURL` passed into loader `resolve()` was wrong.
+// eval works for unknown reasons.  This may change in future node releases.
+const declareDynamicImportFunction = `const dynamicImport = eval('(specifier) => import(specifier)');`;
 
 const test = context(ctxTsNode);
 type Test = TestInterface<ctxTsNode.Ctx>;
@@ -162,18 +166,18 @@ test.suite('Resolver hooks', (test) => {
           for (const experimentalSpecifierResolutionNode of [false, true]) {
             // TODO test against skipIgnore: false, where imports of third-party deps in `node_modules` should not get our mapping behaviors
             for (const skipIgnore of [/*false, */ true]) {
+              let identifier = `resolver-${projectSeq()}`;
+              identifier += preferSrc ? '-preferSrc' : '-preferOut';
+              identifier += typeModule ? '-typeModule' : '-typeCjs---';
+              identifier += allowJs ? '-allowJs' : '--------';
+              identifier += useTsNodeNext ? '-useTsNodenext' : '--------------';
+              identifier += skipIgnore ? '-skipIgnore' : '-----------';
+              identifier += experimentalSpecifierResolutionNode
+                ? '-experimentalSpecifierResolutionNode'
+                : '';
+
               const project: Project = {
-                identifier: `resolver-${projectSeq()}-${
-                  preferSrc ? 'preferSrc' : 'preferOut'
-                }-${typeModule ? 'typeModule' : 'typeCommonjs'}${
-                  allowJs ? '-allowJs' : ''
-                }${useTsNodeNext ? '-useTsNodenext' : ''}${
-                  skipIgnore ? '-skipIgnore' : ''
-                }${
-                  experimentalSpecifierResolutionNode
-                    ? '-experimentalSpecifierResolutionNode'
-                    : ''
-                }`,
+                identifier,
                 allowJs,
                 preferSrc,
                 typeModule,
@@ -408,10 +412,15 @@ function generateTarget(
     p.addFile(srcName, targetContent('src'));
   }
   if (targetPackageStyle) {
+    const selfImporterIsCompiled = project.allowJs;
+    const cjsSelfImporterMustUseDynamicImportHack =
+      !project.useTsNodeNext && selfImporterIsCompiled && targetIsMjs;
     p.addFile(
       selfImporterCjsName,
       targetIsMjs
-        ? `module.exports = import("${targetIdentifier}");`
+        ? cjsSelfImporterMustUseDynamicImportHack
+          ? `${declareDynamicImportFunction}\nmodule.exports = dynamicImport('${targetIdentifier}');`
+          : `module.exports = import("${targetIdentifier}");`
         : `module.exports = require("${targetIdentifier}");`
     );
     p.addFile(
@@ -536,17 +545,18 @@ function generateEntrypoint(
   const entrypointFilename = `entrypoint-${entrypointSeq()}-${entrypointLocation}-to-${entrypointTargetting}${
     withExt ? '-withext' : ''
   }.${entrypointExt}`;
-  const { isMjs: entrypointIsMjs } = fileInfo(
+  const { isMjs: entrypointIsMjs, isCompiled: entrypointIsCompiled } = fileInfo(
     entrypointFilename,
     project.typeModule,
     project.allowJs
   );
   let entrypointContent = 'let mod;\n';
+  entrypointContent += 'let testsRun = 0;\n';
   if (entrypointIsMjs) {
     entrypointContent += `import assert from 'assert';\n`;
   } else {
     entrypointContent += `const assert = require('assert');\n`;
-    entrypointContent += `const dynamicImport = new Function("specifier", "return import(specifier)");\n`;
+    entrypointContent += `${declareDynamicImportFunction}\n`;
   }
   entrypointContent += `async function main() {\n`;
 
@@ -687,18 +697,28 @@ function generateEntrypoint(
         const assertHasExt =
           assertIsSrcOrOut === 'src' ? target.srcExt : target.outExt;
 
+        // If entrypoint is compiled as CJS, and *not* with TS's nodenext, then TS transforms `import` into `require`,
+        // so we must hack around the compiler to get a true `import`.
+        const entrypointMustUseDynamicImportHack =
+          !project.useTsNodeNext &&
+          entrypointIsCompiled &&
+          !entrypointIsMjs &&
+          !externalPackageSelfImport;
         entrypointContent +=
           entrypointExt === 'cjs' && (externalPackageSelfImport || !targetIsMjs)
             ? `  mod = await require('${specifier}');\n`
+            : entrypointMustUseDynamicImportHack
+            ? `  mod = await dynamicImport('${specifier}');\n`
             : `  mod = await import('${specifier}');\n`;
         entrypointContent += `  assert.equal(mod.loc, '${assertIsSrcOrOut}');\n`;
         entrypointContent += `  assert.equal(mod.targetIdentifier, '${target.targetIdentifier}');\n`;
         entrypointContent += `  assert.equal(mod.ext, '${assertHasExt}');\n`;
+        entrypointContent += `  testsRun++;\n`;
       }
     }
   }
   entrypointContent += `}\n`;
-  entrypointContent += `const result = main();\n`;
+  entrypointContent += `const result = main().then(() => {return testsRun});\n`;
   entrypointContent += `result.mark = 'marked';\n`;
   if (entrypointIsMjs) {
     entrypointContent += `export {result};\n`;
@@ -723,14 +743,15 @@ async function execute(t: T, p: FsProject, entrypoints: Entrypoint[]) {
   process.__test_setloader__(t.context.tsNodeUnderTest.createEsmHooks(service));
 
   for (const entrypoint of entrypoints) {
-    console.dir(join(p.cwd, entrypoint));
+    t.log(`Importing ${join(p.cwd, entrypoint)}`);
     try {
       const { result } = await dynamicImport(
         pathToFileURL(join(p.cwd, entrypoint))
       );
       expect(result).toBeInstanceOf(Promise);
       expect(result.mark).toBe('marked');
-      await result;
+      const testsRun = await result;
+      t.log(`Entrypoint ran ${testsRun} tests.`);
     } catch (e) {
       try {
         const launchJsonPath = Path.resolve(
