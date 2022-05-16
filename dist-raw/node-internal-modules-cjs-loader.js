@@ -242,10 +242,11 @@ function tryReplacementExtensions(p, isMain) {
         ext === '.js' ? replacementsForJs
         : ext === '.mjs' ? replacementsForMjs
         : replacementsForCjs;
-    for (let i = 0; i < replacementExts.length; i++) {
-      const filename = tryFile(pathnameWithoutExtension + replacementExts[i], isMain);
-      if (filename) {
-        return filename;
+      for (let i = 0; i < replacementExts.length; i++) {
+        const filename = tryFile(pathnameWithoutExtension + replacementExts[i], isMain);
+        if (filename) {
+          return filename;
+        }
       }
     }
   }
