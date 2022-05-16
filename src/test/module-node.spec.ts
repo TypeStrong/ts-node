@@ -1,6 +1,7 @@
 import { expect, context } from './testlib';
 import {
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
+  isOneOf,
   resetNodeEnvironment,
 } from './helpers';
 import * as Path from 'path';
@@ -14,16 +15,33 @@ test.beforeEach(async () => {
 });
 
 // Declare one test case for each permutations of project configuration
-for (const allowJs of [true, false]) {
-  for (const typecheckMode of ['typecheck', 'transpileOnly', 'swc'] as const) {
-    for (const packageJsonType of [undefined, 'commonjs', 'module'] as const) {
-      declareTest({ allowJs, packageJsonType, typecheckMode });
+test.suite('TypeScript module=NodeNext and Node16', (test) => {
+  for (const allowJs of [true, false]) {
+    for (const typecheckMode of [
+      'typecheck',
+      'transpileOnly',
+      'swc',
+    ] as const) {
+      for (const packageJsonType of [
+        undefined,
+        'commonjs',
+        'module',
+      ] as const) {
+        for (const tsModuleMode of ['NodeNext', 'Node16'] as const) {
+          declareTest({
+            allowJs,
+            packageJsonType,
+            typecheckMode,
+            tsModuleMode,
+          });
+        }
+      }
     }
   }
-}
+});
 
 function declareTest(testParams: TestParams) {
-  const name = `package-json-type=${testParams.packageJsonType} allowJs=${testParams.allowJs} ${testParams.typecheckMode}`;
+  const name = `package-json-type=${testParams.packageJsonType} allowJs=${testParams.allowJs} ${testParams.typecheckMode} tsconfig-module=${testParams.tsModuleMode}`;
 
   test(name, async (t) => {
     const proj = writeFixturesToFilesystem(name, testParams);
@@ -66,25 +84,21 @@ const extensions: Extension[] = [
     ext: 'cts',
     jsEquivalentExt: 'cjs',
     forcesCjs: true,
-    supportsJsx: true,
   },
   {
     ext: 'cjs',
     forcesCjs: true,
     isJs: true,
-    supportsJsx: true,
   },
   {
     ext: 'mts',
     jsEquivalentExt: 'mjs',
     forcesEsm: true,
-    supportsJsx: true,
   },
   {
     ext: 'mjs',
     forcesEsm: true,
     isJs: true,
-    supportsJsx: true,
   },
   {
     ext: 'ts',
@@ -139,6 +153,7 @@ interface TestParams {
   packageJsonType: PackageJsonType;
   typecheckMode: typeof typecheckModes[number];
   allowJs: boolean;
+  tsModuleMode: 'NodeNext' | 'Node16';
 }
 
 interface ImporterParams {
@@ -151,7 +166,7 @@ interface ImporteeParams {
 }
 
 function writeFixturesToFilesystem(name: string, testParams: TestParams) {
-  const { packageJsonType, allowJs, typecheckMode } = testParams;
+  const { packageJsonType, allowJs, typecheckMode, tsModuleMode } = testParams;
 
   const proj = project(name.replace(/ /g, '_'));
 
@@ -163,12 +178,13 @@ function writeFixturesToFilesystem(name: string, testParams: TestParams) {
     compilerOptions: {
       allowJs,
       target: 'esnext',
-      module: 'NodeNext',
+      module: tsModuleMode,
       jsx: 'react',
     },
     'ts-node': {
       transpileOnly: typecheckMode === 'transpileOnly' || undefined,
       swc: typecheckMode === 'swc',
+      experimentalResolver: true,
     },
   });
 
@@ -246,11 +262,18 @@ function createImporter(
     // Cannot import = require an ESM file
     if (importeeTreatment.isExecutedAsEsm && importStyle === 'import = require')
       continue;
+    // Cannot use static imports in non-compiled non-ESM
+    if (
+      importStyle === 'static import' &&
+      !importerTreatment.isCompiled &&
+      importerTreatment.isExecutedAsCjs
+    )
+      continue;
 
     let importSpecifier = `./${importeeExtension.ext}`;
     if (
       !importeeExtension.cjsAllowsOmittingExt ||
-      importeeTreatment.isExecutedAsEsm
+      isOneOf(importStyle, ['dynamic import', 'static import'])
     )
       importSpecifier +=
         '.' + (importeeExtension.jsEquivalentExt ?? importeeExtension.ext);
@@ -270,7 +293,8 @@ function createImporter(
         break;
     }
 
-    importer.assertions += `if(${importeeExtension.ext}.ext !== '${importeeExtension.ext}') throw new Error('Wrong export from importee: expected ${importeeExtension.ext} but got ' + ${importeeExtension.ext}.ext);\n`;
+    importer.assertions += `if(${importeeExtension.ext}.ext !== '${importeeExtension.ext}')\n`;
+    importer.assertions += `  throw new Error('Wrong export from importee: expected ${importeeExtension.ext} but got ' + ${importeeExtension.ext}.ext + '(importee has these keys: ' + Object.keys(${importeeExtension.ext}) + ')');\n`;
   }
   return importer;
 }
@@ -300,11 +324,11 @@ function createImportee(
     importee.content += `
           const React = {
             createElement(tag, dunno, content) {
-              return content
+              return {props: {children: [content]}};
             }
           };
           const jsxTest = <a>Hello World</a>;
-          if(jsxTest !== 'Hello World') throw new Error('Expected ${importeeExtension.ext} to support JSX but it did not.');
+          if(jsxTest?.props?.children[0] !== 'Hello World') throw new Error('Expected ${importeeExtension.ext} to support JSX but it did not.');
         `;
   }
   return { importee, treatment };

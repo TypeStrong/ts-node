@@ -1,5 +1,5 @@
 import { context, ExecutionContext, expect, TestInterface } from './testlib';
-import { ctxTsNode, resetNodeEnvironment, ts } from './helpers';
+import { ctxTsNode, isOneOf, resetNodeEnvironment, ts } from './helpers';
 import { project as fsProject, Project as FsProject } from './fs-helpers';
 import { join } from 'path';
 import * as semver from 'semver';
@@ -802,9 +802,4 @@ function seqGenerator() {
   return function () {
     return padStart('' + next++, 4, '0');
   };
-}
-
-/** Essentially Array:includes, but with tweaked types for checks on enums */
-function isOneOf<V>(value: V, arrayOfPossibilities: ReadonlyArray<V>) {
-  return arrayOfPossibilities.includes(value as any);
 }

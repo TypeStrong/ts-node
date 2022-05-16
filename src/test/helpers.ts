@@ -311,3 +311,8 @@ function resetObject(
 //#endregion
 
 export const delay = promisify(setTimeout);
+
+/** Essentially Array:includes, but with tweaked types for checks on enums */
+export function isOneOf<V>(value: V, arrayOfPossibilities: ReadonlyArray<V>) {
+  return arrayOfPossibilities.includes(value as any);
+}
