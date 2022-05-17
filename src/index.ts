@@ -1574,11 +1574,11 @@ function registerExtensions(
 ) {
   const exts = new Set(extensions);
   // Can't add these extensions cuz would allow omitting file extension; node requires ext for .cjs and .mjs
-  // Unless they're already registered by something else; then we *must* hook them or else our transformer
-  // will not be called.
-  for(const cannotAdd of ['.mts', '.cts', '.mjs', '.cjs']) {
-    // Other file exts can still be transformed via the .js extension.
-    if(exts.has(cannotAdd) && !hasOwnProperty(require.extensions, cannotAdd)) {
+  // Unless they're already registered by something else (nyc does this):
+  // then we *must* hook them or else our transformer will not be called.
+  for (const cannotAdd of ['.mts', '.cts', '.mjs', '.cjs']) {
+    if (exts.has(cannotAdd) && !hasOwnProperty(require.extensions, cannotAdd)) {
+      // Unrecognized file exts can be transformed via the `.js` handler.
       exts.add('.js');
       exts.delete(cannotAdd);
     }
