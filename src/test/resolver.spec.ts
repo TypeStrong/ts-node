@@ -165,13 +165,13 @@ test.suite('Resolver hooks', (test) => {
   //
   // Generate all permutations of projects
   //
-  for (const allowJs of [false, true]) {
-    for (const preferSrc of [false, true]) {
-      for (const typeModule of [false, true]) {
+  for (const preferSrc of [false, true]) {
+    for (const typeModule of [false, true]) {
+      for (const allowJs of [false, true]) {
         for (const useTsNodeNext of [false, true]) {
-          for (const experimentalSpecifierResolutionNode of [false, true]) {
-            // TODO test against skipIgnore: false, where imports of third-party deps in `node_modules` should not get our mapping behaviors
-            for (const skipIgnore of [/*false, */ true]) {
+          // TODO test against skipIgnore: false, where imports of third-party deps in `node_modules` should not get our mapping behaviors
+          for (const skipIgnore of [/*false, */ true]) {
+            for (const experimentalSpecifierResolutionNode of [false, true]) {
               let identifier = `resolver-${projectSeq()}`;
               identifier += preferSrc ? '-preferSrc' : '-preferOut';
               identifier += typeModule ? '-typeModule' : '-typeCjs---';
@@ -235,6 +235,7 @@ function declareProject(_test: Test, project: Project) {
           ? 'esnext'
           : 'commonjs',
         jsx: 'react',
+        target: 'esnext',
       },
     });
 

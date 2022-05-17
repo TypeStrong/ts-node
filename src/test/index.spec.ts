@@ -212,7 +212,9 @@ test.suite('ts-node', (test) => {
     });
 
     test.suite('should support mts when module = ESNext', (test) => {
-      test.runIf(nodeSupportsSpawningChildProcess);
+      test.runIf(
+        nodeSupportsSpawningChildProcess && tsSupportsMtsCtsExtensions
+      );
       test('test', async () => {
         const { err, stdout } = await exec(
           [CMD_TS_NODE_WITHOUT_PROJECT_FLAG, './entrypoint.mjs'].join(' '),

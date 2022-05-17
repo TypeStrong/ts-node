@@ -289,7 +289,7 @@ function resetObject(
         continue;
       if (avoidSetterIfUnchanged.includes(key) && object[key] === value)
         continue;
-      object[key] = value;
+      state.descriptors[key].set?.call(object, value);
     } catch {}
   }
   // Reset descriptors

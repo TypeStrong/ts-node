@@ -1343,8 +1343,7 @@ export function createFromPreloadedConfig(
           transformers: transformers as _ts.CustomTransformers | undefined,
         })
       : undefined;
-    return (code: string, _fileName: string): SourceOutput => {
-      let fileName = _fileName;
+    return (code: string, fileName: string): SourceOutput => {
       let result: _ts.TranspileOutput;
       if (customTranspiler) {
         result = customTranspiler.transpile(code, {
@@ -1553,17 +1552,6 @@ function createIgnore(ignoreBaseDir: string, ignore: RegExp[]) {
 }
 
 /**
- * "Refreshes" an extension on `require.extensions`.
- *
- * @param {string} ext
- */
-function reorderRequireExtension(ext: string) {
-  const old = require.extensions[ext];
-  delete require.extensions[ext];
-  require.extensions[ext] = old;
-}
-
-/**
  * Register the extensions to support when importing files.
  */
 function registerExtensions(
@@ -1584,10 +1572,6 @@ function registerExtensions(
     }
   }
 
-  // TODO do we care about overriding moduleType for mjs?  No, I don't think so.
-  // Could conditionally register `.mjs` extension when moduleType overrides are configured,
-  // since that is the only situation where we want to avoid node throwing an error.
-
   // Register new extensions.
   for (const ext of exts) {
     registerExtension(ext, service, originalJsHandler);
@@ -1599,7 +1583,12 @@ function registerExtensions(
       ...Object.keys(require.extensions),
     ]);
 
-    for (const ext of preferredExtensions) reorderRequireExtension(ext);
+    // Re-sort iteration order of Object.keys()
+    for (const ext of preferredExtensions) {
+      const old = Object.getOwnPropertyDescriptor(require.extensions, ext);
+      delete require.extensions[ext];
+      Object.defineProperty(require.extensions, ext, old!);
+    }
   }
 }
 
