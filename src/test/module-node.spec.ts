@@ -3,6 +3,7 @@ import {
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   isOneOf,
   resetNodeEnvironment,
+  tsSupportsStableNodeNextNode16,
 } from './helpers';
 import * as Path from 'path';
 import { ctxTsNode } from './helpers';
@@ -17,6 +18,8 @@ type Test = typeof test;
 
 // Declare one test case for each permutations of project configuration
 test.suite('TypeScript module=NodeNext and Node16', (test) => {
+  test.runIf(tsSupportsStableNodeNextNode16);
+
   for (const allowJs of [true, false]) {
     for (const typecheckMode of [
       'typecheck',

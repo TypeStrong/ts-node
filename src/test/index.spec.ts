@@ -9,6 +9,7 @@ import {
   nodeSupportsEsmHooks,
   ts,
   tsSupportsShowConfig,
+  tsSupportsStableNodeNextNode16,
   tsSupportsTsconfigInheritanceViaNodePackages,
 } from './helpers';
 import { lstatSync, mkdtempSync } from 'fs';
@@ -1138,8 +1139,8 @@ test('Detect when typescript adds new ModuleKind values; flag as a failure so we
     expect(ts.ModuleKind[99]).toBeUndefined();
   }
   check(7, 'ES2022', false);
-  if (ts.version.startsWith('4.7.') || semver.gte(ts.version, '4.7.0')) {
-    check(100, 'Node16', false);
+  if (tsSupportsStableNodeNextNode16) {
+    check(100, 'Node16', true);
   } else {
     check(100, 'Node12', false);
   }
