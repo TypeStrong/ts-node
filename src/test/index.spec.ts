@@ -9,6 +9,7 @@ import {
   nodeSupportsEsmHooks,
   nodeSupportsSpawningChildProcess,
   ts,
+  tsSupportsMtsCtsExtensions,
   tsSupportsShowConfig,
   tsSupportsStableNodeNextNode16,
   tsSupportsTsconfigInheritanceViaNodePackages,
@@ -1012,12 +1013,12 @@ test.suite('ts-node', (test) => {
   });
 
   test.suite('issue #1098', (test) => {
-    function testIgnored(
+    function testAllowedExtensions(
       t: ExecutionContext<ctxTsNode.Ctx>,
       compilerOptions: CreateOptions['compilerOptions'],
-      allowed: string[],
-      disallowed: string[]
+      allowed: string[]
     ) {
+      const disallowed = allExtensions.filter((ext) => !allowed.includes(ext));
       const { ignored } = t.context.tsNodeUnderTest.create({
         compilerOptions,
         skipProject: true,
@@ -1032,37 +1033,52 @@ test.suite('ts-node', (test) => {
       }
     }
 
+    const allExtensions = [
+      '.ts',
+      '.js',
+      '.d.ts',
+      '.mts',
+      '.cts',
+      '.mjs',
+      '.cjs',
+      '.tsx',
+      '.jsx',
+      '.xyz',
+      '',
+    ];
+    const mtsCts = tsSupportsMtsCtsExtensions ? ['.mts', '.cts'] : [];
+    const mjsCjs = tsSupportsMtsCtsExtensions ? ['.mjs', '.cjs'] : [];
+
     test('correctly filters file extensions from the compiler when allowJs=false and jsx=false', (t) => {
-      testIgnored(
-        t,
-        {},
-        ['.ts', '.d.ts', '.mts', '.cts'],
-        ['.js', '.tsx', '.jsx', '.mjs', '.cjs', '.xyz', '']
-      );
+      testAllowedExtensions(t, {}, ['.ts', '.d.ts', ...mtsCts]);
     });
     test('correctly filters file extensions from the compiler when allowJs=true and jsx=false', (t) => {
-      testIgnored(
-        t,
-        { allowJs: true },
-        ['.ts', '.js', '.d.ts', '.mts', '.cts', '.mjs', '.cjs'],
-        ['.tsx', '.jsx', '.xyz', '']
-      );
+      testAllowedExtensions(t, { allowJs: true }, [
+        '.ts',
+        '.js',
+        '.d.ts',
+        ...mtsCts,
+        ...mjsCjs,
+      ]);
     });
     test('correctly filters file extensions from the compiler when allowJs=false and jsx=true', (t) => {
-      testIgnored(
-        t,
-        { allowJs: false, jsx: 'preserve' },
-        ['.ts', '.tsx', '.d.ts', '.mts', '.cts'],
-        ['.js', '.jsx', '.mjs', '.cjs', '.xyz', '']
-      );
+      testAllowedExtensions(t, { allowJs: false, jsx: 'preserve' }, [
+        '.ts',
+        '.tsx',
+        '.d.ts',
+        ...mtsCts,
+      ]);
     });
     test('correctly filters file extensions from the compiler when allowJs=true and jsx=true', (t) => {
-      testIgnored(
-        t,
-        { allowJs: true, jsx: 'preserve' },
-        ['.ts', '.tsx', '.js', '.jsx', '.d.ts', '.mts', '.cts', '.mjs', '.cjs'],
-        ['.xyz', '']
-      );
+      testAllowedExtensions(t, { allowJs: true, jsx: 'preserve' }, [
+        '.ts',
+        '.tsx',
+        '.js',
+        '.jsx',
+        '.d.ts',
+        ...mtsCts,
+        ...mjsCjs,
+      ]);
     });
   });
 });

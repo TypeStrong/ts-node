@@ -78,6 +78,8 @@ export const tsSupportsShowConfig = semver.gte(ts.version, '3.2.0');
 /** Supports module:nodenext and module:node16 as *stable* features */
 export const tsSupportsStableNodeNextNode16 =
   ts.version.startsWith('4.7.') || semver.gte(ts.version, '4.7.0');
+// TS 4.5 is first version to understand .cts, .mts, .cjs, and .mjs extensions
+export const tsSupportsMtsCtsExtensions = semver.gte(ts.version, '4.5.0');
 //#endregion
 
 export const xfs = new NodeFS(fs);
