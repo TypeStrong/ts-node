@@ -1,5 +1,6 @@
 {
   "ts-node": {
+    "esm": true,
     "experimentalResolver": true
   },
   "compilerOptions": {

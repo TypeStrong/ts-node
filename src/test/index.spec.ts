@@ -210,10 +210,7 @@ test.suite('ts-node', (test) => {
 
     test('should support mts when module = ESNext', async () => {
       const { err, stdout } = await exec(
-        [
-          CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
-          '-pe "import { main } from \'./index.mjs\';main()"',
-        ].join(' '),
+        [CMD_TS_NODE_WITHOUT_PROJECT_FLAG, './entrypoint.mjs'].join(' '),
         {
           cwd: join(TEST_DIR, 'ts45-ext/ext-mts'),
         }
