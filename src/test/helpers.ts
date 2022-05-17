@@ -204,10 +204,6 @@ export function getStream(stream: Readable, waitForPattern?: string | RegExp) {
 
 //#region Reset node environment
 
-// Delete any added by nyc that aren't in vanilla nodejs
-for (const ext of Object.keys(require.extensions)) {
-  if (!['.js', '.json', '.node'].includes(ext)) delete require.extensions[ext];
-}
 const defaultRequireExtensions = captureObjectState(require.extensions);
 // Avoid node deprecation warning for accessing _channel
 const defaultProcess = captureObjectState(process, ['_channel']);

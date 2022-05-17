@@ -11,6 +11,7 @@ import type { Transpiler, TranspilerFactory } from './transpilers/types';
 import {
   cachedLookup,
   createProjectLocalResolveHelper,
+  hasOwnProperty,
   normalizeSlashes,
   once,
   parse,
@@ -1572,15 +1573,16 @@ function registerExtensions(
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
   const exts = new Set(extensions);
-  // Only way to transform .mts and .cts is via the .js extension.
-  // Can't register those extensions cuz would allow omitting file extension; node requires ext for .cjs and .mjs
-  if (exts.has('.mts') || exts.has('.cts')) exts.add('.js');
-  // Filter extensions which should not be added to `require.extensions`
-  // They may still be handled via the `.js` extension handler.
-  exts.delete('.mts');
-  exts.delete('.cts');
-  exts.delete('.mjs');
-  exts.delete('.cjs');
+  // Can't add these extensions cuz would allow omitting file extension; node requires ext for .cjs and .mjs
+  // Unless they're already registered by something else; then we *must* hook them or else our transformer
+  // will not be called.
+  for(const cannotAdd of ['.mts', '.cts', '.mjs', '.cjs']) {
+    // Other file exts can still be transformed via the .js extension.
+    if(exts.has(cannotAdd) && !hasOwnProperty(require.extensions, cannotAdd)) {
+      exts.add('.js');
+      exts.delete(cannotAdd);
+    }
+  }
 
   // TODO do we care about overriding moduleType for mjs?  No, I don't think so.
   // Could conditionally register `.mjs` extension when moduleType overrides are configured,
