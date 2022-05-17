@@ -13,6 +13,7 @@ const test = context(ctxTsNode);
 test.beforeEach(async () => {
   resetNodeEnvironment();
 });
+type Test = typeof test;
 
 // Declare one test case for each permutations of project configuration
 test.suite('TypeScript module=NodeNext and Node16', (test) => {
@@ -28,7 +29,7 @@ test.suite('TypeScript module=NodeNext and Node16', (test) => {
         'module',
       ] as const) {
         for (const tsModuleMode of ['NodeNext', 'Node16'] as const) {
-          declareTest({
+          declareTest(test, {
             allowJs,
             packageJsonType,
             typecheckMode,
@@ -40,11 +41,15 @@ test.suite('TypeScript module=NodeNext and Node16', (test) => {
   }
 });
 
-function declareTest(testParams: TestParams) {
+function declareTest(test: Test, testParams: TestParams) {
   const name = `package-json-type=${testParams.packageJsonType} allowJs=${testParams.allowJs} ${testParams.typecheckMode} tsconfig-module=${testParams.tsModuleMode}`;
 
   test(name, async (t) => {
     const proj = writeFixturesToFilesystem(name, testParams);
+
+    t.log(
+      `Running this command: ( cd ${proj.cwd} ; ${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --esm ./index.mjs )`
+    );
 
     // All assertions happen within the fixture scripts
     // Zero exit code indicates a passing test
@@ -227,8 +232,17 @@ function createImporter(
   );
 
   if (!importerTreatment.isAllowed) return;
-  // import = require only allowed in TS files
+  // import = require only allowed in non-js files
   if (importStyle === 'import = require' && importerExtension.isJs) return;
+  // const = require not allowed in ESM
+  if (importStyle === 'require' && importerTreatment.isExecutedAsEsm) return;
+  // swc bug: import = require will not work in ESM, because swc does not emit necessary `__require = createRequire()`
+  if (
+    testParams.typecheckMode === 'swc' &&
+    importStyle === 'import = require' &&
+    importerTreatment.isExecutedAsEsm
+  )
+    return;
 
   const importer = {
     path: `${name.replace(/ /g, '_')}.${importerExtension.ext}`,
@@ -245,6 +259,8 @@ function createImporter(
     },
   };
   proj.add(importer);
+
+  if (!importerExtension.isJs) importer.imports += `export {};\n`;
 
   for (const importeeExtension of extensions) {
     const ci = createImportee(testParams, { importeeExtension });
@@ -293,7 +309,11 @@ function createImporter(
         break;
     }
 
-    importer.assertions += `if(${importeeExtension.ext}.ext !== '${importeeExtension.ext}')\n`;
+    // Check both namespace.ext and namespace.default.ext, because node can't detect named exports from files we transform
+    const namespaceAsAny = importerExtension.isJs
+      ? importeeExtension.ext
+      : `(${importeeExtension.ext} as any)`;
+    importer.assertions += `if((${importeeExtension.ext}.ext ?? ${namespaceAsAny}.default.ext) !== '${importeeExtension.ext}')\n`;
     importer.assertions += `  throw new Error('Wrong export from importee: expected ${importeeExtension.ext} but got ' + ${importeeExtension.ext}.ext + '(importee has these keys: ' + Object.keys(${importeeExtension.ext}) + ')');\n`;
   }
   return importer;

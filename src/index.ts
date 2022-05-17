@@ -1335,12 +1335,13 @@ export function createFromPreloadedConfig(
       compilerOptions,
       nodeModuleEmitKind
     );
-    let tsTranspileModule = versionGteLt(ts.version, '4.7.0') ?
-      createTsTranspileModule(ts, {
-        compilerOptions,
-        reportDiagnostics: true,
-        transformers: transformers as _ts.CustomTransformers | undefined
-      }) : undefined;
+    let tsTranspileModule = versionGteLt(ts.version, '4.7.0')
+      ? createTsTranspileModule(ts, {
+          compilerOptions,
+          reportDiagnostics: true,
+          transformers: transformers as _ts.CustomTransformers | undefined,
+        })
+      : undefined;
     return (code: string, _fileName: string): SourceOutput => {
       let fileName = _fileName;
       let result: _ts.TranspileOutput;
@@ -1348,23 +1349,15 @@ export function createFromPreloadedConfig(
         result = customTranspiler.transpile(code, {
           fileName,
         });
-      } else if(tsTranspileModule) {
-        result = tsTranspileModule(code, {
-          fileName
-        }, nodeModuleEmitKind === 'nodeesm' ? 'module' : 'commonjs');
+      } else if (tsTranspileModule) {
+        result = tsTranspileModule(
+          code,
+          {
+            fileName,
+          },
+          nodeModuleEmitKind === 'nodeesm' ? 'module' : 'commonjs'
+        );
       } else {
-        // [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
-        // The only way to tell `ts.transpileModule` to emit node-flavored ESM is to set file extension to `.mts` or `.mjs`
-        if (nodeModuleEmitKind === 'nodeesm') {
-          const lastDotIndex = _fileName.lastIndexOf('.');
-          const ext = _fileName.slice(lastDotIndex);
-          const fileNameSansExtension =
-            lastDotIndex >= 0 ? _fileName.slice(0, lastDotIndex) : _fileName;
-          if (ext === '.ts' || ext === '.tsx')
-            fileName = fileNameSansExtension + '.mts';
-          if (ext === '.js' || ext === '.jsx')
-            fileName = fileNameSansExtension + '.mjs';
-        }
         result = ts.transpileModule(code, {
           fileName,
           compilerOptions,
