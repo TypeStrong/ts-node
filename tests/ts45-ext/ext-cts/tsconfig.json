@@ -1,4 +1,7 @@
 {
+  "ts-node": {
+    "experimentalResolver": true
+  },
   "compilerOptions": {
     "module": "CommonJS"
   }
