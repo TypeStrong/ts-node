@@ -1,4 +1,4 @@
-import { context } from './testlib';
+import { context, ExecutionContext } from './testlib';
 import * as expect from 'expect';
 import { join, resolve, sep as pathSep } from 'path';
 import { tmpdir } from 'os';
@@ -30,6 +30,7 @@ import {
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   CMD_ESM_LOADER_WITHOUT_PROJECT,
 } from './helpers';
+import type { CreateOptions } from '..';
 
 const exec = createExec({
   cwd: TEST_DIR,
@@ -209,7 +210,7 @@ test.suite('ts-node', (test) => {
       const { err, stdout } = await exec(
         [
           CMD_TS_NODE_WITH_PROJECT_FLAG,
-          '-O "{\\"module\\":"ESNext"}"',
+          '-O "{\\"module\\":\\"ESNext\\"}"',
           '-pe "import { main } from \'./ts45-ext/ext-mts/index\';main()"',
         ].join(' ')
       );
@@ -1006,62 +1007,55 @@ test.suite('ts-node', (test) => {
 
   test.suite('issue #1098', (test) => {
     function testIgnored(
-      ignored: tsNodeTypes.Service['ignored'],
+      t: ExecutionContext<ctxTsNode.Ctx>,
+      compilerOptions: CreateOptions['compilerOptions'],
       allowed: string[],
       disallowed: string[]
     ) {
+      const { ignored } = t.context.tsNodeUnderTest.create({
+        compilerOptions,
+        skipProject: true,
+      });
       for (const ext of allowed) {
-        // should accept ${ext} files
+        t.log(`Testing that ${ext} files are allowed`);
         expect(ignored(join(DIST_DIR, `index${ext}`))).toBe(false);
       }
       for (const ext of disallowed) {
-        // should ignore ${ext} files
+        t.log(`Testing that ${ext} files are ignored`);
         expect(ignored(join(DIST_DIR, `index${ext}`))).toBe(true);
       }
     }
 
     test('correctly filters file extensions from the compiler when allowJs=false and jsx=false', (t) => {
-      const { ignored } = t.context.tsNodeUnderTest.create({
-        compilerOptions: {},
-        skipProject: true,
-      });
       testIgnored(
-        ignored,
-        ['.ts', '.d.ts'],
+        t,
+        {},
+        ['.ts', '.d.ts', '.mts', '.cts'],
         ['.js', '.tsx', '.jsx', '.mjs', '.cjs', '.xyz', '']
       );
     });
     test('correctly filters file extensions from the compiler when allowJs=true and jsx=false', (t) => {
-      const { ignored } = t.context.tsNodeUnderTest.create({
-        compilerOptions: { allowJs: true },
-        skipProject: true,
-      });
       testIgnored(
-        ignored,
-        ['.ts', '.js', '.d.ts'],
-        ['.tsx', '.jsx', '.mjs', '.cjs', '.xyz', '']
+        t,
+        { allowJs: true },
+        ['.ts', '.js', '.d.ts', '.mts', '.cts', '.mjs', '.cjs'],
+        ['.tsx', '.jsx', '.xyz', '']
       );
     });
     test('correctly filters file extensions from the compiler when allowJs=false and jsx=true', (t) => {
-      const { ignored } = t.context.tsNodeUnderTest.create({
-        compilerOptions: { allowJs: false, jsx: 'preserve' },
-        skipProject: true,
-      });
       testIgnored(
-        ignored,
-        ['.ts', '.tsx', '.d.ts'],
+        t,
+        { allowJs: false, jsx: 'preserve' },
+        ['.ts', '.tsx', '.d.ts', '.mts', '.cts'],
         ['.js', '.jsx', '.mjs', '.cjs', '.xyz', '']
       );
     });
     test('correctly filters file extensions from the compiler when allowJs=true and jsx=true', (t) => {
-      const { ignored } = t.context.tsNodeUnderTest.create({
-        compilerOptions: { allowJs: true, jsx: 'preserve' },
-        skipProject: true,
-      });
       testIgnored(
-        ignored,
-        ['.ts', '.tsx', '.js', '.jsx', '.d.ts'],
-        ['.mjs', '.cjs', '.xyz', '']
+        t,
+        { allowJs: true, jsx: 'preserve' },
+        ['.ts', '.tsx', '.js', '.jsx', '.d.ts', '.mts', '.cts', '.mjs', '.cjs'],
+        ['.xyz', '']
       );
     });
   });
@@ -1143,7 +1137,7 @@ test('Detect when typescript adds new ModuleKind values; flag as a failure so we
     expect(ts.ModuleKind[99]).toBeUndefined();
   }
   check(7, 'ES2022', false);
-  if (ts.version.startsWith('4.8.') || semver.gte(ts.version, '4.8.0')) {
+  if (ts.version.startsWith('4.7.') || semver.gte(ts.version, '4.7.0')) {
     check(100, 'Node16', false);
   } else {
     check(100, 'Node12', false);
