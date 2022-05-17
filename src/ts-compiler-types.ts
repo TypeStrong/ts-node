@@ -19,7 +19,10 @@ export interface TSCommon {
   getPreEmitDiagnostics: typeof _ts.getPreEmitDiagnostics;
   flattenDiagnosticMessageText: typeof _ts.flattenDiagnosticMessageText;
   transpileModule: typeof _ts.transpileModule;
-  ModuleKind: typeof _ts.ModuleKind;
+  ModuleKind: typeof _ts.ModuleKind & {
+    // Hack until we start building against TS >= 4.7.0
+    Node16?: 100;
+  };
   ScriptTarget: typeof _ts.ScriptTarget;
   findConfigFile: typeof _ts.findConfigFile;
   readConfigFile: typeof _ts.readConfigFile;
