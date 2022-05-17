@@ -1,5 +1,11 @@
 import { context, ExecutionContext, expect, TestInterface } from './testlib';
-import { ctxTsNode, isOneOf, resetNodeEnvironment, ts } from './helpers';
+import {
+  ctxTsNode,
+  isOneOf,
+  resetNodeEnvironment,
+  ts,
+  tsSupportsStableNodeNextNode16,
+} from './helpers';
 import { project as fsProject, Project as FsProject } from './fs-helpers';
 import { join } from 'path';
 import * as semver from 'semver';
@@ -194,7 +200,11 @@ test.suite('Resolver hooks', (test) => {
   }
 });
 
-function declareProject(test: Test, project: Project) {
+function declareProject(_test: Test, project: Project) {
+  const test =
+    project.useTsNodeNext && !tsSupportsStableNodeNextNode16
+      ? _test.skip
+      : _test;
   test(`${project.identifier}`, async (t) => {
     t.teardown(() => {
       resetNodeEnvironment();

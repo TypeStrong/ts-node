@@ -7,6 +7,7 @@ import {
   BIN_PATH_JS,
   CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
   nodeSupportsEsmHooks,
+  nodeSupportsSpawningChildProcess,
   ts,
   tsSupportsShowConfig,
   tsSupportsStableNodeNextNode16,
@@ -209,15 +210,18 @@ test.suite('ts-node', (test) => {
       expect(stdout).toBe('hello world\n');
     });
 
-    test('should support mts when module = ESNext', async () => {
-      const { err, stdout } = await exec(
-        [CMD_TS_NODE_WITHOUT_PROJECT_FLAG, './entrypoint.mjs'].join(' '),
-        {
-          cwd: join(TEST_DIR, 'ts45-ext/ext-mts'),
-        }
-      );
-      expect(err).toBe(null);
-      expect(stdout).toBe('hello world\n');
+    test.suite('should support mts when module = ESNext', (test) => {
+      test.runIf(nodeSupportsSpawningChildProcess);
+      test('test', async () => {
+        const { err, stdout } = await exec(
+          [CMD_TS_NODE_WITHOUT_PROJECT_FLAG, './entrypoint.mjs'].join(' '),
+          {
+            cwd: join(TEST_DIR, 'ts45-ext/ext-mts'),
+          }
+        );
+        expect(err).toBe(null);
+        expect(stdout).toBe('hello world\n');
+      });
     });
 
     test('should eval code', async () => {

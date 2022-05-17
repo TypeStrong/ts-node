@@ -86,6 +86,15 @@ export interface TestInterface<
     macros: OneOrMoreMacros<T, Context>,
     ...rest: T
   ): void;
+  skip(title: string, implementation: Implementation<Context>): void;
+  /** Declare a concurrent test that uses one or more macros. Additional arguments are passed to the macro. */
+  skip<T extends any[]>(
+    title: string,
+    macros: OneOrMoreMacros<T, Context>,
+    ...rest: T
+  ): void;
+  /** Declare a concurrent test that uses one or more macros. The macro is responsible for generating a unique test title. */
+  skip<T extends any[]>(macros: OneOrMoreMacros<T, Context>, ...rest: T): void;
 
   macro<Args extends any[], Ctx = Context>(
     cb: (
@@ -189,7 +198,8 @@ function createTestInterface<Context>(opts: {
     title: string | undefined,
     macros: AvaMacro<any[], Context>[],
     avaDeclareFunction: Function & { skip: Function },
-    args: any[]
+    args: any[],
+    skip = false
   ) {
     const wrappedMacros = macros.map((macro) => {
       return async function (t: ExecutionContext<Context>, ...args: any[]) {
@@ -206,7 +216,7 @@ function createTestInterface<Context>(opts: {
       };
     });
     const computedTitle = computeTitle(title, macros, ...args);
-    (automaticallySkip ? avaDeclareFunction.skip : avaDeclareFunction)(
+    (automaticallySkip || skip ? avaDeclareFunction.skip : avaDeclareFunction)(
       computedTitle,
       wrappedMacros,
       ...args
@@ -231,6 +241,11 @@ function createTestInterface<Context>(opts: {
     assertOrderingForDeclaringTest();
     const { args, macros, title } = parseArgs(inputArgs);
     return declareTest(title, macros, avaTest.serial, args);
+  };
+  test.skip = function (...inputArgs: any[]) {
+    assertOrderingForDeclaringTest();
+    const { args, macros, title } = parseArgs(inputArgs);
+    return declareTest(title, macros, avaTest, args, true);
   };
   test.beforeEach = function (
     cb: (test: ExecutionContext<Context>) => Promise<void>
