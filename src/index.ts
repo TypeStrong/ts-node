@@ -35,6 +35,7 @@ import type * as _nodeInternalModulesEsmResolve from '../dist-raw/node-internal-
 import type * as _nodeInternalModulesEsmGetFormat from '../dist-raw/node-internal-modules-esm-get_format';
 import type * as _nodeInternalModulesCjsLoader from '../dist-raw/node-internal-modules-cjs-loader';
 import { Extensions, getExtensions } from './file-extensions';
+import { createTsTranspileModule } from './ts-transpile-module';
 
 export { TSCommon };
 export {
@@ -1334,6 +1335,12 @@ export function createFromPreloadedConfig(
       compilerOptions,
       nodeModuleEmitKind
     );
+    let tsTranspileModule = versionGteLt(ts.version, '4.7.0') ?
+      createTsTranspileModule(ts, {
+        compilerOptions,
+        reportDiagnostics: true,
+        transformers: transformers as _ts.CustomTransformers | undefined
+      }) : undefined;
     return (code: string, _fileName: string): SourceOutput => {
       let fileName = _fileName;
       let result: _ts.TranspileOutput;
@@ -1341,6 +1348,10 @@ export function createFromPreloadedConfig(
         result = customTranspiler.transpile(code, {
           fileName,
         });
+      } else if(tsTranspileModule) {
+        result = tsTranspileModule(code, {
+          fileName
+        }, nodeModuleEmitKind === 'nodeesm' ? 'module' : 'commonjs');
       } else {
         // [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
         // The only way to tell `ts.transpileModule` to emit node-flavored ESM is to set file extension to `.mts` or `.mjs`
