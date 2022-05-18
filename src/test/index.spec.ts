@@ -197,18 +197,21 @@ test.suite('ts-node', (test) => {
       expect(stdout).toBe('hello world\n');
     });
 
-    test('should support cts when module = CommonJS', async () => {
-      const { err, stdout } = await exec(
-        [
-          CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
-          '-pe "import { main } from \'./index.cjs\';main()"',
-        ].join(' '),
-        {
-          cwd: join(TEST_DIR, 'ts45-ext/ext-cts'),
-        }
-      );
-      expect(err).toBe(null);
-      expect(stdout).toBe('hello world\n');
+    test.suite('should support cts when module = CommonJS', (test) => {
+      test.runIf(tsSupportsMtsCtsExtensions);
+      test('test', async (t) => {
+        const { err, stdout } = await exec(
+          [
+            CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
+            '-pe "import { main } from \'./index.cjs\';main()"',
+          ].join(' '),
+          {
+            cwd: join(TEST_DIR, 'ts45-ext/ext-cts'),
+          }
+        );
+        expect(err).toBe(null);
+        expect(stdout).toBe('hello world\n');
+      });
     });
 
     test.suite('should support mts when module = ESNext', (test) => {
