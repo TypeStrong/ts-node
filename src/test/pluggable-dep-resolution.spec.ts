@@ -31,11 +31,22 @@ test.suite(
       async (t) => {
         t.teardown(resetNodeEnvironment);
 
-        const output = t.context.tsNodeUnderTest
-          .create({
-            project: resolve(TEST_DIR, 'pluggable-dep-resolution', config),
-          })
-          .compile('', 'index.ts');
+        // A bit hacky: we've monkey-patched the various dependencies to either:
+        // a) return transpiled output we expect
+        // b) throw an error that we expect
+        // Either way, we've proven that the correct dependency is used, which
+        // is our goal.
+        let output: string;
+        try {
+          output = t.context.tsNodeUnderTest
+            .create({
+              project: resolve(TEST_DIR, 'pluggable-dep-resolution', config),
+            })
+            .compile('', 'index.ts');
+        } catch (e) {
+          expect(e).toBe(`emit from ${expected}`);
+          return;
+        }
 
         expect(output).toContain(`emit from ${expected}\n`);
       },

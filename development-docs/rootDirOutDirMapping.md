@@ -1,3 +1,5 @@
+## Musings about resolving between rootDir and outDir
+
 When /dist and /src are understood to be overlaid because of src -> dist compiling
 /dist/
 /src/

@@ -5,7 +5,10 @@
 'use strict';
 
 const {
+  ArrayIsArray,
+  ArrayPrototypeIncludes,
   ArrayPrototypeJoin,
+  ArrayPrototypePush,
   JSONParse,
   ObjectKeys,
   RegExpPrototypeTest,
@@ -45,6 +48,8 @@ const {
 } = require('./node-internal-constants');
 
 const Module = require('module');
+
+const isWindows = process.platform === 'win32';
 
 let statCache = null;
 
@@ -133,12 +138,13 @@ function readPackageScope(checkPath) {
 /**
  * @param {{
  *   nodeEsmResolver: ReturnType<typeof import('./node-internal-modules-esm-resolve').createResolve>,
- *   compiledExtensions: string[],
+ *   extensions: import('../src/file-extensions').Extensions,
  *   preferTsExts
  * }} opts
  */
 function createCjsLoader(opts) {
-  const {nodeEsmResolver, compiledExtensions, preferTsExts} = opts;
+const {nodeEsmResolver, preferTsExts} = opts;
+const {replacementsForCjs, replacementsForJs, replacementsForMjs} = opts.extensions;
 const {
   encodedSepRegEx,
   packageExportsResolve,
@@ -209,47 +215,42 @@ function toRealPath(requestPath) {
   });
 }
 
-/**
- * TS's resolver can resolve foo.js to foo.ts, by replacing .js extension with several source extensions.
- * IMPORTANT: preserve ordering according to preferTsExts; this affects resolution behavior!
- */
-const extensions = Array.from(new Set([
-  ...(preferTsExts ? compiledExtensions : []),
-  '.js', '.json', '.node', '.mjs', '.cjs',
-  ...compiledExtensions
-]));
-const replacementExtensions = {
-  '.js': extensions.filter(ext => ['.js', '.jsx', '.ts', '.tsx'].includes(ext)),
-  '.cjs': extensions.filter(ext => ['.cjs', '.cts'].includes(ext)),
-  '.mjs': extensions.filter(ext => ['.mjs', '.mts'].includes(ext)),
-};
-
-const replacableExtensionRe = /(\.(?:js|cjs|mjs))$/;
-
 function statReplacementExtensions(p) {
-  const match = p.match(replacableExtensionRe);
-  if (match) {
-    const replacementExts = replacementExtensions[match[1]];
-    const pathnameWithoutExtension = p.slice(0, -match[1].length);
-    for (let i = 0; i < replacementExts.length; i++) {
-      const filename = pathnameWithoutExtension + replacementExts[i];
-      const rc = stat(filename);
-      if (rc === 0) {
-        return [rc, filename];
+  const lastDotIndex = p.lastIndexOf('.');
+  if(lastDotIndex >= 0) {
+    const ext = p.slice(lastDotIndex);
+    if (ext === '.js' || ext === '.cjs' || ext === '.mjs') {
+      const pathnameWithoutExtension = p.slice(0, lastDotIndex);
+      const replacementExts =
+        ext === '.js' ? replacementsForJs
+        : ext === '.mjs' ? replacementsForMjs
+        : replacementsForCjs;
+      for (let i = 0; i < replacementExts.length; i++) {
+        const filename = pathnameWithoutExtension + replacementExts[i];
+        const rc = stat(filename);
+        if (rc === 0) {
+          return [rc, filename];
+        }
       }
     }
   }
   return [stat(p), p];
 }
 function tryReplacementExtensions(p, isMain) {
-  const match = p.match(replacableExtensionRe);
-  if (match) {
-    const replacementExts = replacementExtensions[match[1]];
-    const pathnameWithoutExtension = p.slice(0, -match[1].length);
-    for (let i = 0; i < replacementExts.length; i++) {
-      const filename = tryFile(pathnameWithoutExtension + replacementExts[i], isMain);
-      if (filename) {
-        return filename;
+  const lastDotIndex = p.lastIndexOf('.');
+  if(lastDotIndex >= 0) {
+    const ext = p.slice(lastDotIndex);
+    if (ext === '.js' || ext === '.cjs' || ext === '.mjs') {
+      const pathnameWithoutExtension = p.slice(0, lastDotIndex);
+      const replacementExts =
+        ext === '.js' ? replacementsForJs
+        : ext === '.mjs' ? replacementsForMjs
+        : replacementsForCjs;
+      for (let i = 0; i < replacementExts.length; i++) {
+        const filename = tryFile(pathnameWithoutExtension + replacementExts[i], isMain);
+        if (filename) {
+          return filename;
+        }
       }
     }
   }
@@ -564,11 +565,18 @@ function assertScriptCanLoadAsCJSImpl(service, module, filename) {
   const pkg = readPackageScope(filename);
 
   // ts-node modification: allow our configuration to override
-  const tsNodeClassification = service.moduleTypeClassifier.classifyModule(normalizeSlashes(filename));
+  const tsNodeClassification = service.moduleTypeClassifier.classifyModuleByModuleTypeOverrides(normalizeSlashes(filename));
   if(tsNodeClassification.moduleType === 'cjs') return;
 
+  // ignore package.json when file extension is ESM-only or CJS-only
+  // [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
+  const lastDotIndex = filename.lastIndexOf('.');
+  const ext = lastDotIndex >= 0 ? filename.slice(lastDotIndex) : '';
+
+  if((ext === '.cts' || ext === '.cjs') && tsNodeClassification.moduleType === 'auto') return;
+
   // Function require shouldn't be used in ES modules.
-  if (tsNodeClassification.moduleType === 'esm' || (pkg && pkg.data && pkg.data.type === 'module')) {
+  if (ext === '.mts' || ext === '.mjs' || tsNodeClassification.moduleType === 'esm' || (pkg && pkg.data && pkg.data.type === 'module')) {
     const parentPath = module.parent && module.parent.filename;
     const packageJsonPath = pkg ? path.resolve(pkg.path, 'package.json') : null;
     throw createErrRequireEsm(filename, parentPath, packageJsonPath);
@@ -578,5 +586,6 @@ function assertScriptCanLoadAsCJSImpl(service, module, filename) {
 
 module.exports = {
   createCjsLoader,
-  assertScriptCanLoadAsCJSImpl
+  assertScriptCanLoadAsCJSImpl,
+  readPackageScope
 };

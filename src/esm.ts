@@ -1,10 +1,4 @@
-import {
-  register,
-  getExtensions,
-  RegisterOptions,
-  Service,
-  versionGteLt,
-} from './index';
+import { register, RegisterOptions, Service, versionGteLt } from './index';
 import {
   parse as parseUrl,
   format as formatUrl,
@@ -328,21 +322,26 @@ export function createEsmHooks(tsNodeService: Service) {
 
     const nativePath = fileURLToPath(url);
 
-    // If file has .ts, .tsx, or .jsx extension, then ask node how it would treat this file if it were .js
-    const ext = extname(nativePath);
     let nodeSays: { format: NodeLoaderHooksFormat };
-    const nodeDoesNotUnderstandExt =
-      extensions.extensionsNodeDoesNotUnderstand.includes(ext);
+
+    // If file has extension not understood by node, then ask node how it would treat the emitted extension.
+    // E.g. .mts compiles to .mjs, so ask node how to classify an .mjs file.
+    const ext = extname(nativePath);
     const tsNodeIgnored = tsNodeService.ignored(nativePath);
-    if (nodeDoesNotUnderstandExt && !tsNodeIgnored) {
+    const nodeEquivalentExt = extensions.nodeEquivalents.get(ext);
+    if (nodeEquivalentExt && !tsNodeIgnored) {
       nodeSays = await entrypointFallback(() =>
-        defer(formatUrl(pathToFileURL(nativePath + '.js')))
+        defer(formatUrl(pathToFileURL(nativePath + nodeEquivalentExt)))
       );
     } else {
       try {
         nodeSays = await entrypointFallback(defer);
       } catch (e) {
-        if (e instanceof Error && tsNodeIgnored && nodeDoesNotUnderstandExt) {
+        if (
+          e instanceof Error &&
+          tsNodeIgnored &&
+          extensions.nodeDoesNotUnderstand.includes(ext)
+        ) {
           e.message +=
             `\n\n` +
             `Hint:\n` +
@@ -358,9 +357,10 @@ export function createEsmHooks(tsNodeService: Service) {
       !tsNodeService.ignored(nativePath) &&
       (nodeSays.format === 'commonjs' || nodeSays.format === 'module')
     ) {
-      const { moduleType } = tsNodeService.moduleTypeClassifier.classifyModule(
-        normalizeSlashes(nativePath)
-      );
+      const { moduleType } =
+        tsNodeService.moduleTypeClassifier.classifyModuleByModuleTypeOverrides(
+          normalizeSlashes(nativePath)
+        );
       if (moduleType === 'cjs') {
         return { format: 'commonjs' };
       } else if (moduleType === 'esm') {

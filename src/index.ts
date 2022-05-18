@@ -11,6 +11,7 @@ import type { Transpiler, TranspilerFactory } from './transpilers/types';
 import {
   cachedLookup,
   createProjectLocalResolveHelper,
+  hasOwnProperty,
   normalizeSlashes,
   once,
   parse,
@@ -30,9 +31,12 @@ import {
   installCommonjsResolveHooksIfNecessary,
   ModuleConstructorWithInternals,
 } from './cjs-resolve-hooks';
+import { classifyModule } from './node-module-type-classifier';
 import type * as _nodeInternalModulesEsmResolve from '../dist-raw/node-internal-modules-esm-resolve';
 import type * as _nodeInternalModulesEsmGetFormat from '../dist-raw/node-internal-modules-esm-get_format';
 import type * as _nodeInternalModulesCjsLoader from '../dist-raw/node-internal-modules-cjs-loader';
+import { Extensions, getExtensions } from './file-extensions';
+import { createTsTranspileModule } from './ts-transpile-module';
 
 export { TSCommon };
 export {
@@ -347,8 +351,9 @@ export interface CreateOptions {
   experimentalReplAwait?: boolean;
   /**
    * Override certain paths to be compiled and executed as CommonJS or ECMAScript modules.
-   * When overridden, the tsconfig "module" and package.json "type" fields are overridden.
-   * This is useful because TypeScript files cannot use the .cjs nor .mjs file extensions;
+   * When overridden, the tsconfig "module" and package.json "type" fields are overridden, and
+   * the file extension is ignored.
+   * This is useful if you cannot use .mts, .cts, .mjs, or .cjs file extensions;
    * it achieves the same effect.
    *
    * Each key is a glob pattern following the same rules as tsconfig's "include" array.
@@ -390,7 +395,8 @@ export interface CreateOptions {
   preferTsExts?: boolean;
 }
 
-export type ModuleTypes = Record<string, 'cjs' | 'esm' | 'package'>;
+export type ModuleTypes = Record<string, ModuleTypeOverride>;
+export type ModuleTypeOverride = 'cjs' | 'esm' | 'package';
 
 /** @internal */
 export interface OptionBasePaths {
@@ -418,6 +424,8 @@ export interface RegisterOptions extends CreateOptions {
   /** @internal */
   experimentalSpecifierResolution?: 'node' | 'explicit';
 }
+
+export type ExperimentalSpecifierResolution = 'node' | 'explicit';
 
 /**
  * Must be an interface to support `typescript-json-schema`.
@@ -574,61 +582,8 @@ export interface DiagnosticFilter {
 }
 
 /**
- * Centralized specification of how we deal with file extensions based on
- * project options:
- * which ones we do/don't support, in what situations, etc.  These rules drive
- * logic elsewhere.
- * @internal
- * */
-export type Extensions = ReturnType<typeof getExtensions>;
-
-/**
- * @internal
- */
-export function getExtensions(
-  config: _ts.ParsedCommandLine,
-  options: RegisterOptions
-) {
-  const compiledExtensions: string[] = [];
-  const extensionsNodeDoesNotUnderstand = [
-    '.ts',
-    '.tsx',
-    '.jsx',
-    '.cts',
-    '.mts',
-  ];
-
-  // .js, .cjs, .mjs take precedence if preferTsExts is off
-  if (!options.preferTsExts && config.options.allowJs)
-    compiledExtensions.push('.js');
-
-  compiledExtensions.push('.ts');
-
-  // Enable additional extensions when JSX or `allowJs` is enabled.
-  if (config.options.jsx) compiledExtensions.push('.tsx');
-  if (config.options.jsx && config.options.allowJs)
-    compiledExtensions.push('.jsx');
-  if (config.options.preferTsExt && config.options.allowJs)
-    compiledExtensions.push('.js');
-
-  const compiledExtensionsNodeDoesNotUnderstand =
-    extensionsNodeDoesNotUnderstand.filter((ext) =>
-      compiledExtensions.includes(ext)
-    );
-
-  return {
-    /** All file extensions we transform, ordered by resolution preference according to preferTsExts */
-    compiledExtensions,
-    /** Resolved extensions that vanilla node will not understand; we should handle them */
-    extensionsNodeDoesNotUnderstand,
-    /** Like the above, but only the ones we're compiling */
-    compiledExtensionsNodeDoesNotUnderstand,
-  };
-}
-
-/**
  * Create a new TypeScript compiler instance and register it onto node.js
-
+ *
  * @category Basic
  */
 export function register(opts?: RegisterOptions): Service;
@@ -649,7 +604,6 @@ export function register(
   }
 
   const originalJsHandler = require.extensions['.js'];
-  const { compiledExtensions } = getExtensions(service.config, service.options);
 
   // Expose registered instance globally.
   process[REGISTER_INSTANCE] = service;
@@ -657,7 +611,7 @@ export function register(
   // Register the extensions.
   registerExtensions(
     service.options.preferTsExts,
-    compiledExtensions,
+    service.extensions.compiled,
     service,
     originalJsHandler
   );
@@ -797,6 +751,7 @@ export function createFromPreloadedConfig(
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
     getNewLine: () => ts.sys.newLine,
     getCurrentDirectory: () => cwd,
+    // TODO switch to getCanonicalFileName we already create later in scope
     getCanonicalFileName: ts.sys.useCaseSensitiveFileNames
       ? (x) => x
       : (x) => x.toLowerCase(),
@@ -807,41 +762,47 @@ export function createFromPreloadedConfig(
       'Transformers function is unavailable in "--transpile-only"'
     );
   }
-  let createTranspiler:
-    | ((compilerOptions: TSCommon.CompilerOptions) => Transpiler)
-    | undefined;
-  if (transpiler) {
-    if (!transpileOnly)
-      throw new Error(
-        'Custom transpiler can only be used when transpileOnly is enabled.'
+  let createTranspiler = initializeTranspilerFactory();
+  function initializeTranspilerFactory() {
+    if (transpiler) {
+      if (!transpileOnly)
+        throw new Error(
+          'Custom transpiler can only be used when transpileOnly is enabled.'
+        );
+      const transpilerName =
+        typeof transpiler === 'string' ? transpiler : transpiler[0];
+      const transpilerOptions =
+        typeof transpiler === 'string' ? {} : transpiler[1] ?? {};
+      const transpilerConfigLocalResolveHelper = transpilerBasePath
+        ? createProjectLocalResolveHelper(transpilerBasePath)
+        : projectLocalResolveHelper;
+      const transpilerPath = transpilerConfigLocalResolveHelper(
+        transpilerName,
+        true
       );
-    const transpilerName =
-      typeof transpiler === 'string' ? transpiler : transpiler[0];
-    const transpilerOptions =
-      typeof transpiler === 'string' ? {} : transpiler[1] ?? {};
-    const transpilerConfigLocalResolveHelper = transpilerBasePath
-      ? createProjectLocalResolveHelper(transpilerBasePath)
-      : projectLocalResolveHelper;
-    const transpilerPath = transpilerConfigLocalResolveHelper(
-      transpilerName,
-      true
-    );
-    const transpilerFactory = require(transpilerPath)
-      .create as TranspilerFactory;
-    createTranspiler = function (compilerOptions) {
-      return transpilerFactory({
-        service: {
-          options,
-          config: {
-            ...config,
-            options: compilerOptions,
+      const transpilerFactory = require(transpilerPath)
+        .create as TranspilerFactory;
+      return createTranspiler;
+
+      function createTranspiler(
+        compilerOptions: TSCommon.CompilerOptions,
+        nodeModuleEmitKind?: NodeModuleEmitKind
+      ) {
+        return transpilerFactory?.({
+          service: {
+            options,
+            config: {
+              ...config,
+              options: compilerOptions,
+            },
+            projectLocalResolveHelper,
           },
-          projectLocalResolveHelper,
-        },
-        transpilerConfigLocalResolveHelper,
-        ...transpilerOptions,
-      });
-    };
+          transpilerConfigLocalResolveHelper,
+          nodeModuleEmitKind,
+          ...transpilerOptions,
+        });
+      }
+    }
   }
 
   /**
@@ -919,19 +880,39 @@ export function createFromPreloadedConfig(
   // Render the configuration errors.
   if (configDiagnosticList.length) reportTSError(configDiagnosticList);
 
+  const jsxEmitPreserve = config.options.jsx === ts.JsxEmit.Preserve;
   /**
    * Get the extension for a transpiled file.
+   * [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
    */
-  const getExtension =
-    config.options.jsx === ts.JsxEmit.Preserve
-      ? (path: string) => (/\.[tj]sx$/.test(path) ? '.jsx' : '.js')
-      : (_: string) => '.js';
+  function getEmitExtension(path: string) {
+    const lastDotIndex = path.lastIndexOf('.');
+    if (lastDotIndex >= 0) {
+      const ext = path.slice(lastDotIndex);
+      switch (ext) {
+        case '.js':
+        case '.ts':
+          return '.js';
+        case '.jsx':
+        case '.tsx':
+          return jsxEmitPreserve ? '.jsx' : '.js';
+        case '.mjs':
+        case '.mts':
+          return '.mjs';
+        case '.cjs':
+        case '.cts':
+          return '.cjs';
+      }
+    }
+    return '.js';
+  }
 
   type GetOutputFunction = (code: string, fileName: string) => SourceOutput;
   /**
-   * Create the basic required function using transpile mode.
+   * Get output from TS compiler w/typechecking.  `undefined` in `transpileOnly`
+   * mode.
    */
-  let getOutput: GetOutputFunction;
+  let getOutput: GetOutputFunction | undefined;
   let getTypeInfo: (
     _code: string,
     _fileName: string,
@@ -1339,8 +1320,6 @@ export function createFromPreloadedConfig(
       }
     }
   } else {
-    getOutput = createTranspileOnlyGetOutputFunction();
-
     getTypeInfo = () => {
       throw new TypeError(
         'Type information is unavailable in "--transpile-only"'
@@ -1349,18 +1328,37 @@ export function createFromPreloadedConfig(
   }
 
   function createTranspileOnlyGetOutputFunction(
-    overrideModuleType?: _ts.ModuleKind
+    overrideModuleType?: _ts.ModuleKind,
+    nodeModuleEmitKind?: NodeModuleEmitKind
   ): GetOutputFunction {
     const compilerOptions = { ...config.options };
     if (overrideModuleType !== undefined)
       compilerOptions.module = overrideModuleType;
-    let customTranspiler = createTranspiler?.(compilerOptions);
+    let customTranspiler = createTranspiler?.(
+      compilerOptions,
+      nodeModuleEmitKind
+    );
+    let tsTranspileModule = versionGteLt(ts.version, '4.7.0')
+      ? createTsTranspileModule(ts, {
+          compilerOptions,
+          reportDiagnostics: true,
+          transformers: transformers as _ts.CustomTransformers | undefined,
+        })
+      : undefined;
     return (code: string, fileName: string): SourceOutput => {
       let result: _ts.TranspileOutput;
       if (customTranspiler) {
         result = customTranspiler.transpile(code, {
           fileName,
         });
+      } else if (tsTranspileModule) {
+        result = tsTranspileModule(
+          code,
+          {
+            fileName,
+          },
+          nodeModuleEmitKind === 'nodeesm' ? 'module' : 'commonjs'
+        );
       } else {
         result = ts.transpileModule(code, {
           fileName,
@@ -1380,44 +1378,86 @@ export function createFromPreloadedConfig(
     };
   }
 
-  // When either is undefined, it means normal `getOutput` should be used
-  const getOutputForceCommonJS =
-    config.options.module === ts.ModuleKind.CommonJS
-      ? undefined
-      : createTranspileOnlyGetOutputFunction(ts.ModuleKind.CommonJS);
+  // When true, these mean that a `moduleType` override will cause a different emit
+  // than the TypeScript compiler, so we *must* overwrite the emit.
+  const shouldOverwriteEmitWhenForcingCommonJS =
+    config.options.module !== ts.ModuleKind.CommonJS;
   // [MUST_UPDATE_FOR_NEW_MODULEKIND]
-  const getOutputForceESM =
+  const shouldOverwriteEmitWhenForcingEsm = !(
     config.options.module === ts.ModuleKind.ES2015 ||
     (ts.ModuleKind.ES2020 && config.options.module === ts.ModuleKind.ES2020) ||
     (ts.ModuleKind.ES2022 && config.options.module === ts.ModuleKind.ES2022) ||
     config.options.module === ts.ModuleKind.ESNext
-      ? undefined
-      : // [MUST_UPDATE_FOR_NEW_MODULEKIND]
-        createTranspileOnlyGetOutputFunction(
-          ts.ModuleKind.ES2022 || ts.ModuleKind.ES2020 || ts.ModuleKind.ES2015
-        );
+  );
+  /**
+   * node16 or nodenext
+   * [MUST_UPDATE_FOR_NEW_MODULEKIND]
+   */
+  const isNodeModuleType =
+    (ts.ModuleKind.Node16 && config.options.module === ts.ModuleKind.Node16) ||
+    (ts.ModuleKind.NodeNext &&
+      config.options.module === ts.ModuleKind.NodeNext);
+  const getOutputForceCommonJS = createTranspileOnlyGetOutputFunction(
+    ts.ModuleKind.CommonJS
+  );
+  const getOutputForceNodeCommonJS = createTranspileOnlyGetOutputFunction(
+    ts.ModuleKind.NodeNext,
+    'nodecjs'
+  );
+  const getOutputForceNodeESM = createTranspileOnlyGetOutputFunction(
+    ts.ModuleKind.NodeNext,
+    'nodeesm'
+  );
+  // [MUST_UPDATE_FOR_NEW_MODULEKIND]
+  const getOutputForceESM = createTranspileOnlyGetOutputFunction(
+    ts.ModuleKind.ES2022 || ts.ModuleKind.ES2020 || ts.ModuleKind.ES2015
+  );
   const getOutputTranspileOnly = createTranspileOnlyGetOutputFunction();
 
   // Create a simple TypeScript compiler proxy.
   function compile(code: string, fileName: string, lineOffset = 0) {
     const normalizedFileName = normalizeSlashes(fileName);
     const classification =
-      moduleTypeClassifier.classifyModule(normalizedFileName);
-    // Must always call normal getOutput to throw typechecking errors
-    let [value, sourceMap, emitSkipped] = getOutput(code, normalizedFileName);
+      moduleTypeClassifier.classifyModuleByModuleTypeOverrides(
+        normalizedFileName
+      );
+    let value: string | undefined = '';
+    let sourceMap: string | undefined = '';
+    let emitSkipped = true;
+    if (getOutput) {
+      // Must always call normal getOutput to throw typechecking errors
+      [value, sourceMap, emitSkipped] = getOutput(code, normalizedFileName);
+    }
     // If module classification contradicts the above, call the relevant transpiler
-    if (classification.moduleType === 'cjs' && getOutputForceCommonJS) {
+    if (
+      classification.moduleType === 'cjs' &&
+      (shouldOverwriteEmitWhenForcingCommonJS || emitSkipped)
+    ) {
       [value, sourceMap] = getOutputForceCommonJS(code, normalizedFileName);
-    } else if (classification.moduleType === 'esm' && getOutputForceESM) {
+    } else if (
+      classification.moduleType === 'esm' &&
+      (shouldOverwriteEmitWhenForcingEsm || emitSkipped)
+    ) {
       [value, sourceMap] = getOutputForceESM(code, normalizedFileName);
     } else if (emitSkipped) {
-      [value, sourceMap] = getOutputTranspileOnly(code, normalizedFileName);
+      // Happens when ts compiler skips emit or in transpileOnly mode
+      const classification = classifyModule(fileName, isNodeModuleType);
+      [value, sourceMap] =
+        classification === 'nodecjs'
+          ? getOutputForceNodeCommonJS(code, normalizedFileName)
+          : classification === 'nodeesm'
+          ? getOutputForceNodeESM(code, normalizedFileName)
+          : classification === 'cjs'
+          ? getOutputForceCommonJS(code, normalizedFileName)
+          : classification === 'esm'
+          ? getOutputForceESM(code, normalizedFileName)
+          : getOutputTranspileOnly(code, normalizedFileName);
     }
     const output = updateOutput(
       value!,
       normalizedFileName,
       sourceMap!,
-      getExtension
+      getEmitExtension
     );
     outputCache.set(normalizedFileName, { content: output });
     return output;
@@ -1426,11 +1466,11 @@ export function createFromPreloadedConfig(
   let active = true;
   const enabled = (enabled?: boolean) =>
     enabled === undefined ? active : (active = !!enabled);
-  const extensions = getExtensions(config, options);
+  const extensions = getExtensions(config, options, ts.version);
   const ignored = (fileName: string) => {
     if (!active) return true;
     const ext = extname(fileName);
-    if (extensions.compiledExtensions.includes(ext)) {
+    if (extensions.compiled.includes(ext)) {
       return !isScoped(fileName) || shouldIgnore(fileName);
     }
     return true;
@@ -1449,7 +1489,7 @@ export function createFromPreloadedConfig(
     (
       require('../dist-raw/node-internal-modules-esm-resolve') as typeof _nodeInternalModulesEsmResolve
     ).createResolve({
-      ...extensions,
+      extensions,
       preferTsExts: options.preferTsExts,
       tsNodeExperimentalSpecifierResolution:
         options.experimentalSpecifierResolution,
@@ -1467,7 +1507,7 @@ export function createFromPreloadedConfig(
     (
       require('../dist-raw/node-internal-modules-cjs-loader') as typeof _nodeInternalModulesCjsLoader
     ).createCjsLoader({
-      ...extensions,
+      extensions,
       preferTsExts: options.preferTsExts,
       nodeEsmResolver: getNodeEsmResolver(),
     })
@@ -1511,17 +1551,6 @@ function createIgnore(ignoreBaseDir: string, ignore: RegExp[]) {
 }
 
 /**
- * "Refreshes" an extension on `require.extensions`.
- *
- * @param {string} ext
- */
-function reorderRequireExtension(ext: string) {
-  const old = require.extensions[ext];
-  delete require.extensions[ext];
-  require.extensions[ext] = old;
-}
-
-/**
  * Register the extensions to support when importing files.
  */
 function registerExtensions(
@@ -1530,18 +1559,35 @@ function registerExtensions(
   service: Service,
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
+  const exts = new Set(extensions);
+  // Can't add these extensions cuz would allow omitting file extension; node requires ext for .cjs and .mjs
+  // Unless they're already registered by something else (nyc does this):
+  // then we *must* hook them or else our transformer will not be called.
+  for (const cannotAdd of ['.mts', '.cts', '.mjs', '.cjs']) {
+    if (exts.has(cannotAdd) && !hasOwnProperty(require.extensions, cannotAdd)) {
+      // Unrecognized file exts can be transformed via the `.js` handler.
+      exts.add('.js');
+      exts.delete(cannotAdd);
+    }
+  }
+
   // Register new extensions.
-  for (const ext of extensions) {
+  for (const ext of exts) {
     registerExtension(ext, service, originalJsHandler);
   }
 
   if (preferTsExts) {
     const preferredExtensions = new Set([
-      ...extensions,
+      ...exts,
       ...Object.keys(require.extensions),
     ]);
 
-    for (const ext of preferredExtensions) reorderRequireExtension(ext);
+    // Re-sort iteration order of Object.keys()
+    for (const ext of preferredExtensions) {
+      const old = Object.getOwnPropertyDescriptor(require.extensions, ext);
+      delete require.extensions[ext];
+      Object.defineProperty(require.extensions, ext, old!);
+    }
   }
 }
 
@@ -1585,7 +1631,7 @@ function updateOutput(
   outputText: string,
   fileName: string,
   sourceMap: string,
-  getExtension: (fileName: string) => string
+  getEmitExtension: (fileName: string) => string
 ) {
   const base64Map = Buffer.from(
     updateSourceMap(sourceMap, fileName),
@@ -1598,7 +1644,7 @@ function updateOutput(
   const prefixLength = prefix.length;
   const baseName = /*foo.tsx*/ basename(fileName);
   const extName = /*.tsx*/ extname(fileName);
-  const extension = /*.js*/ getExtension(fileName);
+  const extension = /*.js*/ getEmitExtension(fileName);
   const sourcemapFilename =
     baseName.slice(0, -extName.length) + extension + '.map';
   const sourceMapLengthWithoutPercentEncoding =
@@ -1705,3 +1751,11 @@ function getTokenAtPosition(
 export const createEsmHooks: typeof createEsmHooksFn = (
   tsNodeService: Service
 ) => (require('./esm') as typeof import('./esm')).createEsmHooks(tsNodeService);
+
+/**
+ * When using `module: nodenext` or `module: node12`, there are two possible styles of emit depending in file extension or package.json "type":
+ *
+ * - CommonJS with dynamic imports preserved (not transformed into `require()` calls)
+ * - ECMAScript modules with `import foo = require()` transformed into `require = createRequire(); const foo = require()`
+ */
+export type NodeModuleEmitKind = 'nodeesm' | 'nodecjs';

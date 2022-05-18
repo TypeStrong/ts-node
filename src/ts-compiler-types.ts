@@ -19,7 +19,7 @@ export interface TSCommon {
   getPreEmitDiagnostics: typeof _ts.getPreEmitDiagnostics;
   flattenDiagnosticMessageText: typeof _ts.flattenDiagnosticMessageText;
   transpileModule: typeof _ts.transpileModule;
-  ModuleKind: typeof _ts.ModuleKind;
+  ModuleKind: TSCommon.ModuleKindEnum;
   ScriptTarget: typeof _ts.ScriptTarget;
   findConfigFile: typeof _ts.findConfigFile;
   readConfigFile: typeof _ts.readConfigFile;
@@ -73,6 +73,12 @@ export namespace TSCommon {
     _ts.ResolvedModuleWithFailedLookupLocations;
   export type FileReference = _ts.FileReference;
   export type SourceFile = _ts.SourceFile;
+  // Hack until we start building against TS >= 4.7.0
+  export type ModuleKindEnum = typeof _ts.ModuleKind & {
+    Node16: typeof _ts.ModuleKind extends { Node16: any }
+      ? typeof _ts.ModuleKind['Node16']
+      : 100;
+  };
 }
 
 /**

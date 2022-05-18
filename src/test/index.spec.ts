@@ -1,4 +1,4 @@
-import { context } from './testlib';
+import { context, ExecutionContext } from './testlib';
 import * as expect from 'expect';
 import { join, resolve, sep as pathSep } from 'path';
 import { tmpdir } from 'os';
@@ -7,8 +7,11 @@ import {
   BIN_PATH_JS,
   CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
   nodeSupportsEsmHooks,
+  nodeSupportsSpawningChildProcess,
   ts,
+  tsSupportsMtsCtsExtensions,
   tsSupportsShowConfig,
+  tsSupportsStableNodeNextNode16,
   tsSupportsTsconfigInheritanceViaNodePackages,
 } from './helpers';
 import { lstatSync, mkdtempSync } from 'fs';
@@ -30,6 +33,7 @@ import {
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   CMD_ESM_LOADER_WITHOUT_PROJECT,
 } from './helpers';
+import type { CreateOptions } from '..';
 
 const exec = createExec({
   cwd: TEST_DIR,
@@ -191,6 +195,39 @@ test.suite('ts-node', (test) => {
       );
       expect(err).toBe(null);
       expect(stdout).toBe('hello world\n');
+    });
+
+    test.suite('should support cts when module = CommonJS', (test) => {
+      test.runIf(tsSupportsMtsCtsExtensions);
+      test('test', async (t) => {
+        const { err, stdout } = await exec(
+          [
+            CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
+            '-pe "import { main } from \'./index.cjs\';main()"',
+          ].join(' '),
+          {
+            cwd: join(TEST_DIR, 'ts45-ext/ext-cts'),
+          }
+        );
+        expect(err).toBe(null);
+        expect(stdout).toBe('hello world\n');
+      });
+    });
+
+    test.suite('should support mts when module = ESNext', (test) => {
+      test.runIf(
+        nodeSupportsSpawningChildProcess && tsSupportsMtsCtsExtensions
+      );
+      test('test', async () => {
+        const { err, stdout } = await exec(
+          [CMD_TS_NODE_WITHOUT_PROJECT_FLAG, './entrypoint.mjs'].join(' '),
+          {
+            cwd: join(TEST_DIR, 'ts45-ext/ext-mts'),
+          }
+        );
+        expect(err).toBe(null);
+        expect(stdout).toBe('hello world\n');
+      });
     });
 
     test('should eval code', async () => {
@@ -981,64 +1018,76 @@ test.suite('ts-node', (test) => {
   });
 
   test.suite('issue #1098', (test) => {
-    function testIgnored(
-      ignored: tsNodeTypes.Service['ignored'],
-      allowed: string[],
-      disallowed: string[]
+    function testAllowedExtensions(
+      t: ExecutionContext<ctxTsNode.Ctx>,
+      compilerOptions: CreateOptions['compilerOptions'],
+      allowed: string[]
     ) {
+      const disallowed = allExtensions.filter((ext) => !allowed.includes(ext));
+      const { ignored } = t.context.tsNodeUnderTest.create({
+        compilerOptions,
+        skipProject: true,
+      });
       for (const ext of allowed) {
-        // should accept ${ext} files
+        t.log(`Testing that ${ext} files are allowed`);
         expect(ignored(join(DIST_DIR, `index${ext}`))).toBe(false);
       }
       for (const ext of disallowed) {
-        // should ignore ${ext} files
+        t.log(`Testing that ${ext} files are ignored`);
         expect(ignored(join(DIST_DIR, `index${ext}`))).toBe(true);
       }
     }
 
+    const allExtensions = [
+      '.ts',
+      '.js',
+      '.d.ts',
+      '.mts',
+      '.cts',
+      '.d.mts',
+      '.d.cts',
+      '.mjs',
+      '.cjs',
+      '.tsx',
+      '.jsx',
+      '.xyz',
+      '',
+    ];
+    const mtsCts = tsSupportsMtsCtsExtensions
+      ? ['.mts', '.cts', '.d.mts', '.d.cts']
+      : [];
+    const mjsCjs = tsSupportsMtsCtsExtensions ? ['.mjs', '.cjs'] : [];
+
     test('correctly filters file extensions from the compiler when allowJs=false and jsx=false', (t) => {
-      const { ignored } = t.context.tsNodeUnderTest.create({
-        compilerOptions: {},
-        skipProject: true,
-      });
-      testIgnored(
-        ignored,
-        ['.ts', '.d.ts'],
-        ['.js', '.tsx', '.jsx', '.mjs', '.cjs', '.xyz', '']
-      );
+      testAllowedExtensions(t, {}, ['.ts', '.d.ts', ...mtsCts]);
     });
     test('correctly filters file extensions from the compiler when allowJs=true and jsx=false', (t) => {
-      const { ignored } = t.context.tsNodeUnderTest.create({
-        compilerOptions: { allowJs: true },
-        skipProject: true,
-      });
-      testIgnored(
-        ignored,
-        ['.ts', '.js', '.d.ts'],
-        ['.tsx', '.jsx', '.mjs', '.cjs', '.xyz', '']
-      );
+      testAllowedExtensions(t, { allowJs: true }, [
+        '.ts',
+        '.js',
+        '.d.ts',
+        ...mtsCts,
+        ...mjsCjs,
+      ]);
     });
     test('correctly filters file extensions from the compiler when allowJs=false and jsx=true', (t) => {
-      const { ignored } = t.context.tsNodeUnderTest.create({
-        compilerOptions: { allowJs: false, jsx: 'preserve' },
-        skipProject: true,
-      });
-      testIgnored(
-        ignored,
-        ['.ts', '.tsx', '.d.ts'],
-        ['.js', '.jsx', '.mjs', '.cjs', '.xyz', '']
-      );
+      testAllowedExtensions(t, { allowJs: false, jsx: 'preserve' }, [
+        '.ts',
+        '.tsx',
+        '.d.ts',
+        ...mtsCts,
+      ]);
     });
     test('correctly filters file extensions from the compiler when allowJs=true and jsx=true', (t) => {
-      const { ignored } = t.context.tsNodeUnderTest.create({
-        compilerOptions: { allowJs: true, jsx: 'preserve' },
-        skipProject: true,
-      });
-      testIgnored(
-        ignored,
-        ['.ts', '.tsx', '.js', '.jsx', '.d.ts'],
-        ['.mjs', '.cjs', '.xyz', '']
-      );
+      testAllowedExtensions(t, { allowJs: true, jsx: 'preserve' }, [
+        '.ts',
+        '.tsx',
+        '.js',
+        '.jsx',
+        '.d.ts',
+        ...mtsCts,
+        ...mjsCjs,
+      ]);
     });
   });
 });
@@ -1119,8 +1168,8 @@ test('Detect when typescript adds new ModuleKind values; flag as a failure so we
     expect(ts.ModuleKind[99]).toBeUndefined();
   }
   check(7, 'ES2022', false);
-  if (ts.version.startsWith('4.8.') || semver.gte(ts.version, '4.8.0')) {
-    check(100, 'Node16', false);
+  if (tsSupportsStableNodeNextNode16) {
+    check(100, 'Node16', true);
   } else {
     check(100, 'Node12', false);
   }

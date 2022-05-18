@@ -90,9 +90,18 @@ const DEFAULT_CONDITIONS_SET = new SafeSet(DEFAULT_CONDITIONS);
 
 const pendingDeprecation = getOptionValue('--pending-deprecation');
 
+/**
+ * @param {{
+ *  extensions: import('../src/file-extensions').Extensions,
+ *  preferTsExts: boolean | undefined;
+ *  tsNodeExperimentalSpecifierResolution: import('../src/index').ExperimentalSpecifierResolution | undefined;
+ * }} opts
+ */
 function createResolve(opts) {
 // TODO receive cached fs implementations here
-const {compiledExtensions, preferTsExts, tsNodeExperimentalSpecifierResolution} = opts;
+const {preferTsExts, tsNodeExperimentalSpecifierResolution, extensions} = opts;
+const esrnExtensions = extensions.experimentalSpecifierResolutionAddsIfOmitted;
+const {legacyMainResolveAddsIfOmitted, replacementsForCjs, replacementsForJs, replacementsForMjs} = extensions;
 // const experimentalSpecifierResolution = tsNodeExperimentalSpecifierResolution ?? getOptionValue('--experimental-specifier-resolution');
 const experimentalSpecifierResolution = tsNodeExperimentalSpecifierResolution != null ? tsNodeExperimentalSpecifierResolution : getOptionValue('--experimental-specifier-resolution');
 
@@ -254,13 +263,13 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
                                    packageJSONUrl))) {
       return guess;
     }
-    for(const extension of extensions) {
+    for(const extension of legacyMainResolveAddsIfOmitted) {
       if (fileExists(guess = new URL(`./${packageConfig.main}${extension}`,
                                     packageJSONUrl))) {
         return guess;
       }
     }
-    for(const extension of extensions) {
+    for(const extension of legacyMainResolveAddsIfOmitted) {
       if (fileExists(guess = new URL(`./${packageConfig.main}/index${extension}`,
                                     packageJSONUrl))) {
         return guess;
@@ -268,7 +277,7 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
     }
     // Fallthrough.
   }
-  for(const extension of extensions) {
+  for(const extension of legacyMainResolveAddsIfOmitted) {
     if (fileExists(guess = new URL(`./index${extension}`, packageJSONUrl))) {
       return guess;
     }
@@ -286,44 +295,33 @@ function resolveExtensionsWithTryExactName(search) {
   return resolveExtensions(search);
 }
 
-const extensions = Array.from(new Set([
-  ...(preferTsExts ? compiledExtensions : []),
-  '.js', '.json', '.node', '.mjs',
-  ...compiledExtensions
-]));
-
 // This appends missing extensions
 function resolveExtensions(search) {
-  for (let i = 0; i < extensions.length; i++) {
-    const extension = extensions[i];
+  for (let i = 0; i < esrnExtensions.length; i++) {
+    const extension = esrnExtensions[i];
     const guess = new URL(`${search.pathname}${extension}`, search);
     if (fileExists(guess)) return guess;
   }
   return undefined;
 }
 
-/**
- * TS's resolver can resolve foo.js to foo.ts, by replacing .js extension with several source extensions.
- * IMPORTANT: preserve ordering according to preferTsExts; this affects resolution behavior!
- */
-const replacementExtensions = {
-  '.js': extensions.filter(ext => ['.js', '.jsx', '.ts', '.tsx'].includes(ext)),
-  '.cjs': extensions.filter(ext => ['.cjs', '.cts'].includes(ext)),
-  '.mjs': extensions.filter(ext => ['.mjs', '.mts'].includes(ext)),
-};
-
-const replacableExtensionRe = /(\.(?:js|cjs|mjs))$/;
 /** This replaces JS with TS extensions */
 function resolveReplacementExtensions(search) {
-  const match = search.pathname.match(replacableExtensionRe);
-  if (match) {
-    const replacementExts = replacementExtensions[match[1]];
-    const pathnameWithoutExtension = search.pathname.slice(0, -match[1].length);
-    const guess = new URL(search.toString());
-    for (let i = 0; i < replacementExts.length; i++) {
-      const extension = replacementExts[i];
-      guess.pathname = `${pathnameWithoutExtension}${extension}`;
-      if (fileExists(guess)) return guess;
+  const lastDotIndex = search.pathname.lastIndexOf('.');
+  if(lastDotIndex >= 0) {
+    const ext = search.pathname.slice(lastDotIndex);
+    if (ext === '.js' || ext === '.cjs' || ext === '.mjs') {
+      const pathnameWithoutExtension = search.pathname.slice(0, lastDotIndex);
+      const replacementExts =
+        ext === '.js' ? replacementsForJs
+        : ext === '.mjs' ? replacementsForMjs
+        : replacementsForCjs;
+      const guess = new URL(search.toString());
+      for (let i = 0; i < replacementExts.length; i++) {
+        const extension = replacementExts[i];
+        guess.pathname = `${pathnameWithoutExtension}${extension}`;
+        if (fileExists(guess)) return guess;
+      }
     }
   }
   return undefined;

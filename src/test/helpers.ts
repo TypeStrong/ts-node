@@ -75,6 +75,11 @@ export const tsSupportsTsconfigInheritanceViaNodePackages = semver.gte(
 );
 /** Supports --showConfig: >= v3.2.0 */
 export const tsSupportsShowConfig = semver.gte(ts.version, '3.2.0');
+/** Supports module:nodenext and module:node16 as *stable* features */
+export const tsSupportsStableNodeNextNode16 =
+  ts.version.startsWith('4.7.') || semver.gte(ts.version, '4.7.0');
+// TS 4.5 is first version to understand .cts, .mts, .cjs, and .mjs extensions
+export const tsSupportsMtsCtsExtensions = semver.gte(ts.version, '4.5.0');
 //#endregion
 
 export const xfs = new NodeFS(fs);
@@ -201,10 +206,6 @@ export function getStream(stream: Readable, waitForPattern?: string | RegExp) {
 
 //#region Reset node environment
 
-// Delete any added by nyc that aren't in vanilla nodejs
-for (const ext of Object.keys(require.extensions)) {
-  if (!['.js', '.json', '.node'].includes(ext)) delete require.extensions[ext];
-}
 const defaultRequireExtensions = captureObjectState(require.extensions);
 // Avoid node deprecation warning for accessing _channel
 const defaultProcess = captureObjectState(process, ['_channel']);
@@ -245,7 +246,7 @@ export function resetNodeEnvironment() {
   resetObject(Error, defaultError);
 
   // _resolveFilename et.al. are modified by ts-node, tsconfig-paths, source-map-support, yarn, maybe other things?
-  resetObject(require('module'), defaultModule);
+  resetObject(require('module'), defaultModule, undefined, ['wrap', 'wrapper']);
 
   // May be modified by REPL tests, since the REPL sets globals.
   // Avoid deleting nyc's coverage data.
@@ -271,7 +272,7 @@ function resetObject(
   object: any,
   state: ReturnType<typeof captureObjectState>,
   doNotDeleteTheseKeys: string[] = [],
-  doNotSetTheseKeys: string[] = [],
+  doNotSetTheseKeys: true | string[] = [],
   avoidSetterIfUnchanged: string[] = [],
   reorderProperties = false
 ) {
@@ -284,10 +285,11 @@ function resetObject(
   // Trigger nyc's setter functions
   for (const [key, value] of Object.entries(state.values)) {
     try {
-      if (doNotSetTheseKeys.includes(key)) continue;
+      if (doNotSetTheseKeys === true || doNotSetTheseKeys.includes(key))
+        continue;
       if (avoidSetterIfUnchanged.includes(key) && object[key] === value)
         continue;
-      object[key] = value;
+      state.descriptors[key].set?.call(object, value);
     } catch {}
   }
   // Reset descriptors
@@ -310,3 +312,8 @@ function resetObject(
 //#endregion
 
 export const delay = promisify(setTimeout);
+
+/** Essentially Array:includes, but with tweaked types for checks on enums */
+export function isOneOf<V>(value: V, arrayOfPossibilities: ReadonlyArray<V>) {
+  return arrayOfPossibilities.includes(value as any);
+}

@@ -17,6 +17,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
     swc,
     service: { config, projectLocalResolveHelper },
     transpilerConfigLocalResolveHelper,
+    nodeModuleEmitKind,
   } = createOptions;
 
   // Load swc compiler
@@ -78,6 +79,8 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
     }
     swcTarget = swcTargets[swcTargetIndex];
     const keepClassNames = target! >= /* ts.ScriptTarget.ES2016 */ 3;
+    const isNodeModuleKind =
+      module === ModuleKind.Node12 || module === ModuleKind.NodeNext;
     // swc only supports these 4x module options [MUST_UPDATE_FOR_NEW_MODULEKIND]
     const moduleType =
       module === ModuleKind.CommonJS
@@ -86,6 +89,10 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
         ? 'amd'
         : module === ModuleKind.UMD
         ? 'umd'
+        : isNodeModuleKind && nodeModuleEmitKind === 'nodecjs'
+        ? 'commonjs'
+        : isNodeModuleKind && nodeModuleEmitKind === 'nodeesm'
+        ? 'es6'
         : 'es6';
     // In swc:
     //   strictMode means `"use strict"` is *always* emitted for non-ES module, *never* for ES module where it is assumed it can be omitted.
@@ -111,6 +118,8 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
             noInterop: !esModuleInterop,
             type: moduleType,
             strictMode,
+            // For NodeNext and Node12, emit as CJS but do not transform dynamic imports
+            ignoreDynamic: nodeModuleEmitKind === 'nodecjs',
           } as swcTypes.ModuleConfig)
         : undefined,
       swcrc: false,
@@ -198,4 +207,6 @@ const ModuleKind = {
   ES2015: 5,
   ES2020: 6,
   ESNext: 99,
+  Node12: 100,
+  NodeNext: 199,
 } as const;
