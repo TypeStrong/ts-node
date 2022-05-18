@@ -1,7 +1,3 @@
-// TODO same version check as ESM loader, but export stubs
-// Also export a binder function that allows re-binding where the stubs
-// delegate.
-
 import type { NodeLoaderHooksAPI1, NodeLoaderHooksAPI2 } from '..';
 import { filterHooksByAPIVersion } from '../esm';
 

@@ -1,12 +1,12 @@
-import { expect } from 'chai';
+import { expect } from '../testlib';
 import type { Key } from 'readline';
 import { Stream } from 'stream';
 import semver = require('semver');
 import { ts } from '../helpers';
-import type { ContextWithTsNodeUnderTest } from './helpers';
+import type { ctxTsNode } from '../helpers';
 import { nodeSupportsEsmHooks } from '../helpers';
 
-interface SharedObjects extends ContextWithTsNodeUnderTest {
+interface SharedObjects extends ctxTsNode.Ctx {
   TEST_DIR: string;
 }
 
@@ -64,7 +64,7 @@ export async function upstreamTopLevelAwaitTests({
     return promise;
   }
 
-  runAndWait([
+  await runAndWait([
     'function foo(x) { return x; }',
     'function koo() { return Promise.resolve(4); }',
   ]);
@@ -246,12 +246,12 @@ export async function upstreamTopLevelAwaitTests({
     if (Array.isArray(expected)) {
       if (expected.length === 1) expected.push('undefined');
       if (lines[0] === input) lines.shift();
-      expect(lines).to.eqls([...expected, PROMPT]);
+      expect(lines).toEqual([...expected, PROMPT]);
     } else if ('line' in options) {
-      expect(lines[toBeRun.length + options.line!]).to.eqls(expected);
+      expect(lines[toBeRun.length + options.line!]).toEqual(expected);
     } else {
       const echoed = toBeRun.map((a, i) => `${i > 0 ? '... ' : ''}${a}\r`);
-      expect(lines).to.eqls([...echoed, expected, PROMPT]);
+      expect(lines).toEqual([...echoed, expected, PROMPT]);
     }
   }
 }

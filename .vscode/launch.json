@@ -10,7 +10,33 @@
       "outputCapture": "std",
       "skipFiles": [
         "<node_internals>/**/*.js"
+      ]
+    },
+    {
+      "name": "Debug resolver test",
+      "type": "pwa-node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/tests/tmp/resolver-0029-preferSrc-typeModule-allowJs-skipIgnore-experimentalSpecifierResolutionNode",
+      "runtimeArgs": [
+        "--loader",
+        "../../../esm.mjs"
       ],
+      "program": "./src/entrypoint-0000-src-to-src.cjs"
+    },
+    {
+      "name": "Debug Example: running a test fixture against local ts-node/esm loader",
+      "type": "pwa-node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/tests/esm",
+      "runtimeArgs": [
+        "--loader",
+        "../../ts-node/esm"
+      ],
+      "program": "throw error.ts",
+      "outputCapture": "std",
+      "skipFiles": [
+        "<node_internals>/**/*.js"
+      ]
     }
-  ],
+  ]
 }

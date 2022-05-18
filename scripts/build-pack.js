@@ -23,7 +23,10 @@ exec(
       console.error(err);
       process.exit(1);
     }
-    const tempTarballPath = join(tempDir, readdirSync(tempDir)[0]);
+    const tempTarballPath = join(
+      tempDir,
+      readdirSync(tempDir).find((name) => name.endsWith('.tgz'))
+    );
     writeFileSync(tarballPath, readFileSync(tempTarballPath));
     unlinkSync(tempTarballPath);
     rmdirSync(tempDir);

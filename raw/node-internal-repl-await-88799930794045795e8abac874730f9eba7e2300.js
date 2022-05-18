@@ -1,4 +1,5 @@
-// downloaded from https://github.com/nodejs/node/blob/88799930794045795e8abac874730f9eba7e2300/lib/internal/repl/await.js
+// Copied from https://github.com/nodejs/node/blob/88799930794045795e8abac874730f9eba7e2300/lib/internal/repl/await.js
+
 'use strict';
 
 const {

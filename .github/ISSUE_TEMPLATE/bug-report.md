@@ -49,5 +49,9 @@ https://github.com/TypeStrong/ts-node-repros
 ```
 {}
 ```
+* package.json:
+```
+{}
+```
 * Operating system and version:
 * If Windows, are you using WSL or WSL2?:

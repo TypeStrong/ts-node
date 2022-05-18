@@ -22,7 +22,7 @@ function getProcessTopLevelAwait() {
   if (_processTopLevelAwait === undefined) {
     ({
       processTopLevelAwait: _processTopLevelAwait,
-    } = require('../dist-raw/node-repl-await'));
+    } = require('../dist-raw/node-internal-repl-await'));
   }
   return _processTopLevelAwait;
 }
@@ -124,7 +124,6 @@ export interface CreateReplOptions {
   stderr?: NodeJS.WritableStream;
   /** @internal */
   composeWithEvalAwarePartialHost?: EvalAwarePartialHost;
-  // TODO collapse both of the following two flags into a single `isInteractive` or `isLineByLine` flag.
   /**
    * @internal
    * Ignore diagnostics that are annoying when interactively entering input line-by-line.
@@ -509,6 +508,7 @@ function appendCompileAndEvalInput(options: {
   service: Service;
   state: EvalState;
   input: string;
+  wrappedErr?: unknown;
   /** Enable top-level await but only if the TSNode service allows it. */
   enableTopLevelAwait?: boolean;
   context: Context | undefined;
@@ -516,10 +516,22 @@ function appendCompileAndEvalInput(options: {
   const {
     service,
     state,
-    input,
+    wrappedErr,
     enableTopLevelAwait = false,
     context,
   } = options;
+  let { input } = options;
+
+  // It's confusing for `{ a: 1 }` to be interpreted as a block statement
+  // rather than an object literal. So, we first try to wrap it in
+  // parentheses, so that it will be interpreted as an expression.
+  // Based on https://github.com/nodejs/node/blob/c2e6822153bad023ab7ebd30a6117dcc049e475c/lib/repl.js#L413-L422
+  let wrappedCmd = false;
+  if (!wrappedErr && /^\s*{/.test(input) && !/;\s*$/.test(input)) {
+    input = `(${input.trim()})\n`;
+    wrappedCmd = true;
+  }
+
   const lines = state.lines;
   const isCompletion = !/\n$/.test(input);
   const undo = appendToEvalState(state, input);
@@ -536,6 +548,20 @@ function appendCompileAndEvalInput(options: {
     output = service.compile(state.input, state.path, -lines);
   } catch (err) {
     undo();
+
+    if (wrappedCmd) {
+      if (err instanceof TSError && err.diagnosticCodes[0] === 2339) {
+        // Ensure consistent and more sane behavior between { a: 1 }['b'] and ({ a: 1 }['b'])
+        throw err;
+      }
+      // Unwrap and try again
+      return appendCompileAndEvalInput({
+        ...options,
+        wrappedErr: err,
+      });
+    }
+
+    if (wrappedErr) throw wrappedErr;
     throw err;
   }
 
@@ -679,17 +705,28 @@ function lineCount(value: string) {
 }
 
 /**
- * TS diagnostic codes which are recoverable, meaning that the user likely entered and incomplete line of code
+ * TS diagnostic codes which are recoverable, meaning that the user likely entered an incomplete line of code
  * and should be prompted for the next.  For example, starting a multi-line for() loop and not finishing it.
+ * null value means code is always recoverable.  `Set` means code is only recoverable when occurring alongside at least one
+ * of the other codes.
  */
-const RECOVERY_CODES: Set<number> = new Set([
-  1003, // "Identifier expected."
-  1005, // "')' expected."
-  1109, // "Expression expected."
-  1126, // "Unexpected end of text."
-  1160, // "Unterminated template literal."
-  1161, // "Unterminated regular expression literal."
-  2355, // "A function whose declared type is neither 'void' nor 'any' must return a value."
+const RECOVERY_CODES: Map<number, Set<number> | null> = new Map([
+  [1003, null], // "Identifier expected."
+  [1005, null], // "')' expected.", "'}' expected."
+  [1109, null], // "Expression expected."
+  [1126, null], // "Unexpected end of text."
+  [
+    1136, // "Property assignment expected."
+    new Set([1005]), // happens when typing out an object literal or block scope across multiple lines: '{ foo: 123,'
+  ],
+  [1160, null], // "Unterminated template literal."
+  [1161, null], // "Unterminated regular expression literal."
+  [2355, null], // "A function whose declared type is neither 'void' nor 'any' must return a value."
+  [2391, null], // "Function implementation is missing or not immediately following the declaration."
+  [
+    7010, // "Function, which lacks return-type annotation, implicitly has an 'any' return type."
+    new Set([1005]), // happens when fn signature spread across multiple lines: 'function a(\nb: any\n) {'
+  ],
 ]);
 
 /**
@@ -708,7 +745,13 @@ const topLevelAwaitDiagnosticCodes = [
  * Check if a function can recover gracefully.
  */
 function isRecoverable(error: TSError) {
-  return error.diagnosticCodes.every((code) => RECOVERY_CODES.has(code));
+  return error.diagnosticCodes.every((code) => {
+    const deps = RECOVERY_CODES.get(code);
+    return (
+      deps === null ||
+      (deps && error.diagnosticCodes.some((code) => deps.has(code)))
+    );
+  });
 }
 
 /**

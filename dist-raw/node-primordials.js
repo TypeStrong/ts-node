@@ -20,6 +20,7 @@ module.exports = {
   RegExpPrototypeSymbolReplace: (obj, ...rest) => RegExp.prototype[Symbol.replace].apply(obj, rest),
   SafeMap: Map,
   SafeSet: Set,
+  SafeWeakMap: WeakMap,
   StringPrototypeEndsWith: (str, ...rest) => String.prototype.endsWith.apply(str, rest),
   StringPrototypeIncludes: (str, ...rest) => String.prototype.includes.apply(str, rest),
   StringPrototypeLastIndexOf: (str, ...rest) => String.prototype.lastIndexOf.apply(str, rest),
@@ -30,5 +31,7 @@ module.exports = {
   StringPrototypeSplit: (str, ...rest) => String.prototype.split.apply(str, rest),
   StringPrototypeStartsWith: (str, ...rest) => String.prototype.startsWith.apply(str, rest),
   StringPrototypeSubstr: (str, ...rest) => String.prototype.substr.apply(str, rest),
+  StringPrototypeCharCodeAt: (str, ...rest) => String.prototype.charCodeAt.apply(str, rest),
+  StringPrototypeMatch: (str, ...rest) => String.prototype.match.apply(str, rest),
   SyntaxError: SyntaxError
 };

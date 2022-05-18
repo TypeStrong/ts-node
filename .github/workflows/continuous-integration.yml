@@ -51,10 +51,9 @@ jobs:
       matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
         include:
           # Node 12.15
-          # TODO Add comments about why we test 12.15; I think git blame says it's because of an ESM behavioral change that happened at 12.16
           - flavor: 1
             node: 12.15
             nodeFlag: 12_15
@@ -96,41 +95,64 @@ jobs:
             nodeFlag: 14
             typescript: next
             typescriptFlag: next
+          - flavor: 8
+            node: 14
+            nodeFlag: 14
+            typescript: rc
+            typescriptFlag: rc
           # Node 16
           # Node 16.11.1
           # Earliest version that supports old ESM Loader Hooks API: https://github.com/TypeStrong/ts-node/pull/1522
-          - flavor: 8
+          - flavor: 9
             node: 16.11.1
             nodeFlag: 16_11_1
             typescript: latest
             typescriptFlag: latest
-          - flavor: 9
+          - flavor: 10
             node: 16
             nodeFlag: 16
             typescript: latest
             typescriptFlag: latest
             downgradeNpm: true
-          - flavor: 10
+          - flavor: 11
             node: 16
             nodeFlag: 16
             typescript: 2.7
             typescriptFlag: 2_7
             downgradeNpm: true
-          - flavor: 11
+          - flavor: 12
             node: 16
             nodeFlag: 16
             typescript: next
             typescriptFlag: next
             downgradeNpm: true
-          # Node 17
-          - flavor: 12
-            node: 17
-            nodeFlag: 17
+          - flavor: 13
+            node: 16
+            nodeFlag: 16
+            typescript: rc
+            typescriptFlag: rc
+            downgradeNpm: true
+          # Node 18
+          - flavor: 14
+            node: 18
+            nodeFlag: 18
             typescript: latest
             typescriptFlag: latest
             downgradeNpm: true
+          - flavor: 15
+            node: 18
+            nodeFlag: 18
+            typescript: next
+            typescriptFlag: next
+            downgradeNpm: true
+          - flavor: 16
+            node: 18
+            nodeFlag: 18
+            typescript: rc
+            typescriptFlag: rc
+            downgradeNpm: true
           # Node nightly
-          - flavor: 13
+          - flavor: 17
             node: nightly
             nodeFlag: nightly
             typescript: latest
@@ -173,6 +195,7 @@ jobs:
       - run: |
           npm config set cache "$( node -p "process.cwd()" )/temp/npm-cache"
       - name: Cache dependencies
+        if: ${{ matrix.os != 'windows' }}
         uses: actions/cache@v2
         with:
           path: temp/npm-cache

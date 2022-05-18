@@ -64,12 +64,17 @@ export function createResolverFunctions(kwargs: {
   ) => {
     const { resolvedFileName } = resolvedModule;
     if (resolvedFileName === undefined) return;
-    // .ts is always switched to internal
+    // [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
+    // .ts,.mts,.cts is always switched to internal
     // .js is switched on-demand
     if (
       resolvedModule.isExternalLibraryImport &&
       ((resolvedFileName.endsWith('.ts') &&
         !resolvedFileName.endsWith('.d.ts')) ||
+        (resolvedFileName.endsWith('.cts') &&
+          !resolvedFileName.endsWith('.d.cts')) ||
+        (resolvedFileName.endsWith('.mts') &&
+          !resolvedFileName.endsWith('.d.mts')) ||
         isFileKnownToBeInternal(resolvedFileName) ||
         isFileInInternalBucket(resolvedFileName))
     ) {

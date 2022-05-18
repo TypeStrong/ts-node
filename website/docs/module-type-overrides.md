@@ -2,18 +2,22 @@
 title: Module type overrides
 ---
 
-When deciding between CommonJS and native ECMAScript modules, ts-node defaults to matching vanilla `node` and `tsc`
-behavior.  This means TypeScript files are transformed according to your `tsconfig.json` `"module"` option and executed
-according to node's rules for the `package.json` `"type"` field.
+> Wherever possible, it is recommended to use TypeScript's [`NodeNext` or `Node16` mode](https://devblogs.microsoft.com/typescript/announcing-typescript-4-7-rc/#ecmascript-module-support-in-node-js) instead of the options described
+in this section.  `NodeNext`, `.mts`, and `.cts` should work well for most projects.
 
-In some projects you may need to override this behavior for some files.  For example, in a webpack
-project, you may have `package.json` configured with `"type": "module"` and `tsconfig.json` with
-`"module": "esnext"`.  However, webpack uses our CommonJS hook to execute your `webpack.config.ts`,
-so you need to force your webpack config and any supporting scripts to execute as CommonJS.
+When deciding how a file should be compiled and executed -- as either CommonJS or native ECMAScript module -- ts-node matches
+`node` and `tsc` behavior.  This means TypeScript files are transformed according to your `tsconfig.json` `"module"`
+option and executed according to node's rules for the `package.json` `"type"` field.  Set `"module": "NodeNext"` and everything should work.
 
-In these situations, our `moduleTypes` option lets you override certain files, forcing execution as
-CommonJS or ESM.  Node supports similar overriding via `.cjs` and `.mjs` file extensions, but `.ts` files cannot use them.
-`moduleTypes` achieves the same effect, and *also* overrides your `tsconfig.json` `"module"` config appropriately.
+In rare cases, you may need to override this behavior for some files.  For example, some tools read a `name-of-tool.config.ts`
+and require that file to execute as CommonJS.  If you have `package.json` configured with `"type": "module"` and `tsconfig.json` with
+`"module": "esnext"`, the config is native ECMAScript by default and will raise an error.  You will need to force the config and
+any supporting scripts to execute as CommonJS.
+
+In these situations, our `moduleTypes` option can override certain files to be
+CommonJS or ESM.  Similar overriding is possible by using `.mts`, `.cts`, `.cjs` and `.mjs` file extensions.
+`moduleTypes` achieves the same effect for `.ts` and `.js` files, and *also* overrides your `tsconfig.json` `"module"`
+config appropriately.
 
 The following example tells ts-node to execute a webpack config as CommonJS:
 

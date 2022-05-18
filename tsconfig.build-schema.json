@@ -1,6 +1,11 @@
+// This tsconfig.json is used when we generate the tsconfig JSON schema
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "incremental": false
+    "incremental": false,
+    "tsBuildInfoFile": null,
+    "noEmit": false,
+    "allowJs": true,
+    "checkJs": false,
   }
 }

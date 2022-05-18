@@ -367,7 +367,7 @@ Disable top-level await in REPL.  Equivalent to node's [`--no-experimental-repl-
 *Default:* Enabled if TypeScript version is 3.8 or higher and target is ES2018 or higher.<br/>
 *Environment:* `TS_NODE_EXPERIMENTAL_REPL_AWAIT` set `false` to disable
 
-### experimentalResolverFeatures
+### experimentalResolver
 
 Enable experimental features that re-map imports and require calls to support: `baseUrl`, `paths`, `rootDirs`, `.js` to `.ts` file extension mappings, `outDir` to `rootDir` mappings for composite projects and monorepos.  For details, see [#1514](https://github.com/TypeStrong/ts-node/issues/1514)
 
