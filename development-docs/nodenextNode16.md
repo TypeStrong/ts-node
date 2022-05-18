@@ -1,4 +1,9 @@
-#TODOs
+# Adding support for NodeNext, Node16, `.cts`, `.mts`, `.cjs`, `.mjs`
+
+*This feature has already been implemented.  Here are my notes from when
+I was doing the work*
+
+## TODOs
 
 Implement node module type classifier:
 - if NodeNext or Node12: ask classifier for CJS or ESM determination

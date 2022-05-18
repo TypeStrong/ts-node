@@ -1,6 +1,4 @@
-*Delete this file before merging this PR*
-
-## PnP interop
+## Yarn PnP interop
 
 Asked about it here:
 https://discord.com/channels/226791405589233664/654372321225605128/957301175609344070
