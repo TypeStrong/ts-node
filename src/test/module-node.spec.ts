@@ -358,5 +358,9 @@ function createImportee(
 }
 
 function replaceExtension(path: string, ext: string) {
-  return Path.format({ ...Path.parse(path), ext: '.' + ext, base: undefined });
+  return Path.posix.format({
+    ...Path.parse(path),
+    ext: '.' + ext,
+    base: undefined,
+  });
 }
