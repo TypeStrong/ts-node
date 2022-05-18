@@ -88,7 +88,7 @@ export function createTsTranspileModule(
       }
     },
     getDefaultLibFileName: () => 'lib.d.ts',
-    useCaseSensitiveFileNames: () => false,
+    useCaseSensitiveFileNames: () => true,
     getCanonicalFileName: (fileName) => fileName,
     getCurrentDirectory: () => '',
     getNewLine: () => newLine,

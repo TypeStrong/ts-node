@@ -1,8 +1,6 @@
 import { readPackageScope } from '../dist-raw/node-internal-modules-cjs-loader';
 
 /**
- * TODO https://github.com/microsoft/TypeScript/issues/46452#issuecomment-1073145723
- *
  * Determine how to emit a module based on tsconfig "module" and package.json "type"
  *
  * Supports module=nodenext/node16 with transpileOnly, where we cannot ask the
@@ -16,12 +14,12 @@ import { readPackageScope } from '../dist-raw/node-internal-modules-cjs-loader';
  * @internal
  */
 export function classifyModule(
-  filename: string,
+  nativeFilename: string,
   isNodeModuleType: boolean
 ): 'nodecjs' | 'cjs' | 'esm' | 'nodeesm' | undefined {
   // [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
-  const lastDotIndex = filename.lastIndexOf('.');
-  const ext = lastDotIndex >= 0 ? filename.slice(lastDotIndex) : '';
+  const lastDotIndex = nativeFilename.lastIndexOf('.');
+  const ext = lastDotIndex >= 0 ? nativeFilename.slice(lastDotIndex) : '';
   switch (ext) {
     case '.cjs':
     case '.cts':
@@ -31,7 +29,7 @@ export function classifyModule(
       return isNodeModuleType ? 'nodeesm' : 'esm';
   }
   if (isNodeModuleType) {
-    const packageScope = readPackageScope(filename);
+    const packageScope = readPackageScope(nativeFilename);
     if (packageScope && packageScope.data.type === 'module') return 'nodeesm';
     return 'nodecjs';
   }

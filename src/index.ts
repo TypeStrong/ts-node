@@ -750,6 +750,7 @@ export function createFromPreloadedConfig(
   const diagnosticHost: _ts.FormatDiagnosticsHost = {
     getNewLine: () => ts.sys.newLine,
     getCurrentDirectory: () => cwd,
+    // TODO switch to getCanonicalFileName we already create later in scope
     getCanonicalFileName: ts.sys.useCaseSensitiveFileNames
       ? (x) => x
       : (x) => x.toLowerCase(),
@@ -1439,10 +1440,7 @@ export function createFromPreloadedConfig(
       [value, sourceMap] = getOutputForceESM(code, normalizedFileName);
     } else if (emitSkipped) {
       // Happens when ts compiler skips emit or in transpileOnly mode
-      const classification = classifyModule(
-        normalizedFileName,
-        isNodeModuleType
-      );
+      const classification = classifyModule(fileName, isNodeModuleType);
       [value, sourceMap] =
         classification === 'nodecjs'
           ? getOutputForceNodeCommonJS(code, normalizedFileName)
