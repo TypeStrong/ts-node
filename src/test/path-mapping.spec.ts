@@ -1,4 +1,3 @@
-import * as expect from 'expect';
 import { join } from 'path';
 
 import { createExec } from './exec-helpers';
@@ -9,7 +8,7 @@ import {
   TEST_DIR,
   installTsNode,
 } from './helpers';
-import { test } from './testlib';
+import { test, expect } from './testlib';
 
 test.beforeAll(installTsNode);
 
@@ -26,7 +25,7 @@ function execBuilder(
   return (file = 'index.ts') => partialExec(`${command} ${file}`);
 }
 
-const MODULE_TYPES = <const>{
+const MODULE_TYPES = {
   CJS: {
     name: 'cjs',
     baseDir: 'cjs-path-mapping',
@@ -37,7 +36,7 @@ const MODULE_TYPES = <const>{
     baseDir: 'esm-path-mapping',
     command: CMD_ESM_LOADER_WITHOUT_PROJECT,
   },
-};
+} as const;
 
 const PROJECT_CONFIGS = <const>{
   BASE_URL_NO_PATHS: 'tsconfig-baseurl-no-paths.json',
@@ -59,6 +58,11 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
         test('ignore type definitions', async (t) => {
           const { err } = await exec('ignore-type-definitions.ts');
           expect(err).toBeNull();
+        });
+
+        test(`fallback to node built-in`, async (t) => {
+          const {err} = await exec('import-node-built-in.ts');
+          expect(err).toBe(null);
         });
 
         test(`import at baseUrl`, async () => {
