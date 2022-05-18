@@ -573,7 +573,7 @@ function assertScriptCanLoadAsCJSImpl(service, module, filename) {
   const lastDotIndex = filename.lastIndexOf('.');
   const ext = lastDotIndex >= 0 ? filename.slice(lastDotIndex) : '';
 
-  if(ext === '.cts' || ext === '.cjs') return;
+  if((ext === '.cts' || ext === '.cjs') && tsNodeClassification.moduleType === 'auto') return;
 
   // Function require shouldn't be used in ES modules.
   if (ext === '.mts' || ext === '.mjs' || tsNodeClassification.moduleType === 'esm' || (pkg && pkg.data && pkg.data.type === 'module')) {
