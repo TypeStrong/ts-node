@@ -1044,6 +1044,8 @@ test.suite('ts-node', (test) => {
       '.d.ts',
       '.mts',
       '.cts',
+      '.d.mts',
+      '.d.cts',
       '.mjs',
       '.cjs',
       '.tsx',
@@ -1051,7 +1053,9 @@ test.suite('ts-node', (test) => {
       '.xyz',
       '',
     ];
-    const mtsCts = tsSupportsMtsCtsExtensions ? ['.mts', '.cts'] : [];
+    const mtsCts = tsSupportsMtsCtsExtensions
+      ? ['.mts', '.cts', '.d.mts', '.d.cts']
+      : [];
     const mjsCjs = tsSupportsMtsCtsExtensions ? ['.mjs', '.cjs'] : [];
 
     test('correctly filters file extensions from the compiler when allowJs=false and jsx=false', (t) => {
