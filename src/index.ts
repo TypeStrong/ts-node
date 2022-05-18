@@ -351,8 +351,9 @@ export interface CreateOptions {
   experimentalReplAwait?: boolean;
   /**
    * Override certain paths to be compiled and executed as CommonJS or ECMAScript modules.
-   * When overridden, the tsconfig "module" and package.json "type" fields are overridden.
-   * This is useful because TypeScript files cannot use the .cjs nor .mjs file extensions;
+   * When overridden, the tsconfig "module" and package.json "type" fields are overridden, and
+   * the file extension is ignored.
+   * This is useful if you cannot use .mts, .cts, .mjs, or .cjs file extensions;
    * it achieves the same effect.
    *
    * Each key is a glob pattern following the same rules as tsconfig's "include" array.
