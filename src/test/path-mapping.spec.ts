@@ -61,7 +61,7 @@ for (const moduleType of Object.values(MODULE_TYPES)) {
         });
 
         test(`fallback to node built-in`, async (t) => {
-          const {err} = await exec('import-node-built-in.ts');
+          const { err } = await exec('import-node-built-in.ts');
           expect(err).toBe(null);
         });
 
