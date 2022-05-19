@@ -1,11 +1,12 @@
 // All mapped imports
-import mappedJs from 'mapped/js';
-import mappedJsx from 'mapped/jsx';
-import mappedTs from 'mapped/ts';
-import mappedTsx from 'mapped/tsx';
-import foo from 'candidate/foo';
-import bar from 'candidate/bar';
-import fooBar from 'candidate/foo/bar';
+import mappedJs from 'mapped/js.js';
+import mappedJsx from 'mapped/jsx.js';
+import mappedTs from 'mapped/ts.js';
+import mappedTsx from './level-1/level-2/mapped-tsx.js';
+import mappedTsx from 'mapped/tsx.js';
+import foo from 'candidate/foo.js';
+import bar from 'candidate/bar.js';
+import fooBar from 'candidate/foo/bar.js';
 import immobile from 'static';
 
 // Pre-conditions

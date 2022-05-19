@@ -1,5 +1,5 @@
 // Should be able to use path to map import
-import mappedTs from 'mapped/ts';
+import mappedTs from 'mapped/ts.js';
 
 // Pre-conditions
 import * as assert from 'assert';

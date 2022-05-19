@@ -7,7 +7,7 @@
       "mapped/*": ["./mapped-*"],
       "candidate/*": ["./candidate-1-*", "./candidate-2-*"],
       "candidate/foo/*": ["./candidate-foo-*"],
-      "static": ["./immobile"]
+      "static": ["./immobile.js"]
     }
   }
 }

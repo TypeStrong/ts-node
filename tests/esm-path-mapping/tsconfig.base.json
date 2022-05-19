@@ -8,6 +8,7 @@
   },
   "ts-node": {
     "experimentalPathMapping": "both",
+    "experimentalResolver": true,
     "transpileOnly": true
   }
 }
