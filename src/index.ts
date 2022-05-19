@@ -393,6 +393,12 @@ export interface CreateOptions {
    * @default false
    */
   preferTsExts?: boolean;
+  /**
+   * Like node's `--experimental-specifier-resolution`, , but can also be set in your `tsconfig.json` for convenience.
+   *
+   * For details, see https://nodejs.org/dist/latest-v18.x/docs/api/esm.html#customizing-esm-specifier-resolution-algorithm
+   */
+  experimentalSpecifierResolution?: 'node' | 'explicit';
 }
 
 export type ModuleTypes = Record<string, ModuleTypeOverride>;
@@ -420,9 +426,6 @@ export interface RegisterOptions extends CreateOptions {
    * For details, see https://github.com/TypeStrong/ts-node/issues/1514
    */
   experimentalResolver?: boolean;
-
-  /** @internal */
-  experimentalSpecifierResolution?: 'node' | 'explicit';
 }
 
 export type ExperimentalSpecifierResolution = 'node' | 'explicit';

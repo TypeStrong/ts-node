@@ -374,6 +374,17 @@ Enable experimental features that re-map imports and require calls to support: `
 *Default:* `false`<br/>
 *Can only be specified via `tsconfig.json` or API.*
 
+### experimentalSpecifierResolution
+
+```shell
+ts-node --experimentalSpecifierResolution node
+```
+
+Like node's [`--experimental-specifier-resolution`](https://nodejs.org/dist/latest-v18.x/docs/api/esm.html#customizing-esm-specifier-resolution-algorithm), but can also be set in your `tsconfig.json` for convenience.
+Requires `esm` to be enabled.
+
+*Default:* `explicit`<br/>
+
 ## API Options
 
 The API includes [additional options](https://typestrong.org/ts-node/api/interfaces/RegisterOptions.html) not shown here.
