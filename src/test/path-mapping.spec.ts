@@ -38,11 +38,11 @@ const MODULE_TYPES = {
   },
 } as const;
 
-const PROJECT_CONFIGS = <const>{
+const PROJECT_CONFIGS = {
   BASE_URL_NO_PATHS: 'tsconfig-baseurl-no-paths.json',
   BASE_URL_SOME_PATHS: 'tsconfig-baseurl-some-paths.json',
   BASE_URL_STAR_PATH: 'tsconfig-baseurl-star-path.json',
-};
+} as const;
 
 for (const moduleType of Object.values(MODULE_TYPES)) {
   test.suite(`path mapping ${moduleType.name}`, (test) => {
