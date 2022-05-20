@@ -5,6 +5,7 @@ import {
   UrlWithStringQuery,
   fileURLToPath,
   pathToFileURL,
+  URL,
 } from 'url';
 import { extname } from 'path';
 import * as assert from 'assert';
@@ -212,15 +213,55 @@ export function createEsmHooks(tsNodeService: Service) {
         return entrypointFallback(defer);
       }
 
-      // pathname is the path to be resolved
+      // Note: [SYNC-PATH-MAPPING] keep this logic synced with the corresponding CJS implementation.
+      let candidateSpecifiers: string[] = [specifier];
 
-      return entrypointFallback(() =>
-        nodeResolveImplementation.defaultResolve(
-          specifier,
-          context,
-          defaultResolve
-        )
-      );
+      if (tsNodeService.esmPathMapping && context.parentURL) {
+        const parentUrl = new URL(context.parentURL);
+        const parentPath =
+          parentUrl.protocol === 'file:' && fileURLToPath(parentUrl);
+        if (parentPath && !tsNodeService.ignored(parentPath)) {
+          const mappedSpecifiers = tsNodeService.mapPath(specifier);
+          if (mappedSpecifiers) {
+            candidateSpecifiers = [
+              ...mappedSpecifiers.map((path) => pathToFileURL(path).toString()),
+              specifier,
+            ];
+          }
+        }
+      }
+
+      return entrypointFallback(async () => {
+        // Attempt all resolutions.  Collect resolution failures and throw an
+        // aggregated error if they all fail.
+        const moduleNotFoundErrors = [];
+        for (let i = 0; i < candidateSpecifiers.length; i++) {
+          try {
+            return await nodeResolveImplementation.defaultResolve(
+              candidateSpecifiers[i],
+              context,
+              defaultResolve
+            );
+          } catch (err: any) {
+            const isNotFoundError = err.code === 'ERR_MODULE_NOT_FOUND';
+            if (!isNotFoundError) {
+              throw err;
+            }
+            moduleNotFoundErrors.push(err);
+          }
+        }
+        // If only one candidate, no need to wrap it.
+        if (candidateSpecifiers.length === 1) {
+          throw moduleNotFoundErrors[0];
+        } else {
+          throw new MappedModuleNotFoundError(
+            specifier,
+            context.parentURL,
+            candidateSpecifiers,
+            moduleNotFoundErrors
+          );
+        }
+      });
     });
   }
 
@@ -403,6 +444,35 @@ export function createEsmHooks(tsNodeService: Service) {
   }
 
   return hooksAPI;
+}
+
+class MappedModuleNotFoundError extends Error {
+  // Same code as other module not found errors.
+  readonly code = 'ERR_MODULE_NOT_FOUND' as const;
+  readonly errors!: ReadonlyArray<Error>;
+
+  constructor(
+    specifier: string,
+    base: string,
+    candidates: string[],
+    moduleNotFoundErrors: Error[]
+  ) {
+    super(
+      [
+        `Cannot find '${specifier}' imported from ${base} using TypeScript path mapping`,
+        'Candidates attempted:',
+        ...candidates.map((candidate) => `- ${candidate}`),
+      ].join('\n')
+    );
+    // TODO this differs slightly from nodejs errors; see if we can match them
+    this.name = `Error [${this.code}]`;
+    // Match shape of `AggregateError`
+    Object.defineProperty(this, 'errors', {
+      value: moduleNotFoundErrors,
+      configurable: true,
+      writable: true,
+    });
+  }
 }
 
 async function addShortCircuitFlag<T>(fn: () => Promise<T>) {

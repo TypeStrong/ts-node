@@ -374,6 +374,13 @@ Enable experimental features that re-map imports and require calls to support: `
 *Default:* `false`<br/>
 *Can only be specified via `tsconfig.json` or API.*
 
+### experimentalPathMapping
+
+Enable TypeScript path mapping in the ESM loader, CommonJS loader, or both. Today, the default is `'esm'` to map paths in the experimental ESM loader but not CommonJS.  In the next major release, the default will become `'both'`.
+
+*Default:* `'esm'`<br/>
+*Can only be specified via `tsconfig.json` or API.*
+
 ## API Options
 
 The API includes [additional options](https://typestrong.org/ts-node/api/interfaces/RegisterOptions.html) not shown here.

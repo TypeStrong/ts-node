@@ -381,6 +381,7 @@ function filterRecognizedTsConfigTsNodeOptions(jsonObject: any): {
     experimentalReplAwait,
     swc,
     experimentalResolver,
+    experimentalPathMapping,
     esm,
     experimentalSpecifierResolution,
     ...unrecognized
@@ -407,6 +408,7 @@ function filterRecognizedTsConfigTsNodeOptions(jsonObject: any): {
     moduleTypes,
     swc,
     experimentalResolver,
+    experimentalPathMapping,
     esm,
     experimentalSpecifierResolution,
   };

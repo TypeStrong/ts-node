@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "jsx": "react",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "outDir": "./lib"
+  },
+  "ts-node": {
+    "experimentalPathMapping": "both",
+    "experimentalResolver": true,
+    "transpileOnly": true
+  }
+}

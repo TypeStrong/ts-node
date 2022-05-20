@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": ["**/*.ts", "**/*.mts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+  "compilerOptions": {
+    "baseUrl": "./level-1/level-2"
+  }
+}

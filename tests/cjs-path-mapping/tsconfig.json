@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig-baseurl-some-paths.json",
+  "include": ["**/*.ts", "**/*.mts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+}
