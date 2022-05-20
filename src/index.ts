@@ -521,8 +521,6 @@ export interface Service {
   /** @internal */
   installSourceMapSupport(): void;
   /** @internal */
-  enableExperimentalEsmLoaderInterop(): void;
-  /** @internal */
   transpileOnly: boolean;
   /** @internal */
   projectLocalResolveHelper: ProjectLocalResolveHelper;
@@ -776,15 +774,6 @@ export function createFromPreloadedConfig(
     }
   }
 
-  /**
-   * True if require() hooks should interop with experimental ESM loader.
-   * Enabled explicitly via a flag since it is a breaking change.
-   */
-  let experimentalEsmLoader = false;
-  function enableExperimentalEsmLoaderInterop() {
-    experimentalEsmLoader = true;
-  }
-
   // Install source map support and read from memory cache.
   function installSourceMapSupport() {
     const sourceMapSupport =
@@ -794,9 +783,8 @@ export function createFromPreloadedConfig(
       retrieveFile(pathOrUrl: string) {
         let path = pathOrUrl;
         // If it's a file URL, convert to local path
-        // Note: fileURLToPath does not exist on early node v10
         // I could not find a way to handle non-URLs except to swallow an error
-        if (experimentalEsmLoader && path.startsWith('file://')) {
+        if (path.startsWith('file://')) {
           try {
             path = fileURLToPath(path);
           } catch (e) {
@@ -1473,7 +1461,6 @@ export function createFromPreloadedConfig(
     shouldReplAwait,
     addDiagnosticFilter,
     installSourceMapSupport,
-    enableExperimentalEsmLoaderInterop,
     transpileOnly,
     projectLocalResolveHelper,
     getNodeEsmResolver,
