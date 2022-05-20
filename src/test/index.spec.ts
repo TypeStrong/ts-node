@@ -78,10 +78,9 @@ test.suite('ts-node', (test) => {
     testsDirRequire.resolve('ts-node/transpilers/swc');
     testsDirRequire.resolve('ts-node/transpilers/swc-experimental');
 
-    testsDirRequire.resolve('ts-node/node10/tsconfig.json');
-    testsDirRequire.resolve('ts-node/node12/tsconfig.json');
     testsDirRequire.resolve('ts-node/node14/tsconfig.json');
     testsDirRequire.resolve('ts-node/node16/tsconfig.json');
+    testsDirRequire.resolve('ts-node/node18/tsconfig.json');
   });
 
   test('should not load typescript outside of loadConfig', async () => {
@@ -734,48 +733,35 @@ test.suite('ts-node', (test) => {
         const test = context(async (t) => ({
           tempDir: mkdtempSync(join(tmpdir(), 'ts-node-spec')),
         }));
-        if (semver.gte(process.versions.node, '14.0.0')) {
-          const libAndTarget = semver.gte(process.versions.node, '16.0.0')
-            ? 'es2021'
-            : 'es2020';
-          test('implicitly uses @tsconfig/node14 or @tsconfig/node16 compilerOptions when both TS and node versions support it', async (t) => {
-            // node14 and node16 configs are identical, hence the "or"
-            const {
-              context: { tempDir },
-            } = t;
-            const {
-              err: err1,
-              stdout: stdout1,
-              stderr: stderr1,
-            } = await exec(`${BIN_PATH} --showConfig`, { cwd: tempDir });
-            expect(err1).toBe(null);
-            t.like(JSON.parse(stdout1), {
-              compilerOptions: {
-                target: libAndTarget,
-                lib: [libAndTarget],
-              },
-            });
-            const {
-              err: err2,
-              stdout: stdout2,
-              stderr: stderr2,
-            } = await exec(`${BIN_PATH} -pe 10n`, { cwd: tempDir });
-            expect(err2).toBe(null);
-            expect(stdout2).toBe('10n\n');
-          });
-        } else {
-          test('implicitly uses @tsconfig/* lower than node14 (node12) when either TS or node versions do not support @tsconfig/node14', async ({
+        const libAndTarget = semver.gte(process.versions.node, '18.0.0')
+          ? 'es2022'
+          : semver.gte(process.versions.node, '16.0.0')
+          ? 'es2021'
+          : 'es2020';
+        test('implicitly uses @tsconfig/node14, @tsconfig/node16, or @tsconfig/node18 compilerOptions when both TS and node versions support it', async (t) => {
+          const {
             context: { tempDir },
-          }) => {
-            const { err, stdout, stderr } = await exec(`${BIN_PATH} -pe 10n`, {
-              cwd: tempDir,
-            });
-            expect(err).not.toBe(null);
-            expect(stderr).toMatch(
-              /BigInt literals are not available when targeting lower than|error TS2304: Cannot find name 'n'/
-            );
+          } = t;
+          const {
+            err: err1,
+            stdout: stdout1,
+            stderr: stderr1,
+          } = await exec(`${BIN_PATH} --showConfig`, { cwd: tempDir });
+          expect(err1).toBe(null);
+          t.like(JSON.parse(stdout1), {
+            compilerOptions: {
+              target: libAndTarget,
+              lib: [libAndTarget],
+            },
           });
-        }
+          const {
+            err: err2,
+            stdout: stdout2,
+            stderr: stderr2,
+          } = await exec(`${BIN_PATH} -pe 10n`, { cwd: tempDir });
+          expect(err2).toBe(null);
+          expect(stdout2).toBe('10n\n');
+        });
         test('implicitly loads @types/node even when not installed within local directory', async ({
           context: { tempDir },
         }) => {
@@ -830,10 +816,9 @@ test.suite('ts-node', (test) => {
             },
           });
         });
-        test(`ts-node/node10/tsconfig.json`, macro, 'node10');
-        test(`ts-node/node12/tsconfig.json`, macro, 'node12');
         test(`ts-node/node14/tsconfig.json`, macro, 'node14');
         test(`ts-node/node16/tsconfig.json`, macro, 'node16');
+        test(`ts-node/node18/tsconfig.json`, macro, 'node18');
       }
     );
 
