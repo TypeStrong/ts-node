@@ -4,7 +4,7 @@ import { join, resolve, dirname, parse as parsePath, relative } from 'path';
 import { inspect } from 'util';
 import Module = require('module');
 let arg: typeof import('arg');
-import { parse, createRequire, hasOwnProperty } from './util';
+import { parse, createRequire, hasOwnProperty, versionGteLt } from './util';
 import {
   EVAL_FILENAME,
   EvalState,
@@ -21,7 +21,6 @@ import {
   VERSION,
   TSError,
   register,
-  versionGteLt,
   createEsmHooks,
   createFromPreloadedConfig,
   DEFAULTS,

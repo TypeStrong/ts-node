@@ -1,4 +1,5 @@
 const fs = require('fs');
+const {versionGteLt} = require('../dist/util');
 
 // In node's core, this is implemented in C
 // https://github.com/nodejs/node/blob/v15.3.0/src/node_file.cc#L891-L985
@@ -28,6 +29,17 @@ function internalModuleReadJSON(path) {
  * @returns {number} 0 = file, 1 = dir, negative = error
  */
 function internalModuleStat(path) {
+  const stat = fs.statSync(path, { throwIfNoEntry: false });
+  if(!stat) return -1;
+  if(stat.isFile()) return 0;
+  if(stat.isDirectory()) return 1;
+}
+
+/**
+ * @param {string} path
+ * @returns {number} 0 = file, 1 = dir, negative = error
+ */
+function internalModuleStatInefficient(path) {
   try {
     const stat = fs.statSync(path);
     if(stat.isFile()) return 0;
@@ -37,7 +49,10 @@ function internalModuleStat(path) {
   }
 }
 
+const statSupportsThrowIfNoEntry = versionGteLt(process.versions.node, '15.3.0') ||
+  versionGteLt(process.versions.node, '14.17.0', '15.0.0');
+
 module.exports = {
   internalModuleReadJSON,
-  internalModuleStat
+  internalModuleStat: statSupportsThrowIfNoEntry ? internalModuleStat : internalModuleStatInefficient
 };

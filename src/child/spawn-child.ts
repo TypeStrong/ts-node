@@ -2,7 +2,7 @@ import type { BootstrapState } from '../bin';
 import { spawn } from 'child_process';
 import { brotliCompressSync } from 'zlib';
 import { pathToFileURL } from 'url';
-import { versionGteLt } from '..';
+import { versionGteLt } from '../util';
 
 const argPrefix = '--brotli-base64-config=';
 
