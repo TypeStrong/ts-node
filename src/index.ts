@@ -1100,25 +1100,10 @@ export function createFromPreloadedConfig(
           : undefined,
       };
 
-      const host: _ts.CompilerHost = ts.createIncrementalCompilerHost
-        ? ts.createIncrementalCompilerHost(config.options, sys)
-        : {
-            ...sys,
-            getSourceFile: (fileName, languageVersion) => {
-              const contents = sys.readFile(fileName);
-              if (contents === undefined) return;
-              return ts.createSourceFile(fileName, contents, languageVersion);
-            },
-            getDefaultLibLocation: () => normalizeSlashes(dirname(compiler)),
-            getDefaultLibFileName: () =>
-              normalizeSlashes(
-                join(
-                  dirname(compiler),
-                  ts.getDefaultLibFileName(config.options)
-                )
-              ),
-            useCaseSensitiveFileNames: () => sys.useCaseSensitiveFileNames,
-          };
+      const host: _ts.CompilerHost = ts.createIncrementalCompilerHost(
+        config.options,
+        sys
+      );
       host.trace = options.tsTrace;
       const {
         resolveModuleNames,
@@ -1136,23 +1121,13 @@ export function createFromPreloadedConfig(
       host.resolveModuleNames = resolveModuleNames;
       host.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives;
 
-      // Fallback for older TypeScript releases without incremental API.
-      let builderProgram = ts.createIncrementalProgram
-        ? ts.createIncrementalProgram({
-            rootNames: Array.from(rootFileNames),
-            options: config.options,
-            host,
-            configFileParsingDiagnostics: config.errors,
-            projectReferences: config.projectReferences,
-          })
-        : ts.createEmitAndSemanticDiagnosticsBuilderProgram(
-            Array.from(rootFileNames),
-            config.options,
-            host,
-            undefined,
-            config.errors,
-            config.projectReferences
-          );
+      let builderProgram = ts.createIncrementalProgram({
+        rootNames: Array.from(rootFileNames),
+        options: config.options,
+        host,
+        configFileParsingDiagnostics: config.errors,
+        projectReferences: config.projectReferences,
+      });
 
       // Read and cache custom transformers.
       const customTransformers =
