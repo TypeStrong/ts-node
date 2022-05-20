@@ -431,20 +431,7 @@ test.suite("Catch unexpected changes to node's loader context", (test) => {
           'parentURL',
         ]);
       } else if (json.loadContextKeys) {
-        try {
-          expect(json.loadContextKeys).toEqual(['format', 'importAssertions']);
-        } catch (e) {
-          // HACK for https://github.com/TypeStrong/ts-node/issues/1641
-          if (process.version.includes('nightly')) {
-            expect(json.loadContextKeys).toEqual([
-              'format',
-              'importAssertions',
-              'parentURL',
-            ]);
-          } else {
-            throw e;
-          }
-        }
+        expect(json.loadContextKeys).toEqual(['format', 'importAssertions']);
       } else {
         throw new Error('Unexpected stdout in test.');
       }
