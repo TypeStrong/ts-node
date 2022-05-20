@@ -50,7 +50,7 @@ module.exports = {
           position: 'right',
         },
         {
-          href: 'https://discord.gg/typescript',
+          href: 'https://discord.gg/3rBctmf3dP',
           label: 'Chat',
           position: 'right',
         },

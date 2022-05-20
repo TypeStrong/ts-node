@@ -93,12 +93,12 @@ This error is thrown by node when a module is `require()`d, but node believes it
 - You have installed an ESM dependency but your own code compiles to CommonJS.
   - Solution: configure your project to compile and execute as native ESM. [Docs](./commonjs-vs-native-ecmascript-modules.md#native-ecmascript-modules)
   - Solution: downgrade the dependency to an older, CommonJS version.
-- You have moved your project to ESM but still have a config file, such as `webpack.config.js`, which must be executed as CommonJS
-  - Solution: if supported by the relevant tool, rename your config file to `.cjs`
+- You have moved your project to ESM but still have a config file, such as `webpack.config.ts`, which must be executed as CommonJS <!-- SYNC_WITH_MTO_DOCS -->
+  - Solution: if supported by the relevant tool, rename your config file to `.cts`
   - Solution: Configure a module type override. [Docs](./module-type-overrides.md)
 - You have a mix of CommonJS and native ESM in your project
   - Solution: double-check all package.json "type" and tsconfig.json "module" configuration [Docs](./commonjs-vs-native-ecmascript-modules.md)
-  - Solution: consider simplifying and switch to all CommonJS or all native ESM
+  - Solution: consider simplifying by making your project entirely CommonJS or entirely native ESM
 
 ### `ERR_UNKNOWN_FILE_EXTENSION`
 
@@ -109,6 +109,9 @@ This error is thrown by node when a module has an unrecognized file extension, o
   - Solution: upgrade to ts-node >=[v10.6.0](https://github.com/TypeStrong/ts-node/releases/tag/v10.6.0), which implements a workaround.
 - Our ESM loader is not installed.
   - Solution: Use `ts-node-esm`, `ts-node --esm`, or add `"ts-node": {"esm": true}` to your tsconfig.json.  [Docs](./commonjs-vs-native-ecmascript-modules.md#native-ecmascript-modules)
+- You have moved your project to ESM but still have a config file, such as `webpack.config.ts`, which must be executed as CommonJS <!-- SYNC_WITH_MTO_DOCS -->
+  - Solution: if supported by the relevant tool, rename your config file to `.cts`
+  - Solution: Configure a module type override. [Docs](./module-type-overrides.md)
 
 ## Missing Types
 
