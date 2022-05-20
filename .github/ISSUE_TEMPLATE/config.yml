@@ -11,8 +11,8 @@ contact_links:
   -
     name: "Help! My Types Are Missing!"
     about: "This is likely a configuration problem.  Check our README"
-    url: "https://typestrong.org/ts-node/docs/types"
+    url: "https://typestrong.org/ts-node/docs/troubleshooting#missing-types"
   -
     name: "TSError or SyntaxError"
-    about: "These errors come from TypeScript and node, respectively.  Use StackOverflow or Discord for usage and configuration help."
+    about: "These errors come from TypeScript and node, respectively.  Use Discussions or Discord for usage and configuration help."
     url: "https://typestrong.org/ts-node/docs/troubleshooting"
