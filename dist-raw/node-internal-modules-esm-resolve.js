@@ -149,11 +149,20 @@ function getConditionsSet(conditions) {
 const realpathCache = new SafeMap();
 const packageJSONCache = new SafeMap();  /* string -> PackageConfig */
 
-function tryStatSync(path) {
+const statSupportsThrowIfNoEntry = versionGteLt(process.versions.node, '15.3.0') ||
+  versionGteLt(process.versions.node, '14.17.0', '15.0.0');
+const tryStatSync = statSupportsThrowIfNoEntry ? tryStatSyncWithoutErrors : tryStatSyncWithErrors;
+const statsIfNotFound = new Stats();
+function tryStatSyncWithoutErrors(path) {
+  const stats = statSync(path, { throwIfNoEntry: false });
+  if(stats != null) return stats;
+  return statsIfNotFound;
+}
+function tryStatSyncWithErrors(path) {
   try {
     return statSync(path);
   } catch {
-    return new Stats();
+    return statsIfNotFound;
   }
 }
 

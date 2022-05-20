@@ -1,5 +1,6 @@
 import type * as _ts from 'typescript';
-import { RegisterOptions, versionGteLt } from '.';
+import type { RegisterOptions } from '.';
+import { versionGteLt } from './util';
 
 /**
  * Centralized specification of how we deal with file extensions based on
