@@ -157,10 +157,7 @@ const targetPackageStyles = [
 
 test.suite('Resolver hooks', (test) => {
   test.runSerially();
-  test.runIf(
-    semver.gte(process.version, '14.0.0') &&
-      !semver.satisfies(ts.version, '2.7.x')
-  );
+  test.runIf(semver.gte(process.version, '14.0.0'));
 
   //
   // Generate all permutations of projects

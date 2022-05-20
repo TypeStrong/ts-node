@@ -31,11 +31,7 @@ export async function upstreamTopLevelAwaitTests({
     experimentalReplAwait: true,
     transpileOnly: true,
     compilerOptions: {
-      target: semver.gte(ts.version, '3.0.1')
-        ? 'es2018'
-        : // TS 2.7 is using polyfill for async interator even though they
-          // were added in es2018
-          'esnext',
+      target: 'es2018',
     },
   });
   replService.setService(service);

@@ -60,13 +60,6 @@ export const nodeSupportsImportAssertions = semver.gte(
   process.version,
   '17.1.0'
 );
-/** Supports tsconfig "extends" >= v3.2.0 */
-export const tsSupportsTsconfigInheritanceViaNodePackages = semver.gte(
-  ts.version,
-  '3.2.0'
-);
-/** Supports --showConfig: >= v3.2.0 */
-export const tsSupportsShowConfig = semver.gte(ts.version, '3.2.0');
 /** Supports module:nodenext and module:node16 as *stable* features */
 export const tsSupportsStableNodeNextNode16 =
   ts.version.startsWith('4.7.') || semver.gte(ts.version, '4.7.0');

@@ -8,9 +8,7 @@ import {
   CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
   ts,
   tsSupportsMtsCtsExtensions,
-  tsSupportsShowConfig,
   tsSupportsStableNodeNextNode16,
-  tsSupportsTsconfigInheritanceViaNodePackages,
 } from './helpers';
 import { lstatSync, mkdtempSync } from 'fs';
 import { npath } from '@yarnpkg/fslib';
@@ -521,10 +519,6 @@ test.suite('ts-node', (test) => {
     });
 
     test.suite('issue #884', (test) => {
-      // TODO disabled because it consistently fails on Windows on TS 2.7
-      test.skipIf(
-        process.platform === 'win32' && semver.satisfies(ts.version, '2.7')
-      );
       test('should compile', async (t) => {
         const { err, stdout } = await exec(
           `"${BIN_PATH}" --project issue-884/tsconfig.json issue-884`
@@ -718,22 +712,20 @@ test.suite('ts-node', (test) => {
         ]);
       });
 
-      if (tsSupportsTsconfigInheritanceViaNodePackages) {
-        test('should pull ts-node options from extended `tsconfig.json`', async () => {
-          const { err, stdout } = await exec(
-            `${BIN_PATH} --show-config --project ./tsconfig-extends/tsconfig.json`
-          );
-          expect(err).toBe(null);
-          const config = JSON.parse(stdout);
-          expect(config['ts-node'].require).toEqual([
-            resolve(TEST_DIR, 'tsconfig-extends/other/require-hook.js'),
-          ]);
-          expect(config['ts-node'].scopeDir).toBe(
-            resolve(TEST_DIR, 'tsconfig-extends/other/scopedir')
-          );
-          expect(config['ts-node'].preferTsExts).toBe(true);
-        });
-      }
+      test('should pull ts-node options from extended `tsconfig.json`', async () => {
+        const { err, stdout } = await exec(
+          `${BIN_PATH} --show-config --project ./tsconfig-extends/tsconfig.json`
+        );
+        expect(err).toBe(null);
+        const config = JSON.parse(stdout);
+        expect(config['ts-node'].require).toEqual([
+          resolve(TEST_DIR, 'tsconfig-extends/other/require-hook.js'),
+        ]);
+        expect(config['ts-node'].scopeDir).toBe(
+          resolve(TEST_DIR, 'tsconfig-extends/other/scopedir')
+        );
+        expect(config['ts-node'].preferTsExts).toBe(true);
+      });
     });
 
     test.suite(
@@ -742,10 +734,7 @@ test.suite('ts-node', (test) => {
         const test = context(async (t) => ({
           tempDir: mkdtempSync(join(tmpdir(), 'ts-node-spec')),
         }));
-        if (
-          semver.gte(ts.version, '3.5.0') &&
-          semver.gte(process.versions.node, '14.0.0')
-        ) {
+        if (semver.gte(process.versions.node, '14.0.0')) {
           const libAndTarget = semver.gte(process.versions.node, '16.0.0')
             ? 'es2021'
             : 'es2020';
@@ -825,8 +814,6 @@ test.suite('ts-node', (test) => {
     test.suite(
       'should bundle @tsconfig/bases to be used in your own tsconfigs',
       (test) => {
-        test.runIf(tsSupportsTsconfigInheritanceViaNodePackages);
-
         const macro = test.macro((nodeVersion: string) => async (t) => {
           const config = require(`@tsconfig/${nodeVersion}/tsconfig.json`);
           const { err, stdout, stderr } = await exec(
@@ -908,58 +895,48 @@ test.suite('ts-node', (test) => {
       });
     });
 
-    if (tsSupportsShowConfig) {
-      test('--showConfig should log resolved configuration', async (t) => {
-        function native(path: string) {
-          return path.replace(/\/|\\/g, pathSep);
-        }
-        function posix(path: string) {
-          return path.replace(/\/|\\/g, '/');
-        }
-        const { err, stdout } = await exec(
-          `${CMD_TS_NODE_WITH_PROJECT_FLAG} --showConfig`
-        );
-        expect(err).toBe(null);
-        t.is(
-          stdout,
-          JSON.stringify(
-            {
-              'ts-node': {
-                cwd: native(`${ROOT_DIR}/tests`),
-                projectSearchDir: native(`${ROOT_DIR}/tests`),
-                project: native(`${ROOT_DIR}/tests/tsconfig.json`),
-              },
-              compilerOptions: {
-                target: 'es6',
-                jsx: 'react',
-                noEmit: false,
-                strict: true,
-                typeRoots: [
-                  posix(`${ROOT_DIR}/tests/typings`),
-                  posix(`${ROOT_DIR}/node_modules/@types`),
-                ],
-                sourceMap: true,
-                inlineSourceMap: false,
-                inlineSources: true,
-                declaration: false,
-                outDir: './.ts-node',
-                module: 'commonjs',
-              },
+    test('--showConfig should log resolved configuration', async (t) => {
+      function native(path: string) {
+        return path.replace(/\/|\\/g, pathSep);
+      }
+      function posix(path: string) {
+        return path.replace(/\/|\\/g, '/');
+      }
+      const { err, stdout } = await exec(
+        `${CMD_TS_NODE_WITH_PROJECT_FLAG} --showConfig`
+      );
+      expect(err).toBe(null);
+      t.is(
+        stdout,
+        JSON.stringify(
+          {
+            'ts-node': {
+              cwd: native(`${ROOT_DIR}/tests`),
+              projectSearchDir: native(`${ROOT_DIR}/tests`),
+              project: native(`${ROOT_DIR}/tests/tsconfig.json`),
             },
-            null,
-            2
-          ) + '\n'
-        );
-      });
-    } else {
-      test('--show-config should log error message when used with old typescript versions', async (t) => {
-        const { err, stderr } = await exec(
-          `${CMD_TS_NODE_WITH_PROJECT_FLAG} --showConfig`
-        );
-        expect(err).not.toBe(null);
-        expect(stderr).toMatch('Error: --showConfig requires');
-      });
-    }
+            compilerOptions: {
+              target: 'es6',
+              jsx: 'react',
+              noEmit: false,
+              strict: true,
+              typeRoots: [
+                posix(`${ROOT_DIR}/tests/typings`),
+                posix(`${ROOT_DIR}/node_modules/@types`),
+              ],
+              sourceMap: true,
+              inlineSourceMap: false,
+              inlineSources: true,
+              declaration: false,
+              outDir: './.ts-node',
+              module: 'commonjs',
+            },
+          },
+          null,
+          2
+        ) + '\n'
+      );
+    });
 
     test('should support compiler scope specified via tsconfig.json', async (t) => {
       const { err, stderr, stdout } = await exec(

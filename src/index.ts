@@ -641,18 +641,9 @@ export function createFromPreloadedConfig(
       'Experimental REPL await is not compatible with targets lower than ES2018'
     );
   }
-  // Top-level await was added in TS 3.8
-  const tsVersionSupportsTla = versionGteLt(ts.version, '3.8.0');
-  if (options.experimentalReplAwait === true && !tsVersionSupportsTla) {
-    throw new Error(
-      'Experimental REPL await is not compatible with TypeScript versions older than 3.8'
-    );
-  }
 
   const shouldReplAwait =
-    options.experimentalReplAwait !== false &&
-    tsVersionSupportsTla &&
-    targetSupportsTla;
+    options.experimentalReplAwait !== false && targetSupportsTla;
 
   // swc implies two other options
   // typeCheck option was implemented specifically to allow overriding tsconfig transpileOnly from the command-line

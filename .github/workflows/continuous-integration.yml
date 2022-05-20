@@ -69,8 +69,8 @@ jobs:
           - flavor: 6
             node: 14
             nodeFlag: 14
-            typescript: 2.7
-            typescriptFlag: 2_7
+            typescript: 3.8
+            typescriptFlag: 3_8
           - flavor: 7
             node: 14
             nodeFlag: 14
@@ -98,8 +98,8 @@ jobs:
           - flavor: 11
             node: 16
             nodeFlag: 16
-            typescript: 2.7
-            typescriptFlag: 2_7
+            typescript: 3.8
+            typescriptFlag: 3_8
             downgradeNpm: true
           - flavor: 12
             node: 16

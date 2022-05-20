@@ -22,11 +22,9 @@ test.suite('TSError diagnostics', ({ context }) => {
   );
 
   const diagnosticCode = 2345;
-  const diagnosticMessage = semver.satisfies(ts.version, '2.7')
-    ? "Argument of type '123' " +
-      "is not assignable to parameter of type 'string | undefined'."
-    : "Argument of type 'number' " +
-      "is not assignable to parameter of type 'string'.";
+  const diagnosticMessage =
+    "Argument of type 'number' " +
+    "is not assignable to parameter of type 'string'.";
   const diagnosticErrorMessage = `TS${diagnosticCode}: ${diagnosticMessage}`;
 
   const cwdBefore = process.cwd();
