@@ -6,8 +6,6 @@ import semver = require('semver');
 import {
   BIN_PATH_JS,
   CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
-  nodeSupportsEsmHooks,
-  nodeSupportsSpawningChildProcess,
   ts,
   tsSupportsMtsCtsExtensions,
   tsSupportsShowConfig,
@@ -73,13 +71,11 @@ test.suite('ts-node', (test) => {
     testsDirRequire.resolve('ts-node/register/transpile-only');
     testsDirRequire.resolve('ts-node/register/type-check');
 
-    if (semver.gte(process.version, '12.17.0')) {
-      // `node --loader ts-node/esm`
-      testsDirRequire.resolve('ts-node/esm');
-      testsDirRequire.resolve('ts-node/esm.mjs');
-      testsDirRequire.resolve('ts-node/esm/transpile-only');
-      testsDirRequire.resolve('ts-node/esm/transpile-only.mjs');
-    }
+    // `node --loader ts-node/esm`
+    testsDirRequire.resolve('ts-node/esm');
+    testsDirRequire.resolve('ts-node/esm.mjs');
+    testsDirRequire.resolve('ts-node/esm/transpile-only');
+    testsDirRequire.resolve('ts-node/esm/transpile-only.mjs');
 
     testsDirRequire.resolve('ts-node/transpilers/swc');
     testsDirRequire.resolve('ts-node/transpilers/swc-experimental');
@@ -215,9 +211,7 @@ test.suite('ts-node', (test) => {
     });
 
     test.suite('should support mts when module = ESNext', (test) => {
-      test.runIf(
-        nodeSupportsSpawningChildProcess && tsSupportsMtsCtsExtensions
-      );
+      test.runIf(tsSupportsMtsCtsExtensions);
       test('test', async () => {
         const { err, stdout } = await exec(
           [CMD_TS_NODE_WITHOUT_PROJECT_FLAG, './entrypoint.mjs'].join(' '),
@@ -396,18 +390,16 @@ test.suite('ts-node', (test) => {
       });
     });
 
-    if (nodeSupportsEsmHooks) {
-      test('swc transpiler supports native ESM emit', async () => {
-        const { err, stdout } = await exec(
-          `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./index.ts`,
-          {
-            cwd: resolve(TEST_DIR, 'transpile-only-swc-native-esm'),
-          }
-        );
-        expect(err).toBe(null);
-        expect(stdout).toMatch('Hello file://');
-      });
-    }
+    test('swc transpiler supports native ESM emit', async () => {
+      const { err, stdout } = await exec(
+        `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./index.ts`,
+        {
+          cwd: resolve(TEST_DIR, 'transpile-only-swc-native-esm'),
+        }
+      );
+      expect(err).toBe(null);
+      expect(stdout).toMatch('Hello file://');
+    });
 
     test('should pipe into `ts-node` and evaluate', async () => {
       const execPromise = exec(CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG);

@@ -51,27 +51,8 @@ jobs:
       matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+        flavor: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
         include:
-          # Node 12.15
-          - flavor: 1
-            node: 12.15
-            nodeFlag: 12_15
-            typescript: latest
-            typescriptFlag: latest
-          # Node 12.16
-          # Earliest version that supports getFormat, etc hooks: https://github.com/nodejs/node/blob/master/doc/changelogs/CHANGELOG_V12.md#12.16.0
-          - flavor: 2
-            node: 12.16
-            nodeFlag: 12_16
-            typescript: latest
-            typescriptFlag: latest
-          # Node 12
-          - flavor: 3
-            node: 12
-            nodeFlag: 12
-            typescript: latest
-            typescriptFlag: latest
           # Node 14.13.0
           # To test ESM builtin module resolution immediately before a node behavioral change: https://github.com/TypeStrong/ts-node/issues/1130
           - flavor: 4

@@ -10,7 +10,7 @@ in a factory function, we will not indent the function body, to avoid whitespace
 
 One obvious problem with this approach: the code has been pulled from one version of node, whereas users of ts-node
 run multiple versions of node.
-Users running node 12 may see that ts-node behaves like node 14, for example.
+Users running node 14 may see that ts-node behaves like node 18, for example.
 
 ## `raw` directory
 

@@ -37,6 +37,7 @@ import type * as _nodeInternalModulesEsmGetFormat from '../dist-raw/node-interna
 import type * as _nodeInternalModulesCjsLoader from '../dist-raw/node-internal-modules-cjs-loader';
 import { Extensions, getExtensions } from './file-extensions';
 import { createTsTranspileModule } from './ts-transpile-module';
+import { assertScriptCanLoadAsCJS } from '../dist-raw/node-internal-modules-cjs-loader';
 
 export { TSCommon };
 export {
@@ -59,12 +60,7 @@ export type {
   NodeLoaderHooksFormat,
 } from './esm';
 
-/**
- * Does this version of node obey the package.json "type" field
- * and throw ERR_REQUIRE_ESM when attempting to require() an ESM modules.
- */
-const engineSupportsPackageTypeField =
-  parseInt(process.versions.node.split('.')[0], 10) >= 12;
+const engineSupportsPackageTypeField = true;
 
 /** @internal */
 export function versionGteLt(
@@ -92,24 +88,6 @@ export function versionGteLt(
     return requirement.split(/[\.-]/).map((s) => parseInt(s, 10));
   }
 }
-
-/**
- * Assert that script can be loaded as CommonJS when we attempt to require it.
- * If it should be loaded as ESM, throw ERR_REQUIRE_ESM like node does.
- *
- * Loaded conditionally so we don't need to support older node versions
- */
-let assertScriptCanLoadAsCJS: (
-  service: Service,
-  module: NodeJS.Module,
-  filename: string
-) => void = engineSupportsPackageTypeField
-  ? (
-      require('../dist-raw/node-internal-modules-cjs-loader') as typeof _nodeInternalModulesCjsLoader
-    ).assertScriptCanLoadAsCJSImpl
-  : () => {
-      /* noop */
-    };
 
 /**
  * Registered `ts-node` instance information.
