@@ -369,7 +369,19 @@ Disable top-level await in REPL.  Equivalent to node's [`--no-experimental-repl-
 
 ### experimentalResolver
 
-Enable experimental features that re-map imports and require calls to support: `baseUrl`, `paths`, `rootDirs`, `.js` to `.ts` file extension mappings, `outDir` to `rootDir` mappings for composite projects and monorepos.  For details, see [#1514](https://github.com/TypeStrong/ts-node/issues/1514)
+Enable experimental hooks that re-map imports and require calls to support:
+
+* `.js` to `.ts` mappings, so that `import "foo.js"` can execute `foo.ts`
+* `.cjs` to `.cts` mapping
+* `.mjs` to `.mts` mapping
+
+In the future, this hook will also support:
+
+* `baseUrl`, `paths`
+* `rootDirs`
+* `outDir` to `rootDir` mappings for composite projects and monorepos
+
+For details, see [#1514](https://github.com/TypeStrong/ts-node/issues/1514).
 
 *Default:* `false`<br/>
 *Can only be specified via `tsconfig.json` or API.*
