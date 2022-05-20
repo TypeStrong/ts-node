@@ -1100,7 +1100,10 @@ export function createFromPreloadedConfig(
         const normalizedFileName = normalizeSlashes(fileName);
         updateMemoryCache(code, normalizedFileName);
 
-        const info = service.getQuickInfoAtPosition(normalizedFileName, position);
+        const info = service.getQuickInfoAtPosition(
+          normalizedFileName,
+          position
+        );
         const name = ts.displayPartsToString(info ? info.displayParts : []);
         const comment = ts.displayPartsToString(info ? info.documentation : []);
 
