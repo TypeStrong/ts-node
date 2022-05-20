@@ -176,7 +176,8 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
         '--log-error': '--logError',
         '--scope-dir': '--scopeDir',
         '--no-experimental-repl-await': '--noExperimentalReplAwait',
-        '--experimental-specifier-resolution': '--experimentalSpecifierResolution'
+        '--experimental-specifier-resolution':
+          '--experimentalSpecifierResolution',
       },
       {
         argv,
@@ -399,7 +400,8 @@ function phase3(payload: BootstrapState) {
     scopeDir,
     preferTsExts,
     esm,
-    experimentalSpecifierResolution: experimentalSpecifierResolution as ExperimentalSpecifierResolution,
+    experimentalSpecifierResolution:
+      experimentalSpecifierResolution as ExperimentalSpecifierResolution,
   });
 
   if (preloadedConfig.options.esm) payload.shouldUseChildProcess = true;
