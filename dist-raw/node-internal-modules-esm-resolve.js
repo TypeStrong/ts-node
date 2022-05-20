@@ -2,21 +2,12 @@
 
 'use strict';
 
-const [nodeMajor, nodeMinor, nodePatch] = process.versions.node.split('.').map(s => parseInt(s, 10))
+const {versionGteLt} = require('../dist/util');
+
 // Test for node >14.13.1 || (>=12.20.0 && <13)
-const builtinModuleProtocol = nodeMajor > 14 || (
-    nodeMajor === 14 && (
-      nodeMinor > 13 || (
-        nodeMinor === 13 && nodePatch > 0
-      )
-    )
-  ) || (
-    nodeMajor === 12 && (
-      nodeMinor > 20 || (
-        nodeMinor === 20
-      )
-    )
-  )
+const builtinModuleProtocol =
+  versionGteLt(process.versions.node, '14.13.1') ||
+  versionGteLt(process.versions.node, '12.20.0', '13.0.0')
     ? 'node:'
     : 'nodejs:';
 
