@@ -28,6 +28,7 @@ export interface CreateOptions {
     emit?: boolean;
     esm?: boolean;
     experimentalReplAwait?: boolean;
+    experimentalSpecifierResolution?: 'node' | 'explicit';
     // (undocumented)
     fileExists?: (path: string) => boolean;
     files?: boolean;
@@ -59,7 +60,7 @@ export interface CreateOptions {
 // @public
 export function createRepl(options?: CreateReplOptions): ReplService;
 
-// @public (undocumented)
+// @public
 export interface CreateReplOptions {
     // (undocumented)
     service?: Service;
@@ -75,7 +76,7 @@ export interface CreateReplOptions {
     stdout?: NodeJS.WritableStream;
 }
 
-// @public (undocumented)
+// @public
 export interface CreateTranspilerOptions {
     // (undocumented)
     service: Pick<Service, Extract<'config' | 'options' | 'projectLocalResolveHelper', keyof Service>>;
@@ -85,7 +86,13 @@ export interface CreateTranspilerOptions {
 export type EvalAwarePartialHost = Pick<CreateOptions, 'readFile' | 'fileExists'>;
 
 // @public (undocumented)
-export type ModuleTypes = Record<string, 'cjs' | 'esm' | 'package'>;
+export type ExperimentalSpecifierResolution = 'node' | 'explicit';
+
+// @public (undocumented)
+export type ModuleTypeOverride = 'cjs' | 'esm' | 'package';
+
+// @public (undocumented)
+export type ModuleTypes = Record<string, ModuleTypeOverride>;
 
 // @public (undocumented)
 export interface NodeLoaderHooksAPI1 {
@@ -131,6 +138,7 @@ export namespace NodeLoaderHooksAPI2 {
     }, defaultLoad: NodeLoaderHooksAPI2['load']) => Promise<{
         format: NodeLoaderHooksFormat;
         source: string | Buffer | undefined;
+        shortCircuit?: boolean;
     }>;
     // (undocumented)
     export interface NodeImportAssertions {
@@ -147,11 +155,15 @@ export namespace NodeLoaderHooksAPI2 {
     }, defaultResolve: ResolveHook) => Promise<{
         url: string;
         format?: NodeLoaderHooksFormat;
+        shortCircuit?: boolean;
     }>;
 }
 
 // @public (undocumented)
 export type NodeLoaderHooksFormat = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
+
+// @public
+export type NodeModuleEmitKind = 'nodeesm' | 'nodecjs';
 
 // @public @deprecated
 export type Register = Service;
@@ -167,7 +179,7 @@ export const REGISTER_INSTANCE: unique symbol;
 
 // @public
 export interface RegisterOptions extends CreateOptions {
-    experimentalResolverFeatures?: boolean;
+    experimentalResolver?: boolean;
 }
 
 // @public (undocumented)
@@ -202,13 +214,13 @@ export interface Service {
     ts: TSCommon;
 }
 
-// @public (undocumented)
+// @public
 export interface TranspileOptions {
     // (undocumented)
     fileName: string;
 }
 
-// @public (undocumented)
+// @public
 export interface TranspileOutput {
     // (undocumented)
     diagnostics?: _ts.Diagnostic[];
@@ -218,7 +230,7 @@ export interface TranspileOutput {
     sourceMapText?: string;
 }
 
-// @public (undocumented)
+// @public
 export interface Transpiler {
     // (undocumented)
     transpile(input: string, options: TranspileOptions): TranspileOutput;
@@ -270,7 +282,7 @@ export interface TSCommon {
     // (undocumented)
     JsxEmit: typeof _ts.JsxEmit;
     // (undocumented)
-    ModuleKind: typeof _ts.ModuleKind;
+    ModuleKind: TSCommon.ModuleKindEnum;
     // (undocumented)
     ModuleResolutionKind: typeof _ts.ModuleResolutionKind;
     // (undocumented)
@@ -307,6 +319,12 @@ export namespace TSCommon {
         resolveTypeReferenceDirectives?(typeDirectiveNames: string[] | _ts.FileReference[], containingFile: string, redirectedReference: _ts.ResolvedProjectReference | undefined, options: _ts.CompilerOptions, containingFileMode?: _ts.SourceFile['impliedNodeFormat'] | undefined): (_ts.ResolvedTypeReferenceDirective | undefined)[];
     }
     // (undocumented)
+    export type ModuleKindEnum = typeof _ts.ModuleKind & {
+        Node16: typeof _ts.ModuleKind extends {
+            Node16: any;
+        } ? typeof _ts.ModuleKind['Node16'] : 100;
+    };
+    // (undocumented)
     export type ModuleResolutionHost = _ts.ModuleResolutionHost;
     // (undocumented)
     export type ParsedCommandLine = _ts.ParsedCommandLine;
@@ -328,9 +346,11 @@ export interface TsConfigOptions extends Omit<RegisterOptions, 'transformers' | 
 
 // @public
 export class TSError extends BaseError {
-    constructor(diagnosticText: string, diagnosticCodes: number[]);
+    constructor(diagnosticText: string, diagnosticCodes: number[], diagnostics?: ReadonlyArray<_ts.Diagnostic>);
     // (undocumented)
     diagnosticCodes: number[];
+    // (undocumented)
+    diagnostics: ReadonlyArray<_ts.Diagnostic>;
     // (undocumented)
     diagnosticText: string;
     // (undocumented)
