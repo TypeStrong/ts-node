@@ -371,9 +371,10 @@ Disable top-level await in REPL.  Equivalent to node's [`--no-experimental-repl-
 
 Enable experimental hooks that re-map imports and require calls to support:
 
-* `.js` to `.ts` mappings, so that `import "foo.js"` can execute `foo.ts`
-* `.cjs` to `.cts` mapping
-* `.mjs` to `.mts` mapping
+* resolves `.js` to `.ts`, so that `import "./foo.js"` will execute `foo.ts`
+* resolves `.cjs` to `.cts`
+* resolves `.mjs` to `.mts`
+* allows including file extensions in CommonJS, for consistency with ESM where this is often mandatory
 
 In the future, this hook will also support:
 
@@ -383,7 +384,7 @@ In the future, this hook will also support:
 
 For details, see [#1514](https://github.com/TypeStrong/ts-node/issues/1514).
 
-*Default:* `false`<br/>
+*Default:* `false`, but will likely be enabled by default in a future version<br/>
 *Can only be specified via `tsconfig.json` or API.*
 
 ### experimentalSpecifierResolution
