@@ -596,6 +596,8 @@ export function register(
 
   installCommonjsResolveHooksIfNecessary(service);
 
+  service.installSourceMapSupport();
+
   // Require specified modules before start-up.
   (Module as ModuleConstructorWithInternals)._preloadModules(
     service.options.require
@@ -784,7 +786,6 @@ export function createFromPreloadedConfig(
   }
 
   // Install source map support and read from memory cache.
-  installSourceMapSupport();
   function installSourceMapSupport() {
     const sourceMapSupport =
       require('@cspotcode/source-map-support') as typeof _sourceMapSupport;
