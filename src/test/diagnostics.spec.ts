@@ -8,8 +8,10 @@ const test = context(ctxTsNode);
 test.suite('TSError diagnostics', ({ context }) => {
   const test = context(
     once(async (t) => {
+      // Locking to es2021, because es2022 -- default in @tsconfig/bases for node18 --
+      // changes this diagnostic to be a composite "No overload matches this call."
       const service = t.context.tsNodeUnderTest.create({
-        compilerOptions: { target: 'es5' },
+        compilerOptions: { target: 'es5', lib: ['es2021'] },
         skipProject: true,
       });
       try {
