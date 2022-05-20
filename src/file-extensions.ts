@@ -100,6 +100,7 @@ export function getExtensions(
   const replacementsForJs = r.filter((ext) =>
     ['.js', '.jsx', '.ts', '.tsx'].includes(ext)
   );
+  const replacementsForJsx = r.filter((ext) => ['.jsx', '.tsx'].includes(ext));
   const replacementsForMjs = r.filter((ext) => ['.mjs', '.mts'].includes(ext));
   const replacementsForCjs = r.filter((ext) => ['.cjs', '.cts'].includes(ext));
   const replacementsForJsOrMjs = r.filter((ext) =>
@@ -143,6 +144,7 @@ export function getExtensions(
     legacyMainResolveAddsIfOmitted,
     replacementsForMjs,
     replacementsForCjs,
+    replacementsForJsx,
     replacementsForJs,
   };
 }

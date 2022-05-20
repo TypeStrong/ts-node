@@ -92,7 +92,7 @@ function createResolve(opts) {
 // TODO receive cached fs implementations here
 const {preferTsExts, tsNodeExperimentalSpecifierResolution, extensions} = opts;
 const esrnExtensions = extensions.experimentalSpecifierResolutionAddsIfOmitted;
-const {legacyMainResolveAddsIfOmitted, replacementsForCjs, replacementsForJs, replacementsForMjs} = extensions;
+const {legacyMainResolveAddsIfOmitted, replacementsForCjs, replacementsForJs, replacementsForMjs, replacementsForJsx} = extensions;
 // const experimentalSpecifierResolution = tsNodeExperimentalSpecifierResolution ?? getOptionValue('--experimental-specifier-resolution');
 const experimentalSpecifierResolution = tsNodeExperimentalSpecifierResolution != null ? tsNodeExperimentalSpecifierResolution : getOptionValue('--experimental-specifier-resolution');
 
@@ -310,10 +310,11 @@ function resolveReplacementExtensions(search) {
   const lastDotIndex = search.pathname.lastIndexOf('.');
   if(lastDotIndex >= 0) {
     const ext = search.pathname.slice(lastDotIndex);
-    if (ext === '.js' || ext === '.cjs' || ext === '.mjs') {
+    if (ext === '.js' || ext === '.jsx' || ext === '.mjs' || ext === '.cjs') {
       const pathnameWithoutExtension = search.pathname.slice(0, lastDotIndex);
       const replacementExts =
         ext === '.js' ? replacementsForJs
+        : ext === '.jsx' ? replacementsForJsx
         : ext === '.mjs' ? replacementsForMjs
         : replacementsForCjs;
       const guess = new URL(search.toString());

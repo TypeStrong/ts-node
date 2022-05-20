@@ -369,10 +369,34 @@ Disable top-level await in REPL.  Equivalent to node's [`--no-experimental-repl-
 
 ### experimentalResolver
 
-Enable experimental features that re-map imports and require calls to support: `baseUrl`, `paths`, `rootDirs`, `.js` to `.ts` file extension mappings, `outDir` to `rootDir` mappings for composite projects and monorepos.  For details, see [#1514](https://github.com/TypeStrong/ts-node/issues/1514)
+Enable experimental hooks that re-map imports and require calls to support:
 
-*Default:* `false`<br/>
+* resolves `.js` to `.ts`, so that `import "./foo.js"` will execute `foo.ts`
+* resolves `.cjs` to `.cts`
+* resolves `.mjs` to `.mts`
+* allows including file extensions in CommonJS, for consistency with ESM where this is often mandatory
+
+In the future, this hook will also support:
+
+* `baseUrl`, `paths`
+* `rootDirs`
+* `outDir` to `rootDir` mappings for composite projects and monorepos
+
+For details, see [#1514](https://github.com/TypeStrong/ts-node/issues/1514).
+
+*Default:* `false`, but will likely be enabled by default in a future version<br/>
 *Can only be specified via `tsconfig.json` or API.*
+
+### experimentalSpecifierResolution
+
+```shell
+ts-node --experimentalSpecifierResolution node
+```
+
+Like node's [`--experimental-specifier-resolution`](https://nodejs.org/dist/latest-v18.x/docs/api/esm.html#customizing-esm-specifier-resolution-algorithm), but can also be set in your `tsconfig.json` for convenience.
+Requires `esm` to be enabled.
+
+*Default:* `explicit`<br/>
 
 ## API Options
 

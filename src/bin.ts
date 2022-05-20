@@ -24,6 +24,7 @@ import {
   createEsmHooks,
   createFromPreloadedConfig,
   DEFAULTS,
+  ExperimentalSpecifierResolution,
 } from './index';
 import type { TSInternal } from './ts-compiler-types';
 import { addBuiltinLibsToObject } from '../dist-raw/node-internal-modules-cjs-helpers';
@@ -140,6 +141,7 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
         '--scope': Boolean,
         '--scopeDir': String,
         '--noExperimentalReplAwait': Boolean,
+        '--experimentalSpecifierResolution': String,
 
         // Aliases.
         '-e': '--eval',
@@ -173,6 +175,8 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
         '--log-error': '--logError',
         '--scope-dir': '--scopeDir',
         '--no-experimental-repl-await': '--noExperimentalReplAwait',
+        '--experimental-specifier-resolution':
+          '--experimentalSpecifierResolution',
       },
       {
         argv,
@@ -215,6 +219,7 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
     '--scope': scope = undefined,
     '--scopeDir': scopeDir = undefined,
     '--noExperimentalReplAwait': noExperimentalReplAwait,
+    '--experimentalSpecifierResolution': experimentalSpecifierResolution,
     '--esm': esm,
     _: restArgs,
   } = args;
@@ -253,6 +258,7 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
     scope,
     scopeDir,
     noExperimentalReplAwait,
+    experimentalSpecifierResolution,
     esm,
   };
 }
@@ -300,6 +306,8 @@ Options:
   --preferTsExts                  Prefer importing TypeScript files over JavaScript files
   --logError                      Logs TypeScript errors to stderr instead of throwing exceptions
   --noExperimentalReplAwait       Disable top-level await in REPL.  Equivalent to node's --no-experimental-repl-await
+  --experimentalSpecifierResolution [node|explicit]
+                                  Equivalent to node's --experimental-specifier-resolution
 `);
 
     process.exit(0);
@@ -361,6 +369,8 @@ function phase3(payload: BootstrapState) {
     argsRequire,
     scope,
     scopeDir,
+    esm,
+    experimentalSpecifierResolution,
   } = payload.parseArgvResult;
   const { cwd, scriptPath } = payload.phase2Result!;
 
@@ -388,6 +398,9 @@ function phase3(payload: BootstrapState) {
     scope,
     scopeDir,
     preferTsExts,
+    esm,
+    experimentalSpecifierResolution:
+      experimentalSpecifierResolution as ExperimentalSpecifierResolution,
   });
 
   if (preloadedConfig.options.esm) payload.shouldUseChildProcess = true;
