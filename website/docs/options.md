@@ -374,10 +374,12 @@ Disable top-level await in REPL.  Equivalent to node's [`--no-experimental-repl-
 
 Enable experimental hooks that re-map imports and require calls to support:
 
-* resolves `.js` to `.ts`, so that `import "./foo.js"` will execute `foo.ts`
-* resolves `.cjs` to `.cts`
-* resolves `.mjs` to `.mts`
-* allows including file extensions in CommonJS, for consistency with ESM where this is often mandatory
+* remapping extensions, e.g. so that `import "./foo.js"` will execute `foo.ts`. Currently the following extensions will be mapped:
+  * `.js` to `.ts`, `.tsx`, or `.jsx`
+  * `.cjs` to `.cts`
+  * `.mjs` to `.mts`
+  * `.jsx` to `.tsx`
+* including file extensions in CommonJS, for consistency with ESM where this is often mandatory
 
 In the future, this hook will also support:
 
