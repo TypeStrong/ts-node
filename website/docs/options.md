@@ -328,7 +328,7 @@ ts-node --scope
 
 Scope compiler to files within `scopeDir`.  Anything outside this directory is ignored.
 
-*Default: `false` <br/>
+*Default:* `false` <br/>
 *Environment:* `TS_NODE_SCOPE`
 
 ### scopeDir
