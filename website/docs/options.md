@@ -399,7 +399,7 @@ ts-node --experimentalSpecifierResolution node
 ```
 
 Like node's [`--experimental-specifier-resolution`](https://nodejs.org/dist/latest-v18.x/docs/api/esm.html#customizing-esm-specifier-resolution-algorithm), but can also be set in your `tsconfig.json` for convenience.
-Requires `esm` to be enabled.
+Requires [`esm`](#esm) to be enabled.
 
 *Default:* `explicit`<br/>
 
