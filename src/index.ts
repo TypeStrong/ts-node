@@ -1668,7 +1668,7 @@ function updateOutput(
 function updateSourceMap(sourceMapText: string, fileName: string) {
   const sourceMap = JSON.parse(sourceMapText);
   sourceMap.file = fileName;
-  sourceMap.sources = [fileName];
+  sourceMap.sources = [basename(fileName)];
   delete sourceMap.sourceRoot;
   return JSON.stringify(sourceMap);
 }
