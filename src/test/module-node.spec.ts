@@ -2,6 +2,7 @@ import { expect, context } from './testlib';
 import {
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   isOneOf,
+  nodeSupportsImportingTransformedCjsFromEsm,
   resetNodeEnvironment,
   tsSupportsStableNodeNextNode16,
 } from './helpers';
@@ -18,7 +19,9 @@ type Test = typeof test;
 
 // Declare one test case for each permutations of project configuration
 test.suite('TypeScript module=NodeNext and Node16', (test) => {
-  test.runIf(tsSupportsStableNodeNextNode16);
+  test.runIf(
+    tsSupportsStableNodeNextNode16 && nodeSupportsImportingTransformedCjsFromEsm
+  );
 
   for (const allowJs of [true, false]) {
     for (const typecheckMode of [
@@ -63,6 +66,7 @@ function declareTest(test: Test, testParams: TestParams) {
     t.log(stdout);
     t.log(stderr);
     expect(err).toBe(null);
+    expect(stdout).toMatch(/done\n$/);
   });
 }
 
@@ -215,6 +219,8 @@ function writeFixturesToFilesystem(name: string, testParams: TestParams) {
       indexFile.content += `await import('${importSpecifier}');\n`;
     }
   }
+
+  indexFile.content += `console.log('done');\n`;
 
   proj.rm();
   proj.write();

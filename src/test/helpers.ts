@@ -68,6 +68,14 @@ export const nodeSupportsImportAssertions = semver.gte(
   process.version,
   '17.1.0'
 );
+// Node 14.13.0 has a bug where it tries to lex CJS files to discover named exports *before*
+// we transform the code.
+// In other words, it tries to parse raw TS as CJS and balks at `export const foo =`, expecting to see `exports.foo =`
+// This lexing only happens when CJS TS is imported from the ESM loader.
+export const nodeSupportsImportingTransformedCjsFromEsm = semver.gte(
+  process.version,
+  '14.13.1'
+);
 /** Supports tsconfig "extends" >= v3.2.0 */
 export const tsSupportsTsconfigInheritanceViaNodePackages = semver.gte(
   ts.version,
