@@ -1,6 +1,4 @@
----
-title: Quick start
----
+# Quick Start
 
 This guide offers an opinionated configuration for a modern, fast ts-node project.
 
@@ -16,6 +14,7 @@ Create `tsconfig.json`:
 
 ```jsonc
 {
+    // Recommendations for a node v18 project: https://github.com/tsconfig/bases
     "extends": "@tsconfig/node18/tsconfig.json",
     "ts-node": {
         // Skip typechecking and use swc for fast startup.
@@ -29,7 +28,7 @@ Create `tsconfig.json`:
         "experimentalResolver": true
     },
     "compilerOptions": {
-        // Explicitly listing global types will speed up `tsc`.
+        // Explicitly listing your global types will speed up `tsc`.
         "types": ["node"],
         // Full support for cts, mts, cjs, mjs, and package.json "type"
         "module": "NodeNext"
