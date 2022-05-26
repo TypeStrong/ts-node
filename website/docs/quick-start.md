@@ -1,4 +1,6 @@
-# Quick Start
+---
+title: Quick start
+---
 
 This guide offers an opinionated configuration for a modern, fast ts-node project.
 
