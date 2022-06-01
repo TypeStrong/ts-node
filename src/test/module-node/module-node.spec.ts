@@ -1,15 +1,15 @@
-import { expect, context } from './testlib';
+import { expect, context } from '../testlib';
 import {
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   isOneOf,
   nodeSupportsImportingTransformedCjsFromEsm,
   resetNodeEnvironment,
   tsSupportsStableNodeNextNode16,
-} from './helpers';
+} from '../helpers';
 import * as Path from 'path';
-import { ctxTsNode } from './helpers';
-import { exec } from './exec-helpers';
-import { file, project, ProjectAPI as ProjectAPI } from './fs-helpers';
+import { ctxTsNode } from '../helpers';
+import { exec } from '../exec-helpers';
+import { file, project, ProjectAPI as ProjectAPI } from '../fs-helpers';
 
 const test = context(ctxTsNode);
 test.beforeEach(async () => {

@@ -95,16 +95,24 @@ export function createResolverFunctions(kwargs: {
       containingFile: string,
       reusedNames: string[] | undefined,
       redirectedReference: TSCommon.ResolvedProjectReference | undefined,
-      optionsOnlyWithNewerTsVersions: TSCommon.CompilerOptions
+      optionsOnlyWithNewerTsVersions: TSCommon.CompilerOptions,
+      containingSourceFile?: TSCommon.SourceFile
     ): (TSCommon.ResolvedModule | undefined)[] => {
-      return moduleNames.map((moduleName) => {
+      return moduleNames.map((moduleName, i) => {
+        const mode = containingSourceFile
+          ? (ts as any as TSInternal).getModeForResolutionAtIndex?.(
+              containingSourceFile,
+              i
+            )
+          : undefined;
         const { resolvedModule } = ts.resolveModuleName(
           moduleName,
           containingFile,
           config.options,
           host,
           moduleResolutionCache,
-          redirectedReference
+          redirectedReference,
+          mode
         );
         if (resolvedModule) {
           fixupResolvedModule(resolvedModule);
@@ -117,12 +125,14 @@ export function createResolverFunctions(kwargs: {
   const getResolvedModuleWithFailedLookupLocationsFromCache: TSCommon.LanguageServiceHost['getResolvedModuleWithFailedLookupLocationsFromCache'] =
     (
       moduleName,
-      containingFile
+      containingFile,
+      resolutionMode?: TSCommon.ModuleKind.CommonJS | TSCommon.ModuleKind.ESNext
     ): TSCommon.ResolvedModuleWithFailedLookupLocations | undefined => {
       const ret = ts.resolveModuleNameFromCache(
         moduleName,
         containingFile,
-        moduleResolutionCache
+        moduleResolutionCache,
+        resolutionMode
       );
       if (ret && ret.resolvedModule) {
         fixupResolvedModule(ret.resolvedModule);

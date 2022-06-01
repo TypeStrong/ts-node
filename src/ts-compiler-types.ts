@@ -32,16 +32,7 @@ export interface TSCommon {
   createModuleResolutionCache: typeof _ts.createModuleResolutionCache;
   resolveModuleName: typeof _ts.resolveModuleName;
   resolveModuleNameFromCache: typeof _ts.resolveModuleNameFromCache;
-  // Changed in TS 4.7
-  resolveTypeReferenceDirective(
-    typeReferenceDirectiveName: string,
-    containingFile: string | undefined,
-    options: _ts.CompilerOptions,
-    host: _ts.ModuleResolutionHost,
-    redirectedReference?: _ts.ResolvedProjectReference,
-    cache?: _ts.TypeReferenceDirectiveResolutionCache,
-    resolutionMode?: _ts.SourceFile['impliedNodeFormat']
-  ): _ts.ResolvedTypeReferenceDirectiveWithFailedLookupLocations;
+  resolveTypeReferenceDirective: typeof _ts.resolveTypeReferenceDirective;
   createIncrementalCompilerHost: typeof _ts.createIncrementalCompilerHost;
   createSourceFile: typeof _ts.createSourceFile;
   getDefaultLibFileName: typeof _ts.getDefaultLibFileName;
@@ -52,16 +43,7 @@ export interface TSCommon {
   ModuleResolutionKind: typeof _ts.ModuleResolutionKind;
 }
 export namespace TSCommon {
-  export interface LanguageServiceHost extends _ts.LanguageServiceHost {
-    // Modified in 4.7
-    resolveTypeReferenceDirectives?(
-      typeDirectiveNames: string[] | _ts.FileReference[],
-      containingFile: string,
-      redirectedReference: _ts.ResolvedProjectReference | undefined,
-      options: _ts.CompilerOptions,
-      containingFileMode?: _ts.SourceFile['impliedNodeFormat'] | undefined
-    ): (_ts.ResolvedTypeReferenceDirective | undefined)[];
-  }
+  export interface LanguageServiceHost extends _ts.LanguageServiceHost {}
   export type ModuleResolutionHost = _ts.ModuleResolutionHost;
   export type ParsedCommandLine = _ts.ParsedCommandLine;
   export type ResolvedModule = _ts.ResolvedModule;
@@ -79,6 +61,12 @@ export namespace TSCommon {
       ? typeof _ts.ModuleKind['Node16']
       : 100;
   };
+  // Can't figure out how to re-export an enum
+  // `export import ... =` complains that _ts is type-only import
+  export namespace ModuleKind {
+    export type CommonJS = _ts.ModuleKind.CommonJS;
+    export type ESNext = _ts.ModuleKind.ESNext;
+  }
 }
 
 /**
@@ -129,6 +117,11 @@ export interface TSInternal {
     basePath: string,
     usage: 'files' | 'directories' | 'exclude'
   ): string | undefined;
+  // Added in TS 4.7
+  getModeForResolutionAtIndex?(
+    file: TSInternal.SourceFileImportsList,
+    index: number
+  ): _ts.SourceFile['impliedNodeFormat'];
 }
 /** @internal */
 export namespace TSInternal {
@@ -138,5 +131,9 @@ export namespace TSInternal {
   export interface ConvertToTSConfigHost {
     getCurrentDirectory(): string;
     useCaseSensitiveFileNames: boolean;
+  }
+  // Note: is only a partial declaration, TS sources declare other fields
+  export interface SourceFileImportsList {
+    impliedNodeFormat?: TSCommon.SourceFile['impliedNodeFormat'];
   }
 }
