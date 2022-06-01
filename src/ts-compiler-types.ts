@@ -79,6 +79,12 @@ export namespace TSCommon {
       ? typeof _ts.ModuleKind['Node16']
       : 100;
   };
+  // Can't figure out how to re-export an enum
+  // `export import ... =` complains that _ts is type-only import
+  export namespace ModuleKind {
+    export type CommonJS = _ts.ModuleKind.CommonJS;
+    export type ESNext = _ts.ModuleKind.ESNext;
+  }
 }
 
 /**
