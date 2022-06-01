@@ -117,6 +117,8 @@ export interface TSInternal {
     basePath: string,
     usage: 'files' | 'directories' | 'exclude'
   ): string | undefined;
+  // Added in TS 4.7
+  getModeForResolutionAtIndex?(file: TSInternal.SourceFileImportsList, index: number): _ts.SourceFile['impliedNodeFormat'];
 }
 /** @internal */
 export namespace TSInternal {
@@ -127,4 +129,8 @@ export namespace TSInternal {
     getCurrentDirectory(): string;
     useCaseSensitiveFileNames: boolean;
   }
+  // Note: is only a partial declaration, TS sources declare other fields
+  export interface SourceFileImportsList {
+    impliedNodeFormat?: TSCommon.SourceFile["impliedNodeFormat"];
+};
 }

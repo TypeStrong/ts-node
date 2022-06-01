@@ -98,7 +98,8 @@ export function createResolverFunctions(kwargs: {
       optionsOnlyWithNewerTsVersions: TSCommon.CompilerOptions,
       containingSourceFile?: TSCommon.SourceFile
     ): (TSCommon.ResolvedModule | undefined)[] => {
-      return moduleNames.map((moduleName) => {
+      return moduleNames.map((moduleName, i) => {
+        const mode = containingSourceFile ? (ts as any as TSInternal).getModeForResolutionAtIndex?.(containingSourceFile, i) : undefined;
         const { resolvedModule } = ts.resolveModuleName(
           moduleName,
           containingFile,
@@ -106,9 +107,7 @@ export function createResolverFunctions(kwargs: {
           host,
           moduleResolutionCache,
           redirectedReference,
-          containingSourceFile?.impliedNodeFormat
-
-          // (ts as any as typeof import('typescript')).getModeForResolutionAtIndex(containingSourceFile)
+          mode,
         );
         if (resolvedModule) {
           fixupResolvedModule(resolvedModule);
