@@ -118,7 +118,10 @@ export interface TSInternal {
     usage: 'files' | 'directories' | 'exclude'
   ): string | undefined;
   // Added in TS 4.7
-  getModeForResolutionAtIndex?(file: TSInternal.SourceFileImportsList, index: number): _ts.SourceFile['impliedNodeFormat'];
+  getModeForResolutionAtIndex?(
+    file: TSInternal.SourceFileImportsList,
+    index: number
+  ): _ts.SourceFile['impliedNodeFormat'];
 }
 /** @internal */
 export namespace TSInternal {
@@ -131,6 +134,6 @@ export namespace TSInternal {
   }
   // Note: is only a partial declaration, TS sources declare other fields
   export interface SourceFileImportsList {
-    impliedNodeFormat?: TSCommon.SourceFile["impliedNodeFormat"];
-};
+    impliedNodeFormat?: TSCommon.SourceFile['impliedNodeFormat'];
+  }
 }

@@ -99,7 +99,12 @@ export function createResolverFunctions(kwargs: {
       containingSourceFile?: TSCommon.SourceFile
     ): (TSCommon.ResolvedModule | undefined)[] => {
       return moduleNames.map((moduleName, i) => {
-        const mode = containingSourceFile ? (ts as any as TSInternal).getModeForResolutionAtIndex?.(containingSourceFile, i) : undefined;
+        const mode = containingSourceFile
+          ? (ts as any as TSInternal).getModeForResolutionAtIndex?.(
+              containingSourceFile,
+              i
+            )
+          : undefined;
         const { resolvedModule } = ts.resolveModuleName(
           moduleName,
           containingFile,
@@ -107,7 +112,7 @@ export function createResolverFunctions(kwargs: {
           host,
           moduleResolutionCache,
           redirectedReference,
-          mode,
+          mode
         );
         if (resolvedModule) {
           fixupResolvedModule(resolvedModule);
