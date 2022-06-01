@@ -27,7 +27,7 @@ test.suite(
         }
       );
       expect(err).toBe(null);
-      expect(stdout).toBe('0\n');
+      expect(stdout).toBe('{ esm: true }\n');
     });
   }
 );
