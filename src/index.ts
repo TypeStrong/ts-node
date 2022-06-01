@@ -1,7 +1,7 @@
-import { relative, basename, extname, dirname, join } from 'path';
+import { relative, basename, extname, dirname, join, isAbsolute } from 'path';
 import { Module } from 'module';
 import * as util from 'util';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 import type * as _sourceMapSupport from '@cspotcode/source-map-support';
 import { BaseError } from 'make-error';
@@ -1667,8 +1667,11 @@ function updateOutput(
  */
 function updateSourceMap(sourceMapText: string, fileName: string) {
   const sourceMap = JSON.parse(sourceMapText);
-  sourceMap.file = fileName;
-  sourceMap.sources = [fileName];
+  const outputFileName = isAbsolute(fileName)
+    ? pathToFileURL(fileName).href
+    : fileName;
+  sourceMap.file = outputFileName;
+  sourceMap.sources = [outputFileName];
   delete sourceMap.sourceRoot;
   return JSON.stringify(sourceMap);
 }
