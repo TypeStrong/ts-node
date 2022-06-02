@@ -17,7 +17,7 @@ sourcemap support, and global ts-node CLI. Plugins automatically derive an appro
 The `transpiler` option allows using third-party transpiler plugins with ts-node.  `transpiler` must be given the
 name of a module which can be `require()`d.  The built-in `swc` plugin is exposed as `ts-node/transpilers/swc`.
 
-For example, to use a hypothetical "speedy-ts-compiler", first install it into your project: `npm install speedy-ts-compiler`
+For example, to use a hypothetical "@cspotcode/fast-ts-compiler", first install it into your project: `npm install @cspotcode/fast-ts-compiler`
 
 Then add the following to your tsconfig:
 
@@ -25,7 +25,7 @@ Then add the following to your tsconfig:
 {
   "ts-node": {
     "transpileOnly": true,
-    "transpiler": "speedy-ts-compiler"
+    "transpiler": "@cspotcode/fast-ts-compiler"
   }
 }
 ```
