@@ -21,6 +21,11 @@
       "tagName": "@allOf",
       "syntaxKind": "block",
       "allowMultiple": false
+    },
+    {
+      "tagName": "@category",
+      "syntaxKind": "inline",
+      "allowMultiple": false
     }
   ]
 }

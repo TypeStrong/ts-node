@@ -294,7 +294,7 @@ export interface TSCommon {
     // (undocumented)
     resolveModuleNameFromCache: typeof _ts.resolveModuleNameFromCache;
     // (undocumented)
-    resolveTypeReferenceDirective(typeReferenceDirectiveName: string, containingFile: string | undefined, options: _ts.CompilerOptions, host: _ts.ModuleResolutionHost, redirectedReference?: _ts.ResolvedProjectReference, cache?: _ts.TypeReferenceDirectiveResolutionCache, resolutionMode?: _ts.SourceFile['impliedNodeFormat']): _ts.ResolvedTypeReferenceDirectiveWithFailedLookupLocations;
+    resolveTypeReferenceDirective: typeof _ts.resolveTypeReferenceDirective;
     // (undocumented)
     ScriptSnapshot: typeof _ts.ScriptSnapshot;
     // (undocumented)
@@ -315,8 +315,13 @@ export namespace TSCommon {
     export type FileReference = _ts.FileReference;
     // (undocumented)
     export interface LanguageServiceHost extends _ts.LanguageServiceHost {
+    }
+    // (undocumented)
+    export namespace ModuleKind {
         // (undocumented)
-        resolveTypeReferenceDirectives?(typeDirectiveNames: string[] | _ts.FileReference[], containingFile: string, redirectedReference: _ts.ResolvedProjectReference | undefined, options: _ts.CompilerOptions, containingFileMode?: _ts.SourceFile['impliedNodeFormat'] | undefined): (_ts.ResolvedTypeReferenceDirective | undefined)[];
+        export type CommonJS = _ts.ModuleKind.CommonJS;
+        // (undocumented)
+        export type ESNext = _ts.ModuleKind.ESNext;
     }
     // (undocumented)
     export type ModuleKindEnum = typeof _ts.ModuleKind & {
