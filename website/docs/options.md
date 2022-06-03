@@ -328,7 +328,7 @@ ts-node --scope
 
 Scope compiler to files within `scopeDir`.  Anything outside this directory is ignored.
 
-*Default: `false` <br/>
+*Default:* `false` <br/>
 *Environment:* `TS_NODE_SCOPE`
 
 ### scopeDir
@@ -374,10 +374,12 @@ Disable top-level await in REPL.  Equivalent to node's [`--no-experimental-repl-
 
 Enable experimental hooks that re-map imports and require calls to support:
 
-* resolves `.js` to `.ts`, so that `import "./foo.js"` will execute `foo.ts`
-* resolves `.cjs` to `.cts`
-* resolves `.mjs` to `.mts`
-* allows including file extensions in CommonJS, for consistency with ESM where this is often mandatory
+* remapping extensions, e.g. so that `import "./foo.js"` will execute `foo.ts`. Currently the following extensions will be mapped:
+  * `.js` to `.ts`, `.tsx`, or `.jsx`
+  * `.cjs` to `.cts`
+  * `.mjs` to `.mts`
+  * `.jsx` to `.tsx`
+* including file extensions in CommonJS, for consistency with ESM where this is often mandatory
 
 In the future, this hook will also support:
 
@@ -397,7 +399,7 @@ ts-node --experimentalSpecifierResolution node
 ```
 
 Like node's [`--experimental-specifier-resolution`](https://nodejs.org/dist/latest-v18.x/docs/api/esm.html#customizing-esm-specifier-resolution-algorithm), but can also be set in your `tsconfig.json` for convenience.
-Requires `esm` to be enabled.
+Requires [`esm`](#esm) to be enabled.
 
 *Default:* `explicit`<br/>
 

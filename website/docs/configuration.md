@@ -27,8 +27,8 @@ You can use this sample configuration as a starting point:
 
 ```json title="tsconfig.json"
 {
-  // This is an alias to @tsconfig/node12: https://github.com/tsconfig/bases
-  "extends": "ts-node/node12/tsconfig.json",
+  // This is an alias to @tsconfig/node16: https://github.com/tsconfig/bases
+  "extends": "ts-node/node16/tsconfig.json",
 
   // Most ts-node options can be specified here using their programmatic names.
   "ts-node": {
