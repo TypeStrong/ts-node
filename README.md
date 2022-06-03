@@ -285,8 +285,8 @@ You can use this sample configuration as a starting point:
 
 ```jsonc title="tsconfig.json"
 {
-  // This is an alias to @tsconfig/node12: https://github.com/tsconfig/bases
-  "extends": "ts-node/node12/tsconfig.json",
+  // This is an alias to @tsconfig/node16: https://github.com/tsconfig/bases
+  "extends": "ts-node/node16/tsconfig.json",
 
   // Most ts-node options can be specified here using their programmatic names.
   "ts-node": {
@@ -675,7 +675,7 @@ ts-node --scope
 
 Scope compiler to files within `scopeDir`.  Anything outside this directory is ignored.
 
-\*Default: `false` <br/>
+*Default:* `false` <br/>
 *Environment:* `TS_NODE_SCOPE`
 
 ### scopeDir
@@ -721,10 +721,12 @@ Disable top-level await in REPL.  Equivalent to node's [`--no-experimental-repl-
 
 Enable experimental hooks that re-map imports and require calls to support:
 
-*   resolves `.js` to `.ts`, so that `import "./foo.js"` will execute `foo.ts`
-*   resolves `.cjs` to `.cts`
-*   resolves `.mjs` to `.mts`
-*   allows including file extensions in CommonJS, for consistency with ESM where this is often mandatory
+*   remapping extensions, e.g. so that `import "./foo.js"` will execute `foo.ts`. Currently the following extensions will be mapped:
+    *   `.js` to `.ts`, `.tsx`, or `.jsx`
+    *   `.cjs` to `.cts`
+    *   `.mjs` to `.mts`
+    *   `.jsx` to `.tsx`
+*   including file extensions in CommonJS, for consistency with ESM where this is often mandatory
 
 In the future, this hook will also support:
 
@@ -744,7 +746,7 @@ ts-node --experimentalSpecifierResolution node
 ```
 
 Like node's [`--experimental-specifier-resolution`](https://nodejs.org/dist/latest-v18.x/docs/api/esm.html#customizing-esm-specifier-resolution-algorithm), but can also be set in your `tsconfig.json` for convenience.
-Requires `esm` to be enabled.
+Requires [`esm`](#esm) to be enabled.
 
 *Default:* `explicit`<br/>
 
@@ -1059,7 +1061,7 @@ It is often better to use `tsc --noEmit` to typecheck as part of your tests or l
 
 *   Enable [swc](#swc)
     *   This is by far the fastest option
-*   Enable [`transpileOnly`](#options) to skip typechecking without swc
+*   Enable [`transpileOnly`](#transpileonly) to skip typechecking without swc
 
 ## With typechecking
 
@@ -1189,7 +1191,7 @@ sourcemap support, and global ts-node CLI. Plugins automatically derive an appro
 The `transpiler` option allows using third-party transpiler plugins with ts-node.  `transpiler` must be given the
 name of a module which can be `require()`d.  The built-in `swc` plugin is exposed as `ts-node/transpilers/swc`.
 
-For example, to use a hypothetical "speedy-ts-compiler", first install it into your project: `npm install speedy-ts-compiler`
+For example, to use a hypothetical "@cspotcode/fast-ts-compiler", first install it into your project: `npm install @cspotcode/fast-ts-compiler`
 
 Then add the following to your tsconfig:
 
@@ -1197,7 +1199,7 @@ Then add the following to your tsconfig:
 {
   "ts-node": {
     "transpileOnly": true,
-    "transpiler": "speedy-ts-compiler"
+    "transpiler": "@cspotcode/fast-ts-compiler"
   }
 }
 ```
