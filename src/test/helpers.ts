@@ -64,12 +64,14 @@ export const nodeSupportsSpawningChildProcess = semver.gte(
   '12.17.0'
 );
 export const nodeUsesNewHooksApi = semver.gte(process.version, '16.12.0');
-export const nodeSupportsImportAssertions = semver.gte(process.version, '16.14.0') &&
-        semver.lt(process.version, '17.0.0') ||
-        semver.gte(process.version, '17.1.0');
-export const nodeSupportsImportAssertionsTypeJson = semver.gte(process.version, '16.15.0') &&
-        semver.lt(process.version, '17.0.0') ||
-        semver.gte(process.version, '17.5.0');
+export const nodeSupportsImportAssertions =
+  (semver.gte(process.version, '16.14.0') &&
+    semver.lt(process.version, '17.0.0')) ||
+  semver.gte(process.version, '17.1.0');
+export const nodeSupportsImportAssertionsTypeJson =
+  (semver.gte(process.version, '16.15.0') &&
+    semver.lt(process.version, '17.0.0')) ||
+  semver.gte(process.version, '17.5.0');
 // Node 14.13.0 has a bug where it tries to lex CJS files to discover named exports *before*
 // we transform the code.
 // In other words, it tries to parse raw TS as CJS and balks at `export const foo =`, expecting to see `exports.foo =`
