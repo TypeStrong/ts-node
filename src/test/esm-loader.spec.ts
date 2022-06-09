@@ -15,6 +15,7 @@ import {
   EXPERIMENTAL_MODULES_FLAG,
   nodeSupportsEsmHooks,
   nodeSupportsImportAssertions,
+  nodeSupportsImportAssertionsTypeJson,
   nodeSupportsSpawningChildProcess,
   nodeUsesNewHooksApi,
   resetNodeEnvironment,
@@ -270,8 +271,8 @@ test.suite('esm', (test) => {
     test.suite('supports import assertions', (test) => {
       test.runIf(nodeSupportsImportAssertions);
 
-      test.suite('node >=17.5.0', (test) => {
-        test.runIf(semver.gte(process.version, '17.5.0'));
+      test.suite('node >=16.15.0 <17.0.0 | >=17.5.0', (test) => {
+        test.runIf(nodeSupportsImportAssertionsTypeJson);
 
         test('Can import JSON modules with appropriate assertion', async (t) => {
           const { err, stdout } = await exec(
@@ -287,8 +288,8 @@ test.suite('esm', (test) => {
         });
       });
 
-      test.suite('node <17.5.0', (test) => {
-        test.runIf(semver.lt(process.version, '17.5.0'));
+      test.suite('node <16.15.0 | 17.0.0> <17.5.0', (test) => {
+        test.runIf(!nodeSupportsImportAssertionsTypeJson);
 
         test('Can import JSON using the appropriate flag and assertion', async (t) => {
           const { err, stdout } = await exec(
