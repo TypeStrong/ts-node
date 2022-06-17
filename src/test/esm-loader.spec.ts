@@ -20,6 +20,8 @@ import {
   nodeUsesNewHooksApi,
   resetNodeEnvironment,
   TEST_DIR,
+  tsSupportsImportAssertions,
+  tsSupportsResolveJsonModule,
 } from './helpers';
 import { createExec, createSpawn, ExecReturn } from './exec-helpers';
 import { join, resolve } from 'path';
@@ -269,7 +271,11 @@ test.suite('esm', (test) => {
     });
 
     test.suite('supports import assertions', (test) => {
-      test.runIf(nodeSupportsImportAssertions);
+      test.runIf(
+        nodeSupportsImportAssertions &&
+          tsSupportsImportAssertions &&
+          tsSupportsResolveJsonModule
+      );
 
       const macro = test.macro((flags: string) => async (t) => {
         const { err, stdout } = await exec(

@@ -85,6 +85,7 @@ export const nodeSupportsImportingTransformedCjsFromEsm = semver.gte(
   process.version,
   '14.13.1'
 );
+export const tsSupportsResolveJsonModule = semver.gte(ts.version, '2.9.0');
 /** Supports tsconfig "extends" >= v3.2.0 */
 export const tsSupportsTsconfigInheritanceViaNodePackages = semver.gte(
   ts.version,
@@ -97,6 +98,7 @@ export const tsSupportsStableNodeNextNode16 =
   ts.version.startsWith('4.7.') || semver.gte(ts.version, '4.7.0');
 // TS 4.5 is first version to understand .cts, .mts, .cjs, and .mjs extensions
 export const tsSupportsMtsCtsExtensions = semver.gte(ts.version, '4.5.0');
+export const tsSupportsImportAssertions = semver.gte(ts.version, '4.5.0');
 //#endregion
 
 export const xfs = new NodeFS(fs);
