@@ -15,7 +15,7 @@ import {
   EXPERIMENTAL_MODULES_FLAG,
   nodeSupportsEsmHooks,
   nodeSupportsImportAssertions,
-  nodeSupportsImportAssertionsTypeJson,
+  nodeSupportsUnflaggedJsonImports,
   nodeSupportsSpawningChildProcess,
   nodeUsesNewHooksApi,
   resetNodeEnvironment,
@@ -271,38 +271,33 @@ test.suite('esm', (test) => {
     test.suite('supports import assertions', (test) => {
       test.runIf(nodeSupportsImportAssertions);
 
-      test.suite('node >=16.15.0 <17.0.0 | >=17.5.0', (test) => {
-        test.runIf(nodeSupportsImportAssertionsTypeJson);
-
-        test('Can import JSON modules with appropriate assertion', async (t) => {
-          const { err, stdout } = await exec(
-            `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./importJson.ts`,
-            {
-              cwd: resolve(TEST_DIR, 'esm-import-assertions'),
-            }
-          );
-          expect(err).toBe(null);
-          expect(stdout.trim()).toBe(
-            'A fuchsia car has 2 seats and the doors are open.\nDone!'
-          );
-        });
+      const macro = test.macro((flags: string) => async (t) => {
+        const { err, stdout } = await exec(
+          `${CMD_ESM_LOADER_WITHOUT_PROJECT} ${flags} ./importJson.ts`,
+          {
+            cwd: resolve(TEST_DIR, 'esm-import-assertions'),
+          }
+        );
+        expect(err).toBe(null);
+        expect(stdout.trim()).toBe(
+          'A fuchsia car has 2 seats and the doors are open.\nDone!'
+        );
       });
 
-      test.suite('node <16.15.0 | 17.0.0> <17.5.0', (test) => {
-        test.runIf(!nodeSupportsImportAssertionsTypeJson);
-
-        test('Can import JSON using the appropriate flag and assertion', async (t) => {
-          const { err, stdout } = await exec(
-            `${CMD_ESM_LOADER_WITHOUT_PROJECT} --experimental-json-modules ./importJson.ts`,
-            {
-              cwd: resolve(TEST_DIR, 'esm-import-assertions'),
-            }
-          );
-          expect(err).toBe(null);
-          expect(stdout.trim()).toBe(
-            'A fuchsia car has 2 seats and the doors are open.\nDone!'
-          );
-        });
+      test.suite(
+        'when node does not require --experimental-json-modules',
+        (test) => {
+          test.runIf(nodeSupportsUnflaggedJsonImports);
+          test('Can import JSON modules with appropriate assertion', macro, '');
+        }
+      );
+      test.suite('when node requires --experimental-json-modules', (test) => {
+        test.runIf(!nodeSupportsUnflaggedJsonImports);
+        test(
+          'Can import JSON using the appropriate flag and assertion',
+          macro,
+          '--experimental-json-modules'
+        );
       });
     });
 

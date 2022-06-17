@@ -64,11 +64,16 @@ export const nodeSupportsSpawningChildProcess = semver.gte(
   '12.17.0'
 );
 export const nodeUsesNewHooksApi = semver.gte(process.version, '16.12.0');
+// 16.14.0: https://github.com/nodejs/node/blob/main/doc/changelogs/CHANGELOG_V16.md#notable-changes-4
+// 17.1.0: https://github.com/nodejs/node/blob/main/doc/changelogs/CHANGELOG_V17.md#2021-11-09-version-1710-current-targos
 export const nodeSupportsImportAssertions =
   (semver.gte(process.version, '16.14.0') &&
     semver.lt(process.version, '17.0.0')) ||
   semver.gte(process.version, '17.1.0');
-export const nodeSupportsImportAssertionsTypeJson =
+// These versions do not require `--experimental-json-modules`
+// 16.15.0: https://github.com/nodejs/node/blob/main/doc/changelogs/CHANGELOG_V16.md#2022-04-26-version-16150-gallium-lts-danielleadams
+// 17.5.0: https://github.com/nodejs/node/blob/main/doc/changelogs/CHANGELOG_V17.md#2022-02-10-version-1750-current-ruyadorno
+export const nodeSupportsUnflaggedJsonImports =
   (semver.gte(process.version, '16.15.0') &&
     semver.lt(process.version, '17.0.0')) ||
   semver.gte(process.version, '17.5.0');
