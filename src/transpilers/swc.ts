@@ -2,7 +2,9 @@ import type * as ts from 'typescript';
 import type * as swcWasm from '@swc/wasm';
 import type * as swcTypes from '@swc/core';
 import type { CreateTranspilerOptions, Transpiler } from './types';
+import type { NodeModuleEmitKind } from '..';
 
+type SwcInstance = typeof swcWasm;
 export interface SwcTranspilerOptions extends CreateTranspilerOptions {
   /**
    * swc compiler to use for compilation
@@ -21,8 +23,11 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   } = createOptions;
 
   // Load swc compiler
-  let swcInstance: typeof swcWasm;
+  let swcInstance: SwcInstance;
+  // Used later in diagnostics; merely needs to be human-readable.
+  let swcDepName: string = 'swc';
   if (typeof swc === 'string') {
+    swcDepName = swc;
     swcInstance = require(transpilerConfigLocalResolveHelper(
       swc,
       true
@@ -30,10 +35,12 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   } else if (swc == null) {
     let swcResolved;
     try {
-      swcResolved = transpilerConfigLocalResolveHelper('@swc/core', true);
+      swcDepName = '@swc/core';
+      swcResolved = transpilerConfigLocalResolveHelper(swcDepName, true);
     } catch (e) {
       try {
-        swcResolved = transpilerConfigLocalResolveHelper('@swc/wasm', true);
+        swcDepName = '@swc/wasm';
+        swcResolved = transpilerConfigLocalResolveHelper(swcDepName, true);
       } catch (e) {
         throw new Error(
           'swc compiler requires either @swc/core or @swc/wasm to be installed as a dependency.  See https://typestrong.org/ts-node/docs/transpilers'
@@ -46,107 +53,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   }
 
   // Prepare SWC options derived from typescript compiler options
-  const compilerOptions = config.options;
-  const {
-    esModuleInterop,
-    sourceMap,
-    importHelpers,
-    experimentalDecorators,
-    emitDecoratorMetadata,
-    target,
-    module,
-    jsxFactory,
-    jsxFragmentFactory,
-    strict,
-    alwaysStrict,
-    noImplicitUseStrict,
-  } = compilerOptions;
-  const nonTsxOptions = createSwcOptions(false);
-  const tsxOptions = createSwcOptions(true);
-  function createSwcOptions(isTsx: boolean): swcTypes.Options {
-    let swcTarget = targetMapping.get(target!) ?? 'es3';
-    // Downgrade to lower target if swc does not support the selected target.
-    // Perhaps project has an older version of swc.
-    // TODO cache the results of this; slightly faster
-    let swcTargetIndex = swcTargets.indexOf(swcTarget);
-    for (; swcTargetIndex >= 0; swcTargetIndex--) {
-      try {
-        swcInstance.transformSync('', {
-          jsc: { target: swcTargets[swcTargetIndex] },
-        });
-        break;
-      } catch (e) {}
-    }
-    swcTarget = swcTargets[swcTargetIndex];
-    const keepClassNames = target! >= /* ts.ScriptTarget.ES2016 */ 3;
-    const isNodeModuleKind =
-      module === ModuleKind.Node12 || module === ModuleKind.NodeNext;
-    // swc only supports these 4x module options [MUST_UPDATE_FOR_NEW_MODULEKIND]
-    const moduleType =
-      module === ModuleKind.CommonJS
-        ? 'commonjs'
-        : module === ModuleKind.AMD
-        ? 'amd'
-        : module === ModuleKind.UMD
-        ? 'umd'
-        : isNodeModuleKind && nodeModuleEmitKind === 'nodecjs'
-        ? 'commonjs'
-        : isNodeModuleKind && nodeModuleEmitKind === 'nodeesm'
-        ? 'es6'
-        : 'es6';
-    // In swc:
-    //   strictMode means `"use strict"` is *always* emitted for non-ES module, *never* for ES module where it is assumed it can be omitted.
-    //   (this assumption is invalid, but that's the way swc behaves)
-    // tsc is a bit more complex:
-    //   alwaysStrict will force emitting it always unless `import`/`export` syntax is emitted which implies it per the JS spec.
-    //   if not alwaysStrict, will emit implicitly whenever module target is non-ES *and* transformed module syntax is emitted.
-    // For node, best option is to assume that all scripts are modules (commonjs or esm) and thus should get tsc's implicit strict behavior.
-
-    // Always set strictMode, *unless* alwaysStrict is disabled and noImplicitUseStrict is enabled
-    const strictMode =
-      // if `alwaysStrict` is disabled, remembering that `strict` defaults `alwaysStrict` to true
-      (alwaysStrict === false || (alwaysStrict !== true && strict !== true)) &&
-      // if noImplicitUseStrict is enabled
-      noImplicitUseStrict === true
-        ? false
-        : true;
-    return {
-      sourceMaps: sourceMap,
-      // isModule: true,
-      module: moduleType
-        ? ({
-            noInterop: !esModuleInterop,
-            type: moduleType,
-            strictMode,
-            // For NodeNext and Node12, emit as CJS but do not transform dynamic imports
-            ignoreDynamic: nodeModuleEmitKind === 'nodecjs',
-          } as swcTypes.ModuleConfig)
-        : undefined,
-      swcrc: false,
-      jsc: {
-        externalHelpers: importHelpers,
-        parser: {
-          syntax: 'typescript',
-          tsx: isTsx,
-          decorators: experimentalDecorators,
-          dynamicImport: true,
-        },
-        target: swcTarget,
-        transform: {
-          decoratorMetadata: emitDecoratorMetadata,
-          legacyDecorator: true,
-          react: {
-            throwIfNamespace: false,
-            development: false,
-            useBuiltins: false,
-            pragma: jsxFactory!,
-            pragmaFrag: jsxFragmentFactory!,
-          } as swcTypes.ReactConfig,
-        },
-        keepClassNames,
-      } as swcTypes.JscConfig,
-    };
-  }
+  const {nonTsxOptions, tsxOptions} = createSwcOptions(config.options, nodeModuleEmitKind, swcInstance, swcDepName);
 
   const transpile: Transpiler['transpile'] = (input, transpileOptions) => {
     const { fileName } = transpileOptions;
@@ -210,3 +117,129 @@ const ModuleKind = {
   Node12: 100,
   NodeNext: 199,
 } as const;
+
+/**
+ * Prepare SWC options derived from typescript compiler options.
+ * @internal exported for testing
+ */
+export function createSwcOptions(compilerOptions: ts.CompilerOptions, nodeModuleEmitKind: NodeModuleEmitKind | undefined, swcInstance: SwcInstance, swcDepName: string) {
+  const {
+    esModuleInterop,
+    sourceMap,
+    importHelpers,
+    experimentalDecorators,
+    emitDecoratorMetadata,
+    target,
+    module,
+    jsxFactory,
+    jsxFragmentFactory,
+    strict,
+    alwaysStrict,
+    noImplicitUseStrict,
+  } = compilerOptions;
+
+    let swcTarget = targetMapping.get(target!) ?? 'es3';
+    // Downgrade to lower target if swc does not support the selected target.
+    // Perhaps project has an older version of swc.
+    // TODO cache the results of this; slightly faster
+    let swcTargetIndex = swcTargets.indexOf(swcTarget);
+    for (; swcTargetIndex >= 0; swcTargetIndex--) {
+      try {
+        swcInstance.transformSync('', {
+          jsc: { target: swcTargets[swcTargetIndex] },
+        });
+        break;
+      } catch (e) {}
+    }
+    swcTarget = swcTargets[swcTargetIndex];
+    const keepClassNames = target! >= /* ts.ScriptTarget.ES2016 */ 3;
+    const isNodeModuleKind =
+      module === ModuleKind.Node12 || module === ModuleKind.NodeNext;
+    // swc only supports these 4x module options [MUST_UPDATE_FOR_NEW_MODULEKIND]
+    const moduleType =
+      module === ModuleKind.CommonJS
+        ? 'commonjs'
+        : module === ModuleKind.AMD
+        ? 'amd'
+        : module === ModuleKind.UMD
+        ? 'umd'
+        : isNodeModuleKind && nodeModuleEmitKind === 'nodecjs'
+        ? 'commonjs'
+        : isNodeModuleKind && nodeModuleEmitKind === 'nodeesm'
+        ? 'es6'
+        : 'es6';
+    // In swc:
+    //   strictMode means `"use strict"` is *always* emitted for non-ES module, *never* for ES module where it is assumed it can be omitted.
+    //   (this assumption is invalid, but that's the way swc behaves)
+    // tsc is a bit more complex:
+    //   alwaysStrict will force emitting it always unless `import`/`export` syntax is emitted which implies it per the JS spec.
+    //   if not alwaysStrict, will emit implicitly whenever module target is non-ES *and* transformed module syntax is emitted.
+    // For node, best option is to assume that all scripts are modules (commonjs or esm) and thus should get tsc's implicit strict behavior.
+
+    // Always set strictMode, *unless* alwaysStrict is disabled and noImplicitUseStrict is enabled
+    const strictMode =
+      // if `alwaysStrict` is disabled, remembering that `strict` defaults `alwaysStrict` to true
+      (alwaysStrict === false || (alwaysStrict !== true && strict !== true)) &&
+      // if noImplicitUseStrict is enabled
+      noImplicitUseStrict === true
+        ? false
+        : true;
+
+  const nonTsxOptions = createVariant(false);
+  const tsxOptions = createVariant(true);
+  return {nonTsxOptions, tsxOptions};
+
+  function createVariant(isTsx: boolean): swcTypes.Options {
+    const swcOptions: swcTypes.Options = {
+      sourceMaps: sourceMap,
+      // isModule: true,
+      module: moduleType
+        ? ({
+            noInterop: !esModuleInterop,
+            type: moduleType,
+            strictMode,
+            // For NodeNext and Node12, emit as CJS but do not transform dynamic imports
+            ignoreDynamic: nodeModuleEmitKind === 'nodecjs',
+          } as swcTypes.ModuleConfig)
+        : undefined,
+      swcrc: false,
+      jsc: {
+        externalHelpers: importHelpers,
+        parser: {
+          syntax: 'typescript',
+          tsx: isTsx,
+          decorators: experimentalDecorators,
+          dynamicImport: true,
+        },
+        target: swcTarget,
+        transform: {
+          decoratorMetadata: emitDecoratorMetadata,
+          legacyDecorator: true,
+          react: {
+            throwIfNamespace: false,
+            development: false,
+            useBuiltins: false,
+            pragma: jsxFactory!,
+            pragmaFrag: jsxFragmentFactory!,
+          } as swcTypes.ReactConfig,
+        },
+        keepClassNames,
+      } as swcTypes.JscConfig,
+    };
+
+    // Throw a helpful error if swc version is old, for example, if it rejects `ignoreDynamic`
+    try {
+      swcInstance.transformSync('', swcOptions);
+    } catch(e) {
+      throw new Error(
+        `${swcDepName} threw an error when attempting to validate swc compiler options.\n` +
+        'You may be using an old version of swc which does not support the options used by ts-node.\n' +
+        'Try upgrading to the latest version of swc.\n' +
+        'Error message from swc:\n' +
+        (e as Error)?.message
+      );
+    }
+
+    return swcOptions;
+  }
+}
