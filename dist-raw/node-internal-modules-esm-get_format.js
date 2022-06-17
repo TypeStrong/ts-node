@@ -12,6 +12,7 @@ const [nodeMajor, nodeMinor] = process.versions.node.split('.').map(s => parseIn
 const experimentalJsonModules =
   nodeMajor > 17
   || (nodeMajor === 17 && nodeMinor >= 5)
+  || (nodeMajor === 16 && nodeMinor >= 15)
   || getOptionValue('--experimental-json-modules');
 const experimentalWasmModules = getOptionValue('--experimental-wasm-modules');
 const { URL, fileURLToPath } = require('url');

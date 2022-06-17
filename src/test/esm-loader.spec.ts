@@ -15,10 +15,13 @@ import {
   EXPERIMENTAL_MODULES_FLAG,
   nodeSupportsEsmHooks,
   nodeSupportsImportAssertions,
+  nodeSupportsUnflaggedJsonImports,
   nodeSupportsSpawningChildProcess,
   nodeUsesNewHooksApi,
   resetNodeEnvironment,
   TEST_DIR,
+  tsSupportsImportAssertions,
+  tsSupportsResolveJsonModule,
 } from './helpers';
 import { createExec, createSpawn, ExecReturn } from './exec-helpers';
 import { join, resolve } from 'path';
@@ -268,40 +271,39 @@ test.suite('esm', (test) => {
     });
 
     test.suite('supports import assertions', (test) => {
-      test.runIf(nodeSupportsImportAssertions);
+      test.runIf(
+        nodeSupportsImportAssertions &&
+          tsSupportsImportAssertions &&
+          tsSupportsResolveJsonModule
+      );
 
-      test.suite('node >=17.5.0', (test) => {
-        test.runIf(semver.gte(process.version, '17.5.0'));
-
-        test('Can import JSON modules with appropriate assertion', async (t) => {
-          const { err, stdout } = await exec(
-            `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./importJson.ts`,
-            {
-              cwd: resolve(TEST_DIR, 'esm-import-assertions'),
-            }
-          );
-          expect(err).toBe(null);
-          expect(stdout.trim()).toBe(
-            'A fuchsia car has 2 seats and the doors are open.\nDone!'
-          );
-        });
+      const macro = test.macro((flags: string) => async (t) => {
+        const { err, stdout } = await exec(
+          `${CMD_ESM_LOADER_WITHOUT_PROJECT} ${flags} ./importJson.ts`,
+          {
+            cwd: resolve(TEST_DIR, 'esm-import-assertions'),
+          }
+        );
+        expect(err).toBe(null);
+        expect(stdout.trim()).toBe(
+          'A fuchsia car has 2 seats and the doors are open.\nDone!'
+        );
       });
 
-      test.suite('node <17.5.0', (test) => {
-        test.runIf(semver.lt(process.version, '17.5.0'));
-
-        test('Can import JSON using the appropriate flag and assertion', async (t) => {
-          const { err, stdout } = await exec(
-            `${CMD_ESM_LOADER_WITHOUT_PROJECT} --experimental-json-modules ./importJson.ts`,
-            {
-              cwd: resolve(TEST_DIR, 'esm-import-assertions'),
-            }
-          );
-          expect(err).toBe(null);
-          expect(stdout.trim()).toBe(
-            'A fuchsia car has 2 seats and the doors are open.\nDone!'
-          );
-        });
+      test.suite(
+        'when node does not require --experimental-json-modules',
+        (test) => {
+          test.runIf(nodeSupportsUnflaggedJsonImports);
+          test('Can import JSON modules with appropriate assertion', macro, '');
+        }
+      );
+      test.suite('when node requires --experimental-json-modules', (test) => {
+        test.runIf(!nodeSupportsUnflaggedJsonImports);
+        test(
+          'Can import JSON using the appropriate flag and assertion',
+          macro,
+          '--experimental-json-modules'
+        );
       });
     });
 
