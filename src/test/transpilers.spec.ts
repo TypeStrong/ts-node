@@ -3,13 +3,23 @@
 // Should consolidate them here.
 
 import { context } from './testlib';
-import { ctxTsNode, testsDirRequire } from './helpers';
+import {
+  CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
+  ctxTsNode,
+  TEST_DIR,
+  testsDirRequire,
+} from './helpers';
 import * as expect from 'expect';
+import { createExec } from './exec-helpers';
+
+const exec = createExec({
+  cwd: TEST_DIR,
+});
 
 const test = context(ctxTsNode);
 
 test.suite('swc', (test) => {
-  test('verify that TS->SWC target mappings suppport all possible values from both TS and SWC', async (t) => {
+  test('verify that TS->SWC target mappings support all possible values from both TS and SWC', async (t) => {
     const swcTranspiler = testsDirRequire(
       'ts-node/transpilers/swc-experimental'
     ) as typeof import('../transpilers/swc');
@@ -43,5 +53,19 @@ test.suite('swc', (test) => {
     for (const target of targets) {
       expect([...swcTranspiler.targetMapping.values()]).toContain(target);
     }
+  });
+
+  test('verify paths are mapped correctly', async (t) => {
+    const { err, stdout } = await exec(
+      `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} swc-with-paths`,
+      {
+        env: {
+          ...process.env,
+          NODE_OPTIONS: `${process.env.NODE_OPTIONS || ''}}`,
+        },
+      }
+    );
+    expect(err).toBe(null);
+    expect(stdout).toMatch('Hello, world!\n');
   });
 });

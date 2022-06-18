@@ -1,0 +1,12 @@
+{
+  "ts-node": {
+    "swc": true
+  },
+  "compilerOptions": {
+    "module": "CommonJS",
+    "baseUrl": "./",
+    "paths": {
+      "@parent-dir/*": ["../*"]
+    }
+  }
+}

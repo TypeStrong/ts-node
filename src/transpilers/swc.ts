@@ -1,3 +1,4 @@
+import * as path from 'path';
 import type * as ts from 'typescript';
 import type * as swcWasm from '@swc/wasm';
 import type * as swcTypes from '@swc/core';
@@ -60,6 +61,8 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
     strict,
     alwaysStrict,
     noImplicitUseStrict,
+    baseUrl,
+    paths,
   } = compilerOptions;
   const nonTsxOptions = createSwcOptions(false);
   const tsxOptions = createSwcOptions(true);
@@ -110,6 +113,16 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
       noImplicitUseStrict === true
         ? false
         : true;
+
+    const absolutePaths = Object.fromEntries(
+      Object.entries(paths || {})
+        .filter(([key, values]) => values.length > 0)
+        .map(([key, values]) => [
+          key,
+          values.map((value) => path.resolve(baseUrl || './', value)),
+        ])
+    ) as { [from: string]: [string] };
+
     return {
       sourceMaps: sourceMap,
       // isModule: true,
@@ -144,6 +157,9 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
           } as swcTypes.ReactConfig,
         },
         keepClassNames,
+        baseUrl,
+        paths:
+          Object.keys(absolutePaths).length > 0 ? absolutePaths : undefined,
       } as swcTypes.JscConfig,
     };
   }
