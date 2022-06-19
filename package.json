@@ -111,6 +111,7 @@
   },
   "homepage": "https://typestrong.org/ts-node",
   "devDependencies": {
+    "@cspotcode/zx": "^6.1.0",
     "@microsoft/api-extractor": "^7.19.4",
     "@swc/core": ">=1.2.50",
     "@swc/wasm": ">=1.2.50",
