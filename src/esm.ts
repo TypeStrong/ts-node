@@ -38,12 +38,22 @@ export namespace NodeLoaderHooksAPI1 {
     url: string,
     context: {},
     defaultGetFormat: GetFormatHook
-  ) => Promise<{ format: NodeLoaderHooksFormat }>;
+  ) => Promise<GetFormatReturn>;
+  export interface GetFormatReturn {
+    format: NodeLoaderHooksFormat;
+  }
   export type TransformSourceHook = (
     source: string | Buffer,
-    context: { url: string; format: NodeLoaderHooksFormat },
+    context: TransformSourceContext,
     defaultTransformSource: NodeLoaderHooksAPI1.TransformSourceHook
-  ) => Promise<{ source: string | Buffer }>;
+  ) => Promise<TransformSourceReturn>;
+  export interface TransformSourceContext {
+    url: string;
+    format: NodeLoaderHooksFormat;
+  }
+  export interface TransformSourceReturn {
+    source: string | Buffer;
+  }
 }
 
 export interface NodeLoaderHooksAPI2 {
@@ -53,29 +63,52 @@ export interface NodeLoaderHooksAPI2 {
 export namespace NodeLoaderHooksAPI2 {
   export type ResolveHook = (
     specifier: string,
-    context: {
-      conditions?: NodeImportConditions;
-      importAssertions?: NodeImportAssertions;
-      parentURL: string;
-    },
+    context: ResolveContext,
     defaultResolve: ResolveHook
-  ) => Promise<{
+  ) => Promise<ResolveReturn>;
+  export type ResolveContext = NodeLoaderHooksAPI3.ResolveContext;
+  export type ResolveReturn = NodeLoaderHooksAPI3.ResolveReturn;
+  export type LoadHook = NodeLoaderHooksAPI3.LoadHook;
+  export type LoadReturn = NodeLoaderHooksAPI3.LoadReturn;
+  export type NodeImportConditions = NodeLoaderHooksAPI3.NodeImportConditions;
+  export type NodeImportAssertions = NodeLoaderHooksAPI3.NodeImportAssertions;
+}
+/** in API3, resolve became synchronous */
+export interface NodeLoaderHooksAPI3 {
+  resolve: NodeLoaderHooksAPI3.ResolveHook;
+  load: NodeLoaderHooksAPI3.LoadHook;
+}
+/** in API3, resolve became synchronous */
+export namespace NodeLoaderHooksAPI3 {
+  export type ResolveHook = (
+    specifier: string,
+    context: ResolveContext,
+    defaultResolve: ResolveHook
+  ) => ResolveReturn;
+  export interface ResolveContext {
+    conditions?: NodeImportConditions;
+    importAssertions?: NodeImportAssertions;
+    parentURL: string;
+  }
+  export interface ResolveReturn {
     url: string;
     format?: NodeLoaderHooksFormat;
     shortCircuit?: boolean;
-  }>;
+  }
   export type LoadHook = (
     url: string,
-    context: {
-      format: NodeLoaderHooksFormat | null | undefined;
-      importAssertions?: NodeImportAssertions;
-    },
-    defaultLoad: NodeLoaderHooksAPI2['load']
-  ) => Promise<{
+    context: LoadContext,
+    defaultLoad: LoadHook
+  ) => Promise<LoadReturn>;
+  export interface LoadContext {
+    format: NodeLoaderHooksFormat | null | undefined;
+    importAssertions?: NodeImportAssertions;
+  }
+  export interface LoadReturn {
     format: NodeLoaderHooksFormat;
     source: string | Buffer | undefined;
     shortCircuit?: boolean;
-  }>;
+  }
   export type NodeImportConditions = unknown;
   export interface NodeImportAssertions {
     type?: 'json';
@@ -96,15 +129,20 @@ export interface NodeImportAssertions {
 }
 
 // The hooks API changed in node version X so we need to check for backwards compatibility.
+// if true, is API2 or newer
 const newHooksAPI = versionGteLt(process.versions.node, '16.12.0');
+const syncResolve = versionGteLt(process.versions.node, '19.0.0');
 
 /** @internal */
 export function filterHooksByAPIVersion(
-  hooks: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2
-): NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 {
+  hooks: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2 & NodeLoaderHooksAPI3
+): NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 | NodeLoaderHooksAPI3 {
   const { getFormat, load, resolve, transformSource } = hooks;
   // Explicit return type to avoid TS's non-ideal inferred type
-  const hooksAPI: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 = newHooksAPI
+  const hooksAPI:
+    | NodeLoaderHooksAPI1
+    | NodeLoaderHooksAPI2
+    | NodeLoaderHooksAPI3 = newHooksAPI
     ? { resolve, load, getFormat: undefined, transformSource: undefined }
     : { resolve, getFormat, transformSource, load: undefined };
   return hooksAPI;
@@ -127,6 +165,7 @@ export function createEsmHooks(tsNodeService: Service) {
   const extensions = tsNodeService.extensions;
 
   const hooksAPI = filterHooksByAPIVersion({
+    // @ts-ignore
     resolve,
     load,
     getFormat,
@@ -150,29 +189,49 @@ export function createEsmHooks(tsNodeService: Service) {
   const rememberIsProbablyEntrypoint = new Set();
   const rememberResolvedViaCommonjsFallback = new Set();
 
-  async function resolve(
+  function resolve(
     specifier: string,
     context: { parentURL: string },
     defaultResolve: typeof resolve
-  ): Promise<{ url: string; format?: NodeLoaderHooksFormat }> {
-    const defer = async () => {
-      const r = await defaultResolve(specifier, context, defaultResolve);
+  ):
+    | NodeLoaderHooksAPI3.ResolveReturn
+    | Promise<NodeLoaderHooksAPI3.ResolveReturn> {
+    const defer = () => {
+      const r = defaultResolve(specifier, context, defaultResolve);
       return r;
     };
     // See: https://github.com/nodejs/node/discussions/41711
     // nodejs will likely implement a similar fallback.  Till then, we can do our users a favor and fallback today.
-    async function entrypointFallback(
-      cb: () => ReturnType<typeof resolve> | Awaited<ReturnType<typeof resolve>>
+    function entrypointFallback(
+      cb: () =>
+        | NodeLoaderHooksAPI3.ResolveReturn
+        | Promise<NodeLoaderHooksAPI3.ResolveReturn>
     ): ReturnType<typeof resolve> {
+      // tricky song-and-dance to be conditionally sync or async, depending on node version
+      let resolution:
+        | NodeLoaderHooksAPI3.ResolveReturn
+        | Promise<NodeLoaderHooksAPI3.ResolveReturn>;
       try {
-        const resolution = await cb();
+        resolution = cb();
+      } catch (esmResolverError) {
+        return syncResolve
+          ? onError(esmResolverError)
+          : Promise.reject(esmResolverError).catch(onError);
+      }
+      return syncResolve
+        ? onResolve(resolution as NodeLoaderHooksAPI3.ResolveReturn)
+        : Promise.resolve(resolution).then(onResolve, onError);
+
+      function onResolve(resolution: NodeLoaderHooksAPI3.ResolveReturn) {
         if (
           resolution?.url &&
           isProbablyEntrypoint(specifier, context.parentURL)
         )
           rememberIsProbablyEntrypoint.add(resolution.url);
         return resolution;
-      } catch (esmResolverError) {
+      }
+
+      function onError(esmResolverError: unknown) {
         if (!isProbablyEntrypoint(specifier, context.parentURL))
           throw esmResolverError;
         try {
@@ -187,14 +246,15 @@ export function createEsmHooks(tsNodeService: Service) {
           ).toString();
           rememberIsProbablyEntrypoint.add(resolution);
           rememberResolvedViaCommonjsFallback.add(resolution);
-          return { url: resolution, format: 'commonjs' };
+          return { url: resolution, format: 'commonjs' as 'commonjs' };
         } catch (commonjsResolverError) {
           throw esmResolverError;
         }
       }
     }
 
-    return addShortCircuitFlag(async () => {
+    // @ts-expect-error
+    return (syncResolve ? addShortCircuitFlagSync : addShortCircuitFlag)(() => {
       const parsed = parseUrl(specifier);
       const { pathname, protocol, hostname } = parsed;
 
@@ -227,15 +287,9 @@ export function createEsmHooks(tsNodeService: Service) {
   // `load` from new loader hook API (See description at the top of this file)
   async function load(
     url: string,
-    context: {
-      format: NodeLoaderHooksFormat | null | undefined;
-      importAssertions?: NodeLoaderHooksAPI2.NodeImportAssertions;
-    },
-    defaultLoad: typeof load
-  ): Promise<{
-    format: NodeLoaderHooksFormat;
-    source: string | Buffer | undefined;
-  }> {
+    context: NodeLoaderHooksAPI3.LoadContext,
+    defaultLoad: NodeLoaderHooksAPI3.LoadHook
+  ): Promise<NodeLoaderHooksAPI3.LoadReturn> {
     return addShortCircuitFlag(async () => {
       // If we get a format hint from resolve() on the context then use it
       // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
@@ -290,8 +344,8 @@ export function createEsmHooks(tsNodeService: Service) {
   async function getFormat(
     url: string,
     context: {},
-    defaultGetFormat: typeof getFormat
-  ): Promise<{ format: NodeLoaderHooksFormat }> {
+    defaultGetFormat: NodeLoaderHooksAPI1.GetFormatHook
+  ): Promise<NodeLoaderHooksAPI1.GetFormatReturn> {
     const defer = (overrideUrl: string = url) =>
       defaultGetFormat(overrideUrl, context, defaultGetFormat);
 
@@ -372,9 +426,9 @@ export function createEsmHooks(tsNodeService: Service) {
 
   async function transformSource(
     source: string | Buffer,
-    context: { url: string; format: NodeLoaderHooksFormat },
-    defaultTransformSource: typeof transformSource
-  ): Promise<{ source: string | Buffer }> {
+    context: NodeLoaderHooksAPI1.TransformSourceContext,
+    defaultTransformSource: NodeLoaderHooksAPI1.TransformSourceHook
+  ): Promise<NodeLoaderHooksAPI1.TransformSourceReturn> {
     if (source === null || source === undefined) {
       throw new Error('No source');
     }
@@ -407,6 +461,15 @@ export function createEsmHooks(tsNodeService: Service) {
 
 async function addShortCircuitFlag<T>(fn: () => Promise<T>) {
   const ret = await fn();
+  // Not sure if this is necessary; being lazy.  Can revisit in the future.
+  if (ret == null) return ret;
+  return {
+    ...ret,
+    shortCircuit: true,
+  };
+}
+function addShortCircuitFlagSync<T>(fn: () => T) {
+  const ret = fn();
   // Not sure if this is necessary; being lazy.  Can revisit in the future.
   if (ret == null) return ret;
   return {
