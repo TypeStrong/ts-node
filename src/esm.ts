@@ -48,7 +48,8 @@ export namespace NodeLoaderHooksAPI1 {
     defaultTransformSource: NodeLoaderHooksAPI1.TransformSourceHook
   ) => Promise<TransformSourceReturn>;
   export interface TransformSourceContext {
-url: string; format: NodeLoaderHooksFormat ,
+    url: string;
+    format: NodeLoaderHooksFormat;
   }
   export interface TransformSourceReturn {
     source: string | Buffer;
@@ -85,9 +86,9 @@ export namespace NodeLoaderHooksAPI3 {
     defaultResolve: ResolveHook
   ) => ResolveReturn;
   export interface ResolveContext {
-      conditions?: NodeImportConditions;
-      importAssertions?: NodeImportAssertions;
-      parentURL: string;
+    conditions?: NodeImportConditions;
+    importAssertions?: NodeImportAssertions;
+    parentURL: string;
   }
   export interface ResolveReturn {
     url: string;
@@ -138,7 +139,10 @@ export function filterHooksByAPIVersion(
 ): NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 | NodeLoaderHooksAPI3 {
   const { getFormat, load, resolve, transformSource } = hooks;
   // Explicit return type to avoid TS's non-ideal inferred type
-  const hooksAPI: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 | NodeLoaderHooksAPI3 = newHooksAPI
+  const hooksAPI:
+    | NodeLoaderHooksAPI1
+    | NodeLoaderHooksAPI2
+    | NodeLoaderHooksAPI3 = newHooksAPI
     ? { resolve, load, getFormat: undefined, transformSource: undefined }
     : { resolve, getFormat, transformSource, load: undefined };
   return hooksAPI;
@@ -189,7 +193,9 @@ export function createEsmHooks(tsNodeService: Service) {
     specifier: string,
     context: { parentURL: string },
     defaultResolve: typeof resolve
-  ): NodeLoaderHooksAPI3.ResolveReturn | Promise<NodeLoaderHooksAPI3.ResolveReturn> {
+  ):
+    | NodeLoaderHooksAPI3.ResolveReturn
+    | Promise<NodeLoaderHooksAPI3.ResolveReturn> {
     const defer = () => {
       const r = defaultResolve(specifier, context, defaultResolve);
       return r;
@@ -197,17 +203,24 @@ export function createEsmHooks(tsNodeService: Service) {
     // See: https://github.com/nodejs/node/discussions/41711
     // nodejs will likely implement a similar fallback.  Till then, we can do our users a favor and fallback today.
     function entrypointFallback(
-      cb: () => NodeLoaderHooksAPI3.ResolveReturn | Promise<NodeLoaderHooksAPI3.ResolveReturn>
+      cb: () =>
+        | NodeLoaderHooksAPI3.ResolveReturn
+        | Promise<NodeLoaderHooksAPI3.ResolveReturn>
     ): ReturnType<typeof resolve> {
-
       // tricky song-and-dance to be conditionally sync or async, depending on node version
-      let resolution: NodeLoaderHooksAPI3.ResolveReturn | Promise<NodeLoaderHooksAPI3.ResolveReturn>;
+      let resolution:
+        | NodeLoaderHooksAPI3.ResolveReturn
+        | Promise<NodeLoaderHooksAPI3.ResolveReturn>;
       try {
         resolution = cb();
       } catch (esmResolverError) {
-        return syncResolve ? onError(esmResolverError) : Promise.reject(esmResolverError).catch(onError);
+        return syncResolve
+          ? onError(esmResolverError)
+          : Promise.reject(esmResolverError).catch(onError);
       }
-      return syncResolve ? onResolve(resolution as NodeLoaderHooksAPI3.ResolveReturn) : Promise.resolve(resolution).then(onResolve, onError);
+      return syncResolve
+        ? onResolve(resolution as NodeLoaderHooksAPI3.ResolveReturn)
+        : Promise.resolve(resolution).then(onResolve, onError);
 
       function onResolve(resolution: NodeLoaderHooksAPI3.ResolveReturn) {
         if (

@@ -6,9 +6,7 @@ type UHooks = NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 | NodeLoaderHooksAPI3;
 let hooks: IHooks;
 
 /** @internal */
-export function lateBindHooks(
-  _hooks: UHooks
-) {
+export function lateBindHooks(_hooks: UHooks) {
   hooks = _hooks as IHooks;
 }
 
@@ -23,7 +21,9 @@ const proxy: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2 & NodeLoaderHooksAPI3 = {
   getFormat(...args: Parameters<NodeLoaderHooksAPI1.GetFormatHook>) {
     return (hooks?.getFormat ?? args[2])(...args);
   },
-  transformSource(...args: Parameters<NodeLoaderHooksAPI1.TransformSourceHook>) {
+  transformSource(
+    ...args: Parameters<NodeLoaderHooksAPI1.TransformSourceHook>
+  ) {
     return (hooks?.transformSource ?? args[2])(...args);
   },
 };
