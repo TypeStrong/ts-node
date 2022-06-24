@@ -22,6 +22,7 @@ import {
   TEST_DIR,
   tsSupportsImportAssertions,
   tsSupportsResolveJsonModule,
+  tsSupportsStableNodeNextNode16,
 } from './helpers';
 import { createExec, createSpawn, ExecReturn } from './exec-helpers';
 import { join, resolve } from 'path';
@@ -357,6 +358,45 @@ test.suite('esm', (test) => {
           expect(stderr).toBe('');
         });
       }
+
+      test.suite('esm child process and forking', (test) => {
+        test('should be able to fork vanilla NodeJS script', async () => {
+          const { err, stdout, stderr } = await exec(
+            `${BIN_PATH} --esm --cwd ./esm-child-process/process-forking/ index.ts`
+          );
+
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe('Passing: from main');
+          expect(stderr).toBe('');
+        });
+
+        test('should be able to fork into a nested TypeScript ESM script', async () => {
+          const { err, stdout, stderr } = await exec(
+            `${BIN_PATH} --esm --cwd ./esm-child-process/process-forking-nested-esm/ index.ts`
+          );
+
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe('Passing: from main');
+          expect(stderr).toBe('');
+        });
+
+        test.suite(
+          'with NodeNext TypeScript resolution and `.mts` extension',
+          (test) => {
+            test.runIf(tsSupportsStableNodeNextNode16);
+
+            test('should be able to fork into a nested TypeScript ESM script', async () => {
+              const { err, stdout, stderr } = await exec(
+                `${BIN_PATH} --esm ./esm-child-process/process-forking-nested-esm-node-next/index.mts`
+              );
+
+              expect(err).toBe(null);
+              expect(stdout.trim()).toBe('Passing: from main');
+              expect(stderr).toBe('');
+            });
+          }
+        );
+      });
 
       test.suite('parent passes signals to child', (test) => {
         test.runSerially();

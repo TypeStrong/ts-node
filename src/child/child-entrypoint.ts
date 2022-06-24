@@ -8,8 +8,9 @@ const base64Payload = base64ConfigArg.slice(argPrefix.length);
 const payload = JSON.parse(
   brotliDecompressSync(Buffer.from(base64Payload, 'base64')).toString()
 ) as BootstrapState;
+
 payload.isInChildProcess = true;
-payload.entrypoint = __filename;
+payload.tsNodeScript = __filename;
 payload.parseArgvResult.argv = process.argv;
 payload.parseArgvResult.restArgs = process.argv.slice(3);
 
