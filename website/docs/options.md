@@ -403,6 +403,8 @@ Requires [`esm`](#esm) to be enabled.
 
 *Default:* `explicit`<br/>
 
+*Warning:* According to [documentation](https://nodejs.org/dist/latest-v16.x/docs/api/esm.html#customizing-esm-specifier-resolution-algorithm) Node.js team plan to remove this flag.
+
 ## API Options
 
 The API includes [additional options](https://typestrong.org/ts-node/api/interfaces/RegisterOptions.html) not shown here.
