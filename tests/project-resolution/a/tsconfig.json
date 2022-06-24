@@ -1,0 +1,12 @@
+{
+  "ts-node": {
+    "transpileOnly": true
+  },
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "plugin-a"
+      }
+    ]
+  }
+}

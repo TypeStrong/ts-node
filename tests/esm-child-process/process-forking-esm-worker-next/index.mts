@@ -6,13 +6,10 @@ import { fileURLToPath } from 'url';
 // worker process finishes properly with the expected stdout message.
 process.exitCode = 1;
 
-const workerProcess = fork(
-  join(dirname(fileURLToPath(import.meta.url)), 'subfolder/worker.ts'),
-  [],
-  {
-    stdio: 'pipe',
-  }
-);
+const containingDir = dirname(fileURLToPath(import.meta.url));
+const workerProcess = fork(join(containingDir, 'worker.mts'), [], {
+  stdio: 'pipe',
+});
 
 let stdout = '';
 

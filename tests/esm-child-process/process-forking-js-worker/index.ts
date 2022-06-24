@@ -6,9 +6,8 @@ import { fileURLToPath } from 'url';
 // worker process finishes properly with the expected stdout message.
 process.exitCode = 1;
 
-process.chdir(join(dirname(fileURLToPath(import.meta.url)), 'subfolder'));
-
-const workerProcess = fork('./worker.ts', [], {
+const workerPath = join(dirname(fileURLToPath(import.meta.url)), './worker.js');
+const workerProcess = fork(workerPath, [], {
   stdio: 'pipe',
 });
 

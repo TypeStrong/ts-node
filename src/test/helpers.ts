@@ -33,6 +33,10 @@ export const BIN_SCRIPT_PATH = join(
   TEST_DIR,
   'node_modules/.bin/ts-node-script'
 );
+export const CHILD_ENTRY_POINT_SCRIPT = join(
+  TEST_DIR,
+  'node_modules/ts-node/dist/child/child-entrypoint.js'
+);
 export const BIN_CWD_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-cwd');
 export const BIN_ESM_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-esm');
 

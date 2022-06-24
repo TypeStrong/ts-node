@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "module": "ESNext"
+    "module": "NodeNext"
   },
   "ts-node": {
-    "swc": true
+    "transpileOnly": true
   }
 }

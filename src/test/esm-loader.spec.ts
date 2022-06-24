@@ -388,10 +388,8 @@ test.suite('esm', (test) => {
       test.suite('esm child process working directory', (test) => {
         test('should have the correct working directory in the user entry-point', async () => {
           const { err, stdout, stderr } = await exec(
-            `${BIN_PATH} --esm --cwd ./esm/ index.ts`,
-            {
-              cwd: resolve(TEST_DIR, 'working-dir'),
-            }
+            `${BIN_PATH} --esm index.ts`,
+            { cwd: './working-dir/esm/' }
           );
 
           expect(err).toBe(null);
@@ -403,7 +401,8 @@ test.suite('esm', (test) => {
       test.suite('esm child process and forking', (test) => {
         test('should be able to fork vanilla NodeJS script', async () => {
           const { err, stdout, stderr } = await exec(
-            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-js/index.ts`
+            `${BIN_PATH} --esm index.ts`,
+            { cwd: './esm-child-process/process-forking-js-worker/' }
           );
 
           expect(err).toBe(null);
@@ -411,9 +410,10 @@ test.suite('esm', (test) => {
           expect(stderr).toBe('');
         });
 
-        test('should be able to fork TypeScript script', async () => {
+        test('should be able to fork into a nested TypeScript ESM script', async () => {
           const { err, stdout, stderr } = await exec(
-            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-ts/index.ts`
+            `${BIN_PATH} --esm index.ts`,
+            { cwd: './esm-child-process/process-forking-esm-worker/' }
           );
 
           expect(err).toBe(null);
@@ -421,15 +421,37 @@ test.suite('esm', (test) => {
           expect(stderr).toBe('');
         });
 
-        test('should be able to fork TypeScript script by absolute path', async () => {
-          const { err, stdout, stderr } = await exec(
-            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-ts-abs/index.ts`
-          );
+        test(
+          'should be possible to fork into a nested TypeScript script with respect to ' +
+            'the working directory',
+          async () => {
+            const { err, stdout, stderr } = await exec(
+              `${BIN_PATH} --esm index.ts`,
+              { cwd: './esm-child-process/process-forking-subdir-relative/' }
+            );
 
-          expect(err).toBe(null);
-          expect(stdout.trim()).toBe('Passing: from main');
-          expect(stderr).toBe('');
-        });
+            expect(err).toBe(null);
+            expect(stdout.trim()).toBe('Passing: from main');
+            expect(stderr).toBe('');
+          }
+        );
+
+        test.suite(
+          'with NodeNext TypeScript resolution and `.mts` extension',
+          (test) => {
+            test.runIf(tsSupportsStableNodeNextNode16);
+
+            test('should be able to fork into a nested TypeScript ESM script', async () => {
+              const { err, stdout, stderr } = await exec(
+                `${BIN_PATH} --esm ./esm-child-process/process-forking-esm-worker-next/index.mts`
+              );
+
+              expect(err).toBe(null);
+              expect(stdout.trim()).toBe('Passing: from main');
+              expect(stderr).toBe('');
+            });
+          }
+        );
       });
 
       test.suite('parent passes signals to child', (test) => {

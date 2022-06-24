@@ -1,7 +1,7 @@
 import { strictEqual } from 'assert';
-import { normalize, dirname } from 'path';
+import { join, normalize } from 'path';
 
-// Expect the working directory to be the parent directory.
-strictEqual(normalize(process.cwd()), normalize(dirname(__dirname)));
+// Expect the working directory to be the current directory.
+strictEqual(normalize(process.cwd()), normalize(join(__dirname, '../..')));
 
 console.log('Passing');

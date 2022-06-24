@@ -5,6 +5,7 @@ import { tmpdir } from 'os';
 import semver = require('semver');
 import {
   BIN_PATH_JS,
+  CHILD_ENTRY_POINT_SCRIPT,
   CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
   ts,
   tsSupportsMtsCtsExtensions,
@@ -604,10 +605,7 @@ test.suite('ts-node', (test) => {
 
     test('should have the correct working directory in the user entry-point', async () => {
       const { err, stdout, stderr } = await exec(
-        `${BIN_PATH} --cwd ./cjs index.ts`,
-        {
-          cwd: resolve(TEST_DIR, 'working-dir'),
-        }
+        `${BIN_PATH} --cwd ./working-dir/cjs/ index.ts`
       );
 
       expect(err).toBe(null);
@@ -615,19 +613,19 @@ test.suite('ts-node', (test) => {
       expect(stderr).toBe('');
     });
 
-    // Disabled due to bug:
-    // --cwd is passed to forked children when not using --esm, erroneously affects their entrypoint resolution.
-    // tracked/fixed by either https://github.com/TypeStrong/ts-node/issues/1834
-    // or https://github.com/TypeStrong/ts-node/issues/1831
-    test.skip('should be able to fork into a nested TypeScript script with a modified working directory', async () => {
-      const { err, stdout, stderr } = await exec(
-        `${BIN_PATH} --cwd ./working-dir/forking/ index.ts`
-      );
+    test(
+      'should be able to fork into a nested TypeScript script with a modified ' +
+        'working directory',
+      async () => {
+        const { err, stdout, stderr } = await exec(
+          `${BIN_PATH} --cwd ./working-dir/forking/ index.ts`
+        );
 
-      expect(err).toBe(null);
-      expect(stdout.trim()).toBe('Passing: from main');
-      expect(stderr).toBe('');
-    });
+        expect(err).toBe(null);
+        expect(stdout.trim()).toBe('Passing: from main');
+        expect(stderr).toBe('');
+      }
+    );
 
     test.suite('should read ts-node options from tsconfig.json', (test) => {
       const BIN_EXEC = `"${BIN_PATH}" --project tsconfig-options/tsconfig.json`;
@@ -1086,35 +1084,64 @@ test('Falls back to transpileOnly when ts compiler returns emitSkipped', async (
 
 test.suite('node environment', (test) => {
   test.suite('Sets argv and execArgv correctly in forked processes', (test) => {
-    forkTest(`node --no-warnings ${BIN_PATH_JS}`, BIN_PATH_JS, '--no-warnings');
+    forkTest(test, `node --no-warnings ${BIN_PATH_JS}`, BIN_PATH_JS, [
+      '--no-warnings',
+    ]);
     forkTest(
+      test,
       `${BIN_PATH}`,
       process.platform === 'win32' ? BIN_PATH_JS : BIN_PATH
     );
 
+    test.suite('with esm enabled', (test) => {
+      test.runIf(nodeSupportsSpawningChildProcess);
+
+      forkTest(
+        test,
+        `node --no-warnings ${BIN_PATH_JS} --esm`,
+        CHILD_ENTRY_POINT_SCRIPT,
+        [
+          '--no-warnings',
+          // Forked child processes should directly receive the necessary ESM loader
+          // Node flags through `execArgv`, avoiding doubled child process spawns.
+          '--require',
+          expect.stringMatching(/child-require.js$/),
+          '--loader',
+          expect.stringMatching(/child-loader.mjs$/),
+        ],
+        './recursive-fork-esm/index.ts'
+      );
+    });
+
     function forkTest(
+      testFn: typeof test,
       command: string,
       expectParentArgv0: string,
-      nodeFlag?: string
+      nodeFlags?: (string | ReturnType<typeof expect.stringMatching>)[],
+      testFixturePath = './recursive-fork/index.ts'
     ) {
-      test(command, async (t) => {
+      testFn(command, async (t) => {
         const { err, stderr, stdout } = await exec(
-          `${command} --skipIgnore ./recursive-fork/index.ts argv2`
+          `${command} --skipIgnore ${testFixturePath} argv2`
         );
         expect(err).toBeNull();
         expect(stderr).toBe('');
         const generations = stdout.split('\n');
         const expectation = {
-          execArgv: [nodeFlag, BIN_PATH_JS, '--skipIgnore'].filter((v) => v),
+          execArgv: [
+            ...(nodeFlags || []),
+            CHILD_ENTRY_POINT_SCRIPT,
+            expect.stringMatching(/^--brotli-base64-config=.*/),
+          ],
           argv: [
-            // Note: argv[0] is *always* BIN_PATH_JS in child & grandchild
+            // Note: argv[0] is *always* CHILD_ENTRY_POINT_SCRIPT in child & grandchild
             expectParentArgv0,
-            resolve(TEST_DIR, 'recursive-fork/index.ts'),
+            resolve(TEST_DIR, testFixturePath),
             'argv2',
           ],
         };
         expect(JSON.parse(generations[0])).toMatchObject(expectation);
-        expectation.argv[0] = BIN_PATH_JS;
+        expectation.argv[0] = CHILD_ENTRY_POINT_SCRIPT;
         expect(JSON.parse(generations[1])).toMatchObject(expectation);
         expect(JSON.parse(generations[2])).toMatchObject(expectation);
       });
