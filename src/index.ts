@@ -911,6 +911,8 @@ export function createFromPreloadedConfig(
     patterns: options.moduleTypes,
   });
 
+  const extensions = getExtensions(config, options, ts.version);
+
   // Use full language services when the fast option is disabled.
   if (!transpileOnly) {
     const fileContents = new Map<string, string>();
@@ -992,6 +994,7 @@ export function createFromPreloadedConfig(
         config,
         projectLocalResolveHelper,
         options,
+        extensions,
       });
       serviceHost.resolveModuleNames = resolveModuleNames;
       serviceHost.getResolvedModuleWithFailedLookupLocationsFromCache =
@@ -1151,6 +1154,7 @@ export function createFromPreloadedConfig(
         getCanonicalFileName,
         projectLocalResolveHelper,
         options,
+        extensions,
       });
       host.resolveModuleNames = resolveModuleNames;
       host.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives;
@@ -1456,7 +1460,6 @@ export function createFromPreloadedConfig(
   let active = true;
   const enabled = (enabled?: boolean) =>
     enabled === undefined ? active : (active = !!enabled);
-  const extensions = getExtensions(config, options, ts.version);
   const ignored = (fileName: string) => {
     if (!active) return true;
     const ext = extname(fileName);

@@ -1,5 +1,6 @@
 import { resolve } from 'path';
 import type { CreateOptions } from '.';
+import type { Extensions } from './file-extensions';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
 import type { ProjectLocalResolveHelper } from './util';
 
@@ -15,6 +16,7 @@ export function createResolverFunctions(kwargs: {
   config: TSCommon.ParsedCommandLine;
   projectLocalResolveHelper: ProjectLocalResolveHelper;
   options: CreateOptions;
+  extensions: Extensions;
 }) {
   const {
     host,
@@ -24,6 +26,7 @@ export function createResolverFunctions(kwargs: {
     getCanonicalFileName,
     projectLocalResolveHelper,
     options,
+    extensions,
   } = kwargs;
   const moduleResolutionCache = ts.createModuleResolutionCache(
     cwd,
@@ -118,11 +121,13 @@ export function createResolverFunctions(kwargs: {
           mode
         );
         if (!resolvedModule && options.experimentalTsImportSpecifiers) {
-          const tsExtMatch = moduleName.match(/\.(?:ts|tsx|cts|mts)$/);
-          if (tsExtMatch) {
-            for (const replacementExt of ['.js', '.jsx', '.cjs', '.mjs']) {
+          const lastDotIndex = moduleName.lastIndexOf('.');
+          const ext = lastDotIndex >= 0 ? moduleName.slice(lastDotIndex) : '';
+          if (ext) {
+            const replacements = extensions.tsResolverEquivalents.get(ext);
+            for (const replacementExt of replacements ?? []) {
               ({ resolvedModule } = ts.resolveModuleName(
-                moduleName.slice(0, -tsExtMatch[0].length) + replacementExt,
+                moduleName.slice(0, -ext.length) + replacementExt,
                 containingFile,
                 config.options,
                 host,

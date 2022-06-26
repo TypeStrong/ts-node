@@ -2,5 +2,8 @@
   "ts-node": {
     // Can eventually make this a stable feature.  For now, `experimental` flag allows me to iterate quickly
     "experimentalTsImportSpecifiers": true
+  },
+  "compilerOptions": {
+    "jsx": true
   }
 }
