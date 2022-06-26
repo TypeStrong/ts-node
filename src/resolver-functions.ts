@@ -117,11 +117,11 @@ export function createResolverFunctions(kwargs: {
           redirectedReference,
           mode
         );
-        if(!resolvedModule && options.experimentalTsImportSpecifiers) {
+        if (!resolvedModule && options.experimentalTsImportSpecifiers) {
           const tsExtMatch = moduleName.match(/\.(?:ts|tsx|cts|mts)$/);
-          if(tsExtMatch) {
-            for(const replacementExt of ['.js', '.jsx', '.cjs', '.mjs']) {
-              ({resolvedModule} = ts.resolveModuleName(
+          if (tsExtMatch) {
+            for (const replacementExt of ['.js', '.jsx', '.cjs', '.mjs']) {
+              ({ resolvedModule } = ts.resolveModuleName(
                 moduleName.slice(0, -tsExtMatch[0].length) + replacementExt,
                 containingFile,
                 config.options,
@@ -130,7 +130,7 @@ export function createResolverFunctions(kwargs: {
                 redirectedReference,
                 mode
               ));
-              if(resolvedModule) break;
+              if (resolvedModule) break;
             }
           }
         }

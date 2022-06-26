@@ -694,6 +694,11 @@ export function createFromPreloadedConfig(
         6059, // "'rootDir' is expected to contain all source files."
         18002, // "The 'files' list in config file is empty."
         18003, // "No inputs were found in config file."
+        ...(options.experimentalTsImportSpecifiers
+          ? [
+              2691, // "An import path cannot end with a '.ts' extension. Consider importing '<specifier without ext>' instead."
+            ]
+          : []),
         ...(options.ignoreDiagnostics || []),
       ].map(Number),
     },
