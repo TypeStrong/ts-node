@@ -373,6 +373,7 @@ export interface CreateOptions {
    * For details, see https://nodejs.org/dist/latest-v18.x/docs/api/esm.html#customizing-esm-specifier-resolution-algorithm
    */
   experimentalSpecifierResolution?: 'node' | 'explicit';
+  experimentalTsImportSpecifiers?: boolean;
 }
 
 export type ModuleTypes = Record<string, ModuleTypeOverride>;
@@ -985,6 +986,7 @@ export function createFromPreloadedConfig(
         cwd,
         config,
         projectLocalResolveHelper,
+        options,
       });
       serviceHost.resolveModuleNames = resolveModuleNames;
       serviceHost.getResolvedModuleWithFailedLookupLocationsFromCache =
@@ -1143,6 +1145,7 @@ export function createFromPreloadedConfig(
         ts,
         getCanonicalFileName,
         projectLocalResolveHelper,
+        options,
       });
       host.resolveModuleNames = resolveModuleNames;
       host.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives;

@@ -1,4 +1,5 @@
 import { resolve } from 'path';
+import type { CreateOptions } from '.';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
 import type { ProjectLocalResolveHelper } from './util';
 
@@ -13,6 +14,7 @@ export function createResolverFunctions(kwargs: {
   getCanonicalFileName: (filename: string) => string;
   config: TSCommon.ParsedCommandLine;
   projectLocalResolveHelper: ProjectLocalResolveHelper;
+  options: CreateOptions;
 }) {
   const {
     host,
@@ -21,6 +23,7 @@ export function createResolverFunctions(kwargs: {
     cwd,
     getCanonicalFileName,
     projectLocalResolveHelper,
+    options,
   } = kwargs;
   const moduleResolutionCache = ts.createModuleResolutionCache(
     cwd,
@@ -105,7 +108,7 @@ export function createResolverFunctions(kwargs: {
               i
             )
           : undefined;
-        const { resolvedModule } = ts.resolveModuleName(
+        let { resolvedModule } = ts.resolveModuleName(
           moduleName,
           containingFile,
           config.options,
@@ -114,6 +117,23 @@ export function createResolverFunctions(kwargs: {
           redirectedReference,
           mode
         );
+        if(!resolvedModule && options.experimentalTsImportSpecifiers) {
+          const tsExtMatch = moduleName.match(/\.(?:ts|tsx|cts|mts)$/);
+          if(tsExtMatch) {
+            for(const replacementExt of ['.js', '.jsx', '.cjs', '.mjs']) {
+              ({resolvedModule} = ts.resolveModuleName(
+                moduleName.slice(0, -tsExtMatch[0].length) + replacementExt,
+                containingFile,
+                config.options,
+                host,
+                moduleResolutionCache,
+                redirectedReference,
+                mode
+              ));
+              if(resolvedModule) break;
+            }
+          }
+        }
         if (resolvedModule) {
           fixupResolvedModule(resolvedModule);
         }
