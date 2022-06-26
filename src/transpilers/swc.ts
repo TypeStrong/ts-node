@@ -123,6 +123,11 @@ const ModuleKind = {
   NodeNext: 199,
 } as const;
 
+const JsxEmit = {
+  ReactJSX: /* ts.JsxEmit.ReactJSX */ 4,
+  ReactJSXDev: /* ts.JsxEmit.ReactJSXDev */ 5,
+} as const;
+
 /**
  * Prepare SWC options derived from typescript compiler options.
  * @internal exported for testing
@@ -141,6 +146,7 @@ export function createSwcOptions(
     emitDecoratorMetadata,
     target,
     module,
+    jsx,
     jsxFactory,
     jsxFragmentFactory,
     strict,
@@ -195,6 +201,13 @@ export function createSwcOptions(
       ? false
       : true;
 
+  const jsxRuntime: swcTypes.ReactConfig['runtime'] =
+    jsx === JsxEmit.ReactJSX || jsx === JsxEmit.ReactJSXDev
+      ? 'automatic'
+      : undefined;
+  const jsxDevelopment: swcTypes.ReactConfig['development'] =
+    jsx === JsxEmit.ReactJSXDev ? true : undefined;
+
   const nonTsxOptions = createVariant(false);
   const tsxOptions = createVariant(true);
   return { nonTsxOptions, tsxOptions };
@@ -227,10 +240,11 @@ export function createSwcOptions(
           legacyDecorator: true,
           react: {
             throwIfNamespace: false,
-            development: false,
+            development: jsxDevelopment,
             useBuiltins: false,
             pragma: jsxFactory!,
             pragmaFrag: jsxFragmentFactory!,
+            runtime: jsxRuntime,
           } as swcTypes.ReactConfig,
         },
         keepClassNames,

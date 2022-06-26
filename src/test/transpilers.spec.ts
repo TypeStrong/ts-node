@@ -4,7 +4,9 @@
 
 import { context } from './testlib';
 import { ctxTsNode, testsDirRequire } from './helpers';
+import { createSwcOptions } from '../transpilers/swc';
 import * as expect from 'expect';
+import { outdent } from 'outdent';
 
 const test = context(ctxTsNode);
 
@@ -43,5 +45,92 @@ test.suite('swc', (test) => {
     for (const target of targets) {
       expect([...swcTranspiler.targetMapping.values()]).toContain(target);
     }
+  });
+
+  test.suite('converts TS config to swc config', (test) => {
+    test.suite('jsx', (test) => {
+      const macro = test.macro(
+        (jsx: string, runtime?: string, development?: boolean) => [
+          () => `jsx=${jsx}`,
+          async (t) => {
+            const tsNode = t.context.tsNodeUnderTest.create({
+              compilerOptions: {
+                jsx,
+              },
+            });
+            const swcOptions = createSwcOptions(
+              tsNode.config.options,
+              undefined,
+              require('@swc/core'),
+              '@swc/core'
+            );
+            expect(swcOptions.tsxOptions.jsc?.transform?.react).toBeDefined();
+            expect(
+              swcOptions.tsxOptions.jsc?.transform?.react?.development
+            ).toBe(development);
+            expect(swcOptions.tsxOptions.jsc?.transform?.react?.runtime).toBe(
+              runtime
+            );
+          },
+        ]
+      );
+
+      test(macro, 'react', undefined, undefined);
+      test(macro, 'react-jsx', 'automatic', undefined);
+      test(macro, 'react-jsxdev', 'automatic', true);
+    });
+  });
+
+  test.suite('transforms various forms of jsx', (test) => {
+    const macro = test.macro(
+      (compilerOptions: object, expectedOutput: string) => [
+        () => `${JSON.stringify(compilerOptions)}`,
+        async (t) => {
+          const code = t.context.tsNodeUnderTest
+            .create({
+              swc: true,
+              skipProject: true,
+              compilerOptions: {
+                module: 'esnext',
+                ...compilerOptions,
+              },
+            })
+            .compile(input, 'input.tsx');
+          expect(code.replace(/\/\/# sourceMappingURL.*/, '').trim()).toBe(
+            expectedOutput
+          );
+        },
+      ]
+    );
+
+    const input = outdent`
+      const div = <div></div>;
+    `;
+
+    test(
+      macro,
+      { jsx: 'react' },
+      `const div = /*#__PURE__*/ React.createElement("div", null);`
+    );
+    test(
+      macro,
+      { jsx: 'react-jsx' },
+      outdent`
+        import { jsx as _jsx } from "react/jsx-runtime";
+        const div = /*#__PURE__*/ _jsx("div", {});
+      `
+    );
+    test(
+      macro,
+      { jsx: 'react-jsxdev' },
+      outdent`
+        import { jsxDEV as _jsxDEV } from "react/jsx-dev-runtime";
+        const div = /*#__PURE__*/ _jsxDEV("div", {}, void 0, false, {
+            fileName: "input.tsx",
+            lineNumber: 1,
+            columnNumber: 13
+        }, this);
+      `
+    );
   });
 });
