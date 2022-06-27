@@ -99,6 +99,8 @@ export const tsSupportsStableNodeNextNode16 =
 // TS 4.5 is first version to understand .cts, .mts, .cjs, and .mjs extensions
 export const tsSupportsMtsCtsExtensions = semver.gte(ts.version, '4.5.0');
 export const tsSupportsImportAssertions = semver.gte(ts.version, '4.5.0');
+// TS 4.1 added jsx=react-jsx and react-jsxdev: https://devblogs.microsoft.com/typescript/announcing-typescript-4-1/#react-17-jsx-factories
+export const tsSupportsReact17JsxFactories = semver.gte(ts.version, '4.1.0');
 //#endregion
 
 export const xfs = new NodeFS(fs);

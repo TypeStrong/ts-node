@@ -3,7 +3,12 @@
 // Should consolidate them here.
 
 import { context } from './testlib';
-import { ctxTsNode, testsDirRequire } from './helpers';
+import {
+  ctxTsNode,
+  testsDirRequire,
+  tsSupportsImportAssertions,
+  tsSupportsReact17JsxFactories,
+} from './helpers';
 import { createSwcOptions } from '../transpilers/swc';
 import * as expect from 'expect';
 import { outdent } from 'outdent';
@@ -76,8 +81,11 @@ test.suite('swc', (test) => {
       );
 
       test(macro, 'react', undefined, undefined);
-      test(macro, 'react-jsx', 'automatic', undefined);
-      test(macro, 'react-jsxdev', 'automatic', true);
+      test.suite('react 17 jsx factories', (test) => {
+        test.runIf(tsSupportsReact17JsxFactories);
+        test(macro, 'react-jsx', 'automatic', undefined);
+        test(macro, 'react-jsxdev', 'automatic', true);
+      });
     });
   });
 
@@ -113,31 +121,35 @@ test.suite('swc', (test) => {
       input,
       `const div = /*#__PURE__*/ React.createElement("div", null);`
     );
-    test(
-      compileMacro,
-      { jsx: 'react-jsx' },
-      input,
-      outdent`
-        import { jsx as _jsx } from "react/jsx-runtime";
-        const div = /*#__PURE__*/ _jsx("div", {});
-      `
-    );
-    test(
-      compileMacro,
-      { jsx: 'react-jsxdev' },
-      input,
-      outdent`
-        import { jsxDEV as _jsxDEV } from "react/jsx-dev-runtime";
-        const div = /*#__PURE__*/ _jsxDEV("div", {}, void 0, false, {
-            fileName: "input.tsx",
-            lineNumber: 1,
-            columnNumber: 13
-        }, this);
-      `
-    );
+    test.suite('react 17 jsx factories', (test) => {
+      test.runIf(tsSupportsReact17JsxFactories);
+      test(
+        compileMacro,
+        { jsx: 'react-jsx' },
+        input,
+        outdent`
+          import { jsx as _jsx } from "react/jsx-runtime";
+          const div = /*#__PURE__*/ _jsx("div", {});
+        `
+      );
+      test(
+        compileMacro,
+        { jsx: 'react-jsxdev' },
+        input,
+        outdent`
+          import { jsxDEV as _jsxDEV } from "react/jsx-dev-runtime";
+          const div = /*#__PURE__*/ _jsxDEV("div", {}, void 0, false, {
+              fileName: "input.tsx",
+              lineNumber: 1,
+              columnNumber: 13
+          }, this);
+        `
+      );
+    });
   });
 
   test.suite('preserves import assertions for json imports', (test) => {
+    test.runIf(tsSupportsImportAssertions);
     test(
       'basic json import',
       compileMacro,
