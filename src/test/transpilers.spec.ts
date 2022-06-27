@@ -81,48 +81,51 @@ test.suite('swc', (test) => {
     });
   });
 
-  test.suite('transforms various forms of jsx', (test) => {
-    const macro = test.macro(
-      (compilerOptions: object, expectedOutput: string) => [
-        () => `${JSON.stringify(compilerOptions)}`,
-        async (t) => {
-          const code = t.context.tsNodeUnderTest
-            .create({
-              swc: true,
-              skipProject: true,
-              compilerOptions: {
-                module: 'esnext',
-                ...compilerOptions,
-              },
-            })
-            .compile(input, 'input.tsx');
-          expect(code.replace(/\/\/# sourceMappingURL.*/, '').trim()).toBe(
-            expectedOutput
-          );
-        },
-      ]
-    );
+  const compileMacro = test.macro(
+    (compilerOptions: object, input: string, expectedOutput: string) => [
+      (title?: string) => title ?? `${JSON.stringify(compilerOptions)}`,
+      async (t) => {
+        const code = t.context.tsNodeUnderTest
+          .create({
+            swc: true,
+            skipProject: true,
+            compilerOptions: {
+              module: 'esnext',
+              ...compilerOptions,
+            },
+          })
+          .compile(input, 'input.tsx');
+        expect(code.replace(/\/\/# sourceMappingURL.*/, '').trim()).toBe(
+          expectedOutput
+        );
+      },
+    ]
+  );
 
+  test.suite('transforms various forms of jsx', (test) => {
     const input = outdent`
       const div = <div></div>;
     `;
 
     test(
-      macro,
+      compileMacro,
       { jsx: 'react' },
+      input,
       `const div = /*#__PURE__*/ React.createElement("div", null);`
     );
     test(
-      macro,
+      compileMacro,
       { jsx: 'react-jsx' },
+      input,
       outdent`
         import { jsx as _jsx } from "react/jsx-runtime";
         const div = /*#__PURE__*/ _jsx("div", {});
       `
     );
     test(
-      macro,
+      compileMacro,
       { jsx: 'react-jsxdev' },
+      input,
       outdent`
         import { jsxDEV as _jsxDEV } from "react/jsx-dev-runtime";
         const div = /*#__PURE__*/ _jsxDEV("div", {}, void 0, false, {
@@ -130,6 +133,24 @@ test.suite('swc', (test) => {
             lineNumber: 1,
             columnNumber: 13
         }, this);
+      `
+    );
+  });
+
+  test.suite('preserves import assertions for json imports', (test) => {
+    test(
+      'basic json import',
+      compileMacro,
+      { module: 'esnext' },
+      outdent`
+        import document from './document.json' assert {type: 'json'};
+        document;
+      `,
+      outdent`
+        import document from './document.json' assert {
+            type: 'json'
+        };
+        document;
       `
     );
   });

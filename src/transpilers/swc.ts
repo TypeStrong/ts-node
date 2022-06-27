@@ -233,6 +233,7 @@ export function createSwcOptions(
           tsx: isTsx,
           decorators: experimentalDecorators,
           dynamicImport: true,
+          importAssertions: true,
         },
         target: swcTarget,
         transform: {
@@ -248,6 +249,9 @@ export function createSwcOptions(
           } as swcTypes.ReactConfig,
         },
         keepClassNames,
+        experimental: {
+          keepImportAssertions: true,
+        },
       } as swcTypes.JscConfig,
     };
 
