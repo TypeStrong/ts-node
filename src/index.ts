@@ -373,6 +373,17 @@ export interface CreateOptions {
    * For details, see https://nodejs.org/dist/latest-v18.x/docs/api/esm.html#customizing-esm-specifier-resolution-algorithm
    */
   experimentalSpecifierResolution?: 'node' | 'explicit';
+  /**
+   * Allow using voluntary `.ts` file extension in import specifiers.
+   *
+   * Typically, in ESM projects, import specifiers must hanve an emit extension, `.js`, `.cjs`, or `.mjs`,
+   * and we automatically map to the corresponding `.ts`, `.cts`, or `.mts` source file.  This is the
+   * recommended approach.
+   *
+   * However, if you really want to use `.ts` in import specifiers, and are aware that this may
+   * break tooling, you can enable this flag.
+   */
+  experimentalTsImportSpecifiers?: boolean;
 }
 
 export type ModuleTypes = Record<string, ModuleTypeOverride>;
@@ -693,6 +704,11 @@ export function createFromPreloadedConfig(
         6059, // "'rootDir' is expected to contain all source files."
         18002, // "The 'files' list in config file is empty."
         18003, // "No inputs were found in config file."
+        ...(options.experimentalTsImportSpecifiers
+          ? [
+              2691, // "An import path cannot end with a '.ts' extension. Consider importing '<specifier without ext>' instead."
+            ]
+          : []),
         ...(options.ignoreDiagnostics || []),
       ].map(Number),
     },
@@ -905,6 +921,8 @@ export function createFromPreloadedConfig(
     patterns: options.moduleTypes,
   });
 
+  const extensions = getExtensions(config, options, ts.version);
+
   // Use full language services when the fast option is disabled.
   if (!transpileOnly) {
     const fileContents = new Map<string, string>();
@@ -985,6 +1003,8 @@ export function createFromPreloadedConfig(
         cwd,
         config,
         projectLocalResolveHelper,
+        options,
+        extensions,
       });
       serviceHost.resolveModuleNames = resolveModuleNames;
       serviceHost.getResolvedModuleWithFailedLookupLocationsFromCache =
@@ -1143,6 +1163,8 @@ export function createFromPreloadedConfig(
         ts,
         getCanonicalFileName,
         projectLocalResolveHelper,
+        options,
+        extensions,
       });
       host.resolveModuleNames = resolveModuleNames;
       host.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives;
@@ -1448,7 +1470,6 @@ export function createFromPreloadedConfig(
   let active = true;
   const enabled = (enabled?: boolean) =>
     enabled === undefined ? active : (active = !!enabled);
-  const extensions = getExtensions(config, options, ts.version);
   const ignored = (fileName: string) => {
     if (!active) return true;
     const ext = extname(fileName);

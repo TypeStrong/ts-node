@@ -1,4 +1,6 @@
 import { resolve } from 'path';
+import type { CreateOptions } from '.';
+import type { Extensions } from './file-extensions';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
 import type { ProjectLocalResolveHelper } from './util';
 
@@ -13,6 +15,8 @@ export function createResolverFunctions(kwargs: {
   getCanonicalFileName: (filename: string) => string;
   config: TSCommon.ParsedCommandLine;
   projectLocalResolveHelper: ProjectLocalResolveHelper;
+  options: CreateOptions;
+  extensions: Extensions;
 }) {
   const {
     host,
@@ -21,6 +25,8 @@ export function createResolverFunctions(kwargs: {
     cwd,
     getCanonicalFileName,
     projectLocalResolveHelper,
+    options,
+    extensions,
   } = kwargs;
   const moduleResolutionCache = ts.createModuleResolutionCache(
     cwd,
@@ -105,7 +111,7 @@ export function createResolverFunctions(kwargs: {
               i
             )
           : undefined;
-        const { resolvedModule } = ts.resolveModuleName(
+        let { resolvedModule } = ts.resolveModuleName(
           moduleName,
           containingFile,
           config.options,
@@ -114,6 +120,25 @@ export function createResolverFunctions(kwargs: {
           redirectedReference,
           mode
         );
+        if (!resolvedModule && options.experimentalTsImportSpecifiers) {
+          const lastDotIndex = moduleName.lastIndexOf('.');
+          const ext = lastDotIndex >= 0 ? moduleName.slice(lastDotIndex) : '';
+          if (ext) {
+            const replacements = extensions.tsResolverEquivalents.get(ext);
+            for (const replacementExt of replacements ?? []) {
+              ({ resolvedModule } = ts.resolveModuleName(
+                moduleName.slice(0, -ext.length) + replacementExt,
+                containingFile,
+                config.options,
+                host,
+                moduleResolutionCache,
+                redirectedReference,
+                mode
+              ));
+              if (resolvedModule) break;
+            }
+          }
+        }
         if (resolvedModule) {
           fixupResolvedModule(resolvedModule);
         }
