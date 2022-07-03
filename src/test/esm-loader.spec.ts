@@ -359,6 +359,35 @@ test.suite('esm', (test) => {
         });
       }
 
+      test.suite('esm child process working directory', (test) => {
+        test('should have the correct working directory in the user entry-point', async () => {
+          const { err, stdout, stderr } = await exec(
+            `${BIN_PATH} --esm --cwd ./working-dir/esm/ index.ts`
+          );
+
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe('Passing');
+          expect(stderr).toBe('');
+        });
+
+        test.suite(
+          'with NodeNext TypeScript resolution and `.mts` extension',
+          (test) => {
+            test.runIf(tsSupportsStableNodeNextNode16);
+
+            test('should have the correct working directory in the user entry-point', async () => {
+              const { err, stdout, stderr } = await exec(
+                `${BIN_PATH} --esm --cwd ./working-dir/esm-node-next/ index.ts`
+              );
+
+              expect(err).toBe(null);
+              expect(stdout.trim()).toBe('Passing');
+              expect(stderr).toBe('');
+            });
+          }
+        );
+      });
+
       test.suite('esm child process and forking', (test) => {
         test('should be able to fork vanilla NodeJS script', async () => {
           const { err, stdout, stderr } = await exec(
@@ -379,6 +408,20 @@ test.suite('esm', (test) => {
           expect(stdout.trim()).toBe('Passing: from main');
           expect(stderr).toBe('');
         });
+
+        test(
+          'should be possible to fork into a nested TypeScript script with respect to ' +
+            'the working directory',
+          async () => {
+            const { err, stdout, stderr } = await exec(
+              `${BIN_PATH} --esm --cwd ./esm-child-process/process-forking-nested-relative/ index.ts`
+            );
+
+            expect(err).toBe(null);
+            expect(stdout.trim()).toBe('Passing: from main');
+            expect(stderr).toBe('');
+          }
+        );
 
         test.suite(
           'with NodeNext TypeScript resolution and `.mts` extension',

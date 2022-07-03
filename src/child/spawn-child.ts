@@ -6,8 +6,13 @@ import { versionGteLt } from '../util';
 
 const argPrefix = '--brotli-base64-config=';
 
-/** @internal */
-export function callInChild(state: BootstrapState) {
+/**
+ * @internal
+ * @param state Bootstrap state to be transferred into the child process.
+ * @param targetCwd Working directory to be preserved when transitioning to
+ *   the child process.
+ */
+export function callInChild(state: BootstrapState, targetCwd: string) {
   if (!versionGteLt(process.versions.node, '12.17.0')) {
     throw new Error(
       '`ts-node-esm` and `ts-node --esm` require node version 12.17.0 or newer.'
@@ -29,6 +34,7 @@ export function callInChild(state: BootstrapState) {
     ],
     {
       stdio: 'inherit',
+      cwd: targetCwd,
       argv0: process.argv0,
     }
   );
