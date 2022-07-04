@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "dependencies": {
+    "ts-node": "github:TypeStrong/ts-node#main",
+    "typescript": "^3.8.3"
+  }
+}

@@ -1,3 +1,3 @@
-import { foobar } from 'does-not-exist'
+import { foobar } from 'does-not-exist';
 
-console.log(foobar)
+console.log(foobar);

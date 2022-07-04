@@ -1,0 +1,31 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/tsdoc/v0/tsdoc.schema.json",
+
+  "supportForTags": {
+    // Indicate that the custom tag is supported by your tooling.  (Without this, warnings may
+    // be reported saying that the tag is unsupported.)
+    "@default": true,
+    "@allOf": true,
+    "@see": true,
+    "@deprecated": true,
+    "@category": true
+  },
+
+  "tagDefinitions": [
+    {
+      "tagName": "@default",
+      "syntaxKind": "block",
+      "allowMultiple": false
+    },
+    {
+      "tagName": "@allOf",
+      "syntaxKind": "block",
+      "allowMultiple": false
+    },
+    {
+      "tagName": "@category",
+      "syntaxKind": "inline",
+      "allowMultiple": false
+    }
+  ]
+}

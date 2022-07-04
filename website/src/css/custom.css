@@ -1,0 +1,68 @@
+/* stylelint-disable docusaurus/copyright-header */
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  /* Generating by pasting #3178C6, the shade of blue from typescriptlang.org's navbar, into the palette generator at https://docusaurus.io/docs/styling-layout/ */
+  --ifm-color-primary: #3178c6;
+  --ifm-color-primary-dark: #2c6cb2;
+  --ifm-color-primary-darker: #2a66a8;
+  --ifm-color-primary-darkest: #22548b;
+  --ifm-color-primary-light: #4084d0;
+  --ifm-color-primary-lighter: #4a8bd2;
+  --ifm-color-primary-lightest: #689eda;
+
+  /* Docusaurus defaults */
+  /* --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: rgb(33, 175, 144);
+  --ifm-color-primary-darker: rgb(31, 165, 136);
+  --ifm-color-primary-darkest: rgb(26, 136, 112);
+  --ifm-color-primary-light: rgb(70, 203, 174);
+  --ifm-color-primary-lighter: rgb(102, 212, 189);
+  --ifm-color-primary-lightest: rgb(146, 224, 208);
+  --ifm-code-font-size: 95%; */
+}
+
+[data-theme='dark'] {
+  /* Generating by pasting #4084d0, into the palette generator at https://docusaurus.io/docs/styling-layout/ */
+  --ifm-color-primary: #4084d0;
+  --ifm-color-primary-dark: #3076c4;
+  --ifm-color-primary-darker: #2e70ba;
+  --ifm-color-primary-darkest: #265c99;
+  --ifm-color-primary-light: #5692d5;
+  --ifm-color-primary-lighter: #6199d8;
+  --ifm-color-primary-lightest: #81aee0;
+  --ifm-color-primary-lighter: #4a8bd2;
+}
+
+.docusaurus-highlight-code-line {
+  background-color: rgb(72, 77, 91);
+  display: block;
+  margin: 0 calc(-1 * var(--ifm-pre-padding));
+  padding: 0 var(--ifm-pre-padding);
+}
+
+/* Hide the external link icon */
+.navbar__item svg {
+  display: none;
+}
+
+/*
+ * Shiki-twoslash
+ * See: https://github.com/shikijs/twoslash/tree/main/packages/docusaurus-preset-shiki-twoslash
+ */
+[data-theme='light'] .shiki.nord,
+[data-theme='light'] .shiki.min-dark,
+[data-theme='light'] .shiki.github-dark,
+[data-theme='light'] .shiki.dark-plus,
+[data-theme='light'] .shiki.solarized-dark,
+[data-theme='dark'] .shiki.min-light,
+[data-theme='dark'] .shiki.github-light,
+[data-theme='dark'] .shiki.light-plus,
+[data-theme='dark'] .shiki.solarized-light {
+  display: none;
+}

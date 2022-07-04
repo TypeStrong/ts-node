@@ -1,471 +1,730 @@
 #!/usr/bin/env node
 
-import { join, resolve, dirname } from 'path'
-import { start, Recoverable } from 'repl'
-import { inspect } from 'util'
-import Module = require('module')
-import arg = require('arg')
-import { diffLines } from 'diff'
-import { Script } from 'vm'
-import { readFileSync, statSync } from 'fs'
-import { homedir } from 'os'
-import { register, VERSION, DEFAULTS, TSError, parse, Register } from './index'
-
-/**
- * Eval filename for REPL/debug.
- */
-const EVAL_FILENAME = `[eval].ts`
-
-/**
- * Eval state management.
- */
-class EvalState {
-  input = ''
-  output = ''
-  version = 0
-  lines = 0
-
-  constructor (public path: string) {}
-}
+import { join, resolve, dirname, parse as parsePath, relative } from 'path';
+import { inspect } from 'util';
+import Module = require('module');
+let arg: typeof import('arg');
+import { parse, createRequire, hasOwnProperty, versionGteLt } from './util';
+import {
+  EVAL_FILENAME,
+  EvalState,
+  createRepl,
+  ReplService,
+  setupContext,
+  STDIN_FILENAME,
+  EvalAwarePartialHost,
+  EVAL_NAME,
+  STDIN_NAME,
+  REPL_FILENAME,
+} from './repl';
+import {
+  VERSION,
+  TSError,
+  register,
+  createEsmHooks,
+  createFromPreloadedConfig,
+  DEFAULTS,
+  ExperimentalSpecifierResolution,
+} from './index';
+import type { TSInternal } from './ts-compiler-types';
+import { addBuiltinLibsToObject } from '../dist-raw/node-internal-modules-cjs-helpers';
+import { callInChild } from './child/spawn-child';
+import { findAndReadConfig } from './configuration';
 
 /**
  * Main `bin` functionality.
+ *
+ * This file is split into a chain of functions (phases), each one adding to a shared state object.
+ * This is done so that the next function can either be invoked in-process or, if necessary, invoked in a child process.
+ *
+ * The functions are intentionally given uncreative names and left in the same order as the original code, to make a
+ * smaller git diff.
  */
-export function main (argv: string[]) {
-  const args = arg({
-    // Node.js-like options.
-    '--eval': String,
-    '--interactive': Boolean,
-    '--print': Boolean,
-    '--require': [String],
+export function main(
+  argv: string[] = process.argv.slice(2),
+  entrypointArgs: Record<string, any> = {}
+) {
+  const args = parseArgv(argv, entrypointArgs);
+  const state: BootstrapState = {
+    shouldUseChildProcess: false,
+    isInChildProcess: false,
+    entrypoint: __filename,
+    parseArgvResult: args,
+  };
+  return bootstrap(state);
+}
 
-    // CLI options.
-    '--help': Boolean,
-    '--script-mode': Boolean,
-    '--version': arg.COUNT,
+/**
+ * @internal
+ * Describes state of CLI bootstrapping.
+ * Can be marshalled when necessary to resume bootstrapping in a child process.
+ */
+export interface BootstrapState {
+  isInChildProcess: boolean;
+  shouldUseChildProcess: boolean;
+  entrypoint: string;
+  parseArgvResult: ReturnType<typeof parseArgv>;
+  phase2Result?: ReturnType<typeof phase2>;
+  phase3Result?: ReturnType<typeof phase3>;
+}
 
-    // Project options.
-    '--dir': String,
-    '--files': Boolean,
-    '--compiler': String,
-    '--compiler-options': parse,
-    '--project': String,
-    '--ignore-diagnostics': [String],
-    '--ignore': [String],
-    '--transpile-only': Boolean,
-    '--pretty': Boolean,
-    '--skip-project': Boolean,
-    '--skip-ignore': Boolean,
-    '--prefer-ts-exts': Boolean,
-    '--log-error': Boolean,
+/** @internal */
+export function bootstrap(state: BootstrapState) {
+  if (!state.phase2Result) {
+    state.phase2Result = phase2(state);
+    if (state.shouldUseChildProcess && !state.isInChildProcess) {
+      return callInChild(state);
+    }
+  }
+  if (!state.phase3Result) {
+    state.phase3Result = phase3(state);
+    if (state.shouldUseChildProcess && !state.isInChildProcess) {
+      return callInChild(state);
+    }
+  }
+  return phase4(state);
+}
 
-    // Aliases.
-    '-e': '--eval',
-    '-i': '--interactive',
-    '-p': '--print',
-    '-r': '--require',
-    '-h': '--help',
-    '-s': '--script-mode',
-    '-v': '--version',
-    '-T': '--transpile-only',
-    '-I': '--ignore',
-    '-P': '--project',
-    '-C': '--compiler',
-    '-D': '--ignore-diagnostics',
-    '-O': '--compiler-options'
-  }, {
-    argv,
-    stopAtPositional: true
-  })
+function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
+  arg ??= require('arg');
+  // HACK: technically, this function is not marked @internal so it's possible
+  // that libraries in the wild are doing `require('ts-node/dist/bin').main({'--transpile-only': true})`
+  // We can mark this function @internal in next major release.
+  // For now, rewrite args to avoid a breaking change.
+  entrypointArgs = { ...entrypointArgs };
+  for (const key of Object.keys(entrypointArgs)) {
+    entrypointArgs[
+      key.replace(
+        /([a-z])-([a-z])/g,
+        (_$0, $1, $2: string) => `${$1}${$2.toUpperCase()}`
+      )
+    ] = entrypointArgs[key];
+  }
 
+  const args = {
+    ...entrypointArgs,
+    ...arg(
+      {
+        // Node.js-like options.
+        '--eval': String,
+        '--interactive': Boolean,
+        '--print': Boolean,
+        '--require': [String],
+
+        // CLI options.
+        '--help': Boolean,
+        '--cwdMode': Boolean,
+        '--scriptMode': Boolean,
+        '--version': arg.COUNT,
+        '--showConfig': Boolean,
+        '--esm': Boolean,
+
+        // Project options.
+        '--cwd': String,
+        '--files': Boolean,
+        '--compiler': String,
+        '--compilerOptions': parse,
+        '--project': String,
+        '--ignoreDiagnostics': [String],
+        '--ignore': [String],
+        '--transpileOnly': Boolean,
+        '--transpiler': String,
+        '--swc': Boolean,
+        '--typeCheck': Boolean,
+        '--compilerHost': Boolean,
+        '--pretty': Boolean,
+        '--skipProject': Boolean,
+        '--skipIgnore': Boolean,
+        '--preferTsExts': Boolean,
+        '--logError': Boolean,
+        '--emit': Boolean,
+        '--scope': Boolean,
+        '--scopeDir': String,
+        '--noExperimentalReplAwait': Boolean,
+        '--experimentalSpecifierResolution': String,
+
+        // Aliases.
+        '-e': '--eval',
+        '-i': '--interactive',
+        '-p': '--print',
+        '-r': '--require',
+        '-h': '--help',
+        '-s': '--script-mode',
+        '-v': '--version',
+        '-T': '--transpileOnly',
+        '-H': '--compilerHost',
+        '-I': '--ignore',
+        '-P': '--project',
+        '-C': '--compiler',
+        '-D': '--ignoreDiagnostics',
+        '-O': '--compilerOptions',
+        '--dir': '--cwd',
+
+        // Support both tsc-style camelCase and node-style hypen-case for *all* flags
+        '--cwd-mode': '--cwdMode',
+        '--script-mode': '--scriptMode',
+        '--show-config': '--showConfig',
+        '--compiler-options': '--compilerOptions',
+        '--ignore-diagnostics': '--ignoreDiagnostics',
+        '--transpile-only': '--transpileOnly',
+        '--type-check': '--typeCheck',
+        '--compiler-host': '--compilerHost',
+        '--skip-project': '--skipProject',
+        '--skip-ignore': '--skipIgnore',
+        '--prefer-ts-exts': '--preferTsExts',
+        '--log-error': '--logError',
+        '--scope-dir': '--scopeDir',
+        '--no-experimental-repl-await': '--noExperimentalReplAwait',
+        '--experimental-specifier-resolution':
+          '--experimentalSpecifierResolution',
+      },
+      {
+        argv,
+        stopAtPositional: true,
+      }
+    ),
+  };
+
+  // Only setting defaults for CLI-specific flags
+  // Anything passed to `register()` can be `undefined`; `create()` will apply
+  // defaults.
   const {
-    '--dir': dir = DEFAULTS.dir,
+    '--cwd': cwdArg,
     '--help': help = false,
-    '--script-mode': scriptMode = false,
+    '--scriptMode': scriptMode,
+    '--cwdMode': cwdMode,
     '--version': version = 0,
-    '--require': requires = [],
+    '--showConfig': showConfig,
+    '--require': argsRequire = [],
     '--eval': code = undefined,
     '--print': print = false,
     '--interactive': interactive = false,
-    '--files': files = DEFAULTS.files,
-    '--compiler': compiler = DEFAULTS.compiler,
-    '--compiler-options': compilerOptions = DEFAULTS.compilerOptions,
-    '--project': project = DEFAULTS.project,
-    '--ignore-diagnostics': ignoreDiagnostics = DEFAULTS.ignoreDiagnostics,
-    '--ignore': ignore = DEFAULTS.ignore,
-    '--transpile-only': transpileOnly = DEFAULTS.transpileOnly,
-    '--pretty': pretty = DEFAULTS.pretty,
-    '--skip-project': skipProject = DEFAULTS.skipProject,
-    '--skip-ignore': skipIgnore = DEFAULTS.skipIgnore,
-    '--prefer-ts-exts': preferTsExts = DEFAULTS.preferTsExts,
-    '--log-error': logError = DEFAULTS.logError
-  } = args
+    '--files': files,
+    '--compiler': compiler,
+    '--compilerOptions': compilerOptions,
+    '--project': project,
+    '--ignoreDiagnostics': ignoreDiagnostics,
+    '--ignore': ignore,
+    '--transpileOnly': transpileOnly,
+    '--typeCheck': typeCheck,
+    '--transpiler': transpiler,
+    '--swc': swc,
+    '--compilerHost': compilerHost,
+    '--pretty': pretty,
+    '--skipProject': skipProject,
+    '--skipIgnore': skipIgnore,
+    '--preferTsExts': preferTsExts,
+    '--logError': logError,
+    '--emit': emit,
+    '--scope': scope = undefined,
+    '--scopeDir': scopeDir = undefined,
+    '--noExperimentalReplAwait': noExperimentalReplAwait,
+    '--experimentalSpecifierResolution': experimentalSpecifierResolution,
+    '--esm': esm,
+    _: restArgs,
+  } = args;
+  return {
+    // Note: argv and restArgs may be overwritten by child process
+    argv: process.argv,
+    restArgs,
+
+    cwdArg,
+    help,
+    scriptMode,
+    cwdMode,
+    version,
+    showConfig,
+    argsRequire,
+    code,
+    print,
+    interactive,
+    files,
+    compiler,
+    compilerOptions,
+    project,
+    ignoreDiagnostics,
+    ignore,
+    transpileOnly,
+    typeCheck,
+    transpiler,
+    swc,
+    compilerHost,
+    pretty,
+    skipProject,
+    skipIgnore,
+    preferTsExts,
+    logError,
+    emit,
+    scope,
+    scopeDir,
+    noExperimentalReplAwait,
+    experimentalSpecifierResolution,
+    esm,
+  };
+}
+
+function phase2(payload: BootstrapState) {
+  const { help, version, code, interactive, cwdArg, restArgs, esm } =
+    payload.parseArgvResult;
 
   if (help) {
     console.log(`
-  Usage: ts-node [options] [ -e script | script.ts ] [arguments]
+Usage: ts-node [options] [ -e script | script.ts ] [arguments]
 
-  Options:
+Options:
 
-    -e, --eval [code]              Evaluate code
-    -p, --print                    Print result of \`--eval\`
-    -r, --require [path]           Require a node module before execution
-    -i, --interactive              Opens the REPL even if stdin does not appear to be a terminal
+  -e, --eval [code]               Evaluate code
+  -p, --print                     Print result of \`--eval\`
+  -r, --require [path]            Require a node module before execution
+  -i, --interactive               Opens the REPL even if stdin does not appear to be a terminal
 
-    -h, --help                     Print CLI usage
-    -v, --version                  Print module version information
-    -s, --script-mode              Use cwd from <script.ts> instead of current directory
+  --esm                           Bootstrap with the ESM loader, enabling full ESM support
+  --swc                           Use the faster swc transpiler
 
-    -T, --transpile-only           Use TypeScript's faster \`transpileModule\`
-    -I, --ignore [pattern]         Override the path patterns to skip compilation
-    -P, --project [path]           Path to TypeScript JSON project file
-    -C, --compiler [name]          Specify a custom TypeScript compiler
-    -D, --ignore-diagnostics [code] Ignore TypeScript warnings by diagnostic code
-    -O, --compiler-options [opts]   JSON object to merge with compiler options
+  -h, --help                      Print CLI usage
+  -v, --version                   Print module version information.  -vvv to print additional information
+  --showConfig                    Print resolved configuration and exit
 
-    --dir                          Specify working directory for config resolution
-    --scope                        Scope compiler to files within \`cwd\` only
-    --files                        Load files from \`tsconfig.json\` on startup
-    --pretty                       Use pretty diagnostic formatter (usually enabled by default)
-    --skip-project                 Skip reading \`tsconfig.json\`
-    --skip-ignore                  Skip \`--ignore\` checks
-    --prefer-ts-exts               Prefer importing TypeScript files over JavaScript files
-    --log-error                    Logs TypeScript errors to stderr instead of throwing exceptions
-  `)
+  -T, --transpileOnly             Use TypeScript's faster \`transpileModule\` or a third-party transpiler
+  -H, --compilerHost              Use TypeScript's compiler host API
+  -I, --ignore [pattern]          Override the path patterns to skip compilation
+  -P, --project [path]            Path to TypeScript JSON project file
+  -C, --compiler [name]           Specify a custom TypeScript compiler
+  --transpiler [name]             Specify a third-party, non-typechecking transpiler
+  -D, --ignoreDiagnostics [code]  Ignore TypeScript warnings by diagnostic code
+  -O, --compilerOptions [opts]    JSON object to merge with compiler options
 
-    process.exit(0)
+  --cwd                           Behave as if invoked within this working directory.
+  --files                         Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
+  --pretty                        Use pretty diagnostic formatter (usually enabled by default)
+  --cwdMode                       Use current directory instead of <script.ts> for config resolution
+  --skipProject                   Skip reading \`tsconfig.json\`
+  --skipIgnore                    Skip \`--ignore\` checks
+  --emit                          Emit output files into \`.ts-node\` directory
+  --scope                         Scope compiler to files within \`scopeDir\`.  Anything outside this directory is ignored.
+  --scopeDir                      Directory for \`--scope\`
+  --preferTsExts                  Prefer importing TypeScript files over JavaScript files
+  --logError                      Logs TypeScript errors to stderr instead of throwing exceptions
+  --noExperimentalReplAwait       Disable top-level await in REPL.  Equivalent to node's --no-experimental-repl-await
+  --experimentalSpecifierResolution [node|explicit]
+                                  Equivalent to node's --experimental-specifier-resolution
+`);
+
+    process.exit(0);
   }
 
   // Output project information.
   if (version === 1) {
-    console.log(`v${VERSION}`)
-    process.exit(0)
+    console.log(`v${VERSION}`);
+    process.exit(0);
   }
 
-  const cwd = dir || process.cwd()
-  const scriptPath = args._.length ? resolve(cwd, args._[0]) : undefined
-  const state = new EvalState(scriptPath || join(cwd, EVAL_FILENAME))
+  // Figure out which we are executing: piped stdin, --eval, REPL, and/or entrypoint
+  // This is complicated because node's behavior is complicated
+  // `node -e code -i ./script.js` ignores -e
+  const executeEval = code != null && !(interactive && restArgs.length);
+  const executeEntrypoint = !executeEval && restArgs.length > 0;
+  const executeRepl =
+    !executeEntrypoint &&
+    (interactive || (process.stdin.isTTY && !executeEval));
+  const executeStdin = !executeEval && !executeRepl && !executeEntrypoint;
 
-  // Register the TypeScript compiler instance.
-  const service = register({
-    dir: getCwd(dir, scriptMode, scriptPath),
+  const cwd = cwdArg || process.cwd();
+  /** Unresolved.  May point to a symlink, not realpath.  May be missing file extension */
+  const scriptPath = executeEntrypoint ? resolve(cwd, restArgs[0]) : undefined;
+
+  if (esm) payload.shouldUseChildProcess = true;
+  return {
+    executeEval,
+    executeEntrypoint,
+    executeRepl,
+    executeStdin,
+    cwd,
+    scriptPath,
+  };
+}
+
+function phase3(payload: BootstrapState) {
+  const {
+    emit,
     files,
     pretty,
     transpileOnly,
+    transpiler,
+    noExperimentalReplAwait,
+    typeCheck,
+    swc,
+    compilerHost,
     ignore,
     preferTsExts,
     logError,
+    scriptMode,
+    cwdMode,
     project,
     skipProject,
     skipIgnore,
     compiler,
     ignoreDiagnostics,
     compilerOptions,
-    readFile: code !== undefined
-      ? (path: string) => {
-        if (path === state.path) return state.input
+    argsRequire,
+    scope,
+    scopeDir,
+    esm,
+    experimentalSpecifierResolution,
+  } = payload.parseArgvResult;
+  const { cwd, scriptPath } = payload.phase2Result!;
 
-        try {
-          return readFileSync(path, 'utf8')
-        } catch (err) {/* Ignore. */}
-      }
-      : undefined,
-    fileExists: code !== undefined
-      ? (path: string) => {
-        if (path === state.path) return true
+  const preloadedConfig = findAndReadConfig({
+    cwd,
+    emit,
+    files,
+    pretty,
+    transpileOnly: transpileOnly ?? transpiler != null ? true : undefined,
+    experimentalReplAwait: noExperimentalReplAwait ? false : undefined,
+    typeCheck,
+    transpiler,
+    swc,
+    compilerHost,
+    ignore,
+    logError,
+    projectSearchDir: getProjectSearchDir(cwd, scriptMode, cwdMode, scriptPath),
+    project,
+    skipProject,
+    skipIgnore,
+    compiler,
+    ignoreDiagnostics,
+    compilerOptions,
+    require: argsRequire,
+    scope,
+    scopeDir,
+    preferTsExts,
+    esm,
+    experimentalSpecifierResolution:
+      experimentalSpecifierResolution as ExperimentalSpecifierResolution,
+  });
 
-        try {
-          const stats = statSync(path)
-          return stats.isFile() || stats.isFIFO()
-        } catch (err) {
-          return false
-        }
-      }
-      : undefined
-  })
+  if (preloadedConfig.options.esm) payload.shouldUseChildProcess = true;
+  return { preloadedConfig };
+}
+
+function phase4(payload: BootstrapState) {
+  const { isInChildProcess, entrypoint } = payload;
+  const { version, showConfig, restArgs, code, print, argv } =
+    payload.parseArgvResult;
+  const {
+    executeEval,
+    cwd,
+    executeStdin,
+    executeRepl,
+    executeEntrypoint,
+    scriptPath,
+  } = payload.phase2Result!;
+  const { preloadedConfig } = payload.phase3Result!;
+  /**
+   * <repl>, [stdin], and [eval] are all essentially virtual files that do not exist on disc and are backed by a REPL
+   * service to handle eval-ing of code.
+   */
+  interface VirtualFileState {
+    state: EvalState;
+    repl: ReplService;
+    module?: Module;
+  }
+  let evalStuff: VirtualFileState | undefined;
+  let replStuff: VirtualFileState | undefined;
+  let stdinStuff: VirtualFileState | undefined;
+  let evalAwarePartialHost: EvalAwarePartialHost | undefined = undefined;
+  if (executeEval) {
+    const state = new EvalState(join(cwd, EVAL_FILENAME));
+    evalStuff = {
+      state,
+      repl: createRepl({
+        state,
+        composeWithEvalAwarePartialHost: evalAwarePartialHost,
+        ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl: false,
+      }),
+    };
+    ({ evalAwarePartialHost } = evalStuff.repl);
+    // Create a local module instance based on `cwd`.
+    const module = (evalStuff.module = new Module(EVAL_NAME));
+    module.filename = evalStuff.state.path;
+    module.paths = (Module as any)._nodeModulePaths(cwd);
+  }
+  if (executeStdin) {
+    const state = new EvalState(join(cwd, STDIN_FILENAME));
+    stdinStuff = {
+      state,
+      repl: createRepl({
+        state,
+        composeWithEvalAwarePartialHost: evalAwarePartialHost,
+        ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl: false,
+      }),
+    };
+    ({ evalAwarePartialHost } = stdinStuff.repl);
+    // Create a local module instance based on `cwd`.
+    const module = (stdinStuff.module = new Module(STDIN_NAME));
+    module.filename = stdinStuff.state.path;
+    module.paths = (Module as any)._nodeModulePaths(cwd);
+  }
+  if (executeRepl) {
+    const state = new EvalState(join(cwd, REPL_FILENAME));
+    replStuff = {
+      state,
+      repl: createRepl({
+        state,
+        composeWithEvalAwarePartialHost: evalAwarePartialHost,
+      }),
+    };
+    ({ evalAwarePartialHost } = replStuff.repl);
+  }
+
+  // Register the TypeScript compiler instance.
+  const service = createFromPreloadedConfig({
+    // Since this struct may have been marshalled across thread or process boundaries, we must restore
+    // un-marshall-able values.
+    ...preloadedConfig,
+    options: {
+      ...preloadedConfig.options,
+      readFile: evalAwarePartialHost?.readFile ?? undefined,
+      fileExists: evalAwarePartialHost?.fileExists ?? undefined,
+      tsTrace: DEFAULTS.tsTrace,
+    },
+  });
+  register(service);
+  if (isInChildProcess)
+    (
+      require('./child/child-loader') as typeof import('./child/child-loader')
+    ).lateBindHooks(createEsmHooks(service));
+
+  // Bind REPL service to ts-node compiler service (chicken-and-egg problem)
+  replStuff?.repl.setService(service);
+  evalStuff?.repl.setService(service);
+  stdinStuff?.repl.setService(service);
 
   // Output project information.
-  if (version >= 2) {
-    console.log(`ts-node v${VERSION}`)
-    console.log(`node ${process.version}`)
-    console.log(`compiler v${service.ts.version}`)
-    process.exit(0)
+  if (version === 2) {
+    console.log(`ts-node v${VERSION}`);
+    console.log(`node ${process.version}`);
+    console.log(`compiler v${service.ts.version}`);
+    process.exit(0);
+  }
+  if (version >= 3) {
+    console.log(`ts-node v${VERSION} ${dirname(__dirname)}`);
+    console.log(`node ${process.version}`);
+    console.log(
+      `compiler v${service.ts.version} ${service.compilerPath ?? ''}`
+    );
+    process.exit(0);
   }
 
-  // Create a local module instance based on `cwd`.
-  const module = new Module(state.path)
-  module.filename = state.path
-  module.paths = (Module as any)._nodeModulePaths(cwd)
-
-  // Require specified modules before start-up.
-  ;(Module as any)._preloadModules(requires)
+  if (showConfig) {
+    const ts = service.ts as any as TSInternal;
+    if (typeof ts.convertToTSConfig !== 'function') {
+      console.error(
+        'Error: --showConfig requires a typescript versions >=3.2 that support --showConfig'
+      );
+      process.exit(1);
+    }
+    let moduleTypes = undefined;
+    if (service.options.moduleTypes) {
+      // Assumption: this codepath requires CLI invocation, so moduleTypes must have come from a tsconfig, not API.
+      const showRelativeTo = dirname(service.configFilePath!);
+      moduleTypes = {} as Record<string, string>;
+      for (const [key, value] of Object.entries(service.options.moduleTypes)) {
+        moduleTypes[
+          relative(
+            showRelativeTo,
+            resolve(service.options.optionBasePaths?.moduleTypes!, key)
+          )
+        ] = value;
+      }
+    }
+    const json = {
+      ['ts-node']: {
+        ...service.options,
+        require: service.options.require?.length
+          ? service.options.require
+          : undefined,
+        moduleTypes,
+        optionBasePaths: undefined,
+        compilerOptions: undefined,
+        project: service.configFilePath ?? service.options.project,
+      },
+      ...ts.convertToTSConfig(
+        service.config,
+        service.configFilePath ?? join(cwd, 'ts-node-implicit-tsconfig.json'),
+        service.ts.sys
+      ),
+    };
+    console.log(
+      // Assumes that all configuration options which can possibly be specified via the CLI are JSON-compatible.
+      // If, in the future, we must log functions, for example readFile and fileExists, then we can implement a JSON
+      // replacer function.
+      JSON.stringify(json, null, 2)
+    );
+    process.exit(0);
+  }
 
   // Prepend `ts-node` arguments to CLI for child processes.
-  process.execArgv.unshift(__filename, ...process.argv.slice(2, process.argv.length - args._.length))
-  process.argv = [process.argv[1]].concat(scriptPath || []).concat(args._.slice(1))
+  process.execArgv.push(
+    entrypoint,
+    ...argv.slice(2, argv.length - restArgs.length)
+  );
+  // TODO this comes from BoostrapState
+  process.argv = [process.argv[1]]
+    .concat(executeEntrypoint ? ([scriptPath] as string[]) : [])
+    .concat(restArgs.slice(executeEntrypoint ? 1 : 0));
 
   // Execute the main contents (either eval, script or piped).
-  if (code !== undefined && !interactive) {
-    evalAndExit(service, state, module, code, print)
+  if (executeEntrypoint) {
+    Module.runMain();
   } else {
-    if (args._.length) {
-      Module.runMain()
-    } else {
-      // Piping of execution _only_ occurs when no other script is specified.
-      if (process.stdin.isTTY) {
-        startRepl(service, state, code)
-      } else {
-        let buffer = code || ''
-        process.stdin.on('data', (chunk: Buffer) => buffer += chunk)
-        process.stdin.on('end', () => evalAndExit(service, state, module, buffer, print))
+    // Note: eval and repl may both run, but never with stdin.
+    // If stdin runs, eval and repl will not.
+    if (executeEval) {
+      addBuiltinLibsToObject(global);
+      evalAndExitOnTsError(
+        evalStuff!.repl,
+        evalStuff!.module!,
+        code!,
+        print,
+        'eval'
+      );
+    }
+
+    if (executeRepl) {
+      replStuff!.repl.start();
+    }
+
+    if (executeStdin) {
+      let buffer = code || '';
+      process.stdin.on('data', (chunk: Buffer) => (buffer += chunk));
+      process.stdin.on('end', () => {
+        evalAndExitOnTsError(
+          stdinStuff!.repl,
+          stdinStuff!.module!,
+          buffer,
+          // `echo 123 | node -p` still prints 123
+          print,
+          'stdin'
+        );
+      });
+    }
+  }
+}
+
+/**
+ * Get project search path from args.
+ */
+function getProjectSearchDir(
+  cwd?: string,
+  scriptMode?: boolean,
+  cwdMode?: boolean,
+  scriptPath?: string
+) {
+  // Validate `--script-mode` / `--cwd-mode` / `--cwd` usage is correct.
+  if (scriptMode && cwdMode) {
+    throw new TypeError('--cwd-mode cannot be combined with --script-mode');
+  }
+  if (scriptMode && !scriptPath) {
+    throw new TypeError(
+      '--script-mode must be used with a script name, e.g. `ts-node --script-mode <script.ts>`'
+    );
+  }
+  const doScriptMode =
+    scriptMode === true ? true : cwdMode === true ? false : !!scriptPath;
+  if (doScriptMode) {
+    // Use node's own resolution behavior to ensure we follow symlinks.
+    // scriptPath may omit file extension or point to a directory with or without package.json.
+    // This happens before we are registered, so we tell node's resolver to consider ts, tsx, and jsx files.
+    // In extremely rare cases, is is technically possible to resolve the wrong directory,
+    // because we do not yet know preferTsExts, jsx, nor allowJs.
+    // See also, justification why this will not happen in real-world situations:
+    // https://github.com/TypeStrong/ts-node/pull/1009#issuecomment-613017081
+    const exts = ['.js', '.jsx', '.ts', '.tsx'];
+    const extsTemporarilyInstalled: string[] = [];
+    for (const ext of exts) {
+      if (!hasOwnProperty(require.extensions, ext)) {
+        extsTemporarilyInstalled.push(ext);
+        require.extensions[ext] = function () {};
+      }
+    }
+    try {
+      return dirname(requireResolveNonCached(scriptPath!));
+    } finally {
+      for (const ext of extsTemporarilyInstalled) {
+        delete require.extensions[ext];
       }
     }
   }
+
+  return cwd;
+}
+
+const guaranteedNonexistentDirectoryPrefix = resolve(__dirname, 'doesnotexist');
+let guaranteedNonexistentDirectorySuffix = 0;
+
+/**
+ * require.resolve an absolute path, tricking node into *not* caching the results.
+ * Necessary so that we do not pollute require.resolve cache prior to installing require.extensions
+ *
+ * Is a terrible hack, because node does not expose the necessary cache invalidation APIs
+ * https://stackoverflow.com/questions/59865584/how-to-invalidate-cached-require-resolve-results
+ */
+function requireResolveNonCached(absoluteModuleSpecifier: string) {
+  // node <= 12.1.x fallback: The trick below triggers a node bug on old versions.
+  // On these old versions, pollute the require cache instead. This is a deliberate
+  // ts-node limitation that will *rarely* manifest, and will not matter once node 12
+  // is end-of-life'd on 2022-04-30
+  const isSupportedNodeVersion = versionGteLt(process.versions.node, '12.2.0');
+  if (!isSupportedNodeVersion) return require.resolve(absoluteModuleSpecifier);
+
+  const { dir, base } = parsePath(absoluteModuleSpecifier);
+  const relativeModuleSpecifier = `./${base}`;
+
+  const req = createRequire(
+    join(dir, 'imaginaryUncacheableRequireResolveScript')
+  );
+  return req.resolve(relativeModuleSpecifier, {
+    paths: [
+      `${guaranteedNonexistentDirectoryPrefix}${guaranteedNonexistentDirectorySuffix++}`,
+      ...(req.resolve.paths(relativeModuleSpecifier) || []),
+    ],
+  });
 }
 
 /**
- * Get project path from args.
+ * Evaluate an [eval] or [stdin] script
  */
-function getCwd (dir?: string, scriptMode?: boolean, scriptPath?: string) {
-  // Validate `--script-mode` usage is correct.
-  if (scriptMode) {
-    if (!scriptPath) {
-      throw new TypeError('Script mode must be used with a script name, e.g. `ts-node -s <script.ts>`')
-    }
-
-    if (dir) {
-      throw new TypeError('Script mode cannot be combined with `--dir`')
-    }
-
-    return dirname(scriptPath)
-  }
-
-  return dir
-}
-
-/**
- * Evaluate a script.
- */
-function evalAndExit (service: Register, state: EvalState, module: Module, code: string, isPrinted: boolean) {
-  let result: any
-
-  ;(global as any).__filename = module.filename
-  ;(global as any).__dirname = dirname(module.filename)
-  ;(global as any).exports = module.exports
-  ;(global as any).module = module
-  ;(global as any).require = module.require.bind(module)
+function evalAndExitOnTsError(
+  replService: ReplService,
+  module: Module,
+  code: string,
+  isPrinted: boolean,
+  filenameAndDirname: 'eval' | 'stdin'
+) {
+  let result: any;
+  setupContext(global, module, filenameAndDirname);
 
   try {
-    result = _eval(service, state, code)
+    result = replService.evalCode(code);
   } catch (error) {
     if (error instanceof TSError) {
-      console.error(error)
-      process.exit(1)
+      console.error(error);
+      process.exit(1);
     }
 
-    throw error
+    throw error;
   }
 
   if (isPrinted) {
-    console.log(typeof result === 'string' ? result : inspect(result))
+    console.log(
+      typeof result === 'string'
+        ? result
+        : inspect(result, { colors: process.stdout.isTTY })
+    );
   }
-}
-
-/**
- * Evaluate the code snippet.
- */
-function _eval (service: Register, state: EvalState, input: string) {
-  const lines = state.lines
-  const isCompletion = !/\n$/.test(input)
-  const undo = appendEval(state, input)
-  let output: string
-
-  try {
-    output = service.compile(state.input, state.path, -lines)
-  } catch (err) {
-    undo()
-    throw err
-  }
-
-  // Use `diff` to check for new JavaScript to execute.
-  const changes = diffLines(state.output, output)
-
-  if (isCompletion) {
-    undo()
-  } else {
-    state.output = output
-  }
-
-  return changes.reduce((result, change) => {
-    return change.added ? exec(change.value, state.path) : result
-  }, undefined)
-}
-
-/**
- * Execute some code.
- */
-function exec (code: string, filename: string) {
-  const script = new Script(code, { filename: filename })
-
-  return script.runInThisContext()
-}
-
-/**
- * Start a CLI REPL.
- */
-function startRepl (service: Register, state: EvalState, code?: string) {
-  // Eval incoming code before the REPL starts.
-  if (code) {
-    try {
-      _eval(service, state, `${code}\n`)
-    } catch (err) {
-      console.error(err)
-      process.exit(1)
-    }
-  }
-
-  const repl = start({
-    prompt: '> ',
-    input: process.stdin,
-    output: process.stdout,
-    terminal: process.stdout.isTTY,
-    eval: replEval,
-    useGlobal: true
-  })
-
-  /**
-   * Eval code from the REPL.
-   */
-  function replEval (code: string, _context: any, _filename: string, callback: (err: Error | null, result?: any) => any) {
-    let err: Error | null = null
-    let result: any
-
-    // TODO: Figure out how to handle completion here.
-    if (code === '.scope') {
-      callback(err)
-      return
-    }
-
-    try {
-      result = _eval(service, state, code)
-    } catch (error) {
-      if (error instanceof TSError) {
-        // Support recoverable compilations using >= node 6.
-        if (Recoverable && isRecoverable(error)) {
-          err = new Recoverable(error)
-        } else {
-          console.error(error)
-        }
-      } else {
-        err = error
-      }
-    }
-
-    return callback(err, result)
-  }
-
-  // Bookmark the point where we should reset the REPL state.
-  const resetEval = appendEval(state, '')
-
-  function reset () {
-    resetEval()
-
-    // Hard fix for TypeScript forcing `Object.defineProperty(exports, ...)`.
-    exec('exports = module.exports', state.path)
-  }
-
-  reset()
-  repl.on('reset', reset)
-
-  repl.defineCommand('type', {
-    help: 'Check the type of a TypeScript identifier',
-    action: function (identifier: string) {
-      if (!identifier) {
-        repl.displayPrompt()
-        return
-      }
-
-      const undo = appendEval(state, identifier)
-      const { name, comment } = service.getTypeInfo(state.input, state.path, state.input.length)
-
-      undo()
-
-      repl.outputStream.write(`${name}\n${comment ? `${comment}\n` : ''}`)
-      repl.displayPrompt()
-    }
-  })
-
-  // Set up REPL history when available natively via node.js >= 11.
-  if (repl.setupHistory) {
-    const historyPath = process.env.TS_NODE_HISTORY || join(homedir(), '.ts_node_repl_history')
-
-    repl.setupHistory(historyPath, err => {
-      if (!err) return
-
-      console.error(err)
-      process.exit(1)
-    })
-  }
-}
-
-/**
- * Append to the eval instance and return an undo function.
- */
-function appendEval (state: EvalState, input: string) {
-  const undoInput = state.input
-  const undoVersion = state.version
-  const undoOutput = state.output
-  const undoLines = state.lines
-
-  // Handle ASI issues with TypeScript re-evaluation.
-  if (undoInput.charAt(undoInput.length - 1) === '\n' && /^\s*[\/\[(`]/.test(input) && !/;\s*$/.test(undoInput)) {
-    state.input = `${state.input.slice(0, -1)};\n`
-  }
-
-  state.input += input
-  state.lines += lineCount(input)
-  state.version++
-
-  return function () {
-    state.input = undoInput
-    state.output = undoOutput
-    state.version = undoVersion
-    state.lines = undoLines
-  }
-}
-
-/**
- * Count the number of lines.
- */
-function lineCount (value: string) {
-  let count = 0
-
-  for (const char of value) {
-    if (char === '\n') {
-      count++
-    }
-  }
-
-  return count
-}
-
-const RECOVERY_CODES: Set<number> = new Set([
-  1003, // "Identifier expected."
-  1005, // "')' expected."
-  1109, // "Expression expected."
-  1126, // "Unexpected end of text."
-  1160, // "Unterminated template literal."
-  1161, // "Unterminated regular expression literal."
-  2355 // "A function whose declared type is neither 'void' nor 'any' must return a value."
-])
-
-/**
- * Check if a function can recover gracefully.
- */
-function isRecoverable (error: TSError) {
-  return error.diagnosticCodes.every(code => RECOVERY_CODES.has(code))
 }
 
 if (require.main === module) {
-  main(process.argv.slice(2))
+  main();
 }

@@ -1,0 +1,13 @@
+{
+  "ts-node": {
+    "transpileOnly": true
+  },
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ESNext",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true
+  }
+}

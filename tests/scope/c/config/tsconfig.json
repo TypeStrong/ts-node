@@ -1,0 +1,6 @@
+{
+  "ts-node": {
+    "scope": true,
+    "scopeDir": "./scopedir"
+  }
+}

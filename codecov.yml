@@ -1,0 +1,18 @@
+fixes:
+  # Remap from npm-installed ts-node to root of project
+  # This can take the place of ./scripts/rewrite-coverage-paths.js
+  - "tests/node_modules/ts-node/::"
+
+coverage:
+  status:
+    patch:
+      default:
+        # Do not fail when `patch` coverage is low.  When this fails, it is misleading and not necessarily bad.
+        # For example if a patch changes 2 lines, and only one is covered, then patch coverage is 50%.
+        target: 0%
+    project:
+      default:
+        threshold: 1%
+
+comment:
+  layout: "files"

@@ -1,0 +1,6 @@
+{
+  "ts-node": {
+    "require": ["./require-hook"],
+    "scopeDir": "./scopedir"
+  }
+}
