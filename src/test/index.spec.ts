@@ -197,6 +197,22 @@ test.suite('ts-node', (test) => {
       expect(stdout).toBe('hello world\n');
     });
 
+    test.suite('should support js extension', (test) => {
+      test('test', async () => {
+        const { err, stdout } = await exec(
+          [
+            CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
+            '-pe "import { main } from \'./index\';main()"',
+          ].join(' '),
+          {
+            cwd: join(TEST_DIR, 'import-with-js-extension'),
+          }
+        );
+        expect(err).toBe(null);
+        expect(stdout).toBe('hello world\n');
+      });
+    });
+
     test.suite('should support cts when module = CommonJS', (test) => {
       test.runIf(tsSupportsMtsCtsExtensions);
       test('test', async (t) => {
