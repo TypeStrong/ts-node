@@ -1,4 +1,4 @@
-import { resolve, dirname } from 'path';
+import { resolve, dirname, join } from 'path';
 import type * as _ts from 'typescript';
 import {
   CreateOptions,
@@ -167,9 +167,13 @@ export function readConfig(
 
   // Read project configuration when available.
   if (!skipProject) {
-    configFilePath = project
-      ? resolve(cwd, project)
-      : ts.findConfigFile(projectSearchDir, fileExists);
+    if(project) {
+      const resolved = resolve(cwd, project);
+      const nested = join(resolved, 'tsconfig.json');
+      configFilePath = fileExists(nested) ? nested : resolved;
+    } else {
+      ts.findConfigFile(projectSearchDir, fileExists);
+    }
 
     if (configFilePath) {
       let pathToNextConfigInChain = configFilePath;
