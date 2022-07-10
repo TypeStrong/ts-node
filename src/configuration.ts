@@ -172,7 +172,7 @@ export function readConfig(
       const nested = join(resolved, 'tsconfig.json');
       configFilePath = fileExists(nested) ? nested : resolved;
     } else {
-      ts.findConfigFile(projectSearchDir, fileExists);
+      configFilePath = ts.findConfigFile(projectSearchDir, fileExists);
     }
 
     if (configFilePath) {
