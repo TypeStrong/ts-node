@@ -167,7 +167,7 @@ export function readConfig(
 
   // Read project configuration when available.
   if (!skipProject) {
-    if(project) {
+    if (project) {
       const resolved = resolve(cwd, project);
       const nested = join(resolved, 'tsconfig.json');
       configFilePath = fileExists(nested) ? nested : resolved;
