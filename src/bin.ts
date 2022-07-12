@@ -48,6 +48,7 @@ export function main(
   const state: BootstrapState = {
     shouldUseChildProcess: false,
     isInChildProcess: false,
+    isCli: true,
     tsNodeScript: __filename,
     parseArgvResult: args,
   };
@@ -62,6 +63,11 @@ export function main(
 export interface BootstrapState {
   isInChildProcess: boolean;
   shouldUseChildProcess: boolean;
+  /**
+   * True if bootstrapping the ts-node CLI process or the direct child necessitated by `--esm`.
+   * false if bootstrapping a subsequently `fork()`ed child.
+   */
+  isCli: boolean;
   tsNodeScript: string;
   parseArgvResult: ReturnType<typeof parseArgv>;
   phase2Result?: ReturnType<typeof phase2>;
@@ -75,7 +81,7 @@ export function bootstrap(state: BootstrapState) {
     if (state.shouldUseChildProcess && !state.isInChildProcess) {
       // Note: When transitioning into the child-process after `phase2`,
       // the updated working directory needs to be preserved.
-      return callInChild(state, state.phase2Result.targetCwd);
+      return callInChild(state);
     }
   }
   if (!state.phase3Result) {
@@ -83,7 +89,7 @@ export function bootstrap(state: BootstrapState) {
     if (state.shouldUseChildProcess && !state.isInChildProcess) {
       // Note: When transitioning into the child-process after `phase2`,
       // the updated working directory needs to be preserved.
-      return callInChild(state, state.phase2Result.targetCwd);
+      return callInChild(state);
     }
   }
   return phase4(state);
@@ -297,8 +303,7 @@ Options:
   -D, --ignoreDiagnostics [code]  Ignore TypeScript warnings by diagnostic code
   -O, --compilerOptions [opts]    JSON object to merge with compiler options
 
-  --cwd                           Sets the working directory of the spawned script. Also useful for the
-                                  automatic discovering of the \`tsconfig.json\` project.
+  --cwd                           Behave as if invoked within this working directory.
   --files                         Load \`files\`, \`include\` and \`exclude\` from \`tsconfig.json\` on startup
   --pretty                        Use pretty diagnostic formatter (usually enabled by default)
   --cwdMode                       Use current directory instead of <script.ts> for config resolution
@@ -323,24 +328,14 @@ Options:
     process.exit(0);
   }
 
-  let targetCwd: string;
-
-  // Switch to the target `--cwd` if specified.
-  if (cwdArg !== undefined) {
-    targetCwd = resolve(cwdArg);
-    process.chdir(targetCwd);
-  } else {
-    targetCwd = process.cwd();
-  }
+  const cwd = cwdArg ? resolve(cwdArg) : process.cwd();
 
   // If ESM is explicitly enabled through the flag, stage3 should be run in a child process
   // with the ESM loaders configured.
-  if (esm) {
-    payload.shouldUseChildProcess = true;
-  }
+  if (esm) payload.shouldUseChildProcess = true;
 
   return {
-    targetCwd,
+    cwd,
   };
 }
 
@@ -372,7 +367,7 @@ function phase3(payload: BootstrapState) {
     esm,
     experimentalSpecifierResolution,
   } = payload.parseArgvResult;
-  const { targetCwd } = payload.phase2Result!;
+  const { cwd } = payload.phase2Result!;
 
   // NOTE: When we transition to a child process for ESM, the entry-point script determined
   // here might not be the one used later in `phase4`. This can happen when we execute the
@@ -380,10 +375,10 @@ function phase3(payload: BootstrapState) {
   // We will always use the original TS project in forked processes anyway, so it is
   // expected and acceptable to retrieve the entry-point information here in `phase2`.
   // See: https://github.com/TypeStrong/ts-node/issues/1812.
-  const { entryPointPath } = getEntryPointInfo(payload.parseArgvResult!);
+  const { entryPointPath } = getEntryPointInfo(payload);
 
   const preloadedConfig = findAndReadConfig({
-    cwd: targetCwd,
+    cwd,
     emit,
     files,
     pretty,
@@ -396,7 +391,7 @@ function phase3(payload: BootstrapState) {
     ignore,
     logError,
     projectSearchDir: getProjectSearchDir(
-      targetCwd,
+      cwd,
       scriptMode,
       cwdMode,
       entryPointPath
@@ -418,9 +413,7 @@ function phase3(payload: BootstrapState) {
 
   // If ESM is enabled through the parsed tsconfig, stage4 should be run in a child
   // process with the ESM loaders configured.
-  if (preloadedConfig.options.esm) {
-    payload.shouldUseChildProcess = true;
-  }
+  if (preloadedConfig.options.esm) payload.shouldUseChildProcess = true;
 
   return { preloadedConfig };
 }
@@ -441,9 +434,11 @@ function phase3(payload: BootstrapState) {
  * details can be found in here: https://github.com/TypeStrong/ts-node/issues/1812.
  */
 function getEntryPointInfo(
-  argvResult: NonNullable<BootstrapState['parseArgvResult']>
+  state: BootstrapState
 ) {
-  const { code, interactive, restArgs } = argvResult;
+  const { code, interactive, restArgs } = state.parseArgvResult!;
+  const { cwd } = state.phase2Result!;
+  const { isCli } = state;
 
   // Figure out which we are executing: piped stdin, --eval, REPL, and/or entrypoint
   // This is complicated because node's behavior is complicated
@@ -455,8 +450,11 @@ function getEntryPointInfo(
     (interactive || (process.stdin.isTTY && !executeEval));
   const executeStdin = !executeEval && !executeRepl && !executeEntrypoint;
 
-  /** Unresolved. May point to a symlink, not realpath. May be missing file extension */
-  const entryPointPath = executeEntrypoint ? resolve(restArgs[0]) : undefined;
+  /**
+   * Unresolved. May point to a symlink, not realpath. May be missing file extension
+   * NOTE: resolution relative to cwd option (not `process.cwd()`) is legacy backwards-compat; should be changed in next major: https://github.com/TypeStrong/ts-node/issues/1834
+   */
+  const entryPointPath = executeEntrypoint ? (isCli ? resolve(cwd, restArgs[0]) : resolve(restArgs[0])) : undefined;
 
   return {
     executeEval,
@@ -471,7 +469,7 @@ function phase4(payload: BootstrapState) {
   const { isInChildProcess, tsNodeScript } = payload;
   const { version, showConfig, restArgs, code, print, argv } =
     payload.parseArgvResult;
-  const { targetCwd } = payload.phase2Result!;
+  const { cwd } = payload.phase2Result!;
   const { preloadedConfig } = payload.phase3Result!;
 
   const {
@@ -480,7 +478,7 @@ function phase4(payload: BootstrapState) {
     executeEval,
     executeRepl,
     executeStdin,
-  } = getEntryPointInfo(payload.parseArgvResult!);
+  } = getEntryPointInfo(payload);
 
   /**
    * <repl>, [stdin], and [eval] are all essentially virtual files that do not exist on disc and are backed by a REPL
@@ -496,7 +494,7 @@ function phase4(payload: BootstrapState) {
   let stdinStuff: VirtualFileState | undefined;
   let evalAwarePartialHost: EvalAwarePartialHost | undefined = undefined;
   if (executeEval) {
-    const state = new EvalState(join(targetCwd, EVAL_FILENAME));
+    const state = new EvalState(join(cwd, EVAL_FILENAME));
     evalStuff = {
       state,
       repl: createRepl({
@@ -509,10 +507,10 @@ function phase4(payload: BootstrapState) {
     // Create a local module instance based on `cwd`.
     const module = (evalStuff.module = new Module(EVAL_NAME));
     module.filename = evalStuff.state.path;
-    module.paths = (Module as any)._nodeModulePaths(targetCwd);
+    module.paths = (Module as any)._nodeModulePaths(cwd);
   }
   if (executeStdin) {
-    const state = new EvalState(join(targetCwd, STDIN_FILENAME));
+    const state = new EvalState(join(cwd, STDIN_FILENAME));
     stdinStuff = {
       state,
       repl: createRepl({
@@ -525,10 +523,10 @@ function phase4(payload: BootstrapState) {
     // Create a local module instance based on `cwd`.
     const module = (stdinStuff.module = new Module(STDIN_NAME));
     module.filename = stdinStuff.state.path;
-    module.paths = (Module as any)._nodeModulePaths(targetCwd);
+    module.paths = (Module as any)._nodeModulePaths(cwd);
   }
   if (executeRepl) {
-    const state = new EvalState(join(targetCwd, REPL_FILENAME));
+    const state = new EvalState(join(cwd, REPL_FILENAME));
     replStuff = {
       state,
       repl: createRepl({
@@ -614,7 +612,7 @@ function phase4(payload: BootstrapState) {
       ...ts.convertToTSConfig(
         service.config,
         service.configFilePath ??
-          join(targetCwd, 'ts-node-implicit-tsconfig.json'),
+          join(cwd, 'ts-node-implicit-tsconfig.json'),
         service.ts.sys
       ),
     };
@@ -630,7 +628,7 @@ function phase4(payload: BootstrapState) {
   // Prepend `ts-node` arguments to CLI for child processes.
   process.execArgv.push(
     tsNodeScript,
-    ...sanitizeArgvForChildForking(argv.slice(2, argv.length - restArgs.length))
+    ...argv.slice(2, argv.length - restArgs.length)
   );
 
   // TODO this comes from BootstrapState
@@ -754,30 +752,6 @@ function requireResolveNonCached(absoluteModuleSpecifier: string) {
       ...(req.resolve.paths(relativeModuleSpecifier) || []),
     ],
   });
-}
-
-/**
- * Sanitizes the specified argv string array to be useful for child processes
- * which may be created using `child_process.fork`. Some initial `ts-node` options
- * should not be preserved and forwarded to child process forks.
- *
- *   * `--cwd` should not override the working directory in forked processes.
- */
-function sanitizeArgvForChildForking(argv: string[]): string[] {
-  let result: string[] = [];
-  let omitNext = false;
-
-  for (const value of argv) {
-    if (value === '--cwd' || value === '--dir') {
-      omitNext = true;
-    } else if (!omitNext) {
-      result.push(value);
-    } else {
-      omitNext = false;
-    }
-  }
-
-  return result;
 }
 
 /**

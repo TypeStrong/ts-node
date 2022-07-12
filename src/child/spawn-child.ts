@@ -1,10 +1,8 @@
 import type { BootstrapState } from '../bin';
 import { spawn } from 'child_process';
-import { brotliCompressSync } from 'zlib';
 import { pathToFileURL } from 'url';
 import { versionGteLt } from '../util';
-
-const argPrefix = '--brotli-base64-config=';
+import { argPrefix, compress } from './argv-payload';
 
 /**
  * @internal
@@ -12,7 +10,7 @@ const argPrefix = '--brotli-base64-config=';
  * @param targetCwd Working directory to be preserved when transitioning to
  *   the child process.
  */
-export function callInChild(state: BootstrapState, targetCwd: string) {
+export function callInChild(state: BootstrapState) {
   if (!versionGteLt(process.versions.node, '12.17.0')) {
     throw new Error(
       '`ts-node-esm` and `ts-node --esm` require node version 12.17.0 or newer.'
@@ -27,14 +25,11 @@ export function callInChild(state: BootstrapState, targetCwd: string) {
       // Node on Windows doesn't like `c:\` absolute paths here; must be `file:///c:/`
       pathToFileURL(require.resolve('../../child-loader.mjs')).toString(),
       require.resolve('./child-entrypoint.js'),
-      `${argPrefix}${brotliCompressSync(
-        Buffer.from(JSON.stringify(state), 'utf8')
-      ).toString('base64')}`,
+      `${argPrefix}${compress(state)}`,
       ...state.parseArgvResult.restArgs,
     ],
     {
       stdio: 'inherit',
-      cwd: targetCwd,
       argv0: process.argv0,
     }
   );
