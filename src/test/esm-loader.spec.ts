@@ -362,7 +362,10 @@ test.suite('esm', (test) => {
       test.suite('esm child process working directory', (test) => {
         test('should have the correct working directory in the user entry-point', async () => {
           const { err, stdout, stderr } = await exec(
-            `${BIN_PATH} --esm --cwd ./working-dir/esm/ index.ts`
+            `${BIN_PATH} --esm --cwd ./esm/ index.ts`,
+            {
+              cwd: resolve(TEST_DIR, 'working-dir'),
+            }
           );
 
           expect(err).toBe(null);
@@ -377,7 +380,10 @@ test.suite('esm', (test) => {
 
             test('should have the correct working directory in the user entry-point', async () => {
               const { err, stdout, stderr } = await exec(
-                `${BIN_PATH} --esm --cwd ./working-dir/esm-node-next/ index.ts`
+                `${BIN_PATH} --esm --cwd ./esm-node-next/ index.ts`,
+                {
+                  cwd: resolve(TEST_DIR, 'working-dir'),
+                }
               );
 
               expect(err).toBe(null);

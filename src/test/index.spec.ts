@@ -619,7 +619,10 @@ test.suite('ts-node', (test) => {
 
     test('should have the correct working directory in the user entry-point', async () => {
       const { err, stdout, stderr } = await exec(
-        `${BIN_PATH} --cwd ./working-dir/cjs/ index.ts`
+        `${BIN_PATH} --cwd ./cjs index.ts`,
+        {
+          cwd: resolve(TEST_DIR, 'working-dir'),
+        }
       );
 
       expect(err).toBe(null);
