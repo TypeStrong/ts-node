@@ -433,9 +433,7 @@ function phase3(payload: BootstrapState) {
  * configuration and entry-point information is only reliable in the final phase. More
  * details can be found in here: https://github.com/TypeStrong/ts-node/issues/1812.
  */
-function getEntryPointInfo(
-  state: BootstrapState
-) {
+function getEntryPointInfo(state: BootstrapState) {
   const { code, interactive, restArgs } = state.parseArgvResult!;
   const { cwd } = state.phase2Result!;
   const { isCli } = state;
@@ -454,7 +452,11 @@ function getEntryPointInfo(
    * Unresolved. May point to a symlink, not realpath. May be missing file extension
    * NOTE: resolution relative to cwd option (not `process.cwd()`) is legacy backwards-compat; should be changed in next major: https://github.com/TypeStrong/ts-node/issues/1834
    */
-  const entryPointPath = executeEntrypoint ? (isCli ? resolve(cwd, restArgs[0]) : resolve(restArgs[0])) : undefined;
+  const entryPointPath = executeEntrypoint
+    ? isCli
+      ? resolve(cwd, restArgs[0])
+      : resolve(restArgs[0])
+    : undefined;
 
   return {
     executeEval,
@@ -611,8 +613,7 @@ function phase4(payload: BootstrapState) {
       },
       ...ts.convertToTSConfig(
         service.config,
-        service.configFilePath ??
-          join(cwd, 'ts-node-implicit-tsconfig.json'),
+        service.configFilePath ?? join(cwd, 'ts-node-implicit-tsconfig.json'),
         service.ts.sys
       ),
     };

@@ -13,14 +13,12 @@ state.parseArgvResult.restArgs = process.argv.slice(3);
 
 // Modify and re-compress the payload delivered to subsequent child processes.
 // This logic may be refactored into bin.ts by https://github.com/TypeStrong/ts-node/issues/1831
-if(state.isCli) {
+if (state.isCli) {
   const stateForChildren: BootstrapState = {
     ...state,
-    isCli: false
+    isCli: false,
   };
-  state.parseArgvResult.argv[2] = `${argPrefix}${
-    compress(stateForChildren)
-  }`;
+  state.parseArgvResult.argv[2] = `${argPrefix}${compress(stateForChildren)}`;
 }
 
 bootstrap(state);
