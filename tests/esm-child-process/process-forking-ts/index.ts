@@ -1,12 +1,12 @@
 import { fork } from 'child_process';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 // Initially set the exit code to non-zero. We only set it to `0` when the
 // worker process finishes properly with the expected stdout message.
 process.exitCode = 1;
 
-process.chdir(dirname(fileURLToPath(import.meta.url)));
+process.chdir(join(dirname(fileURLToPath(import.meta.url)), 'subfolder'));
 
 const workerProcess = fork('./worker.ts', [], {
   stdio: 'pipe',

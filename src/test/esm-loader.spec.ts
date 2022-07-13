@@ -377,7 +377,7 @@ test.suite('esm', (test) => {
       test.suite('esm child process and forking', (test) => {
         test('should be able to fork vanilla NodeJS script', async () => {
           const { err, stdout, stderr } = await exec(
-            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking/index.ts`
+            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-js/index.ts`
           );
 
           expect(err).toBe(null);
@@ -385,9 +385,9 @@ test.suite('esm', (test) => {
           expect(stderr).toBe('');
         });
 
-        test('should be able to fork into a nested TypeScript ESM script', async () => {
+        test('should be able to fork TypeScript script', async () => {
           const { err, stdout, stderr } = await exec(
-            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-nested-esm/index.ts`
+            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-ts/index.ts`
           );
 
           expect(err).toBe(null);
@@ -395,9 +395,9 @@ test.suite('esm', (test) => {
           expect(stderr).toBe('');
         });
 
-        test('should be possible to fork into a nested TypeScript script with respect to the working directory', async () => {
+        test('should be able to fork TypeScript script by absolute path', async () => {
           const { err, stdout, stderr } = await exec(
-            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-nested-relative/index.ts`
+            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-ts-abs/index.ts`
           );
 
           expect(err).toBe(null);
