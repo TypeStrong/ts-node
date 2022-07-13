@@ -376,7 +376,7 @@ export interface CreateOptions {
   /**
    * Allow using voluntary `.ts` file extension in import specifiers.
    *
-   * Typically, in ESM projects, import specifiers must hanve an emit extension, `.js`, `.cjs`, or `.mjs`,
+   * Typically, in ESM projects, import specifiers must have an emit extension, `.js`, `.cjs`, or `.mjs`,
    * and we automatically map to the corresponding `.ts`, `.cts`, or `.mts` source file.  This is the
    * recommended approach.
    *
