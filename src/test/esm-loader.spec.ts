@@ -372,26 +372,6 @@ test.suite('esm', (test) => {
           expect(stdout.trim()).toBe('Passing');
           expect(stderr).toBe('');
         });
-
-        test.suite(
-          'with NodeNext TypeScript resolution and `.mts` extension',
-          (test) => {
-            test.runIf(tsSupportsStableNodeNextNode16);
-
-            test('should have the correct working directory in the user entry-point', async () => {
-              const { err, stdout, stderr } = await exec(
-                `${BIN_PATH} --esm --cwd ./esm-node-next/ index.ts`,
-                {
-                  cwd: resolve(TEST_DIR, 'working-dir'),
-                }
-              );
-
-              expect(err).toBe(null);
-              expect(stdout.trim()).toBe('Passing');
-              expect(stderr).toBe('');
-            });
-          }
-        );
       });
 
       test.suite('esm child process and forking', (test) => {
@@ -424,26 +404,6 @@ test.suite('esm', (test) => {
           expect(stdout.trim()).toBe('Passing: from main');
           expect(stderr).toBe('');
         });
-
-        test.suite(
-          'with NodeNext TypeScript resolution and `.mts` extension',
-          (test) => {
-            test.runIf(tsSupportsStableNodeNextNode16);
-
-            test('should be able to fork into a nested TypeScript ESM script', async () => {
-              const { err, stdout, stderr } = await exec(
-                `${BIN_PATH} --esm ./process-forking-nested-esm-node-next/index.mts`,
-                {
-                  cwd: resolve(TEST_DIR, 'esm-child-process'),
-                }
-              );
-
-              expect(err).toBe(null);
-              expect(stdout.trim()).toBe('Passing: from main');
-              expect(stderr).toBe('');
-            });
-          }
-        );
       });
 
       test.suite('parent passes signals to child', (test) => {
