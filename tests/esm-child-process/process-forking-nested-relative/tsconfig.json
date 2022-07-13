@@ -3,6 +3,6 @@
     "module": "ESNext"
   },
   "ts-node": {
-    "transpileOnly": true
+    "swc": true
   }
 }
