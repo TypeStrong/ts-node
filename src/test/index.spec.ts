@@ -617,6 +617,33 @@ test.suite('ts-node', (test) => {
       }
     });
 
+    test('should have the correct working directory in the user entry-point', async () => {
+      const { err, stdout, stderr } = await exec(
+        `${BIN_PATH} --cwd ./cjs index.ts`,
+        {
+          cwd: resolve(TEST_DIR, 'working-dir'),
+        }
+      );
+
+      expect(err).toBe(null);
+      expect(stdout.trim()).toBe('Passing');
+      expect(stderr).toBe('');
+    });
+
+    // Disabled due to bug:
+    // --cwd is passed to forked children when not using --esm, erroneously affects their entrypoint resolution.
+    // tracked/fixed by either https://github.com/TypeStrong/ts-node/issues/1834
+    // or https://github.com/TypeStrong/ts-node/issues/1831
+    test.skip('should be able to fork into a nested TypeScript script with a modified working directory', async () => {
+      const { err, stdout, stderr } = await exec(
+        `${BIN_PATH} --cwd ./working-dir/forking/ index.ts`
+      );
+
+      expect(err).toBe(null);
+      expect(stdout.trim()).toBe('Passing: from main');
+      expect(stderr).toBe('');
+    });
+
     test.suite('should read ts-node options from tsconfig.json', (test) => {
       const BIN_EXEC = `"${BIN_PATH}" --project tsconfig-options/tsconfig.json`;
 

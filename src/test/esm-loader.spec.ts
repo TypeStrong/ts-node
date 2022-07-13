@@ -22,6 +22,7 @@ import {
   TEST_DIR,
   tsSupportsImportAssertions,
   tsSupportsResolveJsonModule,
+  tsSupportsStableNodeNextNode16,
 } from './helpers';
 import { createExec, createSpawn, ExecReturn } from './exec-helpers';
 import { join, resolve } from 'path';
@@ -357,6 +358,53 @@ test.suite('esm', (test) => {
           expect(stderr).toBe('');
         });
       }
+
+      test.suite('esm child process working directory', (test) => {
+        test('should have the correct working directory in the user entry-point', async () => {
+          const { err, stdout, stderr } = await exec(
+            `${BIN_PATH} --esm --cwd ./esm/ index.ts`,
+            {
+              cwd: resolve(TEST_DIR, 'working-dir'),
+            }
+          );
+
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe('Passing');
+          expect(stderr).toBe('');
+        });
+      });
+
+      test.suite('esm child process and forking', (test) => {
+        test('should be able to fork vanilla NodeJS script', async () => {
+          const { err, stdout, stderr } = await exec(
+            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-js/index.ts`
+          );
+
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe('Passing: from main');
+          expect(stderr).toBe('');
+        });
+
+        test('should be able to fork TypeScript script', async () => {
+          const { err, stdout, stderr } = await exec(
+            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-ts/index.ts`
+          );
+
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe('Passing: from main');
+          expect(stderr).toBe('');
+        });
+
+        test('should be able to fork TypeScript script by absolute path', async () => {
+          const { err, stdout, stderr } = await exec(
+            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-ts-abs/index.ts`
+          );
+
+          expect(err).toBe(null);
+          expect(stdout.trim()).toBe('Passing: from main');
+          expect(stderr).toBe('');
+        });
+      });
 
       test.suite('parent passes signals to child', (test) => {
         test.runSerially();

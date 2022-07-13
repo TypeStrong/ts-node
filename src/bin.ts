@@ -48,7 +48,8 @@ export function main(
   const state: BootstrapState = {
     shouldUseChildProcess: false,
     isInChildProcess: false,
-    entrypoint: __filename,
+    isCli: true,
+    tsNodeScript: __filename,
     parseArgvResult: args,
   };
   return bootstrap(state);
@@ -62,7 +63,12 @@ export function main(
 export interface BootstrapState {
   isInChildProcess: boolean;
   shouldUseChildProcess: boolean;
-  entrypoint: string;
+  /**
+   * True if bootstrapping the ts-node CLI process or the direct child necessitated by `--esm`.
+   * false if bootstrapping a subsequently `fork()`ed child.
+   */
+  isCli: boolean;
+  tsNodeScript: string;
   parseArgvResult: ReturnType<typeof parseArgv>;
   phase2Result?: ReturnType<typeof phase2>;
   phase3Result?: ReturnType<typeof phase3>;
@@ -73,12 +79,16 @@ export function bootstrap(state: BootstrapState) {
   if (!state.phase2Result) {
     state.phase2Result = phase2(state);
     if (state.shouldUseChildProcess && !state.isInChildProcess) {
+      // Note: When transitioning into the child-process after `phase2`,
+      // the updated working directory needs to be preserved.
       return callInChild(state);
     }
   }
   if (!state.phase3Result) {
     state.phase3Result = phase3(state);
     if (state.shouldUseChildProcess && !state.isInChildProcess) {
+      // Note: When transitioning into the child-process after `phase2`,
+      // the updated working directory needs to be preserved.
       return callInChild(state);
     }
   }
@@ -264,8 +274,7 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
 }
 
 function phase2(payload: BootstrapState) {
-  const { help, version, code, interactive, cwdArg, restArgs, esm } =
-    payload.parseArgvResult;
+  const { help, version, cwdArg, esm } = payload.parseArgvResult;
 
   if (help) {
     console.log(`
@@ -319,28 +328,14 @@ Options:
     process.exit(0);
   }
 
-  // Figure out which we are executing: piped stdin, --eval, REPL, and/or entrypoint
-  // This is complicated because node's behavior is complicated
-  // `node -e code -i ./script.js` ignores -e
-  const executeEval = code != null && !(interactive && restArgs.length);
-  const executeEntrypoint = !executeEval && restArgs.length > 0;
-  const executeRepl =
-    !executeEntrypoint &&
-    (interactive || (process.stdin.isTTY && !executeEval));
-  const executeStdin = !executeEval && !executeRepl && !executeEntrypoint;
+  const cwd = cwdArg ? resolve(cwdArg) : process.cwd();
 
-  const cwd = cwdArg || process.cwd();
-  /** Unresolved.  May point to a symlink, not realpath.  May be missing file extension */
-  const scriptPath = executeEntrypoint ? resolve(cwd, restArgs[0]) : undefined;
-
+  // If ESM is explicitly enabled through the flag, stage3 should be run in a child process
+  // with the ESM loaders configured.
   if (esm) payload.shouldUseChildProcess = true;
+
   return {
-    executeEval,
-    executeEntrypoint,
-    executeRepl,
-    executeStdin,
     cwd,
-    scriptPath,
   };
 }
 
@@ -372,7 +367,15 @@ function phase3(payload: BootstrapState) {
     esm,
     experimentalSpecifierResolution,
   } = payload.parseArgvResult;
-  const { cwd, scriptPath } = payload.phase2Result!;
+  const { cwd } = payload.phase2Result!;
+
+  // NOTE: When we transition to a child process for ESM, the entry-point script determined
+  // here might not be the one used later in `phase4`. This can happen when we execute the
+  // original entry-point but then the process forks itself using e.g. `child_process.fork`.
+  // We will always use the original TS project in forked processes anyway, so it is
+  // expected and acceptable to retrieve the entry-point information here in `phase2`.
+  // See: https://github.com/TypeStrong/ts-node/issues/1812.
+  const { entryPointPath } = getEntryPointInfo(payload);
 
   const preloadedConfig = findAndReadConfig({
     cwd,
@@ -387,7 +390,12 @@ function phase3(payload: BootstrapState) {
     compilerHost,
     ignore,
     logError,
-    projectSearchDir: getProjectSearchDir(cwd, scriptMode, cwdMode, scriptPath),
+    projectSearchDir: getProjectSearchDir(
+      cwd,
+      scriptMode,
+      cwdMode,
+      entryPointPath
+    ),
     project,
     skipProject,
     skipIgnore,
@@ -403,23 +411,77 @@ function phase3(payload: BootstrapState) {
       experimentalSpecifierResolution as ExperimentalSpecifierResolution,
   });
 
+  // If ESM is enabled through the parsed tsconfig, stage4 should be run in a child
+  // process with the ESM loaders configured.
   if (preloadedConfig.options.esm) payload.shouldUseChildProcess = true;
+
   return { preloadedConfig };
 }
 
+/**
+ * Determines the entry-point information from the argv and phase2 result. This
+ * method will be invoked in two places:
+ *
+ *   1. In phase 3 to be able to find a project from the potential entry-point script.
+ *   2. In phase 4 to determine the actual entry-point script.
+ *
+ * Note that we need to explicitly re-resolve the entry-point information in the final
+ * stage because the previous stage information could be modified when the bootstrap
+ * invocation transitioned into a child process for ESM.
+ *
+ * Stages before (phase 4) can and will be cached by the child process through the Brotli
+ * configuration and entry-point information is only reliable in the final phase. More
+ * details can be found in here: https://github.com/TypeStrong/ts-node/issues/1812.
+ */
+function getEntryPointInfo(state: BootstrapState) {
+  const { code, interactive, restArgs } = state.parseArgvResult!;
+  const { cwd } = state.phase2Result!;
+  const { isCli } = state;
+
+  // Figure out which we are executing: piped stdin, --eval, REPL, and/or entrypoint
+  // This is complicated because node's behavior is complicated
+  // `node -e code -i ./script.js` ignores -e
+  const executeEval = code != null && !(interactive && restArgs.length);
+  const executeEntrypoint = !executeEval && restArgs.length > 0;
+  const executeRepl =
+    !executeEntrypoint &&
+    (interactive || (process.stdin.isTTY && !executeEval));
+  const executeStdin = !executeEval && !executeRepl && !executeEntrypoint;
+
+  /**
+   * Unresolved. May point to a symlink, not realpath. May be missing file extension
+   * NOTE: resolution relative to cwd option (not `process.cwd()`) is legacy backwards-compat; should be changed in next major: https://github.com/TypeStrong/ts-node/issues/1834
+   */
+  const entryPointPath = executeEntrypoint
+    ? isCli
+      ? resolve(cwd, restArgs[0])
+      : resolve(restArgs[0])
+    : undefined;
+
+  return {
+    executeEval,
+    executeEntrypoint,
+    executeRepl,
+    executeStdin,
+    entryPointPath,
+  };
+}
+
 function phase4(payload: BootstrapState) {
-  const { isInChildProcess, entrypoint } = payload;
+  const { isInChildProcess, tsNodeScript } = payload;
   const { version, showConfig, restArgs, code, print, argv } =
     payload.parseArgvResult;
-  const {
-    executeEval,
-    cwd,
-    executeStdin,
-    executeRepl,
-    executeEntrypoint,
-    scriptPath,
-  } = payload.phase2Result!;
+  const { cwd } = payload.phase2Result!;
   const { preloadedConfig } = payload.phase3Result!;
+
+  const {
+    entryPointPath,
+    executeEntrypoint,
+    executeEval,
+    executeRepl,
+    executeStdin,
+  } = getEntryPointInfo(payload);
+
   /**
    * <repl>, [stdin], and [eval] are all essentially virtual files that do not exist on disc and are backed by a REPL
    * service to handle eval-ing of code.
@@ -566,12 +628,13 @@ function phase4(payload: BootstrapState) {
 
   // Prepend `ts-node` arguments to CLI for child processes.
   process.execArgv.push(
-    entrypoint,
+    tsNodeScript,
     ...argv.slice(2, argv.length - restArgs.length)
   );
-  // TODO this comes from BoostrapState
+
+  // TODO this comes from BootstrapState
   process.argv = [process.argv[1]]
-    .concat(executeEntrypoint ? ([scriptPath] as string[]) : [])
+    .concat(executeEntrypoint ? ([entryPointPath] as string[]) : [])
     .concat(restArgs.slice(executeEntrypoint ? 1 : 0));
 
   // Execute the main contents (either eval, script or piped).
