@@ -148,10 +148,9 @@ test.suite('top level await', ({ context }) => {
     }
   });
 
-  if (semver.gte(ts.version, '3.8.0')) {
-    // Serial because it's timing-sensitive
-    test.serial('should allow evaluating top level await', async (t) => {
-      const script = `
+  // Serial because it's timing-sensitive
+  test.serial('should allow evaluating top level await', async (t) => {
+    const script = `
         const x: number = await new Promise((r) => r(1));
         for await (const x of [1,2,3]) { console.log(x) };
         for (const x of ['a', 'b']) { await x; console.log(x) };
@@ -162,123 +161,113 @@ test.suite('top level await', ({ context }) => {
         x + y + z;
       `;
 
-      const { stdout, stderr } = await t.context.executeInTlaRepl(
-        script,
-        '6\n> '
-      );
-      expect(stderr).toBe('');
-      expect(stdout).toBe('> 1\n2\n3\na\nb\n6\n> ');
-    });
+    const { stdout, stderr } = await t.context.executeInTlaRepl(
+      script,
+      '6\n> '
+    );
+    expect(stderr).toBe('');
+    expect(stdout).toBe('> 1\n2\n3\na\nb\n6\n> ');
+  });
 
-    // Serial because it's timing-sensitive
-    test.serial(
-      'should wait until promise is settled when awaiting at top level',
-      async (t) => {
-        const awaitMs = 500;
-        const script = `
+  // Serial because it's timing-sensitive
+  test.serial(
+    'should wait until promise is settled when awaiting at top level',
+    async (t) => {
+      const awaitMs = 500;
+      const script = `
           const startTime = new Date().getTime();
           await new Promise((r) => setTimeout(() => r(1), ${awaitMs}));
           const endTime = new Date().getTime();
           endTime - startTime;
         `;
-        const { stdout, stderr } = await t.context.executeInTlaRepl(
-          script,
-          /\d+\n/
-        );
+      const { stdout, stderr } = await t.context.executeInTlaRepl(
+        script,
+        /\d+\n/
+      );
 
-        expect(stderr).toBe('');
+      expect(stderr).toBe('');
 
-        const elapsedTimeString = stdout
-          .split('\n')[0]
-          .replace('> ', '')
-          .trim();
-        expect(elapsedTimeString).toMatch(/^\d+$/);
-        const elapsedTime = Number(elapsedTimeString);
-        expect(elapsedTime).toBeGreaterThanOrEqual(awaitMs - 50);
-        // When CI is taxed, the time may be *much* greater than expected.
-        // I can't think of a case where the time being *too high* is a bug
-        // that this test can catch.  So I've made this check very loose.
-        expect(elapsedTime).toBeLessThanOrEqual(awaitMs + 10e3);
-      }
-    );
+      const elapsedTimeString = stdout.split('\n')[0].replace('> ', '').trim();
+      expect(elapsedTimeString).toMatch(/^\d+$/);
+      const elapsedTime = Number(elapsedTimeString);
+      expect(elapsedTime).toBeGreaterThanOrEqual(awaitMs - 50);
+      // When CI is taxed, the time may be *much* greater than expected.
+      // I can't think of a case where the time being *too high* is a bug
+      // that this test can catch.  So I've made this check very loose.
+      expect(elapsedTime).toBeLessThanOrEqual(awaitMs + 10e3);
+    }
+  );
 
-    // Serial because it's timing-sensitive
-    test.serial(
-      'should not wait until promise is settled when not using await at top level',
-      async (t) => {
-        const script = `
+  // Serial because it's timing-sensitive
+  test.serial(
+    'should not wait until promise is settled when not using await at top level',
+    async (t) => {
+      const script = `
           const startTime = new Date().getTime();
           (async () => await new Promise((r) => setTimeout(() => r(1), ${5000})))();
           const endTime = new Date().getTime();
           endTime - startTime;
         `;
-        const { stdout, stderr } = await t.context.executeInTlaRepl(
-          script,
-          /\d+\n/
-        );
-
-        expect(stderr).toBe('');
-
-        const ellapsedTime = Number(
-          stdout.split('\n')[0].replace('> ', '').trim()
-        );
-        expect(ellapsedTime).toBeGreaterThanOrEqual(0);
-        // Should ideally be instantaneous; leave wiggle-room for slow CI
-        expect(ellapsedTime).toBeLessThanOrEqual(100);
-      }
-    );
-
-    // Serial because it's timing-sensitive
-    test.serial(
-      'should error with typing information when awaited result has type mismatch',
-      async (t) => {
-        const { stdout, stderr } = await t.context.executeInTlaRepl(
-          'const x: string = await 1',
-          'error'
-        );
-
-        expect(stdout).toBe('> > ');
-        expect(stderr.replace(/\r\n/g, '\n')).toBe(
-          '<repl>.ts(4,7): error TS2322: ' +
-            (semver.gte(ts.version, '4.0.0')
-              ? `Type 'number' is not assignable to type 'string'.\n`
-              : `Type '1' is not assignable to type 'string'.\n`) +
-            '\n'
-        );
-      }
-    );
-
-    // Serial because it's timing-sensitive
-    test.serial(
-      'should error with typing information when importing a file with type errors',
-      async (t) => {
-        const { stdout, stderr } = await t.context.executeInTlaRepl(
-          `const {foo} = await import('./repl/tla-import');`,
-          'error'
-        );
-
-        expect(stdout).toBe('> > ');
-        expect(stderr.replace(/\r\n/g, '\n')).toBe(
-          'repl/tla-import.ts(1,14): error TS2322: ' +
-            (semver.gte(ts.version, '4.0.0')
-              ? `Type 'number' is not assignable to type 'string'.\n`
-              : `Type '1' is not assignable to type 'string'.\n`) +
-            '\n'
-        );
-      }
-    );
-
-    test('should pass upstream test cases', async (t) => {
-      const { tsNodeUnderTest } = t.context;
-      await upstreamTopLevelAwaitTests({ TEST_DIR, tsNodeUnderTest });
-    });
-  } else {
-    test('should throw error when attempting to use top level await on TS < 3.8', async (t) => {
-      expect(t.context.executeInTlaRepl('')).rejects.toThrow(
-        'Experimental REPL await is not compatible with TypeScript versions older than 3.8'
+      const { stdout, stderr } = await t.context.executeInTlaRepl(
+        script,
+        /\d+\n/
       );
-    });
-  }
+
+      expect(stderr).toBe('');
+
+      const ellapsedTime = Number(
+        stdout.split('\n')[0].replace('> ', '').trim()
+      );
+      expect(ellapsedTime).toBeGreaterThanOrEqual(0);
+      // Should ideally be instantaneous; leave wiggle-room for slow CI
+      expect(ellapsedTime).toBeLessThanOrEqual(100);
+    }
+  );
+
+  // Serial because it's timing-sensitive
+  test.serial(
+    'should error with typing information when awaited result has type mismatch',
+    async (t) => {
+      const { stdout, stderr } = await t.context.executeInTlaRepl(
+        'const x: string = await 1',
+        'error'
+      );
+
+      expect(stdout).toBe('> > ');
+      expect(stderr.replace(/\r\n/g, '\n')).toBe(
+        '<repl>.ts(4,7): error TS2322: ' +
+          (semver.gte(ts.version, '4.0.0')
+            ? `Type 'number' is not assignable to type 'string'.\n`
+            : `Type '1' is not assignable to type 'string'.\n`) +
+          '\n'
+      );
+    }
+  );
+
+  // Serial because it's timing-sensitive
+  test.serial(
+    'should error with typing information when importing a file with type errors',
+    async (t) => {
+      const { stdout, stderr } = await t.context.executeInTlaRepl(
+        `const {foo} = await import('./repl/tla-import');`,
+        'error'
+      );
+
+      expect(stdout).toBe('> > ');
+      expect(stderr.replace(/\r\n/g, '\n')).toBe(
+        'repl/tla-import.ts(1,14): error TS2322: ' +
+          (semver.gte(ts.version, '4.0.0')
+            ? `Type 'number' is not assignable to type 'string'.\n`
+            : `Type '1' is not assignable to type 'string'.\n`) +
+          '\n'
+      );
+    }
+  );
+
+  test('should pass upstream test cases', async (t) => {
+    const { tsNodeUnderTest } = t.context;
+    await upstreamTopLevelAwaitTests({ TEST_DIR, tsNodeUnderTest });
+  });
 });
 
 test.suite(
@@ -562,9 +551,7 @@ test.suite('REPL treats object literals and block scopes correctly', (test) => {
     'repl should treat ({ let v = 0; v; }) as object literal and error',
     macroReplStderrContains,
     '({ let v = 0; v; })',
-    semver.satisfies(ts.version, '2.7')
-      ? 'error TS2304'
-      : 'No value exists in scope for the shorthand property'
+    'No value exists in scope for the shorthand property'
   );
   test(
     'repl should treat { let v = 0; v; } as block scope',
@@ -573,7 +560,6 @@ test.suite('REPL treats object literals and block scopes correctly', (test) => {
     '0'
   );
   test.suite('extra', (test) => {
-    test.skipIf(semver.satisfies(ts.version, '2.7'));
     test(
       'repl should treat { key: 123 }; as block scope',
       macroReplNoErrorsAndStdoutContains,
@@ -610,9 +596,7 @@ test.suite('REPL treats object literals and block scopes correctly', (test) => {
       'repl should treat ({\\nlet v = 0;\\nv;\\n}) as object literal and error',
       macroReplStderrContains,
       '({\nlet v = 0;\nv;\n})',
-      semver.satisfies(ts.version, '2.7')
-        ? 'error TS2304'
-        : 'No value exists in scope for the shorthand property'
+      'No value exists in scope for the shorthand property'
     );
     test(
       'repl should treat {\\nlet v = 0;\\nv;\\n} as block scope',
@@ -644,9 +628,7 @@ test.suite('REPL treats object literals and block scopes correctly', (test) => {
       'repl should treat { key: 123 }["foo"] as object literal non-existent indexed access',
       macroReplStderrContains,
       '{ key: 123 }["foo"]',
-      semver.satisfies(ts.version, '2.7')
-        ? 'error TS7017'
-        : "Property 'foo' does not exist on type"
+      "Property 'foo' does not exist on type"
     );
   });
 });

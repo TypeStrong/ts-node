@@ -4,7 +4,6 @@ import { Stream } from 'stream';
 import semver = require('semver');
 import { ts } from '../helpers';
 import type { ctxTsNode } from '../helpers';
-import { nodeSupportsEsmHooks } from '../helpers';
 
 interface SharedObjects extends ctxTsNode.Ctx {
   TEST_DIR: string;
@@ -32,11 +31,7 @@ export async function upstreamTopLevelAwaitTests({
     experimentalReplAwait: true,
     transpileOnly: true,
     compilerOptions: {
-      target: semver.gte(ts.version, '3.0.1')
-        ? 'es2018'
-        : // TS 2.7 is using polyfill for async interator even though they
-          // were added in es2018
-          'esnext',
+      target: 'es2018',
     },
   });
   replService.setService(service);
@@ -114,26 +109,17 @@ export async function upstreamTopLevelAwaitTests({
     ['foo', '[Function: foo]'],
     ['class Foo {}; await 1;', '1'],
 
-    [
-      'Foo',
-      // Adjusted since ts-node supports older versions of node
-      semver.gte(process.version, '12.18.0')
-        ? '[class Foo]'
-        : '[Function: Foo]',
-    ],
+    ['Foo', '[class Foo]'],
     ['if (await true) { function fooz() {}; }'],
     ['fooz', '[Function: fooz]'],
     ['if (await true) { class Bar {}; }'],
 
     [
       'Bar',
-      // Adjusted since ts-node supports older versions of node
-      nodeSupportsEsmHooks
-        ? 'Uncaught ReferenceError: Bar is not defined'
-        : 'ReferenceError: Bar is not defined',
+      'Uncaught ReferenceError: Bar is not defined',
       // Line increased due to TS added lines
       {
-        line: nodeSupportsEsmHooks ? 4 : 5,
+        line: 4,
       },
     ],
 
@@ -144,13 +130,10 @@ export async function upstreamTopLevelAwaitTests({
 
     [
       'j',
-      // Adjusted since ts-node supports older versions of node
-      nodeSupportsEsmHooks
-        ? 'Uncaught ReferenceError: j is not defined'
-        : 'ReferenceError: j is not defined',
+      'Uncaught ReferenceError: j is not defined',
       // Line increased due to TS added lines
       {
-        line: nodeSupportsEsmHooks ? 4 : 5,
+        line: 4,
       },
     ],
 
@@ -158,13 +141,10 @@ export async function upstreamTopLevelAwaitTests({
 
     [
       'return 42; await 5;',
-      // Adjusted since ts-node supports older versions of node
-      nodeSupportsEsmHooks
-        ? 'Uncaught SyntaxError: Illegal return statement'
-        : 'SyntaxError: Illegal return statement',
+      'Uncaught SyntaxError: Illegal return statement',
       // Line increased due to TS added lines
       {
-        line: nodeSupportsEsmHooks ? 4 : 5,
+        line: 4,
       },
     ],
 

@@ -15,9 +15,7 @@ module.exports = {
     NODE_PATH: ''
   },
   require: ['./src/test/remove-env-var-force-color.js'],
-  nodeArguments: semver.gte(process.version, '14.0.0')
-    ? ['--loader', './src/test/test-loader.mjs', '--no-warnings']
-    : [],
+  nodeArguments: ['--loader', './src/test/test-loader.mjs', '--no-warnings'],
   timeout: '300s',
   concurrency: 1,
 };

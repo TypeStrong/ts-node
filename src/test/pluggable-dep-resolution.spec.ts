@@ -1,10 +1,5 @@
 import { context } from './testlib';
-import {
-  ctxTsNode,
-  resetNodeEnvironment,
-  TEST_DIR,
-  tsSupportsTsconfigInheritanceViaNodePackages,
-} from './helpers';
+import { ctxTsNode, resetNodeEnvironment, TEST_DIR } from './helpers';
 import * as expect from 'expect';
 import { resolve } from 'path';
 
@@ -91,8 +86,6 @@ test.suite(
     );
 
     test.suite('"extends"', (test) => {
-      test.runIf(tsSupportsTsconfigInheritanceViaNodePackages);
-
       test(
         macro,
         'tsconfig-extend-custom-compiler.json',

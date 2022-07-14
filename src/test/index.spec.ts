@@ -6,13 +6,9 @@ import semver = require('semver');
 import {
   BIN_PATH_JS,
   CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
-  nodeSupportsEsmHooks,
-  nodeSupportsSpawningChildProcess,
   ts,
   tsSupportsMtsCtsExtensions,
-  tsSupportsShowConfig,
   tsSupportsStableNodeNextNode16,
-  tsSupportsTsconfigInheritanceViaNodePackages,
 } from './helpers';
 import { lstatSync, mkdtempSync } from 'fs';
 import { npath } from '@yarnpkg/fslib';
@@ -73,21 +69,18 @@ test.suite('ts-node', (test) => {
     testsDirRequire.resolve('ts-node/register/transpile-only');
     testsDirRequire.resolve('ts-node/register/type-check');
 
-    if (semver.gte(process.version, '12.17.0')) {
-      // `node --loader ts-node/esm`
-      testsDirRequire.resolve('ts-node/esm');
-      testsDirRequire.resolve('ts-node/esm.mjs');
-      testsDirRequire.resolve('ts-node/esm/transpile-only');
-      testsDirRequire.resolve('ts-node/esm/transpile-only.mjs');
-    }
+    // `node --loader ts-node/esm`
+    testsDirRequire.resolve('ts-node/esm');
+    testsDirRequire.resolve('ts-node/esm.mjs');
+    testsDirRequire.resolve('ts-node/esm/transpile-only');
+    testsDirRequire.resolve('ts-node/esm/transpile-only.mjs');
 
     testsDirRequire.resolve('ts-node/transpilers/swc');
     testsDirRequire.resolve('ts-node/transpilers/swc-experimental');
 
-    testsDirRequire.resolve('ts-node/node10/tsconfig.json');
-    testsDirRequire.resolve('ts-node/node12/tsconfig.json');
     testsDirRequire.resolve('ts-node/node14/tsconfig.json');
     testsDirRequire.resolve('ts-node/node16/tsconfig.json');
+    testsDirRequire.resolve('ts-node/node18/tsconfig.json');
   });
 
   test('should not load typescript outside of loadConfig', async () => {
@@ -215,9 +208,7 @@ test.suite('ts-node', (test) => {
     });
 
     test.suite('should support mts when module = ESNext', (test) => {
-      test.runIf(
-        nodeSupportsSpawningChildProcess && tsSupportsMtsCtsExtensions
-      );
+      test.runIf(tsSupportsMtsCtsExtensions);
       test('test', async () => {
         const { err, stdout } = await exec(
           [CMD_TS_NODE_WITHOUT_PROJECT_FLAG, './entrypoint.mjs'].join(' '),
@@ -396,18 +387,16 @@ test.suite('ts-node', (test) => {
       });
     });
 
-    if (nodeSupportsEsmHooks) {
-      test('swc transpiler supports native ESM emit', async () => {
-        const { err, stdout } = await exec(
-          `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./index.ts`,
-          {
-            cwd: resolve(TEST_DIR, 'transpile-only-swc-native-esm'),
-          }
-        );
-        expect(err).toBe(null);
-        expect(stdout).toMatch('Hello file://');
-      });
-    }
+    test('swc transpiler supports native ESM emit', async () => {
+      const { err, stdout } = await exec(
+        `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./index.ts`,
+        {
+          cwd: resolve(TEST_DIR, 'transpile-only-swc-native-esm'),
+        }
+      );
+      expect(err).toBe(null);
+      expect(stdout).toMatch('Hello file://');
+    });
 
     test('should pipe into `ts-node` and evaluate', async () => {
       const execPromise = exec(CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG);
@@ -529,10 +518,6 @@ test.suite('ts-node', (test) => {
     });
 
     test.suite('issue #884', (test) => {
-      // TODO disabled because it consistently fails on Windows on TS 2.7
-      test.skipIf(
-        process.platform === 'win32' && semver.satisfies(ts.version, '2.7')
-      );
       test('should compile', async (t) => {
         const { err, stdout } = await exec(
           `"${BIN_PATH}" --project issue-884/tsconfig.json issue-884`
@@ -615,6 +600,33 @@ test.suite('ts-node', (test) => {
         t.log('Skipping');
         return;
       }
+    });
+
+    test('should have the correct working directory in the user entry-point', async () => {
+      const { err, stdout, stderr } = await exec(
+        `${BIN_PATH} --cwd ./cjs index.ts`,
+        {
+          cwd: resolve(TEST_DIR, 'working-dir'),
+        }
+      );
+
+      expect(err).toBe(null);
+      expect(stdout.trim()).toBe('Passing');
+      expect(stderr).toBe('');
+    });
+
+    // Disabled due to bug:
+    // --cwd is passed to forked children when not using --esm, erroneously affects their entrypoint resolution.
+    // tracked/fixed by either https://github.com/TypeStrong/ts-node/issues/1834
+    // or https://github.com/TypeStrong/ts-node/issues/1831
+    test.skip('should be able to fork into a nested TypeScript script with a modified working directory', async () => {
+      const { err, stdout, stderr } = await exec(
+        `${BIN_PATH} --cwd ./working-dir/forking/ index.ts`
+      );
+
+      expect(err).toBe(null);
+      expect(stdout.trim()).toBe('Passing: from main');
+      expect(stderr).toBe('');
     });
 
     test.suite('should read ts-node options from tsconfig.json', (test) => {
@@ -726,22 +738,20 @@ test.suite('ts-node', (test) => {
         ]);
       });
 
-      if (tsSupportsTsconfigInheritanceViaNodePackages) {
-        test('should pull ts-node options from extended `tsconfig.json`', async () => {
-          const { err, stdout } = await exec(
-            `${BIN_PATH} --show-config --project ./tsconfig-extends/tsconfig.json`
-          );
-          expect(err).toBe(null);
-          const config = JSON.parse(stdout);
-          expect(config['ts-node'].require).toEqual([
-            resolve(TEST_DIR, 'tsconfig-extends/other/require-hook.js'),
-          ]);
-          expect(config['ts-node'].scopeDir).toBe(
-            resolve(TEST_DIR, 'tsconfig-extends/other/scopedir')
-          );
-          expect(config['ts-node'].preferTsExts).toBe(true);
-        });
-      }
+      test('should pull ts-node options from extended `tsconfig.json`', async () => {
+        const { err, stdout } = await exec(
+          `${BIN_PATH} --show-config --project ./tsconfig-extends/tsconfig.json`
+        );
+        expect(err).toBe(null);
+        const config = JSON.parse(stdout);
+        expect(config['ts-node'].require).toEqual([
+          resolve(TEST_DIR, 'tsconfig-extends/other/require-hook.js'),
+        ]);
+        expect(config['ts-node'].scopeDir).toBe(
+          resolve(TEST_DIR, 'tsconfig-extends/other/scopedir')
+        );
+        expect(config['ts-node'].preferTsExts).toBe(true);
+      });
     });
 
     test.suite(
@@ -750,51 +760,35 @@ test.suite('ts-node', (test) => {
         const test = context(async (t) => ({
           tempDir: mkdtempSync(join(tmpdir(), 'ts-node-spec')),
         }));
-        if (
-          semver.gte(ts.version, '3.5.0') &&
-          semver.gte(process.versions.node, '14.0.0')
-        ) {
-          const libAndTarget = semver.gte(process.versions.node, '16.0.0')
-            ? 'es2021'
-            : 'es2020';
-          test('implicitly uses @tsconfig/node14 or @tsconfig/node16 compilerOptions when both TS and node versions support it', async (t) => {
-            // node14 and node16 configs are identical, hence the "or"
-            const {
-              context: { tempDir },
-            } = t;
-            const {
-              err: err1,
-              stdout: stdout1,
-              stderr: stderr1,
-            } = await exec(`${BIN_PATH} --showConfig`, { cwd: tempDir });
-            expect(err1).toBe(null);
-            t.like(JSON.parse(stdout1), {
-              compilerOptions: {
-                target: libAndTarget,
-                lib: [libAndTarget],
-              },
-            });
-            const {
-              err: err2,
-              stdout: stdout2,
-              stderr: stderr2,
-            } = await exec(`${BIN_PATH} -pe 10n`, { cwd: tempDir });
-            expect(err2).toBe(null);
-            expect(stdout2).toBe('10n\n');
-          });
-        } else {
-          test('implicitly uses @tsconfig/* lower than node14 (node12) when either TS or node versions do not support @tsconfig/node14', async ({
+        const libAndTarget = semver.gte(process.versions.node, '18.0.0')
+          ? 'es2022'
+          : semver.gte(process.versions.node, '16.0.0')
+          ? 'es2021'
+          : 'es2020';
+        test('implicitly uses @tsconfig/node14, @tsconfig/node16, or @tsconfig/node18 compilerOptions when both TS and node versions support it', async (t) => {
+          const {
             context: { tempDir },
-          }) => {
-            const { err, stdout, stderr } = await exec(`${BIN_PATH} -pe 10n`, {
-              cwd: tempDir,
-            });
-            expect(err).not.toBe(null);
-            expect(stderr).toMatch(
-              /BigInt literals are not available when targeting lower than|error TS2304: Cannot find name 'n'/
-            );
+          } = t;
+          const {
+            err: err1,
+            stdout: stdout1,
+            stderr: stderr1,
+          } = await exec(`${BIN_PATH} --showConfig`, { cwd: tempDir });
+          expect(err1).toBe(null);
+          t.like(JSON.parse(stdout1), {
+            compilerOptions: {
+              target: libAndTarget,
+              lib: [libAndTarget],
+            },
           });
-        }
+          const {
+            err: err2,
+            stdout: stdout2,
+            stderr: stderr2,
+          } = await exec(`${BIN_PATH} -pe 10n`, { cwd: tempDir });
+          expect(err2).toBe(null);
+          expect(stdout2).toBe('10n\n');
+        });
         test('implicitly loads @types/node even when not installed within local directory', async ({
           context: { tempDir },
         }) => {
@@ -833,8 +827,6 @@ test.suite('ts-node', (test) => {
     test.suite(
       'should bundle @tsconfig/bases to be used in your own tsconfigs',
       (test) => {
-        test.runIf(tsSupportsTsconfigInheritanceViaNodePackages);
-
         const macro = test.macro((nodeVersion: string) => async (t) => {
           const config = require(`@tsconfig/${nodeVersion}/tsconfig.json`);
           const { err, stdout, stderr } = await exec(
@@ -851,10 +843,9 @@ test.suite('ts-node', (test) => {
             },
           });
         });
-        test(`ts-node/node10/tsconfig.json`, macro, 'node10');
-        test(`ts-node/node12/tsconfig.json`, macro, 'node12');
         test(`ts-node/node14/tsconfig.json`, macro, 'node14');
         test(`ts-node/node16/tsconfig.json`, macro, 'node16');
+        test(`ts-node/node18/tsconfig.json`, macro, 'node18');
       }
     );
 
@@ -916,58 +907,48 @@ test.suite('ts-node', (test) => {
       });
     });
 
-    if (tsSupportsShowConfig) {
-      test('--showConfig should log resolved configuration', async (t) => {
-        function native(path: string) {
-          return path.replace(/\/|\\/g, pathSep);
-        }
-        function posix(path: string) {
-          return path.replace(/\/|\\/g, '/');
-        }
-        const { err, stdout } = await exec(
-          `${CMD_TS_NODE_WITH_PROJECT_FLAG} --showConfig`
-        );
-        expect(err).toBe(null);
-        t.is(
-          stdout,
-          JSON.stringify(
-            {
-              'ts-node': {
-                cwd: native(`${ROOT_DIR}/tests`),
-                projectSearchDir: native(`${ROOT_DIR}/tests`),
-                project: native(`${ROOT_DIR}/tests/tsconfig.json`),
-              },
-              compilerOptions: {
-                target: 'es6',
-                jsx: 'react',
-                noEmit: false,
-                strict: true,
-                typeRoots: [
-                  posix(`${ROOT_DIR}/tests/typings`),
-                  posix(`${ROOT_DIR}/node_modules/@types`),
-                ],
-                sourceMap: true,
-                inlineSourceMap: false,
-                inlineSources: true,
-                declaration: false,
-                outDir: './.ts-node',
-                module: 'commonjs',
-              },
+    test('--showConfig should log resolved configuration', async (t) => {
+      function native(path: string) {
+        return path.replace(/\/|\\/g, pathSep);
+      }
+      function posix(path: string) {
+        return path.replace(/\/|\\/g, '/');
+      }
+      const { err, stdout } = await exec(
+        `${CMD_TS_NODE_WITH_PROJECT_FLAG} --showConfig`
+      );
+      expect(err).toBe(null);
+      t.is(
+        stdout,
+        JSON.stringify(
+          {
+            'ts-node': {
+              cwd: native(`${ROOT_DIR}/tests`),
+              projectSearchDir: native(`${ROOT_DIR}/tests`),
+              project: native(`${ROOT_DIR}/tests/tsconfig.json`),
             },
-            null,
-            2
-          ) + '\n'
-        );
-      });
-    } else {
-      test('--show-config should log error message when used with old typescript versions', async (t) => {
-        const { err, stderr } = await exec(
-          `${CMD_TS_NODE_WITH_PROJECT_FLAG} --showConfig`
-        );
-        expect(err).not.toBe(null);
-        expect(stderr).toMatch('Error: --showConfig requires');
-      });
-    }
+            compilerOptions: {
+              target: 'es6',
+              jsx: 'react',
+              noEmit: false,
+              strict: true,
+              typeRoots: [
+                posix(`${ROOT_DIR}/tests/typings`),
+                posix(`${ROOT_DIR}/node_modules/@types`),
+              ],
+              sourceMap: true,
+              inlineSourceMap: false,
+              inlineSources: true,
+              declaration: false,
+              outDir: './.ts-node',
+              module: 'commonjs',
+            },
+          },
+          null,
+          2
+        ) + '\n'
+      );
+    });
 
     test('should support compiler scope specified via tsconfig.json', async (t) => {
       const { err, stderr, stdout } = await exec(

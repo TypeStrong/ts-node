@@ -29,6 +29,7 @@ export interface CreateOptions {
     esm?: boolean;
     experimentalReplAwait?: boolean;
     experimentalSpecifierResolution?: 'node' | 'explicit';
+    experimentalTsImportSpecifiers?: boolean;
     // (undocumented)
     fileExists?: (path: string) => boolean;
     files?: boolean;

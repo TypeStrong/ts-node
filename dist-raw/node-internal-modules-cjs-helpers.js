@@ -63,8 +63,7 @@ function addBuiltinLibsToObject(object, dummyModuleName) {
 
     ObjectDefineProperty(object, name, {
       get: () => {
-        // Node 12 hack; remove when we drop node12 support
-        const lib = (dummyModule.require || require)(name);
+        const lib = dummyModule.require(name);
 
         // Disable the current getter/setter and set up a new
         // non-enumerable property.

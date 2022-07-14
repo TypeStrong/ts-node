@@ -119,8 +119,6 @@ export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
 }
 
 export function createEsmHooks(tsNodeService: Service) {
-  tsNodeService.enableExperimentalEsmLoaderInterop();
-
   // Custom implementation that considers additional file extensions and automatically adds file extensions
   const nodeResolveImplementation = tsNodeService.getNodeEsmResolver();
   const nodeGetFormatImplementation = tsNodeService.getNodeEsmGetFormat();

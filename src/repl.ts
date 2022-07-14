@@ -90,8 +90,7 @@ export interface ReplService {
    */
   nodeEval(
     code: string,
-    // TODO change to `Context` in a future release?  Technically a breaking change
-    context: any,
+    context: Context,
     _filename: string,
     callback: (err: Error | null, result?: any) => any
   ): void;
@@ -207,6 +206,7 @@ export function createRepl(options: CreateReplOptions = {}) {
       state,
       input: code,
       context,
+      overrideIsCompletion: false,
     });
     assert(result.containsTopLevelAwait === false);
     return result.value;
@@ -229,7 +229,7 @@ export function createRepl(options: CreateReplOptions = {}) {
 
   function nodeEval(
     code: string,
-    context: any,
+    context: Context,
     _filename: string,
     callback: (err: Error | null, result?: any) => any
   ) {
@@ -512,6 +512,12 @@ function appendCompileAndEvalInput(options: {
   /** Enable top-level await but only if the TSNode service allows it. */
   enableTopLevelAwait?: boolean;
   context: Context | undefined;
+  /**
+   * Added so that `evalCode` can be guaranteed *not* to trigger the `isCompletion`
+   * codepath.  However, the `isCompletion` logic is ancient and maybe should be removed entirely.
+   * Nobody's looked at it in a long time.
+   */
+  overrideIsCompletion?: boolean;
 }): AppendCompileAndEvalInputResult {
   const {
     service,
@@ -519,6 +525,7 @@ function appendCompileAndEvalInput(options: {
     wrappedErr,
     enableTopLevelAwait = false,
     context,
+    overrideIsCompletion,
   } = options;
   let { input } = options;
 
@@ -533,7 +540,7 @@ function appendCompileAndEvalInput(options: {
   }
 
   const lines = state.lines;
-  const isCompletion = !/\n$/.test(input);
+  const isCompletion = overrideIsCompletion ?? !/\n$/.test(input);
   const undo = appendToEvalState(state, input);
   let output: string;
 
