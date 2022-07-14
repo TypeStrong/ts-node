@@ -51,46 +51,27 @@ jobs:
       matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
         include:
-          # Node 12.15
-          - flavor: 1
-            node: 12.15
-            nodeFlag: 12_15
-            typescript: latest
-            typescriptFlag: latest
-          # Node 12.16
-          # Earliest version that supports getFormat, etc hooks: https://github.com/nodejs/node/blob/master/doc/changelogs/CHANGELOG_V12.md#12.16.0
-          - flavor: 2
-            node: 12.16
-            nodeFlag: 12_16
-            typescript: latest
-            typescriptFlag: latest
-          # Node 12
-          - flavor: 3
-            node: 12
-            nodeFlag: 12
-            typescript: latest
-            typescriptFlag: latest
           # Node 14.13.0
           # To test ESM builtin module resolution immediately before a node behavioral change: https://github.com/TypeStrong/ts-node/issues/1130
-          - flavor: 4
+          - flavor: 1
             node: 14.13.0
             nodeFlag: 14_13_0
             typescript: latest
             typescriptFlag: latest
           # Node 14
-          - flavor: 5
+          - flavor: 2
             node: 14
             nodeFlag: 14
             typescript: latest
             typescriptFlag: latest
-          - flavor: 6
+          - flavor: 3
             node: 14
             nodeFlag: 14
-            typescript: 2.7
-            typescriptFlag: 2_7
-          - flavor: 7
+            typescript: 4.0
+            typescriptFlag: 4_0
+          - flavor: 4
             node: 14
             nodeFlag: 14
             typescript: next
@@ -98,44 +79,44 @@ jobs:
           # Node 16
           # Node 16.11.1
           # Earliest version that supports old ESM Loader Hooks API: https://github.com/TypeStrong/ts-node/pull/1522
-          - flavor: 8
+          - flavor: 5
             node: 16.11.1
             nodeFlag: 16_11_1
             typescript: latest
             typescriptFlag: latest
-          - flavor: 9
+          - flavor: 6
             node: 16
             nodeFlag: 16
             typescript: latest
             typescriptFlag: latest
             downgradeNpm: true
-          - flavor: 10
+          - flavor: 7
             node: 16
             nodeFlag: 16
-            typescript: 2.7
-            typescriptFlag: 2_7
+            typescript: 4.0
+            typescriptFlag: 4_0
             downgradeNpm: true
-          - flavor: 11
+          - flavor: 8
             node: 16
             nodeFlag: 16
             typescript: next
             typescriptFlag: next
             downgradeNpm: true
           # Node 18
-          - flavor: 12
+          - flavor: 9
             node: 18
             nodeFlag: 18
             typescript: latest
             typescriptFlag: latest
             downgradeNpm: true
-          - flavor: 13
+          - flavor: 10
             node: 18
             nodeFlag: 18
             typescript: next
             typescriptFlag: next
             downgradeNpm: true
           # Node nightly
-          - flavor: 14
+          - flavor: 11
             node: nightly
             nodeFlag: nightly
             typescript: latest

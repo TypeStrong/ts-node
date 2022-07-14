@@ -90,8 +90,7 @@ export interface ReplService {
    */
   nodeEval(
     code: string,
-    // TODO change to `Context` in a future release?  Technically a breaking change
-    context: any,
+    context: Context,
     _filename: string,
     callback: (err: Error | null, result?: any) => any
   ): void;
@@ -230,7 +229,7 @@ export function createRepl(options: CreateReplOptions = {}) {
 
   function nodeEval(
     code: string,
-    context: any,
+    context: Context,
     _filename: string,
     callback: (err: Error | null, result?: any) => any
   ) {

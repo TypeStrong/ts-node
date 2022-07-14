@@ -471,15 +471,11 @@ const Module_resolveFilename = function _resolveFilename(request, parent, isMain
     paths = Module._resolveLookupPaths(request, parent);
   }
 
-  // if (parent?.filename) {
-  // node 12 hack
-  if (parent != null && parent.filename) {
+  if (parent?.filename) {
     if (request[0] === '#') {
       const pkg = readPackageScope(parent.filename) || {};
 
-      // if (pkg.data?.imports != null) {
-      // node 12 hack
-      if (pkg.data != null && pkg.data.imports != null) {
+      if (pkg.data?.imports != null) {
         try {
           return finalizeEsmResolution(
             packageImportsResolve(request, pathToFileURL(parent.filename),
@@ -559,11 +555,15 @@ return {
 /**
  * copied from Module._extensions['.js']
  * https://github.com/nodejs/node/blob/v15.3.0/lib/internal/modules/cjs/loader.js#L1113-L1120
+
+ * Assert that script can be loaded as CommonJS when we attempt to require it.
+ * If it should be loaded as ESM, throw ERR_REQUIRE_ESM like node does.
+ *
  * @param {import('../src/index').Service} service
  * @param {NodeJS.Module} module
  * @param {string} filename
  */
-function assertScriptCanLoadAsCJSImpl(service, module, filename) {
+function assertScriptCanLoadAsCJS(service, module, filename) {
   const pkg = readPackageScope(filename);
 
   // ts-node modification: allow our configuration to override
@@ -588,6 +588,6 @@ function assertScriptCanLoadAsCJSImpl(service, module, filename) {
 
 module.exports = {
   createCjsLoader,
-  assertScriptCanLoadAsCJSImpl,
+  assertScriptCanLoadAsCJS,
   readPackageScope
 };

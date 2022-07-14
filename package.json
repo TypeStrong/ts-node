@@ -28,10 +28,9 @@
     "./child-loader.mjs": "./child-loader.mjs",
     "./transpilers/swc": "./transpilers/swc.js",
     "./transpilers/swc-experimental": "./transpilers/swc-experimental.js",
-    "./node10/tsconfig.json": "./node10/tsconfig.json",
-    "./node12/tsconfig.json": "./node12/tsconfig.json",
     "./node14/tsconfig.json": "./node14/tsconfig.json",
-    "./node16/tsconfig.json": "./node16/tsconfig.json"
+    "./node16/tsconfig.json": "./node16/tsconfig.json",
+    "./node18/tsconfig.json": "./node18/tsconfig.json"
   },
   "types": "dist/index.d.ts",
   "bin": {
@@ -39,8 +38,7 @@
     "ts-node-cwd": "dist/bin-cwd.js",
     "ts-node-esm": "dist/bin-esm.js",
     "ts-node-script": "dist/bin-script.js",
-    "ts-node-transpile-only": "dist/bin-transpile.js",
-    "ts-script": "dist/bin-script-deprecated.js"
+    "ts-node-transpile-only": "dist/bin-transpile.js"
   },
   "files": [
     "/transpilers/",
@@ -55,10 +53,9 @@
     "/LICENSE",
     "/tsconfig.schema.json",
     "/tsconfig.schemastore-schema.json",
-    "/node10/",
-    "/node12/",
     "/node14/",
-    "/node16/"
+    "/node16/",
+    "/node18/"
   ],
   "scripts": {
     "lint": "dprint check",
@@ -159,10 +156,9 @@
   },
   "dependencies": {
     "@cspotcode/source-map-support": "^0.8.0",
-    "@tsconfig/node10": "^1.0.7",
-    "@tsconfig/node12": "^1.0.7",
-    "@tsconfig/node14": "^1.0.0",
-    "@tsconfig/node16": "^1.0.2",
+    "@tsconfig/node14": "*",
+    "@tsconfig/node16": "*",
+    "@tsconfig/node18": "*",
     "acorn": "^8.4.1",
     "acorn-walk": "^8.1.1",
     "arg": "^4.1.0",

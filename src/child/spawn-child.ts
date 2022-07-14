@@ -1,7 +1,6 @@
 import type { BootstrapState } from '../bin';
 import { spawn } from 'child_process';
 import { pathToFileURL } from 'url';
-import { versionGteLt } from '../util';
 import { argPrefix, compress } from './argv-payload';
 
 /**
@@ -11,11 +10,6 @@ import { argPrefix, compress } from './argv-payload';
  *   the child process.
  */
 export function callInChild(state: BootstrapState) {
-  if (!versionGteLt(process.versions.node, '12.17.0')) {
-    throw new Error(
-      '`ts-node-esm` and `ts-node --esm` require node version 12.17.0 or newer.'
-    );
-  }
   const child = spawn(
     process.execPath,
     [

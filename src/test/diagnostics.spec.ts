@@ -8,8 +8,10 @@ const test = context(ctxTsNode);
 test.suite('TSError diagnostics', ({ context }) => {
   const test = context(
     once(async (t) => {
+      // Locking to es2021, because es2022 -- default in @tsconfig/bases for node18 --
+      // changes this diagnostic to be a composite "No overload matches this call."
       const service = t.context.tsNodeUnderTest.create({
-        compilerOptions: { target: 'es5' },
+        compilerOptions: { target: 'es5', lib: ['es2021'] },
         skipProject: true,
       });
       try {
@@ -22,11 +24,9 @@ test.suite('TSError diagnostics', ({ context }) => {
   );
 
   const diagnosticCode = 2345;
-  const diagnosticMessage = semver.satisfies(ts.version, '2.7')
-    ? "Argument of type '123' " +
-      "is not assignable to parameter of type 'string | undefined'."
-    : "Argument of type 'number' " +
-      "is not assignable to parameter of type 'string'.";
+  const diagnosticMessage =
+    "Argument of type 'number' " +
+    "is not assignable to parameter of type 'string'.";
   const diagnosticErrorMessage = `TS${diagnosticCode}: ${diagnosticMessage}`;
 
   const cwdBefore = process.cwd();

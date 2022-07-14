@@ -4,6 +4,7 @@ import {
   isOneOf,
   resetNodeEnvironment,
   ts,
+  tsSupportsMtsCtsExtensions,
   tsSupportsStableNodeNextNode16,
 } from './helpers';
 import { project as fsProject, Project as FsProject } from './fs-helpers';
@@ -157,10 +158,7 @@ const targetPackageStyles = [
 
 test.suite('Resolver hooks', (test) => {
   test.runSerially();
-  test.runIf(
-    semver.gte(process.version, '14.0.0') &&
-      !semver.satisfies(ts.version, '2.7.x')
-  );
+  test.runIf(tsSupportsMtsCtsExtensions);
 
   //
   // Generate all permutations of projects

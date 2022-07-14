@@ -38,6 +38,7 @@ import type * as _nodeInternalModulesEsmGetFormat from '../dist-raw/node-interna
 import type * as _nodeInternalModulesCjsLoader from '../dist-raw/node-internal-modules-cjs-loader';
 import { Extensions, getExtensions } from './file-extensions';
 import { createTsTranspileModule } from './ts-transpile-module';
+import { assertScriptCanLoadAsCJS } from '../dist-raw/node-internal-modules-cjs-loader';
 
 export { TSCommon };
 export {
@@ -60,30 +61,7 @@ export type {
   NodeLoaderHooksFormat,
 } from './esm';
 
-/**
- * Does this version of node obey the package.json "type" field
- * and throw ERR_REQUIRE_ESM when attempting to require() an ESM modules.
- */
-const engineSupportsPackageTypeField =
-  parseInt(process.versions.node.split('.')[0], 10) >= 12;
-
-/**
- * Assert that script can be loaded as CommonJS when we attempt to require it.
- * If it should be loaded as ESM, throw ERR_REQUIRE_ESM like node does.
- *
- * Loaded conditionally so we don't need to support older node versions
- */
-let assertScriptCanLoadAsCJS: (
-  service: Service,
-  module: NodeJS.Module,
-  filename: string
-) => void = engineSupportsPackageTypeField
-  ? (
-      require('../dist-raw/node-internal-modules-cjs-loader') as typeof _nodeInternalModulesCjsLoader
-    ).assertScriptCanLoadAsCJSImpl
-  : () => {
-      /* noop */
-    };
+const engineSupportsPackageTypeField = true;
 
 /**
  * Registered `ts-node` instance information.
@@ -531,8 +509,6 @@ export interface Service {
   /** @internal */
   installSourceMapSupport(): void;
   /** @internal */
-  enableExperimentalEsmLoaderInterop(): void;
-  /** @internal */
   transpileOnly: boolean;
   /** @internal */
   projectLocalResolveHelper: ProjectLocalResolveHelper;
@@ -606,6 +582,8 @@ export function register(
 
   installCommonjsResolveHooksIfNecessary(service);
 
+  service.installSourceMapSupport();
+
   // Require specified modules before start-up.
   (Module as ModuleConstructorWithInternals)._preloadModules(
     service.options.require
@@ -651,18 +629,9 @@ export function createFromPreloadedConfig(
       'Experimental REPL await is not compatible with targets lower than ES2018'
     );
   }
-  // Top-level await was added in TS 3.8
-  const tsVersionSupportsTla = versionGteLt(ts.version, '3.8.0');
-  if (options.experimentalReplAwait === true && !tsVersionSupportsTla) {
-    throw new Error(
-      'Experimental REPL await is not compatible with TypeScript versions older than 3.8'
-    );
-  }
 
   const shouldReplAwait =
-    options.experimentalReplAwait !== false &&
-    tsVersionSupportsTla &&
-    targetSupportsTla;
+    options.experimentalReplAwait !== false && targetSupportsTla;
 
   // swc implies two other options
   // typeCheck option was implemented specifically to allow overriding tsconfig transpileOnly from the command-line
@@ -798,17 +767,7 @@ export function createFromPreloadedConfig(
     }
   }
 
-  /**
-   * True if require() hooks should interop with experimental ESM loader.
-   * Enabled explicitly via a flag since it is a breaking change.
-   */
-  let experimentalEsmLoader = false;
-  function enableExperimentalEsmLoaderInterop() {
-    experimentalEsmLoader = true;
-  }
-
   // Install source map support and read from memory cache.
-  installSourceMapSupport();
   function installSourceMapSupport() {
     const sourceMapSupport =
       require('@cspotcode/source-map-support') as typeof _sourceMapSupport;
@@ -817,9 +776,8 @@ export function createFromPreloadedConfig(
       retrieveFile(pathOrUrl: string) {
         let path = pathOrUrl;
         // If it's a file URL, convert to local path
-        // Note: fileURLToPath does not exist on early node v10
         // I could not find a way to handle non-URLs except to swallow an error
-        if (experimentalEsmLoader && path.startsWith('file://')) {
+        if (path.startsWith('file://')) {
           try {
             path = fileURLToPath(path);
           } catch (e) {
@@ -1131,25 +1089,10 @@ export function createFromPreloadedConfig(
           : undefined,
       };
 
-      const host: _ts.CompilerHost = ts.createIncrementalCompilerHost
-        ? ts.createIncrementalCompilerHost(config.options, sys)
-        : {
-            ...sys,
-            getSourceFile: (fileName, languageVersion) => {
-              const contents = sys.readFile(fileName);
-              if (contents === undefined) return;
-              return ts.createSourceFile(fileName, contents, languageVersion);
-            },
-            getDefaultLibLocation: () => normalizeSlashes(dirname(compiler)),
-            getDefaultLibFileName: () =>
-              normalizeSlashes(
-                join(
-                  dirname(compiler),
-                  ts.getDefaultLibFileName(config.options)
-                )
-              ),
-            useCaseSensitiveFileNames: () => sys.useCaseSensitiveFileNames,
-          };
+      const host: _ts.CompilerHost = ts.createIncrementalCompilerHost(
+        config.options,
+        sys
+      );
       host.trace = options.tsTrace;
       const {
         resolveModuleNames,
@@ -1169,23 +1112,13 @@ export function createFromPreloadedConfig(
       host.resolveModuleNames = resolveModuleNames;
       host.resolveTypeReferenceDirectives = resolveTypeReferenceDirectives;
 
-      // Fallback for older TypeScript releases without incremental API.
-      let builderProgram = ts.createIncrementalProgram
-        ? ts.createIncrementalProgram({
-            rootNames: Array.from(rootFileNames),
-            options: config.options,
-            host,
-            configFileParsingDiagnostics: config.errors,
-            projectReferences: config.projectReferences,
-          })
-        : ts.createEmitAndSemanticDiagnosticsBuilderProgram(
-            Array.from(rootFileNames),
-            config.options,
-            host,
-            undefined,
-            config.errors,
-            config.projectReferences
-          );
+      let builderProgram = ts.createIncrementalProgram({
+        rootNames: Array.from(rootFileNames),
+        options: config.options,
+        host,
+        configFileParsingDiagnostics: config.errors,
+        projectReferences: config.projectReferences,
+      });
 
       // Read and cache custom transformers.
       const customTransformers =
@@ -1531,7 +1464,6 @@ export function createFromPreloadedConfig(
     shouldReplAwait,
     addDiagnosticFilter,
     installSourceMapSupport,
-    enableExperimentalEsmLoaderInterop,
     transpileOnly,
     projectLocalResolveHelper,
     getNodeEsmResolver,

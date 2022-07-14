@@ -2,9 +2,9 @@
 {
   "$schema": "./tsconfig.schemastore-schema.json",
   "compilerOptions": {
-    // `target` and `lib` match @tsconfig/bases for node12, since that's the oldest node LTS, so it's the oldest node we support
-    "target": "es2019",
-    "lib": ["es2019", "es2020.promise", "es2020.bigint", "es2020.string", "dom"],
+    // `target` and `lib` match @tsconfig/bases for node14, since that's the oldest node LTS, so it's the oldest node we support
+    "target": "es2020",
+    "lib": ["es2020"],
     "rootDir": ".",
     "outDir": "temp",
     "tsBuildInfoFile": "temp/tsconfig.tsbuildinfo",

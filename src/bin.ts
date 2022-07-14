@@ -39,6 +39,8 @@ import { findAndReadConfig } from './configuration';
  *
  * The functions are intentionally given uncreative names and left in the same order as the original code, to make a
  * smaller git diff.
+ *
+ * @internal
  */
 export function main(
   argv: string[] = process.argv.slice(2),
@@ -97,19 +99,6 @@ export function bootstrap(state: BootstrapState) {
 
 function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
   arg ??= require('arg');
-  // HACK: technically, this function is not marked @internal so it's possible
-  // that libraries in the wild are doing `require('ts-node/dist/bin').main({'--transpile-only': true})`
-  // We can mark this function @internal in next major release.
-  // For now, rewrite args to avoid a breaking change.
-  entrypointArgs = { ...entrypointArgs };
-  for (const key of Object.keys(entrypointArgs)) {
-    entrypointArgs[
-      key.replace(
-        /([a-z])-([a-z])/g,
-        (_$0, $1, $2: string) => `${$1}${$2.toUpperCase()}`
-      )
-    ] = entrypointArgs[key];
-  }
 
   const args = {
     ...entrypointArgs,
@@ -742,13 +731,6 @@ let guaranteedNonexistentDirectorySuffix = 0;
  * https://stackoverflow.com/questions/59865584/how-to-invalidate-cached-require-resolve-results
  */
 function requireResolveNonCached(absoluteModuleSpecifier: string) {
-  // node <= 12.1.x fallback: The trick below triggers a node bug on old versions.
-  // On these old versions, pollute the require cache instead. This is a deliberate
-  // ts-node limitation that will *rarely* manifest, and will not matter once node 12
-  // is end-of-life'd on 2022-04-30
-  const isSupportedNodeVersion = versionGteLt(process.versions.node, '12.2.0');
-  if (!isSupportedNodeVersion) return require.resolve(absoluteModuleSpecifier);
-
   const { dir, base } = parsePath(absoluteModuleSpecifier);
   const relativeModuleSpecifier = `./${base}`;
 
