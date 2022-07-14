@@ -517,7 +517,7 @@ test.suite("Catch unexpected changes to node's loader context", (test) => {
     rows.forEach((row) => {
       const json = JSON.parse(row) as {
         resolveContextKeys?: string[];
-        loadContextKeys?: string;
+        loadContextKeys?: string[];
       };
       if (json.resolveContextKeys) {
         expect(json.resolveContextKeys).toEqual([
