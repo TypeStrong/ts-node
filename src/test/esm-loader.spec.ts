@@ -255,58 +255,35 @@ test.suite('esm', (test) => {
   });
 
   test.suite('supports import assertions', (test) => {
-    test.runIf(nodeSupportsImportAssertions);
+    test.runIf(nodeSupportsImportAssertions && tsSupportsImportAssertions);
 
-    test.suite('node >=17.5.0', (test) => {
-      test.runIf(semver.gte(process.version, '17.5.0'));
-
-      test('Can import JSON modules with appropriate assertion', async (t) => {
-        const { err, stdout } = await exec(
-          `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./importJson.ts`,
-          {
-            cwd: resolve(TEST_DIR, 'esm-import-assertions'),
-          }
-        );
-        expect(err).toBe(null);
-        expect(stdout.trim()).toBe(
-          'A fuchsia car has 2 seats and the doors are open.\nDone!'
-        );
-      });
-    });
-
-    test.suite('supports import assertions', (test) => {
-      test.runIf(
-        nodeSupportsImportAssertions &&
-          tsSupportsImportAssertions
-      );
-
-      const macro = test.macro((flags: string) => async (t) => {
-        const { err, stdout } = await exec(
-          `${CMD_ESM_LOADER_WITHOUT_PROJECT} ${flags} ./importJson.ts`,
-          {
-            cwd: resolve(TEST_DIR, 'esm-import-assertions'),
-          }
-        );
-        expect(err).toBe(null);
-        expect(stdout.trim()).toBe(
-          'A fuchsia car has 2 seats and the doors are open.\nDone!'
-        );
-      });
-
-      test.suite(
-        'when node does not require --experimental-json-modules',
-        (test) => {
-          test.runIf(nodeSupportsUnflaggedJsonImports);
-          test('Can import JSON modules with appropriate assertion', macro, '');
+    const macro = test.macro((flags: string) => async (t) => {
+      const { err, stdout } = await exec(
+        `${CMD_ESM_LOADER_WITHOUT_PROJECT} ${flags} ./importJson.ts`,
+        {
+          cwd: resolve(TEST_DIR, 'esm-import-assertions'),
         }
       );
-      test.suite('when node requires --experimental-json-modules', (test) => {
-        test.runIf(!nodeSupportsUnflaggedJsonImports);
-        test(
-          'Can import JSON using the appropriate flag and assertion',
-          macro,
-          '--experimental-json-modules'
-        );
+      expect(err).toBe(null);
+      expect(stdout.trim()).toBe(
+        'A fuchsia car has 2 seats and the doors are open.\nDone!'
+      );
+    });
+
+    test.suite(
+      'when node does not require --experimental-json-modules',
+      (test) => {
+        test.runIf(nodeSupportsUnflaggedJsonImports);
+        test('Can import JSON modules with appropriate assertion', macro, '');
+      }
+    );
+    test.suite('when node requires --experimental-json-modules', (test) => {
+      test.runIf(!nodeSupportsUnflaggedJsonImports);
+      test(
+        'Can import JSON using the appropriate flag and assertion',
+        macro,
+        '--experimental-json-modules'
+      );
     });
   });
 
