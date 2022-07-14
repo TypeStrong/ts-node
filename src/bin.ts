@@ -639,7 +639,12 @@ function phase4(payload: BootstrapState) {
 
   // Execute the main contents (either eval, script or piped).
   if (executeEntrypoint) {
-    Module.runMain();
+    if(payload.isInChildProcess && versionGteLt(process.versions.node, '18.6.0')) {
+      // HACK workaround node regression
+      require('../dist-raw/runmain-hack.js').run(entryPointPath);
+    } else {
+      Module.runMain();
+    }
   } else {
     // Note: eval and repl may both run, but never with stdin.
     // If stdin runs, eval and repl will not.
