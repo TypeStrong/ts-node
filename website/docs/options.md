@@ -76,9 +76,12 @@ Bootstrap with the ESM loader, enabling full ESM support
 
 ```shell
 ts-node -P <path/to/tsconfig>
+ts-node --project <path/to/tsconfig>
 ```
 
 Path to tsconfig file.
+
+*Note the uppercase `-P`. This is different from `tsc`'s `-p/--project` option.*
 
 *Environment:* `TS_NODE_PROJECT`
 
@@ -325,7 +328,7 @@ ts-node --scope
 
 Scope compiler to files within `scopeDir`.  Anything outside this directory is ignored.
 
-*Default: `false` <br/>
+*Default:* `false` <br/>
 *Environment:* `TS_NODE_SCOPE`
 
 ### scopeDir
@@ -369,10 +372,36 @@ Disable top-level await in REPL.  Equivalent to node's [`--no-experimental-repl-
 
 ### experimentalResolver
 
-Enable experimental features that re-map imports and require calls to support: `baseUrl`, `paths`, `rootDirs`, `.js` to `.ts` file extension mappings, `outDir` to `rootDir` mappings for composite projects and monorepos.  For details, see [#1514](https://github.com/TypeStrong/ts-node/issues/1514)
+Enable experimental hooks that re-map imports and require calls to support:
 
-*Default:* `false`<br/>
+* remapping extensions, e.g. so that `import "./foo.js"` will execute `foo.ts`. Currently the following extensions will be mapped:
+  * `.js` to `.ts`, `.tsx`, or `.jsx`
+  * `.cjs` to `.cts`
+  * `.mjs` to `.mts`
+  * `.jsx` to `.tsx`
+* including file extensions in CommonJS, for consistency with ESM where this is often mandatory
+
+In the future, this hook will also support:
+
+* `baseUrl`, `paths`
+* `rootDirs`
+* `outDir` to `rootDir` mappings for composite projects and monorepos
+
+For details, see [#1514](https://github.com/TypeStrong/ts-node/issues/1514).
+
+*Default:* `false`, but will likely be enabled by default in a future version<br/>
 *Can only be specified via `tsconfig.json` or API.*
+
+### experimentalSpecifierResolution
+
+```shell
+ts-node --experimentalSpecifierResolution node
+```
+
+Like node's [`--experimental-specifier-resolution`](https://nodejs.org/dist/latest-v18.x/docs/api/esm.html#customizing-esm-specifier-resolution-algorithm), but can also be set in your `tsconfig.json` for convenience.
+Requires [`esm`](#esm) to be enabled.
+
+*Default:* `explicit`<br/>
 
 ## API Options
 

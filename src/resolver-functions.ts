@@ -1,4 +1,6 @@
 import { resolve } from 'path';
+import type { CreateOptions } from '.';
+import type { Extensions } from './file-extensions';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
 import type { ProjectLocalResolveHelper } from './util';
 
@@ -13,6 +15,8 @@ export function createResolverFunctions(kwargs: {
   getCanonicalFileName: (filename: string) => string;
   config: TSCommon.ParsedCommandLine;
   projectLocalResolveHelper: ProjectLocalResolveHelper;
+  options: CreateOptions;
+  extensions: Extensions;
 }) {
   const {
     host,
@@ -21,6 +25,8 @@ export function createResolverFunctions(kwargs: {
     cwd,
     getCanonicalFileName,
     projectLocalResolveHelper,
+    options,
+    extensions,
   } = kwargs;
   const moduleResolutionCache = ts.createModuleResolutionCache(
     cwd,
@@ -95,17 +101,44 @@ export function createResolverFunctions(kwargs: {
       containingFile: string,
       reusedNames: string[] | undefined,
       redirectedReference: TSCommon.ResolvedProjectReference | undefined,
-      optionsOnlyWithNewerTsVersions: TSCommon.CompilerOptions
+      optionsOnlyWithNewerTsVersions: TSCommon.CompilerOptions,
+      containingSourceFile?: TSCommon.SourceFile
     ): (TSCommon.ResolvedModule | undefined)[] => {
-      return moduleNames.map((moduleName) => {
-        const { resolvedModule } = ts.resolveModuleName(
+      return moduleNames.map((moduleName, i) => {
+        const mode = containingSourceFile
+          ? (ts as any as TSInternal).getModeForResolutionAtIndex?.(
+              containingSourceFile,
+              i
+            )
+          : undefined;
+        let { resolvedModule } = ts.resolveModuleName(
           moduleName,
           containingFile,
           config.options,
           host,
           moduleResolutionCache,
-          redirectedReference
+          redirectedReference,
+          mode
         );
+        if (!resolvedModule && options.experimentalTsImportSpecifiers) {
+          const lastDotIndex = moduleName.lastIndexOf('.');
+          const ext = lastDotIndex >= 0 ? moduleName.slice(lastDotIndex) : '';
+          if (ext) {
+            const replacements = extensions.tsResolverEquivalents.get(ext);
+            for (const replacementExt of replacements ?? []) {
+              ({ resolvedModule } = ts.resolveModuleName(
+                moduleName.slice(0, -ext.length) + replacementExt,
+                containingFile,
+                config.options,
+                host,
+                moduleResolutionCache,
+                redirectedReference,
+                mode
+              ));
+              if (resolvedModule) break;
+            }
+          }
+        }
         if (resolvedModule) {
           fixupResolvedModule(resolvedModule);
         }
@@ -117,12 +150,14 @@ export function createResolverFunctions(kwargs: {
   const getResolvedModuleWithFailedLookupLocationsFromCache: TSCommon.LanguageServiceHost['getResolvedModuleWithFailedLookupLocationsFromCache'] =
     (
       moduleName,
-      containingFile
+      containingFile,
+      resolutionMode?: TSCommon.ModuleKind.CommonJS | TSCommon.ModuleKind.ESNext
     ): TSCommon.ResolvedModuleWithFailedLookupLocations | undefined => {
       const ret = ts.resolveModuleNameFromCache(
         moduleName,
         containingFile,
-        moduleResolutionCache
+        moduleResolutionCache,
+        resolutionMode
       );
       if (ret && ret.resolvedModule) {
         fixupResolvedModule(ret.resolvedModule);

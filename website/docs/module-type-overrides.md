@@ -2,8 +2,8 @@
 title: Module type overrides
 ---
 
-> Wherever possible, it is recommended to use TypeScript's [`NodeNext` or `Node16` mode](https://devblogs.microsoft.com/typescript/announcing-typescript-4-7-rc/#ecmascript-module-support-in-node-js) instead of the options described
-in this section.  `NodeNext`, `.mts`, and `.cts` should work well for most projects.
+> Wherever possible, it is recommended to use TypeScript's [`NodeNext` or `Node16` mode](https://www.typescriptlang.org/docs/handbook/esm-node.html) instead of the options described
+in this section.  Setting `"module": "NodeNext"` and using the `.cts` file extension should work well for most projects.
 
 When deciding how a file should be compiled and executed -- as either CommonJS or native ECMAScript module -- ts-node matches
 `node` and `tsc` behavior.  This means TypeScript files are transformed according to your `tsconfig.json` `"module"`

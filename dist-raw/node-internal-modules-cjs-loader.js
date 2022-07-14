@@ -144,7 +144,7 @@ function readPackageScope(checkPath) {
  */
 function createCjsLoader(opts) {
 const {nodeEsmResolver, preferTsExts} = opts;
-const {replacementsForCjs, replacementsForJs, replacementsForMjs} = opts.extensions;
+const {replacementsForCjs, replacementsForJs, replacementsForMjs, replacementsForJsx} = opts.extensions;
 const {
   encodedSepRegEx,
   packageExportsResolve,
@@ -219,10 +219,11 @@ function statReplacementExtensions(p) {
   const lastDotIndex = p.lastIndexOf('.');
   if(lastDotIndex >= 0) {
     const ext = p.slice(lastDotIndex);
-    if (ext === '.js' || ext === '.cjs' || ext === '.mjs') {
+    if (ext === '.js' || ext === '.jsx' || ext === '.mjs' || ext === '.cjs') {
       const pathnameWithoutExtension = p.slice(0, lastDotIndex);
       const replacementExts =
         ext === '.js' ? replacementsForJs
+        : ext === '.jsx' ? replacementsForJsx
         : ext === '.mjs' ? replacementsForMjs
         : replacementsForCjs;
       for (let i = 0; i < replacementExts.length; i++) {
@@ -240,10 +241,11 @@ function tryReplacementExtensions(p, isMain) {
   const lastDotIndex = p.lastIndexOf('.');
   if(lastDotIndex >= 0) {
     const ext = p.slice(lastDotIndex);
-    if (ext === '.js' || ext === '.cjs' || ext === '.mjs') {
+    if (ext === '.js' || ext === '.jsx' || ext === '.mjs' || ext === '.cjs') {
       const pathnameWithoutExtension = p.slice(0, lastDotIndex);
       const replacementExts =
         ext === '.js' ? replacementsForJs
+        : ext === '.jsx' ? replacementsForJsx
         : ext === '.mjs' ? replacementsForMjs
         : replacementsForCjs;
       for (let i = 0; i < replacementExts.length; i++) {

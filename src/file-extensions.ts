@@ -1,5 +1,6 @@
 import type * as _ts from 'typescript';
-import { RegisterOptions, versionGteLt } from '.';
+import type { RegisterOptions } from '.';
+import { versionGteLt } from './util';
 
 /**
  * Centralized specification of how we deal with file extensions based on
@@ -16,6 +17,13 @@ const nodeEquivalents = new Map<string, string>([
   ['.jsx', '.js'],
   ['.mts', '.mjs'],
   ['.cts', '.cjs'],
+]);
+
+const tsResolverEquivalents = new Map<string, readonly string[]>([
+  ['.ts', ['.js']],
+  ['.tsx', ['.js', '.jsx']],
+  ['.mts', ['.mjs']],
+  ['.cts', ['.cjs']],
 ]);
 
 // All extensions understood by vanilla node
@@ -99,6 +107,7 @@ export function getExtensions(
   const replacementsForJs = r.filter((ext) =>
     ['.js', '.jsx', '.ts', '.tsx'].includes(ext)
   );
+  const replacementsForJsx = r.filter((ext) => ['.jsx', '.tsx'].includes(ext));
   const replacementsForMjs = r.filter((ext) => ['.mjs', '.mts'].includes(ext));
   const replacementsForCjs = r.filter((ext) => ['.cjs', '.cts'].includes(ext));
   const replacementsForJsOrMjs = r.filter((ext) =>
@@ -128,6 +137,19 @@ export function getExtensions(
      */
     nodeEquivalents,
     /**
+     * Mapping from extensions rejected by TSC in import specifiers, to the
+     * possible alternatives that TS's resolver will accept.
+     *
+     * When we allow users to opt-in to .ts extensions in import specifiers, TS's
+     * resolver requires us to replace the .ts extensions with .js alternatives.
+     * Otherwise, resolution fails.
+     *
+     * Note TS's resolver is only used by, and only required for, typechecking.
+     * This is separate from node's resolver, which we hook separately and which
+     * does not require this mapping.
+     */
+    tsResolverEquivalents,
+    /**
      * Extensions that we can support if the user upgrades their typescript version.
      * Used when raising hints.
      */
@@ -142,6 +164,7 @@ export function getExtensions(
     legacyMainResolveAddsIfOmitted,
     replacementsForMjs,
     replacementsForCjs,
+    replacementsForJsx,
     replacementsForJs,
   };
 }

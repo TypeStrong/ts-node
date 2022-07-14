@@ -2,21 +2,12 @@
 
 'use strict';
 
-const [nodeMajor, nodeMinor, nodePatch] = process.versions.node.split('.').map(s => parseInt(s, 10))
+const {versionGteLt} = require('../dist/util');
+
 // Test for node >14.13.1 || (>=12.20.0 && <13)
-const builtinModuleProtocol = nodeMajor > 14 || (
-    nodeMajor === 14 && (
-      nodeMinor > 13 || (
-        nodeMinor === 13 && nodePatch > 0
-      )
-    )
-  ) || (
-    nodeMajor === 12 && (
-      nodeMinor > 20 || (
-        nodeMinor === 20
-      )
-    )
-  )
+const builtinModuleProtocol =
+  versionGteLt(process.versions.node, '14.13.1') ||
+  versionGteLt(process.versions.node, '12.20.0', '13.0.0')
     ? 'node:'
     : 'nodejs:';
 
@@ -101,7 +92,7 @@ function createResolve(opts) {
 // TODO receive cached fs implementations here
 const {preferTsExts, tsNodeExperimentalSpecifierResolution, extensions} = opts;
 const esrnExtensions = extensions.experimentalSpecifierResolutionAddsIfOmitted;
-const {legacyMainResolveAddsIfOmitted, replacementsForCjs, replacementsForJs, replacementsForMjs} = extensions;
+const {legacyMainResolveAddsIfOmitted, replacementsForCjs, replacementsForJs, replacementsForMjs, replacementsForJsx} = extensions;
 // const experimentalSpecifierResolution = tsNodeExperimentalSpecifierResolution ?? getOptionValue('--experimental-specifier-resolution');
 const experimentalSpecifierResolution = tsNodeExperimentalSpecifierResolution != null ? tsNodeExperimentalSpecifierResolution : getOptionValue('--experimental-specifier-resolution');
 
@@ -149,11 +140,20 @@ function getConditionsSet(conditions) {
 const realpathCache = new SafeMap();
 const packageJSONCache = new SafeMap();  /* string -> PackageConfig */
 
-function tryStatSync(path) {
+const statSupportsThrowIfNoEntry = versionGteLt(process.versions.node, '15.3.0') ||
+  versionGteLt(process.versions.node, '14.17.0', '15.0.0');
+const tryStatSync = statSupportsThrowIfNoEntry ? tryStatSyncWithoutErrors : tryStatSyncWithErrors;
+const statsIfNotFound = new Stats();
+function tryStatSyncWithoutErrors(path) {
+  const stats = statSync(path, { throwIfNoEntry: false });
+  if(stats != null) return stats;
+  return statsIfNotFound;
+}
+function tryStatSyncWithErrors(path) {
   try {
     return statSync(path);
   } catch {
-    return new Stats();
+    return statsIfNotFound;
   }
 }
 
@@ -310,10 +310,11 @@ function resolveReplacementExtensions(search) {
   const lastDotIndex = search.pathname.lastIndexOf('.');
   if(lastDotIndex >= 0) {
     const ext = search.pathname.slice(lastDotIndex);
-    if (ext === '.js' || ext === '.cjs' || ext === '.mjs') {
+    if (ext === '.js' || ext === '.jsx' || ext === '.mjs' || ext === '.cjs') {
       const pathnameWithoutExtension = search.pathname.slice(0, lastDotIndex);
       const replacementExts =
         ext === '.js' ? replacementsForJs
+        : ext === '.jsx' ? replacementsForJsx
         : ext === '.mjs' ? replacementsForMjs
         : replacementsForCjs;
       const guess = new URL(search.toString());
