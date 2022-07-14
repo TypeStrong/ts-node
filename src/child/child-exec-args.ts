@@ -1,11 +1,14 @@
 import { pathToFileURL } from 'url';
 import { brotliCompressSync } from 'zlib';
-import type { BootstrapStateForChild } from '../bin';
+import type {
+  BootstrapStateForForkedProcesses,
+  BootstrapStateInitialProcess,
+} from '../bin';
 import { argPrefix } from './argv-payload';
 
 export function getChildProcessArguments(
   enableEsmLoader: boolean,
-  state: BootstrapStateForChild
+  state: BootstrapStateForForkedProcesses | BootstrapStateInitialProcess
 ) {
   const nodeExecArgs = [];
 

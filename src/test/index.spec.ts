@@ -1094,8 +1094,6 @@ test.suite('node environment', (test) => {
     );
 
     test.suite('with esm enabled', (test) => {
-      test.runIf(nodeSupportsSpawningChildProcess);
-
       forkTest(
         test,
         `node --no-warnings ${BIN_PATH_JS} --esm`,

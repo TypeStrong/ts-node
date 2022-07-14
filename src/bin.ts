@@ -32,6 +32,9 @@ import { callInChildWithEsm } from './child/spawn-child-with-esm';
 import { findAndReadConfig } from './configuration';
 import { getChildProcessArguments } from './child/child-exec-args';
 
+type MarkPropAsRequired<T, K extends keyof T> = Omit<T, K> &
+  Required<Pick<T, K>>;
+
 /**
  * Main `bin` functionality.
  *
@@ -73,66 +76,74 @@ export interface BootstrapState {
  * only capture information that should be persisted to e.g. forked child processes.
  */
 export interface BootstrapStateForForkedProcesses {
-  // For the final bootstrap we are only interested in the user arguments
-  // that should be passed to the entry-point script (or eval script).
-  // We don't want to encode any options that would break child forking. e.g.
-  // persisting the `--eval` option would break `child_process.fork` in scripts.
-  parseArgvResult: Pick<ReturnType<typeof parseArgv>, 'restArgs'>;
+  // For the final bootstrap we are only interested in the user arguments that should
+  // be passed to the entry-point script (or eval script). We don't want to encode any
+  // other options from `parseArgvResult` that would break child forking.
+  // e.g. persisting the `--eval` option would break `child_process.fork` in scripts.
+  restArgs: string[];
   phase3Result: Pick<
     ReturnType<typeof phase3>,
     'enableEsmLoader' | 'preloadedConfig'
   >;
 }
 
-export interface BootstrapStateInitialProcessChild
-  extends Omit<BootstrapStateForForkedProcesses, 'initialProcessOptions'> {
-  initialProcessOptions: { resolutionCwd: string } & Pick<
-    ReturnType<typeof parseArgv>,
-    // These are options which should not persist into forked child processes,
-    // but can be passed-through in the initial child process creation -- but should
-    // not be encoded in the Brotli state for child process forks (through `execArgv`.)
-    'version' | 'showConfig' | 'code' | 'print' | 'interactive'
-  >;
+export interface BootstrapStateInitialProcess
+  extends Omit<BootstrapStateForForkedProcesses, 'phase3Result'> {
+  initialArgv: ReturnType<typeof parseArgv>;
+  initialResolutionCwd: string;
+  phase3Result?: ReturnType<typeof phase3>;
 }
 
-export type BootstrapStateForChild = Omit<
-  BootstrapStateForForkedProcesses,
-  'initialProcessOptions'
-> &
-  Partial<BootstrapStateInitialProcessChild>;
+export type BootstrapStateForChild = BootstrapStateForForkedProcesses &
+  Partial<BootstrapStateInitialProcess>;
 
 /** @internal */
 export function bootstrap(state: BootstrapState) {
   state.phase2Result = phase2(state);
-  state.phase3Result = phase3(state);
 
-  const initialChildState: BootstrapStateInitialProcessChild = {
-    ...createBootstrapStateForChildProcess(state as Required<BootstrapState>),
-    // Aside with the default child process state, we attach the initial process
-    // options since this `callInChild` invocation is from the initial process.
-    // Later when forking, the initial process options are omitted / not persisted.
-    initialProcessOptions: {
-      code: state.parseArgvResult.code,
-      interactive: state.parseArgvResult.interactive,
-      print: state.parseArgvResult.print,
-      showConfig: state.parseArgvResult.showConfig,
-      version: state.parseArgvResult.version,
-      resolutionCwd: state.phase2Result.resolutionCwd,
-    },
+  const initialProcessState: BootstrapStateInitialProcess = {
+    restArgs: state.parseArgvResult.restArgs,
+    initialArgv: state.parseArgvResult,
+    initialResolutionCwd: state.phase2Result.resolutionCwd,
   };
 
+  // Perf optimization for ESM until ESM hooks can be registered without needing
+  // a child process. We skip phase3 and defer it to the child process where we
+  // would load the TS compiler anyway, avoiding loading it twice in different processes.
+  if (initialProcessState.initialArgv.esm) {
+    callInChildWithEsm(initialProcessState, process.cwd());
+    return;
+  }
+
+  const phase3Result = phase3(initialProcessState);
+
   // For ESM, we need to spawn a new Node process to be able to register our hooks.
-  if (state.phase3Result.enableEsmLoader) {
+  if (phase3Result.enableEsmLoader) {
     // Note: When transitioning into the child process for the final phase,
     // we want to preserve the initial user working directory.
-    callInChildWithEsm(initialChildState, process.cwd());
+    callInChildWithEsm(initialProcessState, process.cwd());
   } else {
-    completeBootstrap(initialChildState);
+    completeBootstrap({ ...initialProcessState, phase3Result });
   }
 }
 /** Final phase of the bootstrap. */
-export function completeBootstrap(state: BootstrapStateForChild) {
-  return phase4(state);
+export function completeBootstrap(
+  state: BootstrapStateForForkedProcesses | BootstrapStateInitialProcess
+) {
+  // IMPORTANT: This is an optimization when we detected `--esm` early in the CLI.
+  // In such cases we skip phase3 and let phase3 to be processed in the child process here.
+  // This avoids loading the TS compiler twice as loading TS is rather slow.
+  // TODO: Remove this when we don't need to spawn a child process for ESM. See:
+  if (state.phase3Result === undefined) {
+    state.phase3Result = phase3(state as BootstrapStateInitialProcess);
+  }
+
+  return phase4(
+    state as MarkPropAsRequired<
+      BootstrapStateForForkedProcesses | BootstrapStateInitialProcess,
+      'phase3Result'
+    >
+  );
 }
 
 function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
@@ -367,7 +378,7 @@ Options:
   };
 }
 
-function phase3(payload: BootstrapState) {
+function phase3(payload: BootstrapStateInitialProcess) {
   const {
     emit,
     files,
@@ -394,8 +405,8 @@ function phase3(payload: BootstrapState) {
     scopeDir,
     esm,
     experimentalSpecifierResolution,
-  } = payload.parseArgvResult;
-  const { resolutionCwd } = payload.phase2Result!;
+  } = payload.initialArgv;
+  const resolutionCwd = payload.initialResolutionCwd;
 
   // NOTE: When we transition to a child process for ESM, the entry-point script determined
   // here might not be the one used later in `phase4`. This can happen when we execute the
@@ -405,7 +416,7 @@ function phase3(payload: BootstrapState) {
   // See: https://github.com/TypeStrong/ts-node/issues/1812.
   const { entryPointPath } = getEntryPointInfo(
     resolutionCwd,
-    payload.parseArgvResult!
+    payload.initialArgv
   );
 
   const preloadedConfig = findAndReadConfig({
@@ -498,10 +509,9 @@ function getEntryPointInfo(
 }
 
 function phase4(payload: BootstrapStateForChild) {
-  const { restArgs } = payload.parseArgvResult;
+  const restArgs = payload.restArgs;
   const { preloadedConfig } = payload.phase3Result;
-  const resolutionCwd =
-    payload.initialProcessOptions?.resolutionCwd ?? process.cwd();
+  const resolutionCwd = payload.initialResolutionCwd ?? process.cwd();
 
   const {
     entryPointPath,
@@ -510,9 +520,9 @@ function phase4(payload: BootstrapStateForChild) {
     executeRepl,
     executeStdin,
   } = getEntryPointInfo(resolutionCwd, {
-    code: payload.initialProcessOptions?.code,
-    interactive: payload.initialProcessOptions?.interactive,
-    restArgs: payload.parseArgvResult.restArgs,
+    code: payload.initialArgv?.code,
+    interactive: payload.initialArgv?.interactive,
+    restArgs: payload.restArgs,
   });
 
   /**
@@ -597,13 +607,13 @@ function phase4(payload: BootstrapStateForChild) {
   stdinStuff?.repl.setService(service);
 
   // Output project information.
-  if (payload.initialProcessOptions?.version === 2) {
+  if (payload.initialArgv?.version === 2) {
     console.log(`ts-node v${VERSION}`);
     console.log(`node ${process.version}`);
     console.log(`compiler v${service.ts.version}`);
     process.exit(0);
   }
-  if ((payload.initialProcessOptions?.version ?? 0) >= 3) {
+  if ((payload.initialArgv?.version ?? 0) >= 3) {
     console.log(`ts-node v${VERSION} ${dirname(__dirname)}`);
     console.log(`node ${process.version}`);
     console.log(
@@ -612,7 +622,7 @@ function phase4(payload: BootstrapStateForChild) {
     process.exit(0);
   }
 
-  if (payload.initialProcessOptions?.showConfig) {
+  if (payload.initialArgv?.showConfig) {
     const ts = service.ts as any as TSInternal;
     if (typeof ts.convertToTSConfig !== 'function') {
       console.error(
@@ -700,8 +710,8 @@ function phase4(payload: BootstrapStateForChild) {
       evalAndExitOnTsError(
         evalStuff!.repl,
         evalStuff!.module!,
-        payload.initialProcessOptions!.code!,
-        payload.initialProcessOptions!.print,
+        payload.initialArgv!.code!,
+        payload.initialArgv!.print,
         'eval'
       );
     }
@@ -711,7 +721,7 @@ function phase4(payload: BootstrapStateForChild) {
     }
 
     if (executeStdin) {
-      let buffer = payload.initialProcessOptions?.code ?? '';
+      let buffer = payload.initialArgv?.code ?? '';
       process.stdin.on('data', (chunk: Buffer) => (buffer += chunk));
       process.stdin.on('end', () => {
         evalAndExitOnTsError(
@@ -719,7 +729,7 @@ function phase4(payload: BootstrapStateForChild) {
           stdinStuff!.module!,
           buffer,
           // `echo 123 | node -p` still prints 123
-          payload.initialProcessOptions?.print ?? false,
+          payload.initialArgv?.print ?? false,
           'stdin'
         );
       });
@@ -728,14 +738,12 @@ function phase4(payload: BootstrapStateForChild) {
 }
 
 function createBootstrapStateForChildProcess(
-  state: BootstrapStateInitialProcessChild | BootstrapStateForForkedProcesses
+  state: BootstrapStateInitialProcess | BootstrapStateForForkedProcesses
 ): BootstrapStateForForkedProcesses {
   // NOTE: Build up the child process fork bootstrap state manually so that we do
   // not encode unnecessary properties into the bootstrap state that is persisted
   return {
-    parseArgvResult: {
-      restArgs: state.parseArgvResult.restArgs,
-    },
+    restArgs: state.restArgs,
     phase3Result: {
       enableEsmLoader: state.phase3Result!.enableEsmLoader,
       preloadedConfig: state.phase3Result!.preloadedConfig,

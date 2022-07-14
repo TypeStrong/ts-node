@@ -1,5 +1,5 @@
 import { fork } from 'child_process';
-import type { BootstrapStateForChild } from '../bin';
+import type { BootstrapStateInitialProcess } from '../bin';
 import { getChildProcessArguments } from './child-exec-args';
 
 /**
@@ -11,13 +11,13 @@ import { getChildProcessArguments } from './child-exec-args';
  *   the child process.
  */
 export function callInChildWithEsm(
-  state: BootstrapStateForChild,
+  state: BootstrapStateInitialProcess,
   targetCwd: string
 ) {
   const { childScriptArgs, childScriptPath, nodeExecArgs } =
     getChildProcessArguments(/* enableEsmLoader */ true, state);
 
-  childScriptArgs.push(...state.parseArgvResult.restArgs);
+  childScriptArgs.push(...state.restArgs);
 
   const child = fork(childScriptPath, childScriptArgs, {
     stdio: 'inherit',
