@@ -122,6 +122,9 @@ export async function installTsNode() {
       try {
         rimrafSync(join(TEST_DIR, 'node_modules'));
         await promisify(childProcessExec)(`npm install`, { cwd: TEST_DIR });
+        await promisify(childProcessExec)(`npm run test-instrument`, {
+          cwd: ROOT_DIR,
+        });
         const packageLockPath = join(TEST_DIR, 'package-lock.json');
         existsSync(packageLockPath) && unlinkSync(packageLockPath);
         break;
