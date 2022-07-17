@@ -591,6 +591,8 @@ ts-node --transpiler ts-node/transpilers/swc
 
 Use a third-party, non-typechecking transpiler
 
+*Environment:* `TS_NODE_TRANSPILER`
+
 ### preferTsExts
 
 ```shell

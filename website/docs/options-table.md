@@ -177,7 +177,7 @@ _Environment variables, where available, are in `ALL_CAPS`_
 <tr><td> <nobr><code>-I, --ignore [pattern]</code></nobr> </td><td> <code>ignore</code> </td><td> Override the path patterns to skip compilation <br/><em>Default:</em> <code>/node_modules/</code> <br/><em>Env:</em> <code>TS_NODE_IGNORE</code> </td></tr>
 <tr><td> <nobr><code>--skip-ignore</code></nobr> </td><td> <code>skipIgnore</code> </td><td> Skip ignore checks <br/><em>Default:</em> <code>false</code> <br/><em>Env:</em> <code>TS_NODE_SKIP_IGNORE</code> </td></tr>
 <tr><td> <nobr><code>-C, --compiler [name]</code></nobr> </td><td> <code>compiler</code> </td><td> Specify a custom TypeScript compiler <br/><em>Default:</em> <code>typescript</code> <br/><em>Env:</em> <code>TS_NODE_COMPILER</code> </td></tr>
-<tr><td> <nobr><code>--transpiler [name]</code></nobr> </td><td> <code>transpiler</code> </td><td> Specify a third-party, non-typechecking transpiler </td></tr>
+<tr><td> <nobr><code>--transpiler [name]</code></nobr> </td><td> <code>transpiler</code> </td><td> Specify a third-party, non-typechecking transpiler <br/><em>Env:</em> <code>TS_NODE_TRANSPILER</code> </td></tr>
 <tr><td> <nobr><code>--prefer-ts-exts</code></nobr> </td><td> <code>preferTsExts</code> </td><td> Re-order file extensions so that TypeScript imports are preferred <br/><em>Default:</em> <code>false</code> <br/><em>Env:</em> <code>TS_NODE_PREFER_TS_EXTS</code> </td></tr>
 
 <tr><td colspan="3"><strong>Diagnostics</strong></td></tr>

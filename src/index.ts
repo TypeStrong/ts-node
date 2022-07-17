@@ -105,6 +105,7 @@ export interface ProcessEnv {
   TS_NODE_PREFER_TS_EXTS?: string;
   TS_NODE_IGNORE_DIAGNOSTICS?: string;
   TS_NODE_TRANSPILE_ONLY?: string;
+  TS_NODE_TRANSPILER?: string;
   TS_NODE_TYPE_CHECK?: string;
   TS_NODE_COMPILER_HOST?: string;
   TS_NODE_LOG_ERROR?: string;
@@ -440,6 +441,7 @@ export const DEFAULTS: RegisterOptions = {
   preferTsExts: yn(env.TS_NODE_PREFER_TS_EXTS),
   ignoreDiagnostics: split(env.TS_NODE_IGNORE_DIAGNOSTICS),
   transpileOnly: yn(env.TS_NODE_TRANSPILE_ONLY),
+  transpiler: env.TS_NODE_TRANSPILER,
   typeCheck: yn(env.TS_NODE_TYPE_CHECK),
   compilerHost: yn(env.TS_NODE_COMPILER_HOST),
   logError: yn(env.TS_NODE_LOG_ERROR),
