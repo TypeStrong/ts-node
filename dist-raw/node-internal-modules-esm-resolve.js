@@ -846,7 +846,7 @@ function resolveAsCommonJS(specifier, parentURL) {
   }
 }
 
-function defaultResolve(specifier, context = {}, defaultResolveUnused) {
+function defaultResolve(specifier, context = {}) {
   let { parentURL, conditions } = context;
   if (parentURL && policy != null && policy.manifest) {
     const redirects = policy.manifest.getDependencyMapper(parentURL);

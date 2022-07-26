@@ -151,10 +151,10 @@ export function createEsmHooks(tsNodeService: Service) {
   async function resolve(
     specifier: string,
     context: { parentURL: string },
-    defaultResolve: typeof resolve
+    defaultResolve: any
   ): Promise<{ url: string; format?: NodeLoaderHooksFormat }> {
     const defer = async () => {
-      const r = await defaultResolve(specifier, context, defaultResolve);
+      const r = await defaultResolve(specifier, context);
       return r;
     };
     // See: https://github.com/nodejs/node/discussions/41711
@@ -213,11 +213,7 @@ export function createEsmHooks(tsNodeService: Service) {
       // pathname is the path to be resolved
 
       return entrypointFallback(() =>
-        nodeResolveImplementation.defaultResolve(
-          specifier,
-          context,
-          defaultResolve
-        )
+        nodeResolveImplementation.defaultResolve(specifier, context)
       );
     });
   }
@@ -229,7 +225,7 @@ export function createEsmHooks(tsNodeService: Service) {
       format: NodeLoaderHooksFormat | null | undefined;
       importAssertions?: NodeLoaderHooksAPI2.NodeImportAssertions;
     },
-    defaultLoad: typeof load
+    defaultLoad: any
   ): Promise<{
     format: NodeLoaderHooksFormat;
     source: string | Buffer | undefined;
@@ -250,14 +246,10 @@ export function createEsmHooks(tsNodeService: Service) {
       let source = undefined;
       if (format !== 'builtin' && format !== 'commonjs') {
         // Call the new defaultLoad() to get the source
-        const { source: rawSource } = await defaultLoad(
-          url,
-          {
-            ...context,
-            format,
-          },
-          defaultLoad
-        );
+        const { source: rawSource } = await defaultLoad(url, {
+          ...context,
+          format,
+        });
 
         if (rawSource === undefined || rawSource === null) {
           throw new Error(
