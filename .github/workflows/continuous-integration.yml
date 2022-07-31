@@ -32,7 +32,7 @@ jobs:
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
-          path: ${{ steps.get-cache-directory.path }}
+          path: ${{ steps.get-cache-directory.outputs.path }}
           key: yarn-cache-packaging-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-cache-packaging-
       # lint, build, test
@@ -158,12 +158,14 @@ jobs:
       # lint, build, test
       - name: Get cache directory
         id: get-cache-directory
-        run: 'echo "::set-output name=path::$( yarn config get cacheFolder )"'
+        run: |
+          yarn config get cacheFolder
+          echo "::set-output name=path::$( yarn config get cacheFolder )"'
       - name: Cache dependencies
         if: ${{ matrix.os != 'windows' }}
         uses: actions/cache@v2
         with:
-          path: ${{ steps.get-cache-directory.path }}
+          path: ${{ steps.get-cache-directory.outputs.path }}
           key: yarn-cache-${{ matrix.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-cache-${{matrix.os }}-
       - run: yarn install --immutable --mode=skip-build
