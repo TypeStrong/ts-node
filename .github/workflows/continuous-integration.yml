@@ -25,11 +25,12 @@ jobs:
         with:
           node-version: 16
       - name: Get cache directory
-        run: 'echo "::set-env name=CACHE_FOLDER::$( yarn config get cacheFolder )"'
+        id: get-cache-directory
+        run: 'echo "::set-output name=path::$( yarn config get cacheFolder )"'
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
-          path: ${{ env.CACHE_FOLDER }}
+          path: ${{ steps.get-cache-directory.path }}
           key: yarn-cache-packaging-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-cache-packaging-
       # lint, build, test
@@ -154,12 +155,13 @@ jobs:
           node --version
       # lint, build, test
       - name: Get cache directory
-        run: 'echo "::set-env name=CACHE_FOLDER::$( yarn config get cacheFolder )"'
+        id: get-cache-directory
+        run: 'echo "::set-output name=path::$( yarn config get cacheFolder )"'
       - name: Cache dependencies
         if: ${{ matrix.os != 'windows' }}
         uses: actions/cache@v2
         with:
-          path: ${{ env.CACHE_FOLDER }}
+          path: ${{ steps.get-cache-directory.path }}
           key: yarn-cache-${{ matrix.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-cache-${{matrix.os }}-
       - run: yarn install --immutable --mode=skip-build
