@@ -160,7 +160,7 @@ jobs:
         id: get-cache-directory
         run: |
           yarn config get cacheFolder
-          echo "::set-output name=path::$( yarn config get cacheFolder )"'
+          echo "::set-output name=path::$( yarn config get cacheFolder )"
       - name: Cache dependencies
         if: ${{ matrix.os != 'windows' }}
         uses: actions/cache@v2
