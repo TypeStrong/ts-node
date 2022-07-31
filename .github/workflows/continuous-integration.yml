@@ -27,7 +27,7 @@ jobs:
       - name: Get cache directory
         id: get-cache-directory
         run: |
-          echo "yarn config get cacheFolder"
+          yarn config get cacheFolder
           echo "::set-output name=path::$( yarn config get cacheFolder )"
       - name: Cache dependencies
         uses: actions/cache@v2
