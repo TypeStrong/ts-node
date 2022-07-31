@@ -13,13 +13,13 @@ regenerate:
     const fs = require("fs");
     let acc = fs.readFileSync("justfile", "utf8").replace(/(# CUT\n)[\s\S]+/, "$1\n");
     for(const [key, value] of Object.entries(require("./package.json").scripts)) {
-      acc += `${key} *ARGS:\n  ${value.replace(/npm run /g, "just ").replace(/ --$/, "")} "$@"\n`;
+      acc += `${key} *ARGS:\n  ${value.replace(/(npm run |yarn )/g, "just ").replace(/ --$/, "")} "$@"\n`;
     }
     fs.writeFileSync("justfile", acc);
   '
 
 install:
-  npm install
+  yarn
 
 # EVERYTHING BELOW THIS LINE IS AUTO-GENERATED FROM PACKAGE.JSON
 # DO NOT MODIFY BY HAND
@@ -31,11 +31,11 @@ lint *ARGS:
 lint-fix *ARGS:
   dprint fmt "$@"
 clean *ARGS:
-  rimraf temp dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz tests/tmp "$@"
+  rimraf temp dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz tests/node_modules tests/tmp "$@"
 rebuild *ARGS:
   just clean && just build "$@"
 build *ARGS:
-  just build-nopack && just build-pack "$@"
+  just build-nopack && just build-pack && just build-manifest "$@"
 build-nopack *ARGS:
   just build-tsc && just build-configSchema "$@"
 build-tsc *ARGS:
@@ -44,6 +44,8 @@ build-configSchema *ARGS:
   typescript-json-schema --topRef --refs --validationKeywords allOf --out tsconfig.schema.json tsconfig.build-schema.json TsConfigSchema && node --require ./register ./scripts/create-merged-schema "$@"
 build-pack *ARGS:
   node ./scripts/build-pack.js "$@"
+build-manifest *ARGS:
+  node ./scripts/build-manifest.mjs "$@"
 test-spec *ARGS:
   ava "$@"
 test-cov *ARGS:
@@ -56,11 +58,9 @@ pre-debug *ARGS:
   just build-tsc && just build-pack "$@"
 coverage-report *ARGS:
   nyc report --reporter=lcov "$@"
-prepare *ARGS:
+__prepare_template__ *ARGS:
   just clean && just build-nopack "$@"
+prepare *ARGS:
+  rimraf temp dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz tests/node_modules tests/tmp && tsc -b ./tsconfig.build-dist.json && typescript-json-schema --topRef --refs --validationKeywords allOf --out tsconfig.schema.json tsconfig.build-schema.json TsConfigSchema && node --require ./register ./scripts/create-merged-schema "$@"
 api-extractor *ARGS:
   api-extractor run --local --verbose "$@"
-esm-usage-example *ARGS:
-  just build-tsc && cd esm-usage-example && node --experimental-specifier-resolution node --loader ../esm.mjs ./index "$@"
-esm-usage-example2 *ARGS:
-  just build-tsc && cd tests && TS_NODE_PROJECT=./module-types/override-to-cjs/tsconfig.json node --loader ../esm.mjs ./module-types/override-to-cjs/test.cjs "$@"

@@ -24,13 +24,11 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 16
-      - run: |
-          npm config set cache "$( node -p "process.cwd()" )/temp/npm-cache"
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
           path: temp/npm-cache
-          key: npm-cache-packaging-${{ hashFiles('package-lock.json') }}
+          key: yarn-cache-packaging-${{ hashFiles('yarn.lock') }}
           restore-keys: npm-cache-packaging-
       # lint, build, test
       - run: npm ci
@@ -153,40 +151,37 @@ jobs:
           Invoke-WebRequest -Uri $url -OutFile $targetPath -UserAgent ([Microsoft.PowerShell.Commands.PSUserAgent]::Chrome)
           node --version
       # lint, build, test
-        # Downgrade from npm 7 to 6 because 7 still seems buggy to me
-      - if: ${{ matrix.downgradeNpm }}
-        run: npm install -g npm@6
-      - run: |
-          npm config set cache "$( node -p "process.cwd()" )/temp/npm-cache"
+      - name: Get cache directory
+        run: 'echo "::set-env name=CACHE_FOLDER::$( yarn config get cacheFolder )"'
       - name: Cache dependencies
         if: ${{ matrix.os != 'windows' }}
         uses: actions/cache@v2
         with:
-          path: temp/npm-cache
-          key: npm-cache-${{ matrix.os }}-${{ hashFiles('package-lock.json') }}
+          path: ${{ env.CACHE_FOLDER }}
+          key: npm-cache-${{ matrix.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: npm-cache-${{matrix.os }}-
-      - run: npm ci --ignore-scripts
-      - name: Upload npm logs
+      - run: yarn install --immutable --mode=skip-build
+      - name: Upload yarn logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: npm-logs
-          path: temp/npm-cache/_logs
-      - run: npm run build-tsc
+          name: yarn-logs
+          path: yarn-error.log
+      - run: yarn build-tsc
       - name: Download package artifact
         uses: actions/download-artifact@v1
         with:
           name: ts-node-packed.tgz
           path: tests/
-      - run: npm install typescript@${{ matrix.typescript }} --force
-      - run: npm run test-cov
-      - name: Upload npm logs
+      - run: yarn add typescript@${{ matrix.typescript }} --force
+      - run: yarn test-cov
+      - name: Upload yarn logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: npm-logs-${{ matrix.os }}-node-${{ matrix.nodeFlag }}-typescript-${{ matrix.typescriptFlag }}
-          path: temp/npm-cache/_logs
-      - run: npm run coverage-report
+          name: yarn-logs-${{ matrix.os }}-node-${{ matrix.nodeFlag }}-typescript-${{ matrix.typescriptFlag }}
+          path: yarn-error.log
+      - run: yarn coverage-report
         if: ${{ always() }}
       - name: Codecov
         if: ${{ always() }}
