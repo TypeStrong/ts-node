@@ -20,13 +20,15 @@ jobs:
       # checkout code
       - uses: actions/checkout@v2
       # install node
-      - name: Use Node.js 16
+      - name: Use Node.js 18
         uses: actions/setup-node@v1
         with:
-          node-version: 16
+          node-version: 18
       - name: Get cache directory
         id: get-cache-directory
-        run: 'echo "::set-output name=path::$( yarn config get cacheFolder )"'
+        run: |
+          echo "yarn config get cacheFolder"
+          echo "::set-output name=path::$( yarn config get cacheFolder )"
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
