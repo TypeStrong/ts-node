@@ -181,7 +181,7 @@ jobs:
         with:
           name: ts-node-packed.tgz
           path: tests/
-      - run: yarn add typescript@${{ matrix.typescript }} --force
+      - run: yarn add typescript@${{ matrix.typescript }}
       - run: yarn test-cov
       - name: Upload yarn logs
         if: ${{ failure() }}
