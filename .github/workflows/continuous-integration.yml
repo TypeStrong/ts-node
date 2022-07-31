@@ -36,7 +36,7 @@ jobs:
           key: yarn-cache-packaging-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-cache-packaging-
       # lint, build, test
-      - run: yarn install --immutable --mode=skip-build
+      - run: yarn install --immutable
       - run: yarn lint
       - run: yarn build-pack
       - name: Upload package artifact
