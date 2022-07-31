@@ -121,9 +121,9 @@ export async function installTsNode() {
     while (true) {
       try {
         rimrafSync(join(TEST_DIR, 'node_modules'));
-        await promisify(childProcessExec)(`npm install`, { cwd: TEST_DIR });
-        const packageLockPath = join(TEST_DIR, 'package-lock.json');
-        existsSync(packageLockPath) && unlinkSync(packageLockPath);
+        await promisify(childProcessExec)(`yarn`, { cwd: TEST_DIR });
+        const lockfilePath = join(TEST_DIR, 'yarn.lock');
+        existsSync(lockfilePath) && unlinkSync(lockfilePath);
         break;
       } catch (e) {
         tries++;
