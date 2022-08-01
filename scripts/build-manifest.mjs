@@ -19,4 +19,4 @@ while (true) {
   if (pkg.scripts.prepare === before) break;
 }
 
-writeFileSync(manifestPath, JSON.stringify(pkg, null, 2));
+writeFileSync(manifestPath, JSON.stringify(pkg, null, 2) + '\n');

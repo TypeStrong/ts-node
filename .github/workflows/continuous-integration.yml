@@ -38,7 +38,7 @@ jobs:
       # lint, build, test
       - run: yarn install --immutable
       - run: yarn lint
-      - run: yarn build-pack
+      - run: yarn build
       - name: Upload package artifact
         uses: actions/upload-artifact@v1
         with:
