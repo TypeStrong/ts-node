@@ -121,7 +121,9 @@ export async function installTsNode() {
     while (true) {
       try {
         rimrafSync(join(TEST_DIR, 'node_modules'));
-        await promisify(childProcessExec)(`yarn --no-immutable`, { cwd: TEST_DIR });
+        await promisify(childProcessExec)(`yarn --no-immutable`, {
+          cwd: TEST_DIR,
+        });
         writeFileSync(join(TEST_DIR, 'yarn.lock'), '');
         break;
       } catch (e) {

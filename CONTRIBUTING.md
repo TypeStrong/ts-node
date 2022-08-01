@@ -15,7 +15,7 @@ We use package.json scripts for building, testing, and linting.  Read the script
 yarn
 yarn build
 yarn test-local
-yarn lint-fix
+yarn fmt
 ```
 
 `npm prepare` / `yarn prepare` is maintained so that anyone can install `ts-node` from git, which is useful for testing experimental branches and unreleased features.

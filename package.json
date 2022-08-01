@@ -59,7 +59,7 @@
   ],
   "scripts": {
     "lint": "dprint check",
-    "lint-fix": "dprint fmt",
+    "fmt": "dprint fmt",
     "clean": "rimraf temp dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz tests/node_modules tests/tmp",
     "rebuild": "yarn clean && yarn build",
     "build": "yarn build-nopack && yarn build-pack && yarn build-manifest",
@@ -71,7 +71,7 @@
     "test-spec": "ava",
     "test-cov": "nyc ava",
     "test": "yarn build && yarn lint && yarn test-cov --",
-    "test-local": "yarn lint-fix && yarn build-tsc && yarn build-pack && yarn test-spec --",
+    "test-local": "yarn fmt && yarn build-tsc && yarn build-pack && yarn test-spec --",
     "pre-debug": "yarn build-tsc && yarn build-pack",
     "coverage-report": "nyc report --reporter=lcov",
     "__prepare_template__": "yarn clean && yarn build-nopack",
