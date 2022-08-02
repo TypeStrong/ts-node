@@ -613,19 +613,15 @@ test.suite('ts-node', (test) => {
       expect(stderr).toBe('');
     });
 
-    test(
-      'should be able to fork into a nested TypeScript script with a modified ' +
-        'working directory',
-      async () => {
-        const { err, stdout, stderr } = await exec(
-          `${BIN_PATH} --cwd ./working-dir/forking/ index.ts`
-        );
+    test('should be able to fork into a nested TypeScript script with a modified working directory', async () => {
+      const { err, stdout, stderr } = await exec(
+        `${BIN_PATH} --cwd ./working-dir/forking/ index.ts`
+      );
 
-        expect(err).toBe(null);
-        expect(stdout.trim()).toBe('Passing: from main');
-        expect(stderr).toBe('');
-      }
-    );
+      expect(err).toBe(null);
+      expect(stdout.trim()).toBe('Passing: from main');
+      expect(stderr).toBe('');
+    });
 
     test.suite('should read ts-node options from tsconfig.json', (test) => {
       const BIN_EXEC = `"${BIN_PATH}" --project tsconfig-options/tsconfig.json`;

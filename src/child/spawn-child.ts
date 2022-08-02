@@ -1,19 +1,12 @@
 import { fork } from 'child_process';
-import type { BootstrapStateInitialProcess } from '../bin';
-import { getChildProcessArguments } from './child-exec-args';
+import type { Phase3Input, Phase4Input } from '../bin';
+import { getChildProcessArguments } from './utils';
 
 /**
  * @internal
  * @param state Bootstrap state to be transferred into the child process.
- * @param enableEsmLoader Whether to enable the ESM loader or not. This option may
- *   be removed in the future when `--esm` is no longer a choice.
- * @param targetCwd Working directory to be preserved when transitioning to
- *   the child process.
  */
-export function callInChildWithEsm(
-  state: BootstrapStateInitialProcess,
-  targetCwd: string
-) {
+export function callInChild(state: Phase3Input | Phase4Input) {
   const { childScriptArgs, childScriptPath, nodeExecArgs } =
     getChildProcessArguments(/* enableEsmLoader */ true, state);
 
@@ -22,7 +15,6 @@ export function callInChildWithEsm(
   const child = fork(childScriptPath, childScriptArgs, {
     stdio: 'inherit',
     execArgv: [...process.execArgv, ...nodeExecArgs],
-    cwd: targetCwd,
   });
   child.on('error', (error) => {
     console.error(error);

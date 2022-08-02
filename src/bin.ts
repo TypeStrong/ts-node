@@ -28,9 +28,9 @@ import {
 } from './index';
 import type { TSInternal } from './ts-compiler-types';
 import { addBuiltinLibsToObject } from '../dist-raw/node-internal-modules-cjs-helpers';
-import { callInChildWithEsm } from './child/spawn-child-with-esm';
+import { callInChild } from './child/spawn-child';
 import { findAndReadConfig } from './configuration';
-import { getChildProcessArguments } from './child/child-exec-args';
+import { getChildProcessArguments } from './child/utils';
 
 type MarkPropAsRequired<T, K extends keyof T> = Omit<T, K> &
   Required<Pick<T, K>>;
@@ -47,103 +47,113 @@ type MarkPropAsRequired<T, K extends keyof T> = Omit<T, K> &
  * @internal
  */
 export function main(
-  argv: string[] = process.argv.slice(2),
+  _argv: string[] = process.argv.slice(2),
   entrypointArgs: Record<string, any> = {}
 ) {
-  const args = parseArgv(argv, entrypointArgs);
-  const state: BootstrapState = {
-    parseArgvResult: args,
+  const { argv, restArgs, ...parseArgvResult } = parseArgv(
+    _argv,
+    entrypointArgs
+  );
+  const state: Phase2Input = {
+    next: 'phase2',
+    restArgs,
+    parseArgvResult,
   };
-  return bootstrap(state);
+  return continueBootstrap(state);
 }
 
 /**
- * @internal
- * Describes state of CLI bootstrapping.
+ * Describes state of in-progress CLI bootstrapping.
  * Can be marshalled when necessary to resume bootstrapping in a child process.
+ *
+ * @internal
  */
-export interface BootstrapState {
-  parseArgvResult: ReturnType<typeof parseArgv>;
-  phase2Result?: ReturnType<typeof phase2>;
-  phase3Result?: ReturnType<typeof phase3>;
+export type BootstrapState =
+  | Phase2Input
+  | Phase3Input
+  | Phase4Input
+  | FinalBootstrapState;
+
+/** @internal */
+interface Phase2Input {
+  next: 'phase2';
+  parseArgvResult: Omit<ReturnType<typeof parseArgv>, 'restArgs' | 'argv'>;
+  /** Mutated as bootstrap proceeds, hence extracted to top-level */
+  restArgs: string[];
+}
+/** @internal */
+export interface Phase3Input {
+  next: 'phase3';
+  parseArgvResult: Omit<ReturnType<typeof parseArgv>, 'restArgs' | 'argv'>;
+  restArgs: string[];
+}
+/** @internal */
+export interface Phase4Input {
+  next: 'phase4';
+  parseArgvResult: Omit<ReturnType<typeof parseArgv>, 'restArgs' | 'argv'>;
+  restArgs: string[];
+  phase3Result: ReturnType<typeof phase3>;
 }
 
 /**
- * Bootstrap state that is passed to the child process used to execute
- * the final bootstrap phase.
+ * Finalized, stripped-down bootstrap state, passed to the final bootstrapping
+ * step.
  *
- * This state may be encoded in process command line arguments and should
+ * This state is also encoded into execArgv and should
  * only capture information that should be persisted to e.g. forked child processes.
+ *
+ * @internal
  */
-export interface BootstrapStateForForkedProcesses {
+interface FinalBootstrapState {
+  next: 'final';
   // For the final bootstrap we are only interested in the user arguments that should
   // be passed to the entry-point script (or eval script). We don't want to encode any
   // other options from `parseArgvResult` that would break child forking.
   // e.g. persisting the `--eval` option would break `child_process.fork` in scripts.
   restArgs: string[];
-  phase3Result: Pick<
-    ReturnType<typeof phase3>,
-    'enableEsmLoader' | 'preloadedConfig'
-  >;
+  phase3Result: ReturnType<typeof phase3>;
 }
 
-export interface BootstrapStateInitialProcess
-  extends Omit<BootstrapStateForForkedProcesses, 'phase3Result'> {
-  initialArgv: ReturnType<typeof parseArgv>;
-  initialResolutionCwd: string;
-  phase3Result?: ReturnType<typeof phase3>;
-}
-
-export type BootstrapStateForChild = BootstrapStateForForkedProcesses &
-  Partial<BootstrapStateInitialProcess>;
-
-/** @internal */
-export function bootstrap(state: BootstrapState) {
-  state.phase2Result = phase2(state);
-
-  const initialProcessState: BootstrapStateInitialProcess = {
-    restArgs: state.parseArgvResult.restArgs,
-    initialArgv: state.parseArgvResult,
-    initialResolutionCwd: state.phase2Result.resolutionCwd,
-  };
-
-  // Perf optimization for ESM until ESM hooks can be registered without needing
-  // a child process. We skip phase3 and defer it to the child process where we
-  // would load the TS compiler anyway, avoiding loading it twice in different processes.
-  if (initialProcessState.initialArgv.esm) {
-    callInChildWithEsm(initialProcessState, process.cwd());
-    return;
-  }
-
-  const phase3Result = phase3(initialProcessState);
-
-  // For ESM, we need to spawn a new Node process to be able to register our hooks.
-  if (phase3Result.enableEsmLoader) {
-    // Note: When transitioning into the child process for the final phase,
-    // we want to preserve the initial user working directory.
-    callInChildWithEsm(initialProcessState, process.cwd());
-  } else {
-    completeBootstrap({ ...initialProcessState, phase3Result });
-  }
-}
-/** Final phase of the bootstrap. */
-export function completeBootstrap(
-  state: BootstrapStateForForkedProcesses | BootstrapStateInitialProcess
+/**
+ * @internal
+ * Continue bootstrapping from where we left off.
+ */
+export function continueBootstrap(
+  state: BootstrapState,
+  inChildProcess = false
 ) {
-  // IMPORTANT: This is an optimization when we detected `--esm` early in the CLI.
-  // In such cases we skip phase3 and let phase3 to be processed in the child process here.
-  // This avoids loading the TS compiler twice as loading TS is rather slow.
-  // TODO: Remove this when we don't need to spawn a child process for ESM. See:
-  if (state.phase3Result === undefined) {
-    state.phase3Result = phase3(state as BootstrapStateInitialProcess);
+  if (state.next === 'phase2') {
+    phase2(state);
+    const _: Phase3Input = (state = {
+      next: 'phase3',
+      restArgs: state.restArgs,
+      parseArgvResult: state.parseArgvResult,
+    });
+
+    // Perf optimization for ESM until ESM hooks can be registered without needing
+    // a child process. We skip phase3 and defer it to the child process where we
+    // would load the TS compiler anyway, avoiding loading it twice in different processes.
+    if (state.parseArgvResult.esm && !inChildProcess) {
+      callInChild(state);
+      return;
+    }
+  }
+  if (state.next === 'phase3') {
+    const _: Phase4Input = (state = {
+      next: 'phase4',
+      restArgs: state.restArgs,
+      parseArgvResult: state.parseArgvResult,
+      phase3Result: phase3(state),
+    });
+
+    // For ESM, we need to spawn a new Node process to be able to register our hooks.
+    if (state.phase3Result.enableEsmLoader && !inChildProcess) {
+      callInChild(state);
+      return;
+    }
   }
 
-  return phase4(
-    state as MarkPropAsRequired<
-      BootstrapStateForForkedProcesses | BootstrapStateInitialProcess,
-      'phase3Result'
-    >
-  );
+  return phase4(state);
 }
 
 function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
@@ -272,8 +282,7 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
     _: restArgs,
   } = args;
   return {
-    // Note: argv and restArgs may be overwritten by child process
-    argv: process.argv,
+    argv,
     restArgs,
 
     cwdArg,
@@ -311,8 +320,8 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
   };
 }
 
-function phase2(payload: BootstrapState) {
-  const { help, version, cwdArg } = payload.parseArgvResult;
+function phase2(state: Phase2Input) {
+  const { help, version } = state.parseArgvResult;
 
   if (help) {
     console.log(`
@@ -365,21 +374,11 @@ Options:
     console.log(`v${VERSION}`);
     process.exit(0);
   }
-
-  let resolutionCwd: string;
-  if (cwdArg !== undefined) {
-    resolutionCwd = resolve(cwdArg);
-  } else {
-    resolutionCwd = process.cwd();
-  }
-
-  return {
-    resolutionCwd,
-  };
 }
 
-function phase3(payload: BootstrapStateInitialProcess) {
+function phase3(state: Phase3Input) {
   const {
+    cwdArg,
     emit,
     files,
     pretty,
@@ -405,8 +404,14 @@ function phase3(payload: BootstrapStateInitialProcess) {
     scopeDir,
     esm,
     experimentalSpecifierResolution,
-  } = payload.initialArgv;
-  const resolutionCwd = payload.initialResolutionCwd;
+  } = state.parseArgvResult!;
+
+  let cwd: string;
+  if (cwdArg !== undefined) {
+    cwd = resolve(cwdArg);
+  } else {
+    cwd = process.cwd();
+  }
 
   // NOTE: When we transition to a child process for ESM, the entry-point script determined
   // here might not be the one used later in `phase4`. This can happen when we execute the
@@ -415,12 +420,13 @@ function phase3(payload: BootstrapStateInitialProcess) {
   // expected and acceptable to retrieve the entry-point information here in `phase2`.
   // See: https://github.com/TypeStrong/ts-node/issues/1812.
   const { entryPointPath } = getEntryPointInfo(
-    resolutionCwd,
-    payload.initialArgv
+    cwd,
+    state.parseArgvResult,
+    state.restArgs
   );
 
   const preloadedConfig = findAndReadConfig({
-    cwd: resolutionCwd,
+    cwd,
     emit,
     files,
     pretty,
@@ -433,7 +439,7 @@ function phase3(payload: BootstrapStateInitialProcess) {
     ignore,
     logError,
     projectSearchDir: getProjectSearchDir(
-      resolutionCwd,
+      cwd,
       scriptMode,
       cwdMode,
       entryPointPath
@@ -454,6 +460,7 @@ function phase3(payload: BootstrapStateInitialProcess) {
   });
 
   return {
+    cwd,
     preloadedConfig,
     enableEsmLoader: !!(preloadedConfig.options.esm || esm),
   };
@@ -475,14 +482,14 @@ function phase3(payload: BootstrapStateInitialProcess) {
  * details can be found in here: https://github.com/TypeStrong/ts-node/issues/1812.
  */
 function getEntryPointInfo(
-  resolutionCwd: string,
+  cwd: string,
   argvResult: {
     code: string | undefined;
     interactive: boolean | undefined;
-    restArgs: string[];
-  }
+  },
+  restArgs: string[]
 ) {
-  const { code, interactive, restArgs } = argvResult;
+  const { code, interactive } = argvResult;
 
   // Figure out which we are executing: piped stdin, --eval, REPL, and/or entrypoint
   // This is complicated because node's behavior is complicated
@@ -496,7 +503,7 @@ function getEntryPointInfo(
 
   /** Unresolved. May point to a symlink, not realpath. May be missing file extension */
   const entryPointPath = executeEntrypoint
-    ? resolve(resolutionCwd, restArgs[0])
+    ? resolve(cwd, restArgs[0])
     : undefined;
 
   return {
@@ -508,10 +515,20 @@ function getEntryPointInfo(
   };
 }
 
-function phase4(payload: BootstrapStateForChild) {
-  const restArgs = payload.restArgs;
-  const { preloadedConfig } = payload.phase3Result;
-  const resolutionCwd = payload.initialResolutionCwd ?? process.cwd();
+function phase4(state: Phase4Input | FinalBootstrapState) {
+  const { restArgs } = state;
+  const { preloadedConfig } = state.phase3Result;
+  const cwd = state.phase3Result.cwd;
+  const parseArgvResult =
+    state.next === 'phase4'
+      ? state.parseArgvResult
+      : {
+          code: undefined,
+          interactive: false,
+          version: 0,
+          showConfig: false,
+          print: false,
+        };
 
   const {
     entryPointPath,
@@ -519,11 +536,15 @@ function phase4(payload: BootstrapStateForChild) {
     executeEval,
     executeRepl,
     executeStdin,
-  } = getEntryPointInfo(resolutionCwd, {
-    code: payload.initialArgv?.code,
-    interactive: payload.initialArgv?.interactive,
-    restArgs: payload.restArgs,
-  });
+  } = getEntryPointInfo(
+    process.cwd(),
+    {
+      code: state.next === 'final' ? undefined : parseArgvResult.code,
+      interactive:
+        state.next === 'final' ? undefined : parseArgvResult.interactive,
+    },
+    restArgs
+  );
 
   /**
    * <repl>, [stdin], and [eval] are all essentially virtual files that do not exist on disc and are backed by a REPL
@@ -539,7 +560,7 @@ function phase4(payload: BootstrapStateForChild) {
   let stdinStuff: VirtualFileState | undefined;
   let evalAwarePartialHost: EvalAwarePartialHost | undefined = undefined;
   if (executeEval) {
-    const state = new EvalState(join(resolutionCwd, EVAL_FILENAME));
+    const state = new EvalState(join(cwd, EVAL_FILENAME));
     evalStuff = {
       state,
       repl: createRepl({
@@ -552,10 +573,10 @@ function phase4(payload: BootstrapStateForChild) {
     // Create a local module instance based on `cwd`.
     const module = (evalStuff.module = new Module(EVAL_NAME));
     module.filename = evalStuff.state.path;
-    module.paths = (Module as any)._nodeModulePaths(resolutionCwd);
+    module.paths = (Module as any)._nodeModulePaths(cwd);
   }
   if (executeStdin) {
-    const state = new EvalState(join(resolutionCwd, STDIN_FILENAME));
+    const state = new EvalState(join(cwd, STDIN_FILENAME));
     stdinStuff = {
       state,
       repl: createRepl({
@@ -568,10 +589,10 @@ function phase4(payload: BootstrapStateForChild) {
     // Create a local module instance based on `cwd`.
     const module = (stdinStuff.module = new Module(STDIN_NAME));
     module.filename = stdinStuff.state.path;
-    module.paths = (Module as any)._nodeModulePaths(resolutionCwd);
+    module.paths = (Module as any)._nodeModulePaths(cwd);
   }
   if (executeRepl) {
-    const state = new EvalState(join(resolutionCwd, REPL_FILENAME));
+    const state = new EvalState(join(cwd, REPL_FILENAME));
     replStuff = {
       state,
       repl: createRepl({
@@ -596,7 +617,7 @@ function phase4(payload: BootstrapStateForChild) {
   });
   register(service);
 
-  if (payload.phase3Result.enableEsmLoader)
+  if (state.phase3Result.enableEsmLoader)
     (
       require('./child/child-loader') as typeof import('./child/child-loader')
     ).lateBindHooks(createEsmHooks(service));
@@ -607,13 +628,13 @@ function phase4(payload: BootstrapStateForChild) {
   stdinStuff?.repl.setService(service);
 
   // Output project information.
-  if (payload.initialArgv?.version === 2) {
+  if (parseArgvResult.version === 2) {
     console.log(`ts-node v${VERSION}`);
     console.log(`node ${process.version}`);
     console.log(`compiler v${service.ts.version}`);
     process.exit(0);
   }
-  if ((payload.initialArgv?.version ?? 0) >= 3) {
+  if (parseArgvResult.version >= 3) {
     console.log(`ts-node v${VERSION} ${dirname(__dirname)}`);
     console.log(`node ${process.version}`);
     console.log(
@@ -622,7 +643,7 @@ function phase4(payload: BootstrapStateForChild) {
     process.exit(0);
   }
 
-  if (payload.initialArgv?.showConfig) {
+  if (parseArgvResult.showConfig) {
     const ts = service.ts as any as TSInternal;
     if (typeof ts.convertToTSConfig !== 'function') {
       console.error(
@@ -657,8 +678,7 @@ function phase4(payload: BootstrapStateForChild) {
       },
       ...ts.convertToTSConfig(
         service.config,
-        service.configFilePath ??
-          join(resolutionCwd, 'ts-node-implicit-tsconfig.json'),
+        service.configFilePath ?? join(cwd, 'ts-node-implicit-tsconfig.json'),
         service.ts.sys
       ),
     };
@@ -671,12 +691,12 @@ function phase4(payload: BootstrapStateForChild) {
     process.exit(0);
   }
 
-  const forkPersistentBootstrapState: BootstrapStateForForkedProcesses =
-    createBootstrapStateForChildProcess(payload);
+  const finalBootstrapState: FinalBootstrapState =
+    createBootstrapStateForChildProcess(state);
 
   const { childScriptPath, childScriptArgs } = getChildProcessArguments(
-    payload.phase3Result.enableEsmLoader,
-    forkPersistentBootstrapState
+    state.phase3Result.enableEsmLoader,
+    finalBootstrapState
   );
 
   // Append the child script path and arguments to the process `execArgv`.
@@ -694,7 +714,7 @@ function phase4(payload: BootstrapStateForChild) {
   // Execute the main contents (either eval, script or piped).
   if (executeEntrypoint) {
     if (
-      payload.phase3Result.enableEsmLoader &&
+      state.phase3Result.enableEsmLoader &&
       versionGteLt(process.versions.node, '18.6.0')
     ) {
       // HACK workaround node regression
@@ -710,8 +730,8 @@ function phase4(payload: BootstrapStateForChild) {
       evalAndExitOnTsError(
         evalStuff!.repl,
         evalStuff!.module!,
-        payload.initialArgv!.code!,
-        payload.initialArgv!.print,
+        parseArgvResult.code!,
+        parseArgvResult.print,
         'eval'
       );
     }
@@ -721,7 +741,7 @@ function phase4(payload: BootstrapStateForChild) {
     }
 
     if (executeStdin) {
-      let buffer = payload.initialArgv?.code ?? '';
+      let buffer = parseArgvResult.code ?? '';
       process.stdin.on('data', (chunk: Buffer) => (buffer += chunk));
       process.stdin.on('end', () => {
         evalAndExitOnTsError(
@@ -729,7 +749,7 @@ function phase4(payload: BootstrapStateForChild) {
           stdinStuff!.module!,
           buffer,
           // `echo 123 | node -p` still prints 123
-          payload.initialArgv?.print ?? false,
+          parseArgvResult.print,
           'stdin'
         );
       });
@@ -738,15 +758,18 @@ function phase4(payload: BootstrapStateForChild) {
 }
 
 function createBootstrapStateForChildProcess(
-  state: BootstrapStateInitialProcess | BootstrapStateForForkedProcesses
-): BootstrapStateForForkedProcesses {
+  state: Phase4Input | FinalBootstrapState
+): FinalBootstrapState {
+  if (state.next === 'final') return state;
   // NOTE: Build up the child process fork bootstrap state manually so that we do
   // not encode unnecessary properties into the bootstrap state that is persisted
   return {
+    next: 'final',
     restArgs: state.restArgs,
     phase3Result: {
-      enableEsmLoader: state.phase3Result!.enableEsmLoader,
-      preloadedConfig: state.phase3Result!.preloadedConfig,
+      cwd: state.phase3Result.cwd,
+      enableEsmLoader: state.phase3Result.enableEsmLoader,
+      preloadedConfig: state.phase3Result.preloadedConfig,
     },
   };
 }
