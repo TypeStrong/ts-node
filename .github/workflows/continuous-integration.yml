@@ -20,22 +20,25 @@ jobs:
       # checkout code
       - uses: actions/checkout@v2
       # install node
-      - name: Use Node.js 16
+      - name: Use Node.js 18
         uses: actions/setup-node@v1
         with:
-          node-version: 16
-      - run: |
-          npm config set cache "$( node -p "process.cwd()" )/temp/npm-cache"
+          node-version: 18
+      - name: Get cache directory
+        id: get-cache-directory
+        run: |
+          yarn config get cacheFolder
+          echo "::set-output name=path::$( yarn config get cacheFolder )"
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
-          path: temp/npm-cache
-          key: npm-cache-packaging-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-cache-packaging-
+          path: ${{ steps.get-cache-directory.outputs.path }}
+          key: yarn-cache-packaging-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-cache-packaging-
       # lint, build, test
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run build-pack
+      - run: yarn install --immutable
+      - run: yarn lint
+      - run: yarn build
       - name: Upload package artifact
         uses: actions/upload-artifact@v1
         with:
@@ -46,20 +49,23 @@ jobs:
     needs: lint-build
     name: "Test: ${{ matrix.os }}, node ${{ matrix.node }}, TS ${{ matrix.typescript }}"
     runs-on: ${{ matrix.os }}-latest
+    env:
+      TEST_MATRIX_NODE_VERSION: ${{ matrix.node }}
+      TEST_MATRIX_TYPESCRIPT_VERSION: ${{ matrix.typescript }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        flavor: [2, 3, 4, 6, 8, 9, 10, 11]
         include:
           # Node 14.13.0
           # To test ESM builtin module resolution immediately before a node behavioral change: https://github.com/TypeStrong/ts-node/issues/1130
-          - flavor: 1
-            node: 14.13.0
-            nodeFlag: 14_13_0
-            typescript: latest
-            typescriptFlag: latest
+          # - flavor: 1
+          #   node: 14.13.0
+          #   nodeFlag: 14_13_0
+          #   typescript: latest
+          #   typescriptFlag: latest
           # Node 14
           - flavor: 2
             node: 14
@@ -79,23 +85,23 @@ jobs:
           # Node 16
           # Node 16.11.1
           # Earliest version that supports old ESM Loader Hooks API: https://github.com/TypeStrong/ts-node/pull/1522
-          - flavor: 5
-            node: 16.11.1
-            nodeFlag: 16_11_1
-            typescript: latest
-            typescriptFlag: latest
+          # - flavor: 5
+          #   node: 16.11.1
+          #   nodeFlag: 16_11_1
+          #   typescript: latest
+          #   typescriptFlag: latest
           - flavor: 6
             node: 16
             nodeFlag: 16
             typescript: latest
             typescriptFlag: latest
             downgradeNpm: true
-          - flavor: 7
-            node: 16
-            nodeFlag: 16
-            typescript: 4.0
-            typescriptFlag: 4_0
-            downgradeNpm: true
+          # - flavor: 7
+          #   node: 16
+          #   nodeFlag: 16
+          #   typescript: 4.0
+          #   typescriptFlag: 4_0
+          #   downgradeNpm: true
           - flavor: 8
             node: 16
             nodeFlag: 16
@@ -153,40 +159,40 @@ jobs:
           Invoke-WebRequest -Uri $url -OutFile $targetPath -UserAgent ([Microsoft.PowerShell.Commands.PSUserAgent]::Chrome)
           node --version
       # lint, build, test
-        # Downgrade from npm 7 to 6 because 7 still seems buggy to me
-      - if: ${{ matrix.downgradeNpm }}
-        run: npm install -g npm@6
-      - run: |
-          npm config set cache "$( node -p "process.cwd()" )/temp/npm-cache"
+      - name: Get cache directory
+        id: get-cache-directory
+        run: |
+          yarn config get cacheFolder
+          echo "::set-output name=path::$( yarn config get cacheFolder )"
       - name: Cache dependencies
         if: ${{ matrix.os != 'windows' }}
         uses: actions/cache@v2
         with:
-          path: temp/npm-cache
-          key: npm-cache-${{ matrix.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-cache-${{matrix.os }}-
-      - run: npm ci --ignore-scripts
-      - name: Upload npm logs
+          path: ${{ steps.get-cache-directory.outputs.path }}
+          key: yarn-cache-${{ matrix.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-cache-${{matrix.os }}-
+      - run: yarn install --immutable --mode=skip-build
+      - name: Upload yarn logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: npm-logs
-          path: temp/npm-cache/_logs
-      - run: npm run build-tsc
+          name: yarn-logs
+          path: yarn-error.log
+      - run: yarn build-tsc
       - name: Download package artifact
         uses: actions/download-artifact@v1
         with:
           name: ts-node-packed.tgz
           path: tests/
-      - run: npm install typescript@${{ matrix.typescript }} --force
-      - run: npm run test-cov
-      - name: Upload npm logs
+      - run: yarn add -D typescript@${{ matrix.typescript }}
+      - run: yarn test-cov
+      - name: Upload yarn logs
         if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
-          name: npm-logs-${{ matrix.os }}-node-${{ matrix.nodeFlag }}-typescript-${{ matrix.typescriptFlag }}
-          path: temp/npm-cache/_logs
-      - run: npm run coverage-report
+          name: yarn-logs-${{ matrix.os }}-node-${{ matrix.nodeFlag }}-typescript-${{ matrix.typescriptFlag }}
+          path: yarn-error.log
+      - run: yarn coverage-report
         if: ${{ always() }}
       - name: Codecov
         if: ${{ always() }}

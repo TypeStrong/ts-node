@@ -52,7 +52,7 @@ export const CMD_ESM_LOADER_WITHOUT_PROJECT = `node --loader ts-node/esm`;
 // `createRequire` does not exist on older node versions
 export const testsDirRequire = createRequire(join(TEST_DIR, 'index.js'));
 
-export const ts = testsDirRequire('typescript');
+export const ts = testsDirRequire('typescript') as typeof import('typescript');
 
 //#region version checks
 export const nodeUsesNewHooksApi = semver.gte(process.version, '16.12.0');
@@ -121,9 +121,10 @@ export async function installTsNode() {
     while (true) {
       try {
         rimrafSync(join(TEST_DIR, 'node_modules'));
-        await promisify(childProcessExec)(`npm install`, { cwd: TEST_DIR });
-        const packageLockPath = join(TEST_DIR, 'package-lock.json');
-        existsSync(packageLockPath) && unlinkSync(packageLockPath);
+        await promisify(childProcessExec)(`yarn --no-immutable`, {
+          cwd: TEST_DIR,
+        });
+        writeFileSync(join(TEST_DIR, 'yarn.lock'), '');
         break;
       } catch (e) {
         tries++;

@@ -1126,9 +1126,9 @@ test('Detect when typescript adds new ModuleKind values; flag as a failure so we
   // We have marked a few places in our code with MUST_UPDATE_FOR_NEW_MODULEKIND to make it easier to update them when TS adds new ModuleKinds
   const foundKeys: string[] = [];
   function check(value: number, name: string, required: boolean) {
-    if (required) expect(ts.ModuleKind[name]).toBe(value);
+    if (required) expect(ts.ModuleKind[name as any]).toBe(value);
     if (ts.ModuleKind[value] === undefined) {
-      expect(ts.ModuleKind[name]).toBeUndefined();
+      expect(ts.ModuleKind[name as any]).toBeUndefined();
     } else {
       expect(ts.ModuleKind[value]).toBe(name);
       foundKeys.push(name, `${value}`);
