@@ -2,6 +2,8 @@ import { readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { resolve } from 'path';
 
+// NOTE: could be replaced with using https://npm.im/yarpm
+
 const manifestPath = resolve(
   fileURLToPath(import.meta.url),
   '../../package.json'
