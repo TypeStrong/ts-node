@@ -20,10 +20,7 @@ test.suite('Confirm node and typescript versions on CI', (test) => {
   test('typescript version is correct', async (t) => {
     expect(process.env.TEST_MATRIX_TYPESCRIPT_VERSION).toBeDefined();
     expect(
-      semver.satisfies(
-        ts.version,
-        process.env.TEST_MATRIX_TYPESCRIPT_VERSION!
-      )
+      semver.satisfies(ts.version, process.env.TEST_MATRIX_TYPESCRIPT_VERSION!)
     ).toBe(true);
   });
 });
