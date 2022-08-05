@@ -10,23 +10,27 @@ const test = context(ctxTsNode);
 test.suite('Confirm node and typescript versions on CI', (test) => {
   test.runIf(!!process.env.CI);
   test('node version is correct', async (t) => {
-    expect(process.env.TEST_MATRIX_NODE_VERSION).toBeDefined();
-    expect(
-      semver.satisfies(
-        process.versions.node,
-        process.env.TEST_MATRIX_NODE_VERSION!
-      )
-    ).toBe(true);
+    const expectedVersion = process.env.TEST_MATRIX_NODE_VERSION!;
+    const actualVersion = process.versions.node;
+    t.log({ expectedVersion, actualVersion });
+    expect(expectedVersion).toBeDefined();
+    if (expectedVersion === 'nightly') {
+      expect(actualVersion).toMatch('nightly');
+    } else {
+      expect(semver.satisfies(actualVersion, expectedVersion)).toBe(true);
+    }
   });
   test('typescript version is correct', async (t) => {
     let expectedVersion = process.env.TEST_MATRIX_TYPESCRIPT_VERSION!;
+    const actualVersion = ts.version;
+    t.log({ expectedVersion, actualVersion });
     expect(expectedVersion).toBeDefined();
     if (expectedVersion === 'next' || expectedVersion === 'latest') {
       const stdout = execSync(
         `npm view typescript@${expectedVersion} version --json`,
         { encoding: 'utf8' }
       );
-      t.log(stdout);
+      t.log({ stdout });
       expectedVersion = JSON.parse(stdout);
       expect(ts.version).toBe(expectedVersion);
     } else {
