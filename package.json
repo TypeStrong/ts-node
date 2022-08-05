@@ -69,7 +69,7 @@
     "build-pack": "node ./scripts/build-pack.js",
     "build-manifest": "node ./scripts/build-manifest.mjs",
     "test-spec": "ava",
-    "test-cov": "nyc ava --match 'Confirm*'",
+    "test-cov": "nyc ava",
     "test": "yarn build && yarn lint && yarn test-cov",
     "test-local": "yarn fmt && yarn build-tsc && yarn build-pack && yarn test-spec",
     "pre-debug": "yarn build-tsc && yarn build-pack",
