@@ -28,7 +28,7 @@ install:
 
 lint *ARGS:
   dprint check "$@"
-lint-fix *ARGS:
+fmt *ARGS:
   dprint fmt "$@"
 clean *ARGS:
   rimraf temp dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz tests/node_modules tests/tmp "$@"
@@ -53,7 +53,7 @@ test-cov *ARGS:
 test *ARGS:
   just build && just lint && just test-cov "$@"
 test-local *ARGS:
-  just lint-fix && just build-tsc && just build-pack && just test-spec "$@"
+  just fmt && just build-tsc && just build-pack && just test-spec "$@"
 pre-debug *ARGS:
   just build-tsc && just build-pack "$@"
 coverage-report *ARGS:
