@@ -52,7 +52,7 @@ export const CMD_ESM_LOADER_WITHOUT_PROJECT = `node --loader ts-node/esm`;
 // `createRequire` does not exist on older node versions
 export const testsDirRequire = createRequire(join(TEST_DIR, 'index.js'));
 
-export const ts = testsDirRequire('typescript');
+export const ts = testsDirRequire('typescript') as typeof import('typescript');
 
 //#region version checks
 export const nodeUsesNewHooksApi = semver.gte(process.version, '16.12.0');

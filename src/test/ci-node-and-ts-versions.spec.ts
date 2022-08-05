@@ -2,7 +2,7 @@
 // and typescript in the test matrix.
 
 import semver = require('semver');
-import { ctxTsNode } from './helpers';
+import { ctxTsNode, ts } from './helpers';
 import { context, expect } from './testlib';
 
 const test = context(ctxTsNode);
@@ -21,7 +21,7 @@ test.suite('Confirm node and typescript versions on CI', (test) => {
     expect(process.env.TEST_MATRIX_TYPESCRIPT_VERSION).toBeDefined();
     expect(
       semver.satisfies(
-        t.context.tsNodeUnderTest.VERSION,
+        ts.version,
         process.env.TEST_MATRIX_TYPESCRIPT_VERSION!
       )
     ).toBe(true);
