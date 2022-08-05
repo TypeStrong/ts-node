@@ -49,6 +49,9 @@ jobs:
     needs: lint-build
     name: "Test: ${{ matrix.os }}, node ${{ matrix.node }}, TS ${{ matrix.typescript }}"
     runs-on: ${{ matrix.os }}-latest
+    env:
+      TEST_MATRIX_NODE_VERSION: ${{ matrix.node }}
+      TEST_MATRIX_TYPESCRIPT_VERSION: ${{ matrix.typescript }}
     strategy:
       fail-fast: false
       matrix:
