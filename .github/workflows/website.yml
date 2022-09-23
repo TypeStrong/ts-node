@@ -4,8 +4,11 @@ on:
   push:
     branches:
       - docs
+permissions: {}
 jobs:
   build:
+    permissions:
+      contents: write
     name: Build & Deploy
     runs-on: ubuntu-20.04
     steps:
