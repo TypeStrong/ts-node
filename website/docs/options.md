@@ -403,6 +403,8 @@ Requires [`esm`](#esm) to be enabled.
 
 *Default:* `explicit`<br/>
 
+This feature has been removed since Node 19 version.
+
 ## API Options
 
 The API includes [additional options](https://typestrong.org/ts-node/api/interfaces/RegisterOptions.html) not shown here.
