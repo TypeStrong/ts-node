@@ -122,7 +122,7 @@ We publish using `np`: https://npm.im/np
 4. Publish with `np`
  - `np --branch main --no-tests`
   - `--no-tests` because we must rely on CI to test ts-node.  Even if you *did* run the tests locally, you would only be testing a single operating system, node version, and TypeScript version, so locally-run tests are insufficient.
-5. Add changelog to the Github Release; match formatting from previous releases
+5. Add changelog to the GitHub Release; match formatting from previous releases
 6. Move `docs` branch to head of `main`
   - this rebuilds the website
   - `git push --force origin main:docs`
