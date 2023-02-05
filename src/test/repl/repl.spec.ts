@@ -285,7 +285,7 @@ test.suite(
     test('interactive repl should not ignore them if they occur in other files', async (t) => {
       const { stdout, stderr } = await execTester({
         flags: '-i',
-        stdin: `import './repl-ignored-diagnostics/index.ts';\n`,
+        stdin: `import './repl-ignored-diagnostics/index';\n`,
       });
       expect(stderr).toContain(diagnosticMessage);
     });
