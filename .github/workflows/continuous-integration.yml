@@ -19,7 +19,7 @@ jobs:
     steps:
       # checkout code
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       # install node
       - name: Use Node.js 18
         uses: actions/setup-node@v3
@@ -31,7 +31,7 @@ jobs:
           yarn config get cacheFolder
           echo "path=$( yarn config get cacheFolder )" >> $GITHUB_OUTPUT
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.get-cache-directory.outputs.path }}
           key: yarn-cache-packaging-${{ hashFiles('yarn.lock') }}
@@ -94,7 +94,7 @@ jobs:
     steps:
       # checkout code
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       # install node
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v3
@@ -108,7 +108,7 @@ jobs:
           echo "path=$( yarn config get cacheFolder )" >> $GITHUB_OUTPUT
       - name: Cache dependencies
         if: ${{ matrix.os != 'windows' }}
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.get-cache-directory.outputs.path }}
           key: yarn-cache-${{ matrix.os }}-${{ hashFiles('yarn.lock') }}
@@ -133,7 +133,7 @@ jobs:
         with:
           files: yarn-error.log
       - name: Upload yarn logs
-        if: ${{ failure() && steps.check-yarn-logs-exist.outputs.files_exists }}
+        if: ${{ failure() && steps.check-yarn-logs-exist.outputs.files_exists == 'true' }}
         uses: actions/upload-artifact@v1
         with:
           name: yarn-logs-${{ matrix.os }}-node-${{ matrix.nodeFlag }}-typescript-${{ matrix.typescriptFlag }}
