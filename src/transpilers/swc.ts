@@ -90,7 +90,7 @@ targetMapping.set(/* ts.ScriptTarget.ES2019 */ 6, 'es2019');
 targetMapping.set(/* ts.ScriptTarget.ES2020 */ 7, 'es2020');
 targetMapping.set(/* ts.ScriptTarget.ES2021 */ 8, 'es2021');
 targetMapping.set(/* ts.ScriptTarget.ES2022 */ 9, 'es2022');
-targetMapping.set(/* ts.ScriptTarget.ESNext */ 99, 'es2022');
+targetMapping.set(/* ts.ScriptTarget.ESNext */ 99, 'esnext');
 
 type SwcTarget = typeof swcTargets[number];
 /**
@@ -108,6 +108,7 @@ const swcTargets = [
   'es2020',
   'es2021',
   'es2022',
+  'esnext',
 ] as const;
 
 const ModuleKind = {
@@ -162,7 +163,7 @@ export function createSwcOptions(
   for (; swcTargetIndex >= 0; swcTargetIndex--) {
     try {
       swcInstance.transformSync('', {
-        jsc: { target: swcTargets[swcTargetIndex] },
+        jsc: { target: swcTargets[swcTargetIndex] as swcWasm.JscTarget },
       });
       break;
     } catch (e) {}
@@ -217,13 +218,13 @@ export function createSwcOptions(
       sourceMaps: sourceMap,
       // isModule: true,
       module: moduleType
-        ? ({
+        ? {
             noInterop: !esModuleInterop,
             type: moduleType,
             strictMode,
             // For NodeNext and Node12, emit as CJS but do not transform dynamic imports
             ignoreDynamic: nodeModuleEmitKind === 'nodecjs',
-          } as swcTypes.ModuleConfig)
+          }
         : undefined,
       swcrc: false,
       jsc: {
@@ -234,8 +235,8 @@ export function createSwcOptions(
           decorators: experimentalDecorators,
           dynamicImport: true,
           importAssertions: true,
-        },
-        target: swcTarget,
+        } as swcWasm.TsParserConfig,
+        target: swcTarget as swcWasm.JscTarget,
         transform: {
           decoratorMetadata: emitDecoratorMetadata,
           legacyDecorator: true,
@@ -246,13 +247,13 @@ export function createSwcOptions(
             pragma: jsxFactory!,
             pragmaFrag: jsxFragmentFactory!,
             runtime: jsxRuntime,
-          } as swcTypes.ReactConfig,
+          },
         },
         keepClassNames,
         experimental: {
           keepImportAssertions: true,
         },
-      } as swcTypes.JscConfig,
+      },
     };
 
     // Throw a helpful error if swc version is old, for example, if it rejects `ignoreDynamic`
