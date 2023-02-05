@@ -12,10 +12,10 @@ jobs:
       # checkout code
       - uses: actions/checkout@v2
       # install node
-      - name: Use Node.js 14
-        uses: actions/setup-node@v1
+      - name: Use Node.js 18
+        uses: actions/setup-node@v3
         with:
-          node-version: 14
+          node-version: 18
       # Render typedoc
       - run: npm install && npx typedoc
       # Render docusaurus and deploy website

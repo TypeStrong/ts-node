@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v2
       # install node
       - name: Use Node.js 18
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: 18
       - name: Get cache directory
@@ -57,107 +57,49 @@ jobs:
       matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [2, 3, 4, 6, 8, 9, 10, 11]
+        flavor: [6, 8, 9, 10, 11]
         include:
-          # Node 14.13.0
-          # To test ESM builtin module resolution immediately before a node behavioral change: https://github.com/TypeStrong/ts-node/issues/1130
-          # - flavor: 1
-          #   node: 14.13.0
-          #   nodeFlag: 14_13_0
-          #   typescript: latest
-          #   typescriptFlag: latest
-          # Node 14
-          - flavor: 2
-            node: 14
-            nodeFlag: 14
-            typescript: latest
-            typescriptFlag: latest
-          - flavor: 3
-            node: 14
-            nodeFlag: 14
-            typescript: 4.0
-            typescriptFlag: 4_0
-          - flavor: 4
-            node: 14
-            nodeFlag: 14
-            typescript: next
-            typescriptFlag: next
           # Node 16
-          # Node 16.11.1
-          # Earliest version that supports old ESM Loader Hooks API: https://github.com/TypeStrong/ts-node/pull/1522
-          # - flavor: 5
-          #   node: 16.11.1
-          #   nodeFlag: 16_11_1
-          #   typescript: latest
-          #   typescriptFlag: latest
           - flavor: 6
             node: 16
             nodeFlag: 16
             typescript: latest
             typescriptFlag: latest
-            downgradeNpm: true
           # - flavor: 7
           #   node: 16
           #   nodeFlag: 16
           #   typescript: 4.0
           #   typescriptFlag: 4_0
-          #   downgradeNpm: true
           - flavor: 8
             node: 16
             nodeFlag: 16
             typescript: next
             typescriptFlag: next
-            downgradeNpm: true
           # Node 18
           - flavor: 9
             node: 18
             nodeFlag: 18
             typescript: latest
             typescriptFlag: latest
-            downgradeNpm: true
           - flavor: 10
             node: 18
             nodeFlag: 18
             typescript: next
             typescriptFlag: next
-            downgradeNpm: true
           # Node nightly
           - flavor: 11
-            node: nightly
-            nodeFlag: nightly
+            node: 19-nightly
+            nodeFlag: 19_nightly
             typescript: latest
             typescriptFlag: latest
-            downgradeNpm: true
     steps:
       # checkout code
       - uses: actions/checkout@v2
       # install node
       - name: Use Node.js ${{ matrix.node }}
-        if: matrix.node != 'nightly'
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
-      - name: Use Node.js 16, will be subsequently overridden by download of nightly
-        if: matrix.node == 'nightly'
-        uses: actions/setup-node@v1
-        with:
-          node-version: 16
-      - name: Download Node.js nightly
-        if: matrix.node == 'nightly' && matrix.os == 'ubuntu'
-        run: |
-          export N_PREFIX=$(pwd)/n
-          npm install -g n
-          n nightly
-          sudo cp "${N_PREFIX}/bin/node" "$(which node)"
-          node --version
-      - name: Download Node.js nightly
-        if: matrix.node == 'nightly' && matrix.os == 'windows'
-        run: |
-          $version = (Invoke-WebRequest https://nodejs.org/download/nightly/index.json | ConvertFrom-json)[0].version
-          $url = "https://nodejs.org/download/nightly/$version/win-x64/node.exe"
-          $targetPath = (Get-Command node.exe).Source
-          Invoke-WebRequest -Uri $url -OutFile $targetPath -UserAgent ([Microsoft.PowerShell.Commands.PSUserAgent]::Chrome)
-          node --version
       # lint, build, test
       - name: Get cache directory
         id: get-cache-directory
