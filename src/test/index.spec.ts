@@ -7,6 +7,7 @@ import {
   BIN_PATH_JS,
   CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
   ts,
+  tsSupportsEs2021,
   tsSupportsMtsCtsExtensions,
   tsSupportsStableNodeNextNode16,
 } from './helpers';
@@ -762,7 +763,7 @@ test.suite('ts-node', (test) => {
         }));
         const libAndTarget = semver.gte(process.versions.node, '18.0.0')
           ? 'es2022'
-          : semver.gte(process.versions.node, '16.0.0')
+          : semver.gte(process.versions.node, '16.0.0') && tsSupportsEs2021
           ? 'es2021'
           : 'es2020';
         test('implicitly uses @tsconfig/node14, @tsconfig/node16, or @tsconfig/node18 compilerOptions when both TS and node versions support it', async (t) => {

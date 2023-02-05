@@ -90,6 +90,12 @@ export const tsSupportsAllowImportingTsExtensions = semver.gte(
   ts.version,
   '4.999.999'
 );
+// Relevant when @tsconfig/bases refers to es2021 and we run tests against
+// old TS versions.
+export const tsSupportsEs2021 = semver.gte(
+  ts.version,
+  '4.3'
+);
 //#endregion
 
 export const xfs = new NodeFS(fs);
