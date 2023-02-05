@@ -28,7 +28,7 @@ jobs:
         id: get-cache-directory
         run: |
           yarn config get cacheFolder
-          echo "::set-output name=path::$( yarn config get cacheFolder )"
+          echo "path=$( yarn config get cacheFolder )" >> $GITHUB_OUTPUT
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
@@ -57,37 +57,32 @@ jobs:
       matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [6, 8, 9, 10, 11]
+        flavor: [1, 2, 3, 4, 5]
         include:
           # Node 16
-          - flavor: 6
+          - flavor: 1
             node: 16
             nodeFlag: 16
             typescript: latest
             typescriptFlag: latest
-          # - flavor: 7
-          #   node: 16
-          #   nodeFlag: 16
-          #   typescript: 4.0
-          #   typescriptFlag: 4_0
-          - flavor: 8
+          - flavor: 2
             node: 16
             nodeFlag: 16
-            typescript: next
-            typescriptFlag: next
+            typescript: 4.2
+            typescriptFlag: 4_2
           # Node 18
-          - flavor: 9
+          - flavor: 3
             node: 18
             nodeFlag: 18
             typescript: latest
             typescriptFlag: latest
-          - flavor: 10
+          - flavor: 4
             node: 18
             nodeFlag: 18
             typescript: next
             typescriptFlag: next
           # Node nightly
-          - flavor: 11
+          - flavor: 5
             node: 19-nightly
             nodeFlag: 19_nightly
             typescript: latest
@@ -105,7 +100,7 @@ jobs:
         id: get-cache-directory
         run: |
           yarn config get cacheFolder
-          echo "::set-output name=path::$( yarn config get cacheFolder )"
+          echo "path=$( yarn config get cacheFolder )" >> $GITHUB_OUTPUT
       - name: Cache dependencies
         if: ${{ matrix.os != 'windows' }}
         uses: actions/cache@v2
@@ -114,12 +109,6 @@ jobs:
           key: yarn-cache-${{ matrix.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-cache-${{matrix.os }}-
       - run: yarn install --immutable --mode=skip-build
-      - name: Upload yarn logs
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v1
-        with:
-          name: yarn-logs
-          path: yarn-error.log
       - run: yarn build-tsc
       - name: Download package artifact
         uses: actions/download-artifact@v1
@@ -128,8 +117,14 @@ jobs:
           path: tests/
       - run: yarn add -D typescript@${{ matrix.typescript }}
       - run: yarn test-cov
-      - name: Upload yarn logs
+      - name: Check for existence of yarn logs
+        id: check-yarn-logs-exist
         if: ${{ failure() }}
+        uses: andstor/file-existence-action@v2
+        with:
+          files: yarn-error.log
+      - name: Upload yarn logs
+        if: ${{ failure() && steps.check-yarn-logs-exist.outputs.files_exists }}
         uses: actions/upload-artifact@v1
         with:
           name: yarn-logs-${{ matrix.os }}-node-${{ matrix.nodeFlag }}-typescript-${{ matrix.typescriptFlag }}
