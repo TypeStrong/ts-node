@@ -20,7 +20,7 @@ import './helpers';
 
 // NOTE: this limits concurrency within a single process, but AVA launches
 // each .spec file in its own process, so actual concurrency is higher.
-const concurrencyLimiter = throat(16);
+const concurrencyLimiter = throat(4);
 
 function errorPostprocessor<T extends Function>(fn: T): T {
   return async function (this: any) {
