@@ -120,10 +120,16 @@ export async function installTsNode() {
     let tries = 0;
     while (true) {
       try {
-        rimrafSync(join(TEST_DIR, 'node_modules'));
-        await promisify(childProcessExec)(`yarn --no-immutable`, {
-          cwd: TEST_DIR,
-        });
+        rimrafSync(join(TEST_DIR, '.yarn/cache/ts-node-file-*'));
+        const result = await promisify(childProcessExec)(
+          `yarn --no-immutable`,
+          {
+            cwd: TEST_DIR,
+          }
+        );
+        // You can uncomment this to aid debugging
+        // console.log(result.stdout, result.stderr);
+        rimrafSync(join(TEST_DIR, '.yarn/cache/ts-node-file-*'));
         writeFileSync(join(TEST_DIR, 'yarn.lock'), '');
         break;
       } catch (e) {
