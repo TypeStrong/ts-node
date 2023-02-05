@@ -5,6 +5,7 @@
     "experimentalResolver": true
   },
   "compilerOptions": {
-    "jsx": "react"
+    "jsx": "react",
+    "allowImportingTsExtensions": true
   }
 }
