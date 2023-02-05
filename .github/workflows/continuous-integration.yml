@@ -18,7 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # checkout code
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
       # install node
       - name: Use Node.js 18
         uses: actions/setup-node@v3
@@ -36,9 +37,12 @@ jobs:
           key: yarn-cache-packaging-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-cache-packaging-
       # lint, build, test
-      - run: yarn install --immutable
-      - run: yarn lint
-      - run: yarn build
+      - name: Install dependencies
+        run: yarn install --immutable
+      - name: Lint
+        run: yarn lint
+      - name: Build
+        run: yarn build
       - name: Upload package artifact
         uses: actions/upload-artifact@v1
         with:
@@ -89,7 +93,8 @@ jobs:
             typescriptFlag: latest
     steps:
       # checkout code
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
       # install node
       - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v3
@@ -108,16 +113,20 @@ jobs:
           path: ${{ steps.get-cache-directory.outputs.path }}
           key: yarn-cache-${{ matrix.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-cache-${{matrix.os }}-
-      - run: yarn install --immutable --mode=skip-build
-      - run: yarn build-tsc
+      - name: Install dependencies
+        run: yarn install --immutable --mode=skip-build
+      - name: Build tests
+        run: yarn build-tsc
       - name: Download package artifact
         uses: actions/download-artifact@v1
         with:
           name: ts-node-packed.tgz
           path: tests/
-      - run: yarn add -D typescript@${{ matrix.typescript }}
-      - run: yarn test-cov
-      - name: Check for existence of yarn logs
+      - name: Install typescript version to test against
+        run: yarn add -D typescript@${{ matrix.typescript }}
+      - name: Test
+        run: yarn test-cov
+      - name: Check for yarn logs
         id: check-yarn-logs-exist
         if: ${{ failure() }}
         uses: andstor/file-existence-action@v2
@@ -129,7 +138,8 @@ jobs:
         with:
           name: yarn-logs-${{ matrix.os }}-node-${{ matrix.nodeFlag }}-typescript-${{ matrix.typescriptFlag }}
           path: yarn-error.log
-      - run: yarn coverage-report
+      - name: Coverage Report
+        run: yarn coverage-report
         if: ${{ always() }}
       - name: Codecov
         if: ${{ always() }}
