@@ -1,5 +1,6 @@
 setTimeout(function () {
   console.log('Slept 30 seconds');
+  process.exit(456);
 }, 30e3);
 process.on('SIGTERM', onSignal);
 process.on('SIGINT', onSignal);
@@ -9,5 +10,5 @@ function onSignal(signal: string) {
   setTimeout(() => {
     console.log(`child exiting`);
     process.exit(123);
-  }, 5e3);
+  }, 1e3);
 }

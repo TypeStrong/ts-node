@@ -337,8 +337,6 @@ test.suite('esm', (test) => {
     }
 
     test.suite('parent passes signals to child', (test) => {
-      test.runSerially();
-
       signalTest('SIGINT');
       signalTest('SIGTERM');
 
@@ -350,38 +348,32 @@ test.suite('esm', (test) => {
             BIN_PATH_JS,
             `./esm-child-process/via-tsconfig/sleep.ts`,
           ]);
-          let code: number | null | undefined = undefined;
-          childP.child.on('exit', (_code) => (code = _code));
-          await delay(20e3);
-          const codeAfter20Seconds = code;
-          process.kill(childP.child.pid, signal);
-          await delay(2e3);
-          const codeAfter22Seconds = code;
-          const { stdoutP, stderrP } = await childP;
-          const stdout = await stdoutP;
-          const stderr = await stderrP;
-          t.log({
-            stdout,
-            stderr,
-            codeAfter20Seconds: codeAfter20Seconds,
-            codeAfter22Seconds: codeAfter22Seconds,
-            code,
-          });
-          expect(codeAfter20Seconds).toBeUndefined();
-          if (process.platform === 'win32') {
-            // Windows doesn't have signals, and node attempts an imperfect facsimile.
-            // In Windows, SIGINT and SIGTERM kill the process immediately with exit
-            // code 1, and the process can't catch or prevent this.
-            expect(codeAfter22Seconds).toBe(1);
-            expect(code).toBe(1);
-          } else {
-            expect(codeAfter22Seconds).toBe(undefined);
-            expect(code).toBe(123);
-            expect(stdout.trim()).toBe(
-              `child registered signal handlers\nchild received signal: ${signal}\nchild exiting`
-            );
+          try {
+            await childP.stdout.wait('child registered signal handlers');
+            process.kill(childP.child.pid, signal);
+            await childP;
+            const stdout = await childP.stdout;
+            const stderr = await childP.stderr;
+            if (process.platform === 'win32') {
+              // Windows doesn't have signals, and node attempts an imperfect facsimile.
+              // In Windows, SIGINT and SIGTERM kill the process immediately with exit
+              // code 1, and the process can't catch or prevent this.
+              expect(childP.code).toBe(1);
+              expect(stdout.trim()).toBe(`child registered signal handlers\n`);
+            } else {
+              expect(childP.code).toBe(123);
+              expect(stdout.trim()).toBe(
+                `child registered signal handlers\nchild received signal: ${signal}\nchild exiting`
+              );
+            }
+            expect(stderr).toBe('');
+          } finally {
+            t.log({
+              stdout: await childP.stdout,
+              stderr: await childP.stderr,
+              code: childP.code,
+            });
           }
-          expect(stderr).toBe('');
         });
       }
     });

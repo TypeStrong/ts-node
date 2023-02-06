@@ -8,7 +8,7 @@ import {
   exec as childProcessExec,
   spawn as childProcessSpawn,
 } from 'child_process';
-import { getStream } from './helpers';
+import { GetStream, getStream } from './helpers';
 import { expect } from './testlib';
 
 export type ExecReturn = Promise<ExecResult> & { child: ChildProcess };
@@ -53,10 +53,10 @@ export function createExec<T extends Partial<ExecOptions>>(
   };
 }
 
-export type SpawnReturn = Promise<SpawnResult> & { child: ChildProcess };
+export type SpawnReturn = Promise<SpawnResult> & SpawnResult;
 export interface SpawnResult {
-  stdoutP: Promise<string>;
-  stderrP: Promise<string>;
+  stdout: GetStream;
+  stderr: GetStream;
   code: number | null;
   child: ChildProcess;
 }
@@ -75,18 +75,21 @@ export function createSpawn<T extends Partial<SpawnOptions>>(
     cmd: string[],
     opts?: Pick<SpawnOptions, Exclude<keyof SpawnOptions, keyof T>> &
       Partial<Pick<SpawnOptions, keyof T & keyof SpawnOptions>>
-  ) {
+  ): SpawnReturn {
     let child!: ChildProcess;
-    return Object.assign(
+    let stdout!: GetStream;
+    let stderr!: GetStream;
+    const promise = Object.assign(
       new Promise<SpawnResult>((resolve, reject) => {
         child = childProcessSpawn(cmd[0], cmd.slice(1), {
           ...preBoundOptions,
           ...opts,
         });
-        const stdoutP = getStream(child.stdout!);
-        const stderrP = getStream(child.stderr!);
+        stdout = getStream(child.stdout!);
+        stderr = getStream(child.stderr!);
         child.on('exit', (code) => {
-          resolve({ stdoutP, stderrP, code, child });
+          promise.code = code;
+          resolve({ stdout, stderr, code, child });
         });
         child.on('error', (error) => {
           reject(error);
@@ -94,8 +97,12 @@ export function createSpawn<T extends Partial<SpawnOptions>>(
       }),
       {
         child,
+        stdout,
+        stderr,
+        code: null as number | null,
       }
     );
+    return promise;
   };
 }
 

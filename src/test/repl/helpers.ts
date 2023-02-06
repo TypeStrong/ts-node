@@ -78,10 +78,14 @@ export async function ctxRepl(t: ctxTsNode.T) {
 
     stdin.write(input);
     stdin.end();
-    const stdoutPromise = getStream(stdout, waitPattern);
-    const stderrPromise = getStream(stderr, waitPattern);
+    const stdoutPromise = getStream(stdout);
+    const stderrPromise = getStream(stderr);
     // Wait for expected output pattern or timeout, whichever comes first
-    await Promise.race([delay(waitMs), stdoutPromise, stderrPromise]);
+    await Promise.race([
+      delay(waitMs),
+      waitPattern != null ? stdoutPromise.wait(waitPattern) : stdoutPromise,
+      waitPattern != null ? stderrPromise.wait(waitPattern) : stderrPromise,
+    ]);
     stdout.end();
     stderr.end();
 
