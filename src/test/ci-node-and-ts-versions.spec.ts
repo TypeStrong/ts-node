@@ -14,8 +14,10 @@ test.suite('Confirm node and typescript versions on CI', (test) => {
     const actualVersion = process.versions.node;
     t.log({ expectedVersion, actualVersion });
     expect(expectedVersion).toBeDefined();
-    if (expectedVersion === 'nightly') {
-      expect(actualVersion).toMatch('nightly');
+    const major = expectedVersion.match(/^(\d+)-nightly$/)?.[1];
+    if (major != null) {
+      expect(actualVersion).toMatch(new RegExp('^' + major));
+      expect(actualVersion).toMatch('-nightly');
     } else {
       expect(semver.satisfies(actualVersion, expectedVersion)).toBe(true);
     }

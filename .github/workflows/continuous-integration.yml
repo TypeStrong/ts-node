@@ -18,27 +18,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # checkout code
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v3
       # install node
       - name: Use Node.js 18
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: 18
       - name: Get cache directory
         id: get-cache-directory
         run: |
           yarn config get cacheFolder
-          echo "::set-output name=path::$( yarn config get cacheFolder )"
+          echo "path=$( yarn config get cacheFolder )" >> $GITHUB_OUTPUT
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.get-cache-directory.outputs.path }}
           key: yarn-cache-packaging-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-cache-packaging-
       # lint, build, test
-      - run: yarn install --immutable
-      - run: yarn lint
-      - run: yarn build
+      - name: Install dependencies
+        run: yarn install --immutable
+      - name: Lint
+        run: yarn lint
+      - name: Build
+        run: yarn build
       - name: Upload package artifact
         uses: actions/upload-artifact@v1
         with:
@@ -57,145 +61,88 @@ jobs:
       matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [2, 3, 4, 6, 8, 9, 10, 11]
+        flavor: [1, 2, 3, 4, 5]
         include:
-          # Node 14.13.0
-          # To test ESM builtin module resolution immediately before a node behavioral change: https://github.com/TypeStrong/ts-node/issues/1130
-          # - flavor: 1
-          #   node: 14.13.0
-          #   nodeFlag: 14_13_0
-          #   typescript: latest
-          #   typescriptFlag: latest
-          # Node 14
-          - flavor: 2
-            node: 14
-            nodeFlag: 14
-            typescript: latest
-            typescriptFlag: latest
-          - flavor: 3
-            node: 14
-            nodeFlag: 14
-            typescript: 4.0
-            typescriptFlag: 4_0
-          - flavor: 4
-            node: 14
-            nodeFlag: 14
-            typescript: next
-            typescriptFlag: next
           # Node 16
-          # Node 16.11.1
-          # Earliest version that supports old ESM Loader Hooks API: https://github.com/TypeStrong/ts-node/pull/1522
-          # - flavor: 5
-          #   node: 16.11.1
-          #   nodeFlag: 16_11_1
-          #   typescript: latest
-          #   typescriptFlag: latest
-          - flavor: 6
+          - flavor: 1
             node: 16
             nodeFlag: 16
             typescript: latest
             typescriptFlag: latest
-            downgradeNpm: true
-          # - flavor: 7
-          #   node: 16
-          #   nodeFlag: 16
-          #   typescript: 4.0
-          #   typescriptFlag: 4_0
-          #   downgradeNpm: true
-          - flavor: 8
+          - flavor: 2
             node: 16
             nodeFlag: 16
-            typescript: next
-            typescriptFlag: next
-            downgradeNpm: true
+            typescript: 4.2
+            typescriptFlag: 4_2
           # Node 18
-          - flavor: 9
+          - flavor: 3
             node: 18
             nodeFlag: 18
             typescript: latest
             typescriptFlag: latest
-            downgradeNpm: true
-          - flavor: 10
+          - flavor: 4
             node: 18
             nodeFlag: 18
             typescript: next
             typescriptFlag: next
-            downgradeNpm: true
           # Node nightly
-          - flavor: 11
-            node: nightly
-            nodeFlag: nightly
+          - flavor: 5
+            node: 19-nightly
+            nodeFlag: 19_nightly
             typescript: latest
             typescriptFlag: latest
-            downgradeNpm: true
     steps:
       # checkout code
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v3
       # install node
       - name: Use Node.js ${{ matrix.node }}
-        if: matrix.node != 'nightly'
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
-      - name: Use Node.js 16, will be subsequently overridden by download of nightly
-        if: matrix.node == 'nightly'
-        uses: actions/setup-node@v1
-        with:
-          node-version: 16
-      - name: Download Node.js nightly
-        if: matrix.node == 'nightly' && matrix.os == 'ubuntu'
-        run: |
-          export N_PREFIX=$(pwd)/n
-          npm install -g n
-          n nightly
-          sudo cp "${N_PREFIX}/bin/node" "$(which node)"
-          node --version
-      - name: Download Node.js nightly
-        if: matrix.node == 'nightly' && matrix.os == 'windows'
-        run: |
-          $version = (Invoke-WebRequest https://nodejs.org/download/nightly/index.json | ConvertFrom-json)[0].version
-          $url = "https://nodejs.org/download/nightly/$version/win-x64/node.exe"
-          $targetPath = (Get-Command node.exe).Source
-          Invoke-WebRequest -Uri $url -OutFile $targetPath -UserAgent ([Microsoft.PowerShell.Commands.PSUserAgent]::Chrome)
-          node --version
       # lint, build, test
       - name: Get cache directory
         id: get-cache-directory
         run: |
           yarn config get cacheFolder
-          echo "::set-output name=path::$( yarn config get cacheFolder )"
+          echo "path=$( yarn config get cacheFolder )" >> $GITHUB_OUTPUT
       - name: Cache dependencies
         if: ${{ matrix.os != 'windows' }}
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.get-cache-directory.outputs.path }}
           key: yarn-cache-${{ matrix.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-cache-${{matrix.os }}-
-      - run: yarn install --immutable --mode=skip-build
-      - name: Upload yarn logs
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v1
-        with:
-          name: yarn-logs
-          path: yarn-error.log
-      - run: yarn build-tsc
+      - name: Install dependencies
+        run: yarn install --immutable --mode=skip-build
+      - name: Build tests
+        run: yarn build-tsc
       - name: Download package artifact
         uses: actions/download-artifact@v1
         with:
           name: ts-node-packed.tgz
           path: tests/
-      - run: yarn add -D typescript@${{ matrix.typescript }}
-      - run: yarn test-cov
-      - name: Upload yarn logs
+      - name: Install typescript version to test against
+        run: yarn add -D typescript@${{ matrix.typescript }}
+      - name: Test
+        run: yarn test-cov
+      - name: Check for yarn logs
+        id: check-yarn-logs-exist
         if: ${{ failure() }}
+        uses: andstor/file-existence-action@v2
+        with:
+          files: yarn-error.log
+      - name: Upload yarn logs
+        if: ${{ failure() && steps.check-yarn-logs-exist.outputs.files_exists == 'true' }}
         uses: actions/upload-artifact@v1
         with:
           name: yarn-logs-${{ matrix.os }}-node-${{ matrix.nodeFlag }}-typescript-${{ matrix.typescriptFlag }}
           path: yarn-error.log
-      - run: yarn coverage-report
+      - name: Coverage Report
+        run: yarn coverage-report
         if: ${{ always() }}
       - name: Codecov
         if: ${{ always() }}
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           flags: ${{ matrix.os }},node_${{ matrix.nodeFlag }},typescript_${{ matrix.typescriptFlag }}

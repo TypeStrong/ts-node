@@ -70,7 +70,7 @@ test.serial('REPL can be configured on `start`', async (t) => {
   const { stdout, stderr } = await t.context.executeInRepl(
     `const x = 3\n'done'`,
     {
-      waitPattern: "'done'",
+      waitPattern: "'done'\n#> ",
       registerHooks: true,
       startInternalOptions: {
         prompt,
@@ -80,7 +80,7 @@ test.serial('REPL can be configured on `start`', async (t) => {
   );
 
   expect(stderr).toBe('');
-  expect(stdout).toBe(`${prompt}${prompt}'done'\n`);
+  expect(stdout).toBe(`${prompt}${prompt}'done'\n#> `);
 });
 
 // Serial because it's timing-sensitive
@@ -285,7 +285,7 @@ test.suite(
     test('interactive repl should not ignore them if they occur in other files', async (t) => {
       const { stdout, stderr } = await execTester({
         flags: '-i',
-        stdin: `import './repl-ignored-diagnostics/index.ts';\n`,
+        stdin: `import './repl-ignored-diagnostics/index';\n`,
       });
       expect(stderr).toContain(diagnosticMessage);
     });
@@ -521,7 +521,7 @@ test.suite('REPL declares types for node built-ins within REPL', (test) => {
           swc: true,
         },
         registerHooks: true,
-        waitPattern: `done`,
+        waitPattern: `'done'\n> `,
         startInternalOptions: {
           useGlobal: false,
         },
@@ -529,7 +529,7 @@ test.suite('REPL declares types for node built-ins within REPL', (test) => {
     );
 
     // Assert that we do not get errors about `declare import` syntax from swc
-    expect(stdout).toBe("> undefined\n> undefined\n> 'done'\n");
+    expect(stdout).toBe("> undefined\n> undefined\n> 'done'\n> ");
     expect(stderr).toBe('');
   });
 });

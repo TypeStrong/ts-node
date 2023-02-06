@@ -85,6 +85,15 @@ export const tsSupportsMtsCtsExtensions = semver.gte(ts.version, '4.5.0');
 export const tsSupportsImportAssertions = semver.gte(ts.version, '4.5.0');
 // TS 4.1 added jsx=react-jsx and react-jsxdev: https://devblogs.microsoft.com/typescript/announcing-typescript-4-1/#react-17-jsx-factories
 export const tsSupportsReact17JsxFactories = semver.gte(ts.version, '4.1.0');
+// TS 5.0 added "allowImportingTsExtensions"
+export const tsSupportsAllowImportingTsExtensions = semver.gte(
+  ts.version,
+  '4.999.999'
+);
+// Relevant when @tsconfig/bases refers to es2021 and we run tests against
+// old TS versions.
+export const tsSupportsEs2021 = semver.gte(ts.version, '4.3.0');
+export const tsSupportsEs2022 = semver.gte(ts.version, '4.6.0');
 //#endregion
 
 export const xfs = new NodeFS(fs);
@@ -120,10 +129,16 @@ export async function installTsNode() {
     let tries = 0;
     while (true) {
       try {
-        rimrafSync(join(TEST_DIR, 'node_modules'));
-        await promisify(childProcessExec)(`yarn --no-immutable`, {
-          cwd: TEST_DIR,
-        });
+        rimrafSync(join(TEST_DIR, '.yarn/cache/ts-node-file-*'));
+        const result = await promisify(childProcessExec)(
+          `yarn --no-immutable`,
+          {
+            cwd: TEST_DIR,
+          }
+        );
+        // You can uncomment this to aid debugging
+        // console.log(result.stdout, result.stderr);
+        rimrafSync(join(TEST_DIR, '.yarn/cache/ts-node-file-*'));
         writeFileSync(join(TEST_DIR, 'yarn.lock'), '');
         break;
       } catch (e) {
@@ -174,11 +189,12 @@ async function lockedMemoizedOperation(
 }
 //#endregion
 
+export type GetStream = ReturnType<typeof getStream>;
 /**
  * Get a stream into a string.
- * Will resolve early if
+ * Wait for the stream to end, or wait till some pattern appears in the stream.
  */
-export function getStream(stream: Readable, waitForPattern?: string | RegExp) {
+export function getStream(stream: Readable) {
   let resolve: (value: string) => void;
   const promise = new Promise<string>((res) => {
     resolve = res;
@@ -186,27 +202,59 @@ export function getStream(stream: Readable, waitForPattern?: string | RegExp) {
   const received: Buffer[] = [];
   let combinedBuffer: Buffer = Buffer.concat([]);
   let combinedString: string = '';
+  let waitForStart = 0;
 
   stream.on('data', (data) => {
     received.push(data);
     combine();
-    if (
-      (typeof waitForPattern === 'string' &&
-        combinedString.indexOf(waitForPattern) >= 0) ||
-      (waitForPattern instanceof RegExp && combinedString.match(waitForPattern))
-    )
-      resolve(combinedString);
-    combinedBuffer = Buffer.concat(received);
   });
   stream.on('end', () => {
     resolve(combinedString);
   });
 
-  return promise;
+  return Object.assign(promise, {
+    get,
+    wait,
+    stream,
+  });
+
+  function get() {
+    return combinedString;
+  }
+
+  function wait(pattern: string | RegExp, required = false) {
+    return new Promise<string | undefined>((resolve, reject) => {
+      const start = waitForStart;
+      stream.on('checkWaitFor', checkWaitFor);
+      stream.on('end', endOrTimeout);
+      checkWaitFor();
+
+      function checkWaitFor() {
+        if (typeof pattern === 'string') {
+          const index = combinedString.indexOf(pattern, start);
+          if (index >= 0) {
+            waitForStart = index + pattern.length;
+            resolve(combinedString.slice(index, waitForStart));
+          }
+        } else if (pattern instanceof RegExp) {
+          const match = combinedString.slice(start).match(pattern);
+          if (match != null) {
+            waitForStart = start + match.index!;
+            resolve(match[0]);
+          }
+        }
+      }
+
+      function endOrTimeout() {
+        required ? reject() : resolve(undefined);
+      }
+    });
+  }
 
   function combine() {
     combinedBuffer = Buffer.concat(received);
     combinedString = combinedBuffer.toString('utf8');
+    stream.emit('checkWaitFor');
   }
 }
 

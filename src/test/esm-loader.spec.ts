@@ -337,8 +337,6 @@ test.suite('esm', (test) => {
     }
 
     test.suite('parent passes signals to child', (test) => {
-      test.runSerially();
-
       signalTest('SIGINT');
       signalTest('SIGTERM');
 
@@ -350,137 +348,75 @@ test.suite('esm', (test) => {
             BIN_PATH_JS,
             `./esm-child-process/via-tsconfig/sleep.ts`,
           ]);
-          let code: number | null | undefined = undefined;
-          childP.child.on('exit', (_code) => (code = _code));
-          await delay(6e3);
-          const codeAfter6Seconds = code;
-          process.kill(childP.child.pid, signal);
-          await delay(2e3);
-          const codeAfter8Seconds = code;
-          const { stdoutP, stderrP } = await childP;
-          const stdout = await stdoutP;
-          const stderr = await stderrP;
-          t.log({
-            stdout,
-            stderr,
-            codeAfter6Seconds,
-            codeAfter8Seconds,
-            code,
-          });
-          expect(codeAfter6Seconds).toBeUndefined();
-          if (process.platform === 'win32') {
-            // Windows doesn't have signals, and node attempts an imperfect facsimile.
-            // In Windows, SIGINT and SIGTERM kill the process immediately with exit
-            // code 1, and the process can't catch or prevent this.
-            expect(codeAfter8Seconds).toBe(1);
-            expect(code).toBe(1);
-          } else {
-            expect(codeAfter8Seconds).toBe(undefined);
-            expect(code).toBe(123);
-            expect(stdout.trim()).toBe(
-              `child registered signal handlers\nchild received signal: ${signal}\nchild exiting`
-            );
-          }
-          expect(stderr).toBe('');
-        });
-      }
-
-      test.suite('esm child process working directory', (test) => {
-        test('should have the correct working directory in the user entry-point', async () => {
-          const { err, stdout, stderr } = await exec(
-            `${BIN_PATH} --esm --cwd ./esm/ index.ts`,
-            {
-              cwd: resolve(TEST_DIR, 'working-dir'),
-            }
-          );
-
-          expect(err).toBe(null);
-          expect(stdout.trim()).toBe('Passing');
-          expect(stderr).toBe('');
-        });
-      });
-
-      test.suite('esm child process and forking', (test) => {
-        test('should be able to fork vanilla NodeJS script', async () => {
-          const { err, stdout, stderr } = await exec(
-            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-js/index.ts`
-          );
-
-          expect(err).toBe(null);
-          expect(stdout.trim()).toBe('Passing: from main');
-          expect(stderr).toBe('');
-        });
-
-        test('should be able to fork TypeScript script', async () => {
-          const { err, stdout, stderr } = await exec(
-            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-ts/index.ts`
-          );
-
-          expect(err).toBe(null);
-          expect(stdout.trim()).toBe('Passing: from main');
-          expect(stderr).toBe('');
-        });
-
-        test('should be able to fork TypeScript script by absolute path', async () => {
-          const { err, stdout, stderr } = await exec(
-            `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-ts-abs/index.ts`
-          );
-
-          expect(err).toBe(null);
-          expect(stdout.trim()).toBe('Passing: from main');
-          expect(stderr).toBe('');
-        });
-      });
-
-      test.suite('parent passes signals to child', (test) => {
-        test.runSerially();
-
-        signalTest('SIGINT');
-        signalTest('SIGTERM');
-
-        function signalTest(signal: string) {
-          test(signal, async (t) => {
-            const childP = spawn([
-              // exec lets us run the shims on windows; spawn does not
-              process.execPath,
-              BIN_PATH_JS,
-              `./esm-child-process/via-tsconfig/sleep.ts`,
-            ]);
-            let code: number | null | undefined = undefined;
-            childP.child.on('exit', (_code) => (code = _code));
-            await delay(6e3);
-            const codeAfter6Seconds = code;
+          try {
+            await childP.stdout.wait('child registered signal handlers');
             process.kill(childP.child.pid, signal);
-            await delay(2e3);
-            const codeAfter8Seconds = code;
-            const { stdoutP, stderrP } = await childP;
-            const stdout = await stdoutP;
-            const stderr = await stderrP;
-            t.log({
-              stdout,
-              stderr,
-              codeAfter6Seconds,
-              codeAfter8Seconds,
-              code,
-            });
-            expect(codeAfter6Seconds).toBeUndefined();
+            await childP;
+            const stdout = await childP.stdout;
+            const stderr = await childP.stderr;
             if (process.platform === 'win32') {
               // Windows doesn't have signals, and node attempts an imperfect facsimile.
               // In Windows, SIGINT and SIGTERM kill the process immediately with exit
               // code 1, and the process can't catch or prevent this.
-              expect(codeAfter8Seconds).toBe(1);
-              expect(code).toBe(1);
+              expect(childP.code).toBe(1);
+              expect(stdout.trim()).toBe(`child registered signal handlers`);
             } else {
-              expect(codeAfter8Seconds).toBe(undefined);
-              expect(code).toBe(123);
+              expect(childP.code).toBe(123);
               expect(stdout.trim()).toBe(
                 `child registered signal handlers\nchild received signal: ${signal}\nchild exiting`
               );
             }
             expect(stderr).toBe('');
-          });
-        }
+          } finally {
+            t.log({
+              stdout: await childP.stdout,
+              stderr: await childP.stderr,
+              code: childP.code,
+            });
+          }
+        });
+      }
+    });
+
+    test.suite('esm child process working directory', (test) => {
+      test('should have the correct working directory in the user entry-point', async () => {
+        const { err, stdout, stderr } = await exec(
+          `${BIN_PATH} --esm --cwd ./esm/ index.ts`,
+          {
+            cwd: resolve(TEST_DIR, 'working-dir'),
+          }
+        );
+
+        expect(err).toBe(null);
+        expect(stdout.trim()).toBe('Passing');
+        expect(stderr).toBe('');
       });
+    });
+
+    test.suite('esm child process and forking', (test) => {
+      const macro = test.macro((command: string) => async (t) => {
+        const { err, stdout, stderr } = await exec(command);
+
+        expect(err).toBe(null);
+        expect(stdout.trim()).toBe('Passing: from main');
+        expect(stderr).toBe('');
+      });
+
+      test(
+        'should be able to fork vanilla NodeJS script',
+        macro,
+        `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-js/index.ts`
+      );
+      test(
+        'should be able to fork TypeScript script',
+        macro,
+        `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-ts/index.ts`
+      );
+      test(
+        'should be able to fork TypeScript script by absolute path',
+        macro,
+        `${BIN_PATH} --esm --cwd ./esm-child-process/ ./process-forking-ts-abs/index.ts`
+      );
     });
   });
 
