@@ -359,7 +359,7 @@ test.suite('esm', (test) => {
               // In Windows, SIGINT and SIGTERM kill the process immediately with exit
               // code 1, and the process can't catch or prevent this.
               expect(childP.code).toBe(1);
-              expect(stdout.trim()).toBe(`child registered signal handlers\n`);
+              expect(stdout.trim()).toBe(`child registered signal handlers`);
             } else {
               expect(childP.code).toBe(123);
               expect(stdout.trim()).toBe(
