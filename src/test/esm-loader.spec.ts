@@ -352,30 +352,30 @@ test.suite('esm', (test) => {
           ]);
           let code: number | null | undefined = undefined;
           childP.child.on('exit', (_code) => (code = _code));
-          await delay(6e3);
-          const codeAfter6Seconds = code;
+          await delay(20e3);
+          const codeAfter20Seconds = code;
           process.kill(childP.child.pid, signal);
           await delay(2e3);
-          const codeAfter8Seconds = code;
+          const codeAfter22Seconds = code;
           const { stdoutP, stderrP } = await childP;
           const stdout = await stdoutP;
           const stderr = await stderrP;
           t.log({
             stdout,
             stderr,
-            codeAfter6Seconds,
-            codeAfter8Seconds,
+            codeAfter20Seconds: codeAfter20Seconds,
+            codeAfter22Seconds: codeAfter22Seconds,
             code,
           });
-          expect(codeAfter6Seconds).toBeUndefined();
+          expect(codeAfter20Seconds).toBeUndefined();
           if (process.platform === 'win32') {
             // Windows doesn't have signals, and node attempts an imperfect facsimile.
             // In Windows, SIGINT and SIGTERM kill the process immediately with exit
             // code 1, and the process can't catch or prevent this.
-            expect(codeAfter8Seconds).toBe(1);
+            expect(codeAfter22Seconds).toBe(1);
             expect(code).toBe(1);
           } else {
-            expect(codeAfter8Seconds).toBe(undefined);
+            expect(codeAfter22Seconds).toBe(undefined);
             expect(code).toBe(123);
             expect(stdout.trim()).toBe(
               `child registered signal handlers\nchild received signal: ${signal}\nchild exiting`
