@@ -212,6 +212,12 @@ export function getStream(stream: Readable) {
     resolve(combinedString);
   });
 
+  return Object.assign(promise, {
+    get,
+    wait,
+    stream,
+  });
+
   function get() {
     return combinedString;
   }
@@ -244,11 +250,6 @@ export function getStream(stream: Readable) {
       }
     });
   }
-
-  return Object.assign(promise, {
-    get,
-    wait,
-  });
 
   function combine() {
     combinedBuffer = Buffer.concat(received);
