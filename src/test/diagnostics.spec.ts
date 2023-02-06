@@ -8,60 +8,44 @@ const test = context(ctxTsNode);
 test.suite('TSError diagnostics', ({ context }) => {
   const test = context(
     once(async (t) => {
-      // Locking to es2021, because es2022 -- default in @tsconfig/bases for node18 --
-      // changes this diagnostic to be a composite "No overload matches this call."
+      // Locking to es2020, because:
+      // 1) es2022 -- default in @tsconfig/bases for node18 -- changes this diagnostic
+      //   to be a composite "No overload matches this call."
+      // 2) TS 4.2 doesn't support es2021 or higher
       const service = t.context.tsNodeUnderTest.create({
-        compilerOptions: { target: 'es5', lib: ['es2021'] },
+        compilerOptions: { target: 'es5', lib: ['es2020'] },
         skipProject: true,
       });
       try {
         service.compile('new Error(123)', 'test.ts');
       } catch (err) {
-        return { service, err };
+        return { err: err as TSError };
       }
-      return { service, err: undefined };
+      return { err: undefined };
     })
   );
 
   const diagnosticCode = 2345;
   const diagnosticMessage =
-    "Argument of type 'number' " +
-    "is not assignable to parameter of type 'string'.";
-  const diagnosticErrorMessage = `TS${diagnosticCode}: ${diagnosticMessage}`;
+    /Argument of type '.*?' is not assignable to parameter of type 'string( \| undefined)?'./;
+  const diagnosticErrorMessage =
+    /TS2345: Argument of type '.*?' is not assignable to parameter of type 'string( \| undefined)?'./;
 
-  const cwdBefore = process.cwd();
-  test('should throw errors', ({ log, context: { err, service } }) => {
-    log({
-      version: ts.version,
-      serviceVersion: service.ts.version,
-      cwdBefore,
-      cwd: process.cwd(),
-      configFilePath: service.configFilePath,
-      config: service.config.options,
-    });
+  test('should throw errors', (t) => {
+    const { err } = t.context;
     expect(err).toBeDefined();
-    expect((err as Error).message).toMatch(diagnosticErrorMessage);
-  });
-
-  test('should throw errors with diagnostic text', ({ context: { err } }) => {
-    expect((err as TSError).diagnosticText).toMatch(diagnosticErrorMessage);
-  });
-
-  test('should throw errors with diagnostic codes', ({ context: { err } }) => {
-    expect((err as TSError).diagnosticCodes).toEqual([2345]);
-  });
-
-  test('should throw errors with complete diagnostic information', ({
-    context: { err },
-  }) => {
-    const diagnostics = (err as TSError).diagnostics;
-
-    expect(diagnostics).toHaveLength(1);
-    expect(diagnostics[0]).toMatchObject({
-      code: 2345,
-      start: 10,
-      length: 3,
-      messageText: expect.stringMatching(diagnosticMessage),
+    expect(err!).toMatchObject({
+      message: expect.stringMatching(diagnosticErrorMessage),
+      diagnosticText: expect.stringMatching(diagnosticErrorMessage),
+      diagnosticCodes: [diagnosticCode],
+      diagnostics: [
+        {
+          code: diagnosticCode,
+          start: 10,
+          length: 3,
+          messageText: expect.stringMatching(diagnosticMessage),
+        },
+      ],
     });
   });
 });

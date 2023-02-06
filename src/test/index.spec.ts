@@ -8,6 +8,7 @@ import {
   CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
   ts,
   tsSupportsEs2021,
+  tsSupportsEs2022,
   tsSupportsMtsCtsExtensions,
   tsSupportsStableNodeNextNode16,
 } from './helpers';
@@ -761,11 +762,12 @@ test.suite('ts-node', (test) => {
         const test = context(async (t) => ({
           tempDir: mkdtempSync(join(tmpdir(), 'ts-node-spec')),
         }));
-        const libAndTarget = semver.gte(process.versions.node, '18.0.0')
-          ? 'es2022'
-          : semver.gte(process.versions.node, '16.0.0') && tsSupportsEs2021
-          ? 'es2021'
-          : 'es2020';
+        const libAndTarget =
+          semver.gte(process.versions.node, '18.0.0') && tsSupportsEs2022
+            ? 'es2022'
+            : semver.gte(process.versions.node, '16.0.0') && tsSupportsEs2021
+            ? 'es2021'
+            : 'es2020';
         test('implicitly uses @tsconfig/node14, @tsconfig/node16, or @tsconfig/node18 compilerOptions when both TS and node versions support it', async (t) => {
           const {
             context: { tempDir },
@@ -828,6 +830,8 @@ test.suite('ts-node', (test) => {
     test.suite(
       'should bundle @tsconfig/bases to be used in your own tsconfigs',
       (test) => {
+        // Older TS versions will complain about newer `target` and `lib` options
+        test.runIf(tsSupportsEs2022);
         const macro = test.macro((nodeVersion: string) => async (t) => {
           const config = require(`@tsconfig/${nodeVersion}/tsconfig.json`);
           const { err, stdout, stderr } = await exec(
