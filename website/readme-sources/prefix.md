@@ -18,7 +18,7 @@ You can build the readme with this command:
 
 [![NPM version](https://img.shields.io/npm/v/ts-node.svg?style=flat)](https://npmjs.org/package/ts-node)
 [![NPM downloads](https://img.shields.io/npm/dm/ts-node.svg?style=flat)](https://npmjs.org/package/ts-node)
-[![Build status](https://img.shields.io/github/workflow/status/TypeStrong/ts-node/Continuous%20Integration)](https://github.com/TypeStrong/ts-node/actions?query=workflow%3A%22Continuous+Integration%22)
+[![Build status](https://img.shields.io/github/actions/workflow/status/TypeStrong/ts-node/continuous-integration.yml?branch=main)](https://github.com/TypeStrong/ts-node/actions?query=workflow%3A%22Continuous+Integration%22)
 [![Test coverage](https://codecov.io/gh/TypeStrong/ts-node/branch/main/graph/badge.svg)](https://codecov.io/gh/TypeStrong/ts-node)
 
 > TypeScript execution and REPL for node.js, with source map and native ESM support.
