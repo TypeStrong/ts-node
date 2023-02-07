@@ -1,6 +1,6 @@
 import { NodeFS } from '@yarnpkg/fslib';
 import { exec as childProcessExec } from 'child_process';
-import * as promisify from 'util.promisify';
+import { promisify } from 'util';
 import { sync as rimrafSync } from 'rimraf';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
