@@ -5,7 +5,7 @@ import { sync as rimrafSync } from 'rimraf';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
 import * as fs from 'fs';
-import { lock } from 'proper-lockfile';
+import { Context } from 'ava-shared-setup';
 import type { Readable } from 'stream';
 /**
  * types from ts-node under test
@@ -112,80 +112,33 @@ export namespace ctxTsNode {
 }
 
 //#region install ts-node tarball
-const ts_node_install_lock = process.env.ts_node_install_lock as string;
-const lockPath = join(__dirname, ts_node_install_lock);
-
-interface InstallationResult {
-  error: string | null;
-}
 
 /**
  * Pack and install ts-node locally, necessary to test package "exports"
  * FS locking b/c tests run in separate processes
  */
 export async function installTsNode() {
-  await lockedMemoizedOperation(lockPath, async () => {
+  const context = new Context('installTsNode');
+  await context.task('installTsNode', async () => {
     const totalTries = process.platform === 'win32' ? 5 : 1;
-    let tries = 0;
-    while (true) {
+    let error;
+    for (let tries = 0; tries < totalTries; tries++) {
       try {
         rimrafSync(join(TEST_DIR, '.yarn/cache/ts-node-file-*'));
-        const result = await promisify(childProcessExec)(
-          `yarn --no-immutable`,
-          {
-            cwd: TEST_DIR,
-          }
-        );
+        await promisify(childProcessExec)(`yarn --no-immutable`, {
+          cwd: TEST_DIR,
+        });
         // You can uncomment this to aid debugging
         // console.log(result.stdout, result.stderr);
         rimrafSync(join(TEST_DIR, '.yarn/cache/ts-node-file-*'));
         writeFileSync(join(TEST_DIR, 'yarn.lock'), '');
-        break;
+        return;
       } catch (e) {
-        tries++;
-        if (tries >= totalTries) throw e;
+        error = e;
       }
     }
+    throw error;
   });
-}
-
-/**
- * Attempt an operation once across multiple processes, using filesystem locking.
- * If it was executed already by another process, and it errored, throw the same error message.
- */
-async function lockedMemoizedOperation(
-  lockPath: string,
-  operation: () => Promise<void>
-) {
-  const releaseLock = await lock(lockPath, {
-    realpath: false,
-    stale: 120e3,
-    retries: {
-      retries: 120,
-      maxTimeout: 1000,
-    },
-  });
-  try {
-    const operationHappened = existsSync(lockPath);
-    if (operationHappened) {
-      const result: InstallationResult = JSON.parse(
-        readFileSync(lockPath, 'utf8')
-      );
-      if (result.error) throw result.error;
-    } else {
-      const result: InstallationResult = { error: null };
-      try {
-        await operation();
-      } catch (e) {
-        result.error = `${e}`;
-        throw e;
-      } finally {
-        writeFileSync(lockPath, JSON.stringify(result));
-      }
-    }
-  } finally {
-    releaseLock();
-  }
 }
 //#endregion
 

@@ -6,7 +6,6 @@ module.exports = {
   files: ['dist/test/**/*.spec.js'],
   failWithoutAssertions: false,
   environmentVariables: {
-    ts_node_install_lock: `id-${Math.floor(Math.random() * 10e9)}`,
     // Force jest expect() errors to generate colorized strings, makes output more readable.
     // Delete the env var within ava processes via `require` option below.
     // This avoids passing it to spawned processes under test, which would negatively affect
@@ -18,8 +17,6 @@ module.exports = {
   nodeArguments: ['--loader', './src/test/test-loader.mjs', '--no-warnings'],
   timeout: '300s',
   concurrency: 4,
-  // We do chdir -- maybe other things -- that you can't do in worker_threads.
-  workerThreads: false,
 };
 
 {
