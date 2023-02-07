@@ -59,3 +59,5 @@ module.exports = {
     if(existsSync(p)) (rmSync || rimraf.sync)(p, {recursive: true})
   }
 }
+
+process.chdir('tests');

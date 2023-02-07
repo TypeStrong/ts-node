@@ -7,6 +7,7 @@ import { join, resolve } from 'path';
 import * as fs from 'fs';
 import { Context } from 'ava-shared-setup';
 import type { Readable } from 'stream';
+import * as assert from 'assert';
 /**
  * types from ts-node under test
  */
@@ -36,7 +37,8 @@ export const BIN_SCRIPT_PATH = join(
 export const BIN_CWD_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-cwd');
 export const BIN_ESM_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-esm');
 
-process.chdir(TEST_DIR);
+// process.chdir(TEST_DIR);
+assert.strictEqual(process.cwd(), TEST_DIR);
 //#endregion
 
 //#region command lines

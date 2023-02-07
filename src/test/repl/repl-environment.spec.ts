@@ -28,7 +28,7 @@ const execTester = createExecTester({
 
 test.suite(
   '[eval], <repl>, and [stdin] execute with correct globals',
-  (test) => {
+  (_test) => {
     interface GlobalInRepl extends NodeJS.Global {
       testReport: any;
       replReport: any;
@@ -41,53 +41,46 @@ test.suite(
       __dirname: any;
     }
     const globalInRepl = global as GlobalInRepl;
-    const programmaticTest = test.macro(
-      (
-          {
-            evalCodeBefore,
-            stdinCode,
-            waitFor,
-          }: {
-            evalCodeBefore: string | null;
-            stdinCode: string;
-            waitFor?: () => boolean;
-          },
-          assertions: (stdout: string) => Promise<void> | void
-        ) =>
-        async (t) => {
-          delete globalInRepl.testReport;
-          delete globalInRepl.replReport;
-          delete globalInRepl.stdinReport;
-          delete globalInRepl.evalReport;
-          delete globalInRepl.module;
-          delete globalInRepl.exports;
-          delete globalInRepl.fs;
-          delete globalInRepl.__filename;
-          delete globalInRepl.__dirname;
-          const { stdin, stderr, stdout, replService } =
-            t.context.createReplViaApi({ registerHooks: true });
-          if (typeof evalCodeBefore === 'string') {
-            replService.evalCode(evalCodeBefore);
-          }
-          replService.start();
-          stdin.write(stdinCode);
-          stdin.end();
-          let done = false;
-          await Promise.race([
-            delay(20e3),
-            (async () => {
-              while (!done && !waitFor?.()) {
-                await delay(1e3);
-              }
-            })(),
-          ]);
-          done = true;
-          stdout.end();
-          stderr.end();
-          expect(await getStream(stderr)).toBe('');
-          await assertions(await getStream(stdout));
+    const test = _test.context(async (t) => ({
+      async programmaticTest(options: {
+        evalCodeBefore: string | null;
+        stdinCode: string;
+        waitFor?: () => boolean;
+      }) {
+        const { evalCodeBefore, stdinCode, waitFor } = options;
+        delete globalInRepl.testReport;
+        delete globalInRepl.replReport;
+        delete globalInRepl.stdinReport;
+        delete globalInRepl.evalReport;
+        delete globalInRepl.module;
+        delete globalInRepl.exports;
+        delete globalInRepl.fs;
+        delete globalInRepl.__filename;
+        delete globalInRepl.__dirname;
+        const { stdin, stderr, stdout, replService } =
+          t.context.createReplViaApi({ registerHooks: true });
+        if (typeof evalCodeBefore === 'string') {
+          replService.evalCode(evalCodeBefore);
         }
-    );
+        replService.start();
+        stdin.write(stdinCode);
+        stdin.end();
+        let done = false;
+        await Promise.race([
+          delay(20e3),
+          (async () => {
+            while (!done && !waitFor?.()) {
+              await delay(1e3);
+            }
+          })(),
+        ]);
+        done = true;
+        stdout.end();
+        stderr.end();
+        expect(await getStream(stderr)).toBe('');
+        return await getStream(stdout);
+      },
+    }));
 
     const declareGlobals = `declare var replReport: any, stdinReport: any, evalReport: any, restReport: any, global: any, __filename: any, __dirname: any, module: any, exports: any;`;
     function setReportGlobal(type: 'repl' | 'stdin' | 'eval') {
@@ -392,13 +385,12 @@ test.suite(
     // Serial because it's timing-sensitive
     test.serial(
       'programmatically, eval-ing before starting REPL',
-      programmaticTest,
-      {
-        evalCodeBefore: `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
-        stdinCode: '',
-        waitFor: () => !!globalInRepl.testReport,
-      },
-      (stdout) => {
+      async (t) => {
+        const stdout = await t.context.programmaticTest({
+          evalCodeBefore: `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
+          stdinCode: '',
+          waitFor: () => !!globalInRepl.testReport,
+        });
         expect(globalInRepl.testReport).toMatchObject({
           stdinReport: false,
           evalReport: false,
@@ -436,13 +428,12 @@ test.suite(
     );
     test.serial(
       'programmatically, passing code to stdin after starting REPL',
-      programmaticTest,
-      {
-        evalCodeBefore: null,
-        stdinCode: `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
-        waitFor: () => !!globalInRepl.testReport,
-      },
-      (stdout) => {
+      async (t) => {
+        const stdout = await t.context.programmaticTest({
+          evalCodeBefore: null,
+          stdinCode: `${setReportGlobal('repl')};${saveReportsAsGlobal}`,
+          waitFor: () => !!globalInRepl.testReport,
+        });
         expect(globalInRepl.testReport).toMatchObject({
           stdinReport: false,
           evalReport: false,
