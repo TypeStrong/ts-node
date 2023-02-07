@@ -7,7 +7,11 @@
 import avaTest, {
   ExecutionContext,
   Implementation,
-  OneOrMoreMacros,
+  ImplementationFn,
+  Macro,
+  MacroDeclarationOptions,
+  MacroFn,
+  TestFn,
 } from 'ava';
 import * as assert from 'assert';
 import throat from 'throat';
@@ -58,59 +62,72 @@ export const test = createTestInterface({
 // In case someone wants to `const test = context()`
 export const context = test.context;
 
+export type SimpleTitleFn = (providedTitle: string | undefined) => string;
+export type SimpleImplementationFn<Context = unknown> = (
+  t: ExecutionContext<Context>
+) => PromiseLike<void>;
+export type SimpleContextFn<Context, T> = (
+  t: ExecutionContext<Context>
+) => Promise<T>;
+
 export interface TestInterface<
   Context
 > /*extends Omit<AvaTestInterface<Context>, 'before' | 'beforeEach' | 'after' | 'afterEach' | 'failing' | 'serial'>*/ {
   //#region copy-pasted from ava's .d.ts
   /** Declare a concurrent test. */
-  (title: string, implementation: Implementation<Context>): void;
+  (title: string, implementation: Implementation<unknown[], Context>): void;
   /** Declare a concurrent test that uses one or more macros. Additional arguments are passed to the macro. */
   <T extends any[]>(
     title: string,
-    macros: OneOrMoreMacros<T, Context>,
+    implementation: Implementation<T, Context>,
     ...rest: T
   ): void;
   /** Declare a concurrent test that uses one or more macros. The macro is responsible for generating a unique test title. */
-  <T extends any[]>(macros: OneOrMoreMacros<T, Context>, ...rest: T): void;
+  <T extends any[]>(macro: Implementation<T, Context>, ...rest: T): void;
   //#endregion
 
-  serial(title: string, implementation: Implementation<Context>): void;
+  serial(
+    title: string,
+    implementation: Implementation<unknown[], Context>
+  ): void;
   /** Declare a concurrent test that uses one or more macros. Additional arguments are passed to the macro. */
   serial<T extends any[]>(
     title: string,
-    macros: OneOrMoreMacros<T, Context>,
+    implementation: Implementation<T, Context>,
     ...rest: T
   ): void;
   /** Declare a concurrent test that uses one or more macros. The macro is responsible for generating a unique test title. */
   serial<T extends any[]>(
-    macros: OneOrMoreMacros<T, Context>,
+    implementation: Implementation<T, Context>,
     ...rest: T
   ): void;
-  skip(title: string, implementation: Implementation<Context>): void;
+  skip(title: string, implementation: Implementation<unknown[], Context>): void;
   /** Declare a concurrent test that uses one or more macros. Additional arguments are passed to the macro. */
   skip<T extends any[]>(
     title: string,
-    macros: OneOrMoreMacros<T, Context>,
+    implementation: Implementation<T, Context>,
     ...rest: T
   ): void;
   /** Declare a concurrent test that uses one or more macros. The macro is responsible for generating a unique test title. */
-  skip<T extends any[]>(macros: OneOrMoreMacros<T, Context>, ...rest: T): void;
+  skip<T extends any[]>(
+    implementation: Implementation<T, Context>,
+    ...rest: T
+  ): void;
 
   macro<Args extends any[], Ctx = Context>(
     cb: (
       ...args: Args
     ) =>
-      | [
-          ((title: string | undefined) => string | undefined) | string,
-          (t: ExecutionContext<Ctx>) => Promise<void>
-        ]
-      | ((t: ExecutionContext<Ctx>) => Promise<void>)
-  ): AvaMacro<Args, Ctx>;
+      | [SimpleTitleFn | string, SimpleImplementationFn<Ctx>]
+      | SimpleImplementationFn<Ctx>
+  ): Macro<Args, Ctx>;
 
-  beforeAll(cb: (t: ExecutionContext<Context>) => Promise<void>): void;
-  beforeEach(cb: (t: ExecutionContext<Context>) => Promise<void>): void;
+  avaMacro: MacroFn<Context>;
+
+  beforeAll(cb: SimpleImplementationFn<Context>): void;
+  beforeEach(cb: SimpleImplementationFn<Context>): void;
   context<T extends object | void>(
-    cb: (t: ExecutionContext<Context>) => Promise<T>
+    cb: SimpleContextFn<Context, T>
   ): TestInterface<Context & T>;
   suite(title: string, cb: (test: TestInterface<Context>) => void): void;
 
@@ -124,10 +141,6 @@ export interface TestInterface<
   skipIf(conditional: boolean): void;
 
   // TODO add teardownEach
-}
-export interface AvaMacro<Args extends any[] = any[], Ctx = unknown> {
-  (test: ExecutionContext<Ctx>, ...args: Args): Promise<void>;
-  title?(givenTitle: string | undefined, ...args: Args): string;
 }
 
 function createTestInterface<Context>(opts: {
@@ -145,13 +158,11 @@ function createTestInterface<Context>(opts: {
   let suiteOrTestDeclared = false;
   function computeTitle<Args extends any[]>(
     title: string | undefined,
-    macros?: AvaMacro<Args, any>[],
+    impl?: Implementation<Args, any>,
     ...args: Args
   ) {
-    for (const macro of macros ?? []) {
-      if (macro.title) {
-        title = macro.title(title, ...args);
-      }
+    if (isMacroWithTitle(impl)) {
+      title = impl.title!(title, ...args);
     }
     assert(title);
     // return `${ titlePrefix }${ separator }${ title }`;
@@ -165,13 +176,8 @@ function createTestInterface<Context>(opts: {
   function parseArgs(args: any[]) {
     const title =
       typeof args[0] === 'string' ? (args.shift() as string) : undefined;
-    const macros =
-      typeof args[0] === 'function'
-        ? [args.shift() as AvaMacro]
-        : Array.isArray(args[0])
-        ? (args.shift() as AvaMacro[])
-        : [];
-    return { title, macros, args };
+    const impl = args.shift() as Implementation<any[], Context>;
+    return { title, impl, args };
   }
   function assertOrderingForDeclaringTest() {
     suiteOrTestDeclared = true;
@@ -196,29 +202,32 @@ function createTestInterface<Context>(opts: {
    */
   function declareTest(
     title: string | undefined,
-    macros: AvaMacro<any[], Context>[],
+    impl: Implementation<any[], Context>,
     avaDeclareFunction: Function & { skip: Function },
     args: any[],
     skip = false
   ) {
-    const wrappedMacros = macros.map((macro) => {
-      return async function (t: ExecutionContext<Context>, ...args: any[]) {
-        return concurrencyLimiter(
-          errorPostprocessor(async () => {
-            let i = 0;
-            for (const func of beforeEachFunctions) {
-              await func(t);
-              i++;
-            }
-            return macro(t, ...args);
-          })
-        );
-      };
-    });
-    const computedTitle = computeTitle(title, macros, ...args);
+    const wrapped = async function (
+      t: ExecutionContext<Context>,
+      ...args: any[]
+    ) {
+      return concurrencyLimiter(
+        errorPostprocessor(async () => {
+          let i = 0;
+          for (const func of beforeEachFunctions) {
+            await func(t);
+            i++;
+          }
+          return isMacro(impl)
+            ? impl.exec(t, ...args)
+            : (impl as ImplementationFn<any[], Context>)(t, ...args);
+        })
+      );
+    };
+    const computedTitle = computeTitle(title, impl, ...args);
     (automaticallySkip || skip ? avaDeclareFunction.skip : avaDeclareFunction)(
       computedTitle,
-      wrappedMacros,
+      wrapped,
       ...args
     );
   }
@@ -229,23 +238,23 @@ function createTestInterface<Context>(opts: {
     // start till it finishes.
     // HOWEVER if it returns a single shared state, can tests concurrently use this shared state?
     // if(!automaticallyDoSerial && mustDoSerial) throw new Error('Cannot declare non-serial tests because you have declared a beforeAll() hook for this test suite.');
-    const { args, macros, title } = parseArgs(inputArgs);
+    const { args, impl, title } = parseArgs(inputArgs);
     return declareTest(
       title,
-      macros,
+      impl,
       automaticallyDoSerial ? avaTest.serial : avaTest,
       args
     );
   }
   test.serial = function (...inputArgs: any[]) {
     assertOrderingForDeclaringTest();
-    const { args, macros, title } = parseArgs(inputArgs);
-    return declareTest(title, macros, avaTest.serial, args);
+    const { args, impl, title } = parseArgs(inputArgs);
+    return declareTest(title, impl, avaTest.serial, args);
   };
   test.skip = function (...inputArgs: any[]) {
     assertOrderingForDeclaringTest();
-    const { args, macros, title } = parseArgs(inputArgs);
-    return declareTest(title, macros, avaTest, args, true);
+    const { args, impl, title } = parseArgs(inputArgs);
+    return declareTest(title, impl, avaTest, args, true);
   };
   test.beforeEach = function (
     cb: (test: ExecutionContext<Context>) => Promise<void>
@@ -274,27 +283,29 @@ function createTestInterface<Context>(opts: {
     cb: (
       ...args: Args
     ) =>
-      | [
-          ((title: string | undefined) => string | undefined) | string,
-          (t: ExecutionContext<Context>) => Promise<void>
-        ]
-      | ((t: ExecutionContext<Context>) => Promise<void>)
+      | [SimpleTitleFn | string, SimpleImplementationFn<Context>]
+      | SimpleImplementationFn<Context>
   ) {
-    function macro(testInterface: ExecutionContext<Context>, ...args: Args) {
-      const ret = cb(...args);
-      const macroFunction = Array.isArray(ret) ? ret[1] : ret;
-      return macroFunction(testInterface);
-    }
-    macro.title = function (givenTitle: string | undefined, ...args: Args) {
+    function title(givenTitle: string | undefined, ...args: Args) {
       const ret = cb(...args);
       return Array.isArray(ret)
         ? typeof ret[0] === 'string'
           ? ret[0]
           : ret[0](givenTitle)
-        : givenTitle;
+        : givenTitle ?? 'UNKNOWN';
+    }
+    function exec(testInterface: ExecutionContext<Context>, ...args: Args) {
+      const ret = cb(...args);
+      const impl = Array.isArray(ret) ? ret[1] : ret;
+      return impl(testInterface);
+    }
+    const declaration: MacroDeclarationOptions<Args, Context> = {
+      title,
+      exec,
     };
-    return macro;
+    return (avaTest as TestFn<Context>).macro<Args>(declaration);
   };
+  test.avaMacro = (avaTest as TestFn<Context>).macro;
   test.suite = function (
     title: string,
     cb: (test: TestInterface<Context>) => void
@@ -321,4 +332,15 @@ function createTestInterface<Context>(opts: {
     test.runIf(!skipIfTrue);
   };
   return test as any;
+}
+
+function isMacro(
+  implementation?: Implementation<any, any>
+): implementation is Macro<any> {
+  return implementation != null && typeof implementation !== 'function';
+}
+function isMacroWithTitle(
+  implementation?: Implementation<any, any>
+): implementation is Macro<any> {
+  return !!(implementation && (implementation as Macro<[]>)?.title);
 }

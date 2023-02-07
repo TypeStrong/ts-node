@@ -18,6 +18,8 @@ module.exports = {
   nodeArguments: ['--loader', './src/test/test-loader.mjs', '--no-warnings'],
   timeout: '300s',
   concurrency: 4,
+  // We do chdir -- maybe other things -- that you can't do in worker_threads.
+  workerThreads: false,
 };
 
 {
