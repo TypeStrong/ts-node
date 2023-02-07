@@ -6,7 +6,7 @@ import {
   fileURLToPath,
   pathToFileURL,
 } from 'url';
-import { extname } from 'path';
+import { extname, resolve as pathResolve } from 'path';
 import * as assert from 'assert';
 import { normalizeSlashes, versionGteLt } from './util';
 import { createRequire } from 'module';
@@ -137,12 +137,19 @@ export function createEsmHooks(tsNodeService: Service) {
     return protocol === null || protocol === 'file:';
   }
 
+  const runMainHackUrl = pathToFileURL(
+    pathResolve(__dirname, '../dist-raw/runmain-hack.js')
+  ).toString();
+
   /**
    * Named "probably" as a reminder that this is a guess.
    * node does not explicitly tell us if we're resolving the entrypoint or not.
    */
   function isProbablyEntrypoint(specifier: string, parentURL: string) {
-    return parentURL === undefined && specifier.startsWith('file://');
+    return (
+      (parentURL === undefined || parentURL === runMainHackUrl) &&
+      specifier.startsWith('file://')
+    );
   }
   // Side-channel between `resolve()` and `load()` hooks
   const rememberIsProbablyEntrypoint = new Set();

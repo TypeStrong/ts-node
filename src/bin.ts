@@ -630,7 +630,7 @@ function phase4(payload: BootstrapState) {
   if (executeEntrypoint) {
     if (
       payload.isInChildProcess &&
-      versionGteLt(process.versions.node, '18.6.0')
+      versionGteLt(process.versions.node, '18.6.0', '18.7.0')
     ) {
       // HACK workaround node regression
       require('../dist-raw/runmain-hack.js').run(entryPointPath);

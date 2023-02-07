@@ -336,6 +336,14 @@ test.suite('esm', (test) => {
       });
     }
 
+    test('extensionless entrypoint, regression test for #1943', async (t) => {
+      const { err, stdout } = await exec(
+        `${BIN_ESM_PATH} ./esm-loader-entrypoint-cjs-fallback/extensionless-entrypoint`
+      );
+      expect(err).toBe(null);
+      expect(stdout.trim()).toBe('Hello world!');
+    });
+
     test.suite('parent passes signals to child', (test) => {
       signalTest('SIGINT');
       signalTest('SIGTERM');
