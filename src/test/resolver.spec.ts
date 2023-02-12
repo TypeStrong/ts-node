@@ -157,8 +157,8 @@ const targetPackageStyles = [
 ] as const;
 
 test.suite('Resolver hooks', (test) => {
-  test.runSerially();
-  test.runIf(tsSupportsMtsCtsExtensions);
+  test.serial();
+  test.if(tsSupportsMtsCtsExtensions);
 
   //
   // Generate all permutations of projects

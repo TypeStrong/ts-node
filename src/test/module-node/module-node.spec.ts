@@ -19,7 +19,7 @@ type Test = typeof test;
 
 // Declare one test case for each permutations of project configuration
 test.suite('TypeScript module=NodeNext and Node16', (test) => {
-  test.runIf(
+  test.if(
     tsSupportsStableNodeNextNode16 && nodeSupportsImportingTransformedCjsFromEsm
   );
 

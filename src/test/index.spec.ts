@@ -182,7 +182,7 @@ test.suite('ts-node', (test) => {
     });
 
     test.suite('should support cts when module = CommonJS', (test) => {
-      test.runIf(tsSupportsMtsCtsExtensions);
+      test.if(tsSupportsMtsCtsExtensions);
       test('test', async (t) => {
         const r = await exec(
           [
@@ -199,7 +199,7 @@ test.suite('ts-node', (test) => {
     });
 
     test.suite('should support mts when module = ESNext', (test) => {
-      test.runIf(tsSupportsMtsCtsExtensions);
+      test.if(tsSupportsMtsCtsExtensions);
       test('test', async () => {
         const r = await exec(
           [CMD_TS_NODE_WITHOUT_PROJECT_FLAG, './entrypoint.mjs'].join(' '),
@@ -712,8 +712,8 @@ test.suite('ts-node', (test) => {
 
     test.suite(
       'should use implicit @tsconfig/bases config when one is not loaded from disk',
-      ({ context }) => {
-        const test = context(async (t) => ({
+      ({ contextEach }) => {
+        const test = contextEach(async (t) => ({
           tempDir: mkdtempSync(join(tmpdir(), 'ts-node-spec')),
         }));
         const libAndTarget =
@@ -771,7 +771,7 @@ test.suite('ts-node', (test) => {
       'should bundle @tsconfig/bases to be used in your own tsconfigs',
       (test) => {
         // Older TS versions will complain about newer `target` and `lib` options
-        test.runIf(tsSupportsEs2022);
+        test.if(tsSupportsEs2022);
         const macro = test.macro((nodeVersion: string) => async (t) => {
           const config = require(`@tsconfig/${nodeVersion}/tsconfig.json`);
           const r = await exec(`${BIN_PATH} --showConfig -e 10n`, {
@@ -899,8 +899,8 @@ test.suite('ts-node', (test) => {
     });
   });
 
-  test.suite('create', ({ context }) => {
-    const test = context(async (t) => {
+  test.suite('create', ({ contextEach }) => {
+    const test = contextEach(async (t) => {
       return {
         service: t.context.tsNodeUnderTest.create({
           compilerOptions: { target: 'es5' },

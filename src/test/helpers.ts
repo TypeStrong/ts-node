@@ -99,13 +99,13 @@ export const tsSupportsEs2022 = semver.gte(ts.version, '4.6.0');
 export const xfs = new NodeFS(fs);
 
 /** Pass to `test.context()` to get access to the ts-node API under test */
-export const ctxTsNode = once(async () => {
+export async function ctxTsNode() {
   await installTsNode();
   const tsNodeUnderTest: typeof tsNodeTypes = testsDirRequire('ts-node');
   return {
     tsNodeUnderTest,
   };
-});
+}
 export namespace ctxTsNode {
   export type Ctx = Awaited<ReturnType<typeof ctxTsNode>>;
   export type T = ExecutionContext<Ctx>;

@@ -82,7 +82,7 @@ test.suite('swc', (test) => {
 
       test(macro, 'react', undefined, undefined);
       test.suite('react 17 jsx factories', (test) => {
-        test.runIf(tsSupportsReact17JsxFactories);
+        test.if(tsSupportsReact17JsxFactories);
         test(macro, 'react-jsx', 'automatic', undefined);
         test(macro, 'react-jsxdev', 'automatic', true);
       });
@@ -122,7 +122,7 @@ test.suite('swc', (test) => {
       `const div = /*#__PURE__*/ React.createElement("div", null);`
     );
     test.suite('react 17 jsx factories', (test) => {
-      test.runIf(tsSupportsReact17JsxFactories);
+      test.if(tsSupportsReact17JsxFactories);
       test(
         compileMacro,
         { jsx: 'react-jsx' },
@@ -149,7 +149,7 @@ test.suite('swc', (test) => {
   });
 
   test.suite('preserves import assertions for json imports', (test) => {
-    test.runIf(tsSupportsImportAssertions);
+    test.if(tsSupportsImportAssertions);
     test(
       'basic json import',
       compileMacro,

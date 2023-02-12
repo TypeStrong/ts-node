@@ -16,7 +16,7 @@ import { createExec, createExecTester } from '../exec-helpers';
 import { homedir } from 'os';
 import { ctxRepl } from './helpers';
 
-const test = context(ctxTsNode).context(ctxRepl);
+const test = context(ctxTsNode).contextEach(ctxRepl);
 
 const exec = createExec({
   cwd: TEST_DIR,

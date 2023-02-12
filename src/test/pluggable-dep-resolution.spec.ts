@@ -8,7 +8,7 @@ const test = context(ctxTsNode);
 test.suite(
   'Pluggable dependency (compiler, transpiler, swc backend) is require()d relative to the tsconfig file that declares it',
   (test) => {
-    test.runSerially();
+    test.serial();
 
     // The use-case we want to support:
     //

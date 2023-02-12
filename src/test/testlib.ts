@@ -24,7 +24,7 @@ import './helpers';
 
 // NOTE: this limits concurrency within a single process, but AVA launches
 // each .spec file in its own process, so actual concurrency is higher.
-const concurrencyLimiter = throat(4);
+const concurrencyLimiter = throat(parseInt(process.env.CONCURRENT_TESTS!) || 4);
 
 function errorPostprocessor<T extends Function>(fn: T): T {
   return async function (this: any) {
@@ -59,8 +59,10 @@ export const test = createTestInterface({
   separator: ' \u203a ',
   titlePrefix: undefined,
 });
+
 // In case someone wants to `const test = context()`
 export const context = test.context;
+export const contextEach = test.contextEach;
 
 export type SimpleTitleFn = (providedTitle: string | undefined) => string;
 export type SimpleImplementationFn<Context = unknown> = (
@@ -86,6 +88,9 @@ export interface TestInterface<
   <T extends any[]>(macro: Implementation<T, Context>, ...rest: T): void;
   //#endregion
 
+  /** Run the entire suite serially */
+  serial(): void;
+
   serial(
     title: string,
     implementation: Implementation<unknown[], Context>
@@ -101,6 +106,7 @@ export interface TestInterface<
     implementation: Implementation<T, Context>,
     ...rest: T
   ): void;
+
   skip(title: string, implementation: Implementation<unknown[], Context>): void;
   /** Declare a concurrent test that uses one or more macros. Additional arguments are passed to the macro. */
   skip<T extends any[]>(
@@ -124,19 +130,24 @@ export interface TestInterface<
 
   avaMacro: MacroFn<Context>;
 
-  beforeAll(cb: SimpleImplementationFn<Context>): void;
+  before(cb: SimpleImplementationFn<Context>): void;
   beforeEach(cb: SimpleImplementationFn<Context>): void;
+
   context<T extends object | void>(
     cb: SimpleContextFn<Context, T>
   ): TestInterface<Context & T>;
-  suite(title: string, cb: (test: TestInterface<Context>) => void): void;
+  contextEach<T extends object | void>(
+    cb: SimpleContextFn<Context, T>
+  ): TestInterface<Context & T>;
 
-  runSerially(): void;
+  suite(title: string, cb: (test: TestInterface<Context>) => void): void;
 
   /** Skip tests unless this condition is met */
   skipUnless(conditional: boolean): void;
+
   /** If conditional is true, run tests, otherwise skip them */
-  runIf(conditional: boolean): void;
+  if(conditional: boolean): void;
+
   /** If conditional is false, skip tests */
   skipIf(conditional: boolean): void;
 
@@ -156,6 +167,7 @@ function createTestInterface<Context>(opts: {
   let { mustDoSerial, automaticallyDoSerial, automaticallySkip } = opts;
   let hookDeclared = false;
   let suiteOrTestDeclared = false;
+
   function computeTitle<Args extends any[]>(
     title: string | undefined,
     impl?: Implementation<Args, any>,
@@ -173,15 +185,18 @@ function createTestInterface<Context>(opts: {
       return title;
     }
   }
+
   function parseArgs(args: any[]) {
     const title =
       typeof args[0] === 'string' ? (args.shift() as string) : undefined;
     const impl = args.shift() as Implementation<any[], Context>;
     return { title, impl, args };
   }
+
   function assertOrderingForDeclaringTest() {
     suiteOrTestDeclared = true;
   }
+
   function assertOrderingForDeclaringHook() {
     if (suiteOrTestDeclared) {
       throw new Error(
@@ -190,13 +205,15 @@ function createTestInterface<Context>(opts: {
     }
     hookDeclared = true;
   }
+
   function assertOrderingForDeclaringSkipUnless() {
     if (suiteOrTestDeclared) {
       throw new Error(
-        'skipUnless or runIf must be declared before declaring sub-suites or tests'
+        'skipUnless or if must be declared before declaring sub-suites or tests'
       );
     }
   }
+
   /**
    * @param avaDeclareFunction either test or test.serial
    */
@@ -231,13 +248,14 @@ function createTestInterface<Context>(opts: {
       ...args
     );
   }
+
   function test(...inputArgs: any[]) {
     assertOrderingForDeclaringTest();
     // TODO is this safe to disable?
-    // X parallel tests will each invoke the beforeAll hook, but once()ification means each invocation will return the same promise, and tests cannot
+    // X parallel tests will each invoke the before hook, but once()ification means each invocation will return the same promise, and tests cannot
     // start till it finishes.
     // HOWEVER if it returns a single shared state, can tests concurrently use this shared state?
-    // if(!automaticallyDoSerial && mustDoSerial) throw new Error('Cannot declare non-serial tests because you have declared a beforeAll() hook for this test suite.');
+    // if(!automaticallyDoSerial && mustDoSerial) throw new Error('Cannot declare non-serial tests because you have declared a before() hook for this test suite.');
     const { args, impl, title } = parseArgs(inputArgs);
     return declareTest(
       title,
@@ -246,40 +264,55 @@ function createTestInterface<Context>(opts: {
       args
     );
   }
-  test.serial = function (...inputArgs: any[]) {
+
+  test.serial = serial;
+  function serial(...inputArgs: any[]) {
+    if (inputArgs.length === 0) {
+      automaticallyDoSerial = true;
+      return;
+    }
     assertOrderingForDeclaringTest();
     const { args, impl, title } = parseArgs(inputArgs);
     return declareTest(title, impl, avaTest.serial, args);
-  };
-  test.skip = function (...inputArgs: any[]) {
+  }
+
+  test.skip = skip;
+  function skip(...inputArgs: any[]) {
     assertOrderingForDeclaringTest();
     const { args, impl, title } = parseArgs(inputArgs);
     return declareTest(title, impl, avaTest, args, true);
-  };
-  test.beforeEach = function (
-    cb: (test: ExecutionContext<Context>) => Promise<void>
-  ) {
+  }
+
+  test.beforeEach = beforeEach;
+  function beforeEach(cb: (test: ExecutionContext<Context>) => Promise<void>) {
     assertOrderingForDeclaringHook();
     beforeEachFunctions.push(cb);
-  };
-  test.context = function (
-    cb: (test: ExecutionContext<Context>) => Promise<any>
-  ) {
+  }
+
+  test.contextEach = contextEach;
+  function contextEach(cb: (test: ExecutionContext<Context>) => Promise<any>) {
     assertOrderingForDeclaringHook();
     beforeEachFunctions.push(async (t: ExecutionContext<Context>) => {
       const addedContextFields = await cb(t);
       Object.assign(t.context, addedContextFields);
     });
     return test;
-  };
-  test.beforeAll = function (
-    cb: (test: ExecutionContext<Context>) => Promise<void>
-  ) {
+  }
+
+  test.context = context;
+  function context(cb: (test: ExecutionContext<Context>) => Promise<any>) {
+    return contextEach(once(cb));
+  }
+
+  test.before = before;
+  function before(cb: (test: ExecutionContext<Context>) => Promise<void>) {
     assertOrderingForDeclaringHook();
     mustDoSerial = true;
     beforeEachFunctions.push(once(cb));
-  };
-  test.macro = function <Args extends any[]>(
+  }
+
+  test.macro = macro;
+  function macro<Args extends any[]>(
     cb: (
       ...args: Args
     ) =>
@@ -304,12 +337,12 @@ function createTestInterface<Context>(opts: {
       exec,
     };
     return (avaTest as TestFn<Context>).macro<Args>(declaration);
-  };
+  }
+
   test.avaMacro = (avaTest as TestFn<Context>).macro;
-  test.suite = function (
-    title: string,
-    cb: (test: TestInterface<Context>) => void
-  ) {
+
+  test.suite = suite;
+  function suite(title: string, cb: (test: TestInterface<Context>) => void) {
     suiteOrTestDeclared = true;
     const newApi = createTestInterface<Context>({
       mustDoSerial,
@@ -320,17 +353,19 @@ function createTestInterface<Context>(opts: {
       beforeEachFunctions,
     });
     cb(newApi);
-  };
-  test.runSerially = function () {
-    automaticallyDoSerial = true;
-  };
-  test.skipUnless = test.runIf = function (runIfTrue: boolean) {
+  }
+
+  test.skipUnless = test.if = _if;
+  function _if(runIfTrue: boolean) {
     assertOrderingForDeclaringSkipUnless();
     automaticallySkip = automaticallySkip || !runIfTrue;
-  };
-  test.skipIf = function (skipIfTrue: boolean) {
-    test.runIf(!skipIfTrue);
-  };
+  }
+
+  test.skipIf = skipIf;
+  function skipIf(skipIfTrue: boolean) {
+    test.if(!skipIfTrue);
+  }
+
   return test as any;
 }
 

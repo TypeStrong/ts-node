@@ -15,8 +15,8 @@ import {
   macroReplStderrContains,
 } from './helpers';
 
-const test = context(ctxTsNode).context(ctxRepl);
-test.runSerially();
+const test = context(ctxTsNode).contextEach(ctxRepl);
+test.serial();
 test.beforeEach(async (t) => {
   t.teardown(() => {
     resetNodeEnvironment();
@@ -115,11 +115,11 @@ test.serial('REPL can be created via API', async (t) => {
   );
 });
 
-test.suite('top level await', ({ context }) => {
+test.suite('top level await', ({ contextEach }) => {
   const compilerOptions = {
     target: 'es2018',
   };
-  const test = context(async (t) => {
+  const test = contextEach(async (t) => {
     return { executeInTlaRepl };
 
     function executeInTlaRepl(input: string, waitPattern?: string | RegExp) {
@@ -298,7 +298,7 @@ test.suite(
   'REPL inputs are syntactically independent of each other',
   (test) => {
     // Serial because they're timing-sensitive
-    test.runSerially();
+    test.serial();
 
     test('arithmetic operators are independent of previous values', async (t) => {
       const r = await t.context.executeInRepl(
@@ -400,7 +400,7 @@ test.suite(
 );
 
 test.suite('Multiline inputs and RECOVERY_CODES', (test) => {
-  test.runSerially();
+  test.serial();
   test(
     'multiline function args declaration',
     macroReplNoErrorsAndStdoutContains,
@@ -471,7 +471,7 @@ test.suite('REPL works with traceResolution', (test) => {
 });
 
 test.suite('REPL declares types for node built-ins within REPL', (test) => {
-  test.runSerially();
+  test.serial();
   test('enabled when typechecking', async (t) => {
     const r = await t.context.executeInRepl(
       `util.promisify(setTimeout)("should not be a string" as string)

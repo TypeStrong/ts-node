@@ -201,8 +201,8 @@ test.suite('esm', (test) => {
     });
   });
 
-  test.suite('unit test hooks', ({ context }) => {
-    const test = context(async (t) => {
+  test.suite('unit test hooks', ({ contextEach }) => {
+    const test = contextEach(async (t) => {
       const service = t.context.tsNodeUnderTest.create({
         cwd: TEST_DIR,
       });
@@ -216,7 +216,7 @@ test.suite('esm', (test) => {
     });
 
     test.suite('data URIs', (test) => {
-      test.runIf(nodeUsesNewHooksApi);
+      test.if(nodeUsesNewHooksApi);
 
       test('Correctly determines format of data URIs', async (t) => {
         const { hooks } = t.context;
@@ -234,7 +234,7 @@ test.suite('esm', (test) => {
   });
 
   test.suite('supports import assertions', (test) => {
-    test.runIf(nodeSupportsImportAssertions && tsSupportsImportAssertions);
+    test.if(nodeSupportsImportAssertions && tsSupportsImportAssertions);
 
     const macro = test.macro((flags: string) => async (t) => {
       const r = await exec(
@@ -252,12 +252,12 @@ test.suite('esm', (test) => {
     test.suite(
       'when node does not require --experimental-json-modules',
       (test) => {
-        test.runIf(nodeSupportsUnflaggedJsonImports);
+        test.if(nodeSupportsUnflaggedJsonImports);
         test('Can import JSON modules with appropriate assertion', macro, '');
       }
     );
     test.suite('when node requires --experimental-json-modules', (test) => {
-      test.runIf(!nodeSupportsUnflaggedJsonImports);
+      test.if(!nodeSupportsUnflaggedJsonImports);
       test(
         'Can import JSON using the appropriate flag and assertion',
         macro,
@@ -418,7 +418,7 @@ test.suite('esm', (test) => {
 
 test.suite("Catch unexpected changes to node's loader context", (test) => {
   // loader context includes import assertions, therefore this test requires support for import assertions
-  test.runIf(nodeSupportsImportAssertions);
+  test.if(nodeSupportsImportAssertions);
 
   /*
    * This does not test ts-node.

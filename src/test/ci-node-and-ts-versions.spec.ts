@@ -8,7 +8,7 @@ import { context, expect } from './testlib';
 
 const test = context(ctxTsNode);
 test.suite('Confirm node and typescript versions on CI', (test) => {
-  test.runIf(!!process.env.CI);
+  test.if(!!process.env.CI);
   test('node version is correct', async (t) => {
     const expectedVersion = process.env.TEST_MATRIX_NODE_VERSION!;
     const actualVersion = process.versions.node;
