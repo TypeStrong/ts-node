@@ -232,6 +232,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@cspotcode/ava-lib@github:cspotcode/ava-lib#50a64fa0f1e018298ab41e8b4c18b18396824bab":
+  version: 0.0.1
+  resolution: "@cspotcode/ava-lib@https://github.com/cspotcode/ava-lib.git#commit=50a64fa0f1e018298ab41e8b4c18b18396824bab"
+  dependencies:
+    "@types/node": "*"
+    throat: ^6.0.1
+  peerDependencies:
+    ava: "*"
+    expect: "*"
+  checksum: 1bdc6c405d8e7d74e2151dd6ed0cdd73eddcfeec33bbca456c78722e26c9dbb3e56d0823418880c7dd530f4d6c7ff77c7e275558e4a145a007aa688e08e24cbc
+  languageName: node
+  linkType: hard
+
 "@cspotcode/source-map-support@npm:^0.8.0":
   version: 0.8.1
   resolution: "@cspotcode/source-map-support@npm:0.8.1"
@@ -3814,6 +3827,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "ts-node@workspace:."
   dependencies:
+    "@cspotcode/ava-lib": "github:cspotcode/ava-lib#50a64fa0f1e018298ab41e8b4c18b18396824bab"
     "@cspotcode/source-map-support": ^0.8.0
     "@microsoft/api-extractor": ^7.19.4
     "@swc/core": ">=1.3.32"

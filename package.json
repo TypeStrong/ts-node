@@ -108,6 +108,7 @@
   },
   "homepage": "https://typestrong.org/ts-node",
   "devDependencies": {
+    "@cspotcode/ava-lib": "github:cspotcode/ava-lib#50a64fa0f1e018298ab41e8b4c18b18396824bab",
     "@microsoft/api-extractor": "^7.19.4",
     "@swc/core": ">=1.3.32",
     "@swc/wasm": ">=1.3.32",
