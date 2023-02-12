@@ -59,14 +59,14 @@ function declareTest(test: Test, testParams: TestParams) {
 
     // All assertions happen within the fixture scripts
     // Zero exit code indicates a passing test
-    const { stdout, stderr, err } = await exec(
+    const r = await exec(
       `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --esm ./index.mjs`,
       { cwd: proj.cwd }
     );
-    t.log(stdout);
-    t.log(stderr);
-    expect(err).toBe(null);
-    expect(stdout).toMatch(/done\n$/);
+    t.log(r.stdout);
+    t.log(r.stderr);
+    expect(r.err).toBe(null);
+    expect(r.stdout).toMatch(/done\n$/);
   });
 }
 

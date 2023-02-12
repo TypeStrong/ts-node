@@ -129,13 +129,13 @@ async function macroReplInternal(
   waitPattern: string,
   options?: Partial<ExecuteInReplOptions>
 ) {
-  const { stdout, stderr } = await t.context.executeInRepl(script, {
+  const r = await t.context.executeInRepl(script, {
     registerHooks: true,
     startInternalOptions: { useGlobal: false },
     waitPattern,
     ...options,
   });
-  if (stderrContains) expect(stderr).toContain(stderrContains);
-  else expect(stderr).toBe('');
-  if (stdoutContains) expect(stdout).toContain(stdoutContains);
+  if (stderrContains) expect(r.stderr).toContain(stderrContains);
+  else expect(r.stderr).toBe('');
+  if (stdoutContains) expect(r.stdout).toContain(stdoutContains);
 }

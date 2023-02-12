@@ -143,18 +143,18 @@ export function createExecTester<T extends Partial<ExecTesterOptions>>(
       ...preBoundOptions,
       ...options,
     };
-    const execPromise = exec(`${cmd} ${flags}`, {
+    const p = exec(`${cmd} ${flags}`, {
       env: { ...process.env, ...env },
     });
     if (stdin !== undefined) {
-      execPromise.child.stdin!.end(stdin);
+      p.child.stdin!.end(stdin);
     }
-    const { err, stdout, stderr } = await execPromise;
+    const r = await p;
     if (expectError) {
-      expect(err).toBeDefined();
+      expect(r.err).toBeDefined();
     } else {
-      expect(err).toBeNull();
+      expect(r.err).toBeNull();
     }
-    return { stdout, stderr, err };
+    return r;
   };
 }

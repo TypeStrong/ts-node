@@ -12,10 +12,11 @@ const exec = createExecTester({
 });
 
 test('Redirects source-map-support to @cspotcode/source-map-support so that third-party libraries get correct source-mapped locations', async () => {
-  const { stdout } = await exec({
+  const r = await exec({
     flags: `./legacy-source-map-support-interop/index.ts`,
   });
-  expect(stdout.split('\n')).toMatchObject([
+  expect(r.err).toBeNull();
+  expect(r.stdout.split('\n')).toMatchObject([
     expect.stringContaining('.ts:2 '),
     'true',
     'true',

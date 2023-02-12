@@ -54,10 +54,9 @@ test('Supports .ts extensions in import specifiers with typechecking, even thoug
   });
   p.write();
 
-  const { err, stdout } = await exec(
-    `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} ./index.ts`,
-    { cwd: p.cwd }
-  );
-  expect(err).toBe(null);
-  expect(stdout.trim()).toBe('{ foo: true, bar: true }');
+  const r = await exec(`${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} ./index.ts`, {
+    cwd: p.cwd,
+  });
+  expect(r.err).toBe(null);
+  expect(r.stdout.trim()).toBe('{ foo: true, bar: true }');
 });

@@ -36,29 +36,29 @@ const execTester = createExecTester({
 });
 
 test('should run REPL when --interactive passed and stdin is not a TTY', async () => {
-  const execPromise = exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} --interactive`);
-  execPromise.child.stdin!.end('console.log("123")\n');
-  const { err, stdout } = await execPromise;
-  expect(err).toBe(null);
-  expect(stdout).toBe('> 123\n' + 'undefined\n' + '> ');
+  const p = exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} --interactive`);
+  p.child.stdin!.end('console.log("123")\n');
+  const r = await p;
+  expect(r.err).toBe(null);
+  expect(r.stdout).toBe('> 123\n' + 'undefined\n' + '> ');
 });
 
 test('should echo a value when using the swc transpiler', async () => {
-  const execPromise = exec(
+  const p = exec(
     `${CMD_TS_NODE_WITH_PROJECT_FLAG} --interactive  --transpiler ts-node/transpilers/swc-experimental`
   );
-  execPromise.child.stdin!.end('400\n401\n');
-  const { err, stdout } = await execPromise;
-  expect(err).toBe(null);
-  expect(stdout).toBe('> 400\n> 401\n> ');
+  p.child.stdin!.end('400\n401\n');
+  const r = await p;
+  expect(r.err).toBe(null);
+  expect(r.stdout).toBe('> 400\n> 401\n> ');
 });
 
 test('REPL has command to get type information', async () => {
-  const execPromise = exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} --interactive`);
-  execPromise.child.stdin!.end('\nconst a = 123\n.type a');
-  const { err, stdout } = await execPromise;
-  expect(err).toBe(null);
-  expect(stdout).toBe(
+  const p = exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} --interactive`);
+  p.child.stdin!.end('\nconst a = 123\n.type a');
+  const r = await p;
+  expect(r.err).toBe(null);
+  expect(r.stdout).toBe(
     '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
   );
 });
@@ -67,27 +67,24 @@ test('REPL has command to get type information', async () => {
 test.serial('REPL can be configured on `start`', async (t) => {
   const prompt = '#> ';
 
-  const { stdout, stderr } = await t.context.executeInRepl(
-    `const x = 3\n'done'`,
-    {
-      waitPattern: "'done'\n#> ",
-      registerHooks: true,
-      startInternalOptions: {
-        prompt,
-        ignoreUndefined: true,
-      },
-    }
-  );
+  const r = await t.context.executeInRepl(`const x = 3\n'done'`, {
+    waitPattern: "'done'\n#> ",
+    registerHooks: true,
+    startInternalOptions: {
+      prompt,
+      ignoreUndefined: true,
+    },
+  });
 
-  expect(stderr).toBe('');
-  expect(stdout).toBe(`${prompt}${prompt}'done'\n#> `);
+  expect(r.stderr).toBe('');
+  expect(r.stdout).toBe(`${prompt}${prompt}'done'\n#> `);
 });
 
 // Serial because it's timing-sensitive
 test.serial(
   'REPL uses a different context when `useGlobal` is false',
   async (t) => {
-    const { stdout, stderr } = await t.context.executeInRepl(
+    const r = await t.context.executeInRepl(
       // No error when re-declaring x
       'const x = 3\n' +
         // console.log ouput will end up in the stream and not in test output
@@ -101,22 +98,19 @@ test.serial(
       }
     );
 
-    expect(stderr).toBe('');
-    expect(stdout).toBe(`> undefined\n> 1\nundefined\n> `);
+    expect(r.stderr).toBe('');
+    expect(r.stdout).toBe(`> undefined\n> 1\nundefined\n> `);
   }
 );
 
 // Serial because it's timing-sensitive
 test.serial('REPL can be created via API', async (t) => {
-  const { stdout, stderr } = await t.context.executeInRepl(
-    `\nconst a = 123\n.type a\n`,
-    {
-      registerHooks: true,
-      waitPattern: '123\n> ',
-    }
-  );
-  expect(stderr).toBe('');
-  expect(stdout).toBe(
+  const r = await t.context.executeInRepl(`\nconst a = 123\n.type a\n`, {
+    registerHooks: true,
+    waitPattern: '123\n> ',
+  });
+  expect(r.stderr).toBe('');
+  expect(r.stdout).toBe(
     '> undefined\n' + '> undefined\n' + '> const a: 123\n' + '> '
   );
 });
@@ -161,12 +155,9 @@ test.suite('top level await', ({ context }) => {
         x + y + z;
       `;
 
-    const { stdout, stderr } = await t.context.executeInTlaRepl(
-      script,
-      '6\n> '
-    );
-    expect(stderr).toBe('');
-    expect(stdout).toBe('> 1\n2\n3\na\nb\n6\n> ');
+    const r = await t.context.executeInTlaRepl(script, '6\n> ');
+    expect(r.stderr).toBe('');
+    expect(r.stdout).toBe('> 1\n2\n3\na\nb\n6\n> ');
   });
 
   // Serial because it's timing-sensitive
@@ -180,14 +171,14 @@ test.suite('top level await', ({ context }) => {
           const endTime = new Date().getTime();
           endTime - startTime;
         `;
-      const { stdout, stderr } = await t.context.executeInTlaRepl(
-        script,
-        /\d+\n/
-      );
+      const r = await t.context.executeInTlaRepl(script, /\d+\n/);
 
-      expect(stderr).toBe('');
+      expect(r.stderr).toBe('');
 
-      const elapsedTimeString = stdout.split('\n')[0].replace('> ', '').trim();
+      const elapsedTimeString = r.stdout
+        .split('\n')[0]
+        .replace('> ', '')
+        .trim();
       expect(elapsedTimeString).toMatch(/^\d+$/);
       const elapsedTime = Number(elapsedTimeString);
       expect(elapsedTime).toBeGreaterThanOrEqual(awaitMs - 50);
@@ -208,15 +199,12 @@ test.suite('top level await', ({ context }) => {
           const endTime = new Date().getTime();
           endTime - startTime;
         `;
-      const { stdout, stderr } = await t.context.executeInTlaRepl(
-        script,
-        /\d+\n/
-      );
+      const r = await t.context.executeInTlaRepl(script, /\d+\n/);
 
-      expect(stderr).toBe('');
+      expect(r.stderr).toBe('');
 
       const ellapsedTime = Number(
-        stdout.split('\n')[0].replace('> ', '').trim()
+        r.stdout.split('\n')[0].replace('> ', '').trim()
       );
       expect(ellapsedTime).toBeGreaterThanOrEqual(0);
       // Should ideally be instantaneous; leave wiggle-room for slow CI
@@ -228,13 +216,13 @@ test.suite('top level await', ({ context }) => {
   test.serial(
     'should error with typing information when awaited result has type mismatch',
     async (t) => {
-      const { stdout, stderr } = await t.context.executeInTlaRepl(
+      const r = await t.context.executeInTlaRepl(
         'const x: string = await 1',
         'error'
       );
 
-      expect(stdout).toBe('> > ');
-      expect(stderr.replace(/\r\n/g, '\n')).toBe(
+      expect(r.stdout).toBe('> > ');
+      expect(r.stderr.replace(/\r\n/g, '\n')).toBe(
         '<repl>.ts(4,7): error TS2322: ' +
           (semver.gte(ts.version, '4.0.0')
             ? `Type 'number' is not assignable to type 'string'.\n`
@@ -248,13 +236,13 @@ test.suite('top level await', ({ context }) => {
   test.serial(
     'should error with typing information when importing a file with type errors',
     async (t) => {
-      const { stdout, stderr } = await t.context.executeInTlaRepl(
+      const r = await t.context.executeInTlaRepl(
         `const {foo} = await import('./repl/tla-import');`,
         'error'
       );
 
-      expect(stdout).toBe('> > ');
-      expect(stderr.replace(/\r\n/g, '\n')).toBe(
+      expect(r.stdout).toBe('> > ');
+      expect(r.stderr.replace(/\r\n/g, '\n')).toBe(
         'repl/tla-import.ts(1,14): error TS2322: ' +
           (semver.gte(ts.version, '4.0.0')
             ? `Type 'number' is not assignable to type 'string'.\n`
@@ -276,32 +264,32 @@ test.suite(
     const code = `function foo() {};\nfunction foo() {return 123};\nconsole.log(foo());\n`;
     const diagnosticMessage = `Duplicate function implementation`;
     test('interactive repl should ignore them', async (t) => {
-      const { stdout, stderr } = await execTester({
+      const r = await execTester({
         flags: '-i',
         stdin: code,
       });
-      expect(stdout).not.toContain(diagnosticMessage);
+      expect(r.stdout).not.toContain(diagnosticMessage);
     });
     test('interactive repl should not ignore them if they occur in other files', async (t) => {
-      const { stdout, stderr } = await execTester({
+      const r = await execTester({
         flags: '-i',
         stdin: `import './repl-ignored-diagnostics/index';\n`,
       });
-      expect(stderr).toContain(diagnosticMessage);
+      expect(r.stderr).toContain(diagnosticMessage);
     });
     test('[stdin] should not ignore them', async (t) => {
-      const { stdout, stderr } = await execTester({
+      const r = await execTester({
         stdin: code,
         expectError: true,
       });
-      expect(stderr).toContain(diagnosticMessage);
+      expect(r.stderr).toContain(diagnosticMessage);
     });
     test('[eval] should not ignore them', async (t) => {
-      const { stdout, stderr } = await execTester({
+      const r = await execTester({
         flags: `-e "${code.replace(/\n/g, '')}"`,
         expectError: true,
       });
-      expect(stderr).toContain(diagnosticMessage);
+      expect(r.stderr).toContain(diagnosticMessage);
     });
   }
 );
@@ -313,7 +301,7 @@ test.suite(
     test.runSerially();
 
     test('arithmetic operators are independent of previous values', async (t) => {
-      const { stdout, stderr } = await t.context.executeInRepl(
+      const r = await t.context.executeInRepl(
         `9
           + 3
           7
@@ -332,17 +320,17 @@ test.suite(
           waitPattern: 'done!\nundefined\n>',
         }
       );
-      expect(stdout).not.toContain('12');
-      expect(stdout).not.toContain('4');
-      expect(stdout).not.toContain('21');
-      expect(stdout).not.toContain('50');
-      expect(stdout).not.toContain('25');
-      expect(stdout).toContain('3');
-      expect(stdout).toContain('-3');
+      expect(r.stdout).not.toContain('12');
+      expect(r.stdout).not.toContain('4');
+      expect(r.stdout).not.toContain('21');
+      expect(r.stdout).not.toContain('50');
+      expect(r.stdout).not.toContain('25');
+      expect(r.stdout).toContain('3');
+      expect(r.stdout).toContain('-3');
     });
 
     test('automatically inserted semicolons do not appear in error messages at the end', async (t) => {
-      const { stdout, stderr } = await t.context.executeInRepl(
+      const r = await t.context.executeInRepl(
         `(
           a
           console.log('done!')`,
@@ -352,12 +340,12 @@ test.suite(
           waitPattern: 'done!\nundefined\n>',
         }
       );
-      expect(stderr).toContain("error TS1005: ')' expected.");
-      expect(stderr).not.toContain(';');
+      expect(r.stderr).toContain("error TS1005: ')' expected.");
+      expect(r.stderr).not.toContain(';');
     });
 
     test('automatically inserted semicolons do not appear in error messages at the start', async (t) => {
-      const { stdout, stderr } = await t.context.executeInRepl(
+      const r = await t.context.executeInRepl(
         `)
           console.log('done!')`,
         {
@@ -366,15 +354,15 @@ test.suite(
           waitPattern: 'done!\nundefined\n>',
         }
       );
-      expect(stderr).toContain(
+      expect(r.stderr).toContain(
         'error TS1128: Declaration or statement expected.'
       );
-      expect(stderr).toContain(')');
-      expect(stderr).not.toContain(';');
+      expect(r.stderr).toContain(')');
+      expect(r.stderr).not.toContain(';');
     });
 
     test('automatically inserted semicolons do not break function calls', async (t) => {
-      const { stdout, stderr } = await t.context.executeInRepl(
+      const r = await t.context.executeInRepl(
         `function foo(a: number) {
               return a + 1;
           }
@@ -387,15 +375,15 @@ test.suite(
           waitPattern: '2\n>',
         }
       );
-      expect(stderr).toBe('');
-      expect(stdout).toContain('2');
+      expect(r.stderr).toBe('');
+      expect(r.stdout).toContain('2');
     });
 
     test('automatically inserted semicolons do not affect subsequent line numbers', async (t) => {
       // If first line of input ends in a semicolon, should not add a second semicolon.
       // That will cause an extra blank line in the compiled output which will
       // offset the stack line number.
-      const { stdout, stderr } = await t.context.executeInRepl(
+      const r = await t.context.executeInRepl(
         `1;
           new Error().stack!.split('\\n')[1]
           console.log('done!')`,
@@ -405,8 +393,8 @@ test.suite(
           waitPattern: 'done!',
         }
       );
-      expect(stderr).toBe('');
-      expect(stdout).toContain(":1:1'\n");
+      expect(r.stderr).toBe('');
+      expect(r.stdout).toContain(":1:1'\n");
     });
   }
 );
@@ -471,13 +459,13 @@ test.suite('REPL works with traceResolution', (test) => {
   test.serial(
     'traces should NOT appear when traceResolution is not enabled',
     async (t) => {
-      const { stdout, stderr } = await t.context.executeInRepl('1', {
+      const r = await t.context.executeInRepl('1', {
         registerHooks: true,
         startInternalOptions: { useGlobal: false },
         waitPattern: '1\n>',
       });
-      expect(stderr).toBe('');
-      expect(stdout).not.toContain('======== Resolving module');
+      expect(r.stderr).toBe('');
+      expect(r.stdout).not.toContain('======== Resolving module');
     }
   );
 });
@@ -485,7 +473,7 @@ test.suite('REPL works with traceResolution', (test) => {
 test.suite('REPL declares types for node built-ins within REPL', (test) => {
   test.runSerially();
   test('enabled when typechecking', async (t) => {
-    const { stdout, stderr } = await t.context.executeInRepl(
+    const r = await t.context.executeInRepl(
       `util.promisify(setTimeout)("should not be a string" as string)
       type Duplex = stream.Duplex
       const s = stream
@@ -501,18 +489,18 @@ test.suite('REPL declares types for node built-ins within REPL', (test) => {
 
     // Assert that we receive a typechecking error about improperly using
     // `util.promisify` but *not* an error about the absence of `util`
-    expect(stderr).not.toMatch("Cannot find name 'util'");
-    expect(stderr).toMatch(
+    expect(r.stderr).not.toMatch("Cannot find name 'util'");
+    expect(r.stderr).toMatch(
       "Argument of type 'string' is not assignable to parameter of type 'number'"
     );
     // Assert that both types and values can be used without error
-    expect(stderr).not.toMatch("Cannot find namespace 'stream'");
-    expect(stderr).not.toMatch("Cannot find name 'stream'");
-    expect(stdout).toMatch(`done`);
+    expect(r.stderr).not.toMatch("Cannot find namespace 'stream'");
+    expect(r.stderr).not.toMatch("Cannot find name 'stream'");
+    expect(r.stdout).toMatch(`done`);
   });
 
   test('disabled in transpile-only mode, to avoid breaking third-party SWC transpiler which rejects `declare import` syntax', async (t) => {
-    const { stdout, stderr } = await t.context.executeInRepl(
+    const r = await t.context.executeInRepl(
       `type Duplex = stream.Duplex
       const s = stream
       'done'`,
@@ -529,8 +517,8 @@ test.suite('REPL declares types for node built-ins within REPL', (test) => {
     );
 
     // Assert that we do not get errors about `declare import` syntax from swc
-    expect(stdout).toBe("> undefined\n> undefined\n> 'done'\n> ");
-    expect(stderr).toBe('');
+    expect(r.stdout).toBe("> undefined\n> undefined\n> 'done'\n> ");
+    expect(r.stderr).toBe('');
   });
 });
 

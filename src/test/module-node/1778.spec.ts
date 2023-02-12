@@ -19,14 +19,11 @@ test.suite(
   (test) => {
     test.runIf(tsSupportsStableNodeNextNode16);
     test('test', async () => {
-      const { err, stdout } = await exec(
-        `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} ./index.ts`,
-        {
-          cwd: join(TEST_DIR, '1778'),
-        }
-      );
-      expect(err).toBe(null);
-      expect(stdout).toBe('{ esm: true }\n');
+      const r = await exec(`${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} ./index.ts`, {
+        cwd: join(TEST_DIR, '1778'),
+      });
+      expect(r.err).toBe(null);
+      expect(r.stdout).toBe('{ esm: true }\n');
     });
   }
 );
