@@ -8,7 +8,7 @@ import {
   exec as childProcessExec,
   spawn as childProcessSpawn,
 } from 'child_process';
-import { GetStream, getStream } from './helpers';
+import { ExpectStream, expectStream } from '@cspotcode/expect-stream';
 import { expect } from './testlib';
 
 export type ExecReturn = Promise<ExecResult> & { child: ChildProcess };
@@ -55,8 +55,8 @@ export function createExec<T extends Partial<ExecOptions>>(
 
 export type SpawnReturn = Promise<SpawnResult> & SpawnResult;
 export interface SpawnResult {
-  stdout: GetStream;
-  stderr: GetStream;
+  stdout: ExpectStream;
+  stderr: ExpectStream;
   code: number | null;
   child: ChildProcess;
 }
@@ -77,16 +77,16 @@ export function createSpawn<T extends Partial<SpawnOptions>>(
       Partial<Pick<SpawnOptions, keyof T & keyof SpawnOptions>>
   ): SpawnReturn {
     let child!: ChildProcess;
-    let stdout!: GetStream;
-    let stderr!: GetStream;
+    let stdout!: ExpectStream;
+    let stderr!: ExpectStream;
     const promise = Object.assign(
       new Promise<SpawnResult>((resolve, reject) => {
         child = childProcessSpawn(cmd[0], cmd.slice(1), {
           ...preBoundOptions,
           ...opts,
         });
-        stdout = getStream(child.stdout!);
-        stderr = getStream(child.stderr!);
+        stdout = expectStream(child.stdout!);
+        stderr = expectStream(child.stderr!);
         child.on('exit', (code) => {
           promise.code = code;
           resolve({ stdout, stderr, code, child });

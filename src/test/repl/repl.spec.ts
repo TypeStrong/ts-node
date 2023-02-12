@@ -4,7 +4,6 @@ import semver = require('semver');
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
   ctxTsNode,
-  getStream,
   TEST_DIR,
 } from '../helpers';
 import { createExec, createExecTester } from '../exec-helpers';
@@ -14,6 +13,7 @@ import {
   macroReplNoErrorsAndStdoutContains,
   macroReplStderrContains,
 } from './helpers';
+import { expectStream } from '@cspotcode/expect-stream';
 
 const test = context(ctxTsNode).contextEach(ctxRepl);
 test.serial();
@@ -449,7 +449,7 @@ test.suite('REPL works with traceResolution', (test) => {
       await delay(3e3);
 
       repl.stdout.end();
-      const stdout = await getStream(repl.stdout);
+      const stdout = await expectStream(repl.stdout);
 
       expect(stdout).toContain('======== Resolving module');
       expect(stdout.endsWith('> ')).toBe(true);

@@ -6,7 +6,6 @@ import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
 import * as fs from 'fs';
 import { lock } from 'proper-lockfile';
-import type { Readable } from 'stream';
 /**
  * types from ts-node under test
  */
@@ -188,75 +187,6 @@ async function lockedMemoizedOperation(
   }
 }
 //#endregion
-
-export type GetStream = ReturnType<typeof getStream>;
-/**
- * Get a stream into a string.
- * Wait for the stream to end, or wait till some pattern appears in the stream.
- */
-export function getStream(stream: Readable) {
-  let resolve: (value: string) => void;
-  const promise = new Promise<string>((res) => {
-    resolve = res;
-  });
-  const received: Buffer[] = [];
-  let combinedBuffer: Buffer = Buffer.concat([]);
-  let combinedString: string = '';
-  let waitForStart = 0;
-
-  stream.on('data', (data) => {
-    received.push(data);
-    combine();
-  });
-  stream.on('end', () => {
-    resolve(combinedString);
-  });
-
-  return Object.assign(promise, {
-    get,
-    wait,
-    stream,
-  });
-
-  function get() {
-    return combinedString;
-  }
-
-  function wait(pattern: string | RegExp, required = false) {
-    return new Promise<string | undefined>((resolve, reject) => {
-      const start = waitForStart;
-      stream.on('checkWaitFor', checkWaitFor);
-      stream.on('end', endOrTimeout);
-      checkWaitFor();
-
-      function checkWaitFor() {
-        if (typeof pattern === 'string') {
-          const index = combinedString.indexOf(pattern, start);
-          if (index >= 0) {
-            waitForStart = index + pattern.length;
-            resolve(combinedString.slice(index, waitForStart));
-          }
-        } else if (pattern instanceof RegExp) {
-          const match = combinedString.slice(start).match(pattern);
-          if (match != null) {
-            waitForStart = start + match.index!;
-            resolve(match[0]);
-          }
-        }
-      }
-
-      function endOrTimeout() {
-        required ? reject() : resolve(undefined);
-      }
-    });
-  }
-
-  function combine() {
-    combinedBuffer = Buffer.concat(received);
-    combinedString = combinedBuffer.toString('utf8');
-    stream.emit('checkWaitFor');
-  }
-}
 
 //#region Reset node environment
 

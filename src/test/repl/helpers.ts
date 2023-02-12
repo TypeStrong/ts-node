@@ -1,7 +1,8 @@
 import { PassThrough } from 'stream';
-import { delay, getStream, TEST_DIR, tsNodeTypes, ctxTsNode } from '../helpers';
+import { delay, TEST_DIR, tsNodeTypes, ctxTsNode } from '../helpers';
 import type { ExecutionContext } from 'ava';
 import { test, expect } from '../testlib';
+import { expectStream } from '@cspotcode/expect-stream';
 
 export interface CreateReplViaApiOptions {
   registerHooks: boolean;
@@ -78,8 +79,8 @@ export async function ctxRepl(t: ctxTsNode.T) {
 
     stdin.write(input);
     stdin.end();
-    const stdoutPromise = getStream(stdout);
-    const stderrPromise = getStream(stderr);
+    const stdoutPromise = expectStream(stdout);
+    const stderrPromise = expectStream(stderr);
     // Wait for expected output pattern or timeout, whichever comes first
     await Promise.race([
       delay(waitMs),

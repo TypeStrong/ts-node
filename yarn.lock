@@ -245,6 +245,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@cspotcode/expect-stream@github:cspotcode/node-expect-stream#5af62193743993ff2b6284e153dea6861244c53b":
+  version: 0.0.0
+  resolution: "@cspotcode/expect-stream@https://github.com/cspotcode/node-expect-stream.git#commit=5af62193743993ff2b6284e153dea6861244c53b"
+  checksum: 568dc68ec9497412c8e3d15bb353746a0c4ef63e8190b3bfe82e9aa6ab46b22b3bc76ccbb75b5beb795767c12ac44e0b34686665e07cb821e6020602677a2d75
+  languageName: node
+  linkType: hard
+
 "@cspotcode/source-map-support@npm:^0.8.0":
   version: 0.8.1
   resolution: "@cspotcode/source-map-support@npm:0.8.1"
@@ -1990,13 +1997,6 @@ __metadata:
   version: 0.1.0
   resolution: "get-package-type@npm:0.1.0"
   checksum: bba0811116d11e56d702682ddef7c73ba3481f114590e705fc549f4d868972263896af313c57a25c076e3c0d567e11d919a64ba1b30c879be985fc9d44f96148
-  languageName: node
-  linkType: hard
-
-"get-stream@npm:^6.0.0":
-  version: 6.0.1
-  resolution: "get-stream@npm:6.0.1"
-  checksum: e04ecece32c92eebf5b8c940f51468cd53554dcbb0ea725b2748be583c9523d00128137966afce410b9b051eb2ef16d657cd2b120ca8edafcf5a65e81af63cad
   languageName: node
   linkType: hard
 
@@ -3828,6 +3828,7 @@ __metadata:
   resolution: "ts-node@workspace:."
   dependencies:
     "@cspotcode/ava-lib": "github:cspotcode/ava-lib#50a64fa0f1e018298ab41e8b4c18b18396824bab"
+    "@cspotcode/expect-stream": "github:cspotcode/node-expect-stream#5af62193743993ff2b6284e153dea6861244c53b"
     "@cspotcode/source-map-support": ^0.8.0
     "@microsoft/api-extractor": ^7.19.4
     "@swc/core": ">=1.3.32"
@@ -3853,7 +3854,6 @@ __metadata:
     diff: ^4.0.1
     dprint: ^0.25.0
     expect: 27.0.2
-    get-stream: ^6.0.0
     lodash: ^4.17.15
     make-error: ^1.1.1
     nyc: ^15.0.1

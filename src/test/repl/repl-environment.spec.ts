@@ -4,7 +4,7 @@
  */
 
 import { context, expect } from '../testlib';
-import * as getStream from 'get-stream';
+import { expectStream } from '@cspotcode/expect-stream';
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
   ctxTsNode,
@@ -84,8 +84,8 @@ test.suite(
           done = true;
           stdout.end();
           stderr.end();
-          expect(await getStream(stderr)).toBe('');
-          await assertions(await getStream(stdout));
+          expect(await expectStream(stderr)).toBe('');
+          await assertions(await expectStream(stdout));
         }
     );
 
