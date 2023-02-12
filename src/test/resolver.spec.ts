@@ -7,7 +7,10 @@ import {
   tsSupportsMtsCtsExtensions,
   tsSupportsStableNodeNextNode16,
 } from './helpers';
-import { project as fsProject, Project as FsProject } from './fs-helpers';
+import {
+  project as fsProject,
+  Project as FsProject,
+} from '@TypeStrong/fs-fixture-builder';
 import { join } from 'path';
 import * as semver from 'semver';
 import { padStart } from 'lodash';

@@ -7,7 +7,7 @@ import {
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   tsSupportsAllowImportingTsExtensions,
 } from './helpers';
-import { project as fsProject, Project as FsProject } from './fs-helpers';
+import { project as fsProject } from '@TypeStrong/fs-fixture-builder';
 import { outdent as o } from 'outdent';
 
 const exec = createExec({

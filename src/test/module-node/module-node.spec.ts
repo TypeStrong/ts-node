@@ -9,7 +9,12 @@ import {
 import * as Path from 'path';
 import { ctxTsNode } from '../helpers';
 import { exec } from '../exec-helpers';
-import { file, project, ProjectAPI as ProjectAPI } from '../fs-helpers';
+import {
+  file,
+  project,
+  ProjectAPI as ProjectAPI,
+  StringFile,
+} from '@TypeStrong/fs-fixture-builder';
 
 const test = context(ctxTsNode);
 test.beforeEach(async () => {
@@ -254,6 +259,7 @@ function createImporter(
     return;
 
   const importer = {
+    type: 'string',
     path: `${name.replace(/ /g, '_')}.${importerExtension.ext}`,
     imports: '',
     assertions: '',
@@ -267,7 +273,7 @@ function createImporter(
         `;
     },
   };
-  proj.add(importer);
+  proj.add(importer as StringFile);
 
   if (!importerExtension.isJs) importer.imports += `export {};\n`;
 

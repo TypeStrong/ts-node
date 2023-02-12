@@ -108,6 +108,7 @@
   },
   "homepage": "https://typestrong.org/ts-node",
   "devDependencies": {
+    "@TypeStrong/fs-fixture-builder": "github:TypeStrong/fs-fixture-builder#7164968417507edebd5909ba0479cd7c572354bc",
     "@cspotcode/ava-lib": "github:cspotcode/ava-lib#50a64fa0f1e018298ab41e8b4c18b18396824bab",
     "@cspotcode/expect-stream": "github:cspotcode/node-expect-stream#5af62193743993ff2b6284e153dea6861244c53b",
     "@microsoft/api-extractor": "^7.19.4",

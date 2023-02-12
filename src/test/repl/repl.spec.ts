@@ -1,11 +1,7 @@
 import { context, expect } from '../testlib';
 import { delay, resetNodeEnvironment, ts } from '../helpers';
 import semver = require('semver');
-import {
-  CMD_TS_NODE_WITH_PROJECT_FLAG,
-  ctxTsNode,
-  TEST_DIR,
-} from '../helpers';
+import { CMD_TS_NODE_WITH_PROJECT_FLAG, ctxTsNode, TEST_DIR } from '../helpers';
 import { createExec, createExecTester } from '../exec-helpers';
 import { upstreamTopLevelAwaitTests } from './node-repl-tla';
 import {

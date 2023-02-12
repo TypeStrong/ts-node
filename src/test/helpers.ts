@@ -1,4 +1,5 @@
 import { NodeFS } from '@yarnpkg/fslib';
+import { setFixturesRootDir } from '@TypeStrong/fs-fixture-builder';
 import { exec as childProcessExec } from 'child_process';
 import { promisify } from 'util';
 import { sync as rimrafSync } from 'rimraf';
@@ -36,6 +37,7 @@ export const BIN_CWD_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-cwd');
 export const BIN_ESM_PATH = join(TEST_DIR, 'node_modules/.bin/ts-node-esm');
 
 process.chdir(TEST_DIR);
+setFixturesRootDir(TEST_DIR);
 //#endregion
 
 //#region command lines

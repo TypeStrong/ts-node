@@ -5,6 +5,15 @@ __metadata:
   version: 6
   cacheKey: 8
 
+"@TypeStrong/fs-fixture-builder@github:TypeStrong/fs-fixture-builder":
+  version: 0.0.0
+  resolution: "@TypeStrong/fs-fixture-builder@https://github.com/TypeStrong/fs-fixture-builder.git#commit=7164968417507edebd5909ba0479cd7c572354bc"
+  bin:
+    capture-fs-fixture: ./dist/capture-fixture.ts
+  checksum: 3fc91e5210fa742e59cc0c7539c19028b886656b035281514ff9a5ae4f5badb8a5a06c411401cba7cce7c8575cbd5d9ee027d0d2959cce3dffe00359959192ca
+  languageName: node
+  linkType: hard
+
 "@ampproject/remapping@npm:^2.1.0":
   version: 2.2.0
   resolution: "@ampproject/remapping@npm:2.2.0"
@@ -3827,6 +3836,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "ts-node@workspace:."
   dependencies:
+    "@TypeStrong/fs-fixture-builder": "github:TypeStrong/fs-fixture-builder"
     "@cspotcode/ava-lib": "github:cspotcode/ava-lib#50a64fa0f1e018298ab41e8b4c18b18396824bab"
     "@cspotcode/expect-stream": "github:cspotcode/node-expect-stream#5af62193743993ff2b6284e153dea6861244c53b"
     "@cspotcode/source-map-support": ^0.8.0
