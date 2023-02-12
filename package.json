@@ -108,9 +108,9 @@
   },
   "homepage": "https://typestrong.org/ts-node",
   "devDependencies": {
-    "@TypeStrong/fs-fixture-builder": "github:TypeStrong/fs-fixture-builder#fa8e9fbaf14217caa820c69f9d505a7c2c65f400",
-    "@cspotcode/ava-lib": "github:cspotcode/ava-lib#50a64fa0f1e018298ab41e8b4c18b18396824bab",
-    "@cspotcode/expect-stream": "github:cspotcode/node-expect-stream#7c3406b11ce0cf6617f8c7dda2f3cb5151145af4",
+    "@TypeStrong/fs-fixture-builder": "github:TypeStrong/fs-fixture-builder#bafd3051e3a5eba5119360c02ede6344e7d82504",
+    "@cspotcode/ava-lib": "github:cspotcode/ava-lib#e470e2f87d657ca1e195ff6a2be9f8aa8077aa1f",
+    "@cspotcode/expect-stream": "github:cspotcode/node-expect-stream#4c824cc70f6681651d4b2e3a8fa50804ff56006f",
     "@microsoft/api-extractor": "^7.19.4",
     "@swc/core": ">=1.3.32",
     "@swc/wasm": ">=1.3.32",
