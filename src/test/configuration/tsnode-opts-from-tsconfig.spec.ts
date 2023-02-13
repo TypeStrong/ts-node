@@ -1,10 +1,12 @@
 import { BIN_PATH } from '../helpers/paths';
 import { createExec } from '../exec-helpers';
 import { TEST_DIR } from '../helpers/paths';
-import { test, expect } from '../testlib';
+import { context, expect } from '../testlib';
 import { join, resolve } from 'path';
 import { tsSupportsExtendsArray } from '../helpers/version-checks';
-import { isExportDeclaration } from 'typescript';
+import { ctxTsNode } from '../helpers';
+
+const test = context(ctxTsNode);
 
 const exec = createExec({
   cwd: TEST_DIR,
@@ -155,7 +157,9 @@ test.suite('should read ts-node options from tsconfig.json', (test) => {
         );
 
         // From b
-        expect(config['ts-node'].moduleTypes).toBe({ 'modules-types-from-b': 'cjs' });
+        expect(config['ts-node'].moduleTypes).toBe({
+          'modules-types-from-b': 'cjs',
+        });
 
         // From c, overrides declaration in b
         expect(config['ts-node'].transpiler).toBe('transpiler-from-c');

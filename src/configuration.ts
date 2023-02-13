@@ -154,7 +154,7 @@ export function readConfig(
   }> = [];
   let config: any = { compilerOptions: {} };
   let basePath = cwd;
-  let configFilePath: string | undefined = undefined;
+  let rootConfigPath: string | undefined = undefined;
   const projectSearchDir = resolve(cwd, rawApiOptions.projectSearchDir ?? cwd);
 
   const {
@@ -170,24 +170,31 @@ export function readConfig(
     if (project) {
       const resolved = resolve(cwd, project);
       const nested = join(resolved, 'tsconfig.json');
-      configFilePath = fileExists(nested) ? nested : resolved;
+      rootConfigPath = fileExists(nested) ? nested : resolved;
     } else {
-      configFilePath = ts.findConfigFile(projectSearchDir, fileExists);
+      rootConfigPath = ts.findConfigFile(projectSearchDir, fileExists);
     }
 
-    if (configFilePath) {
-      let pathToNextConfigInChain = configFilePath;
+    if (rootConfigPath) {
+      // If root extends [a, c] and a extends b, c extends d, then this array will look like:
+      // [root, c, d, a, b]
+      let configPaths = [rootConfigPath];
       const tsInternals = createTsInternals(ts);
       const errors: Array<_ts.Diagnostic> = [];
 
       // Follow chain of "extends"
-      while (true) {
-        const result = ts.readConfigFile(pathToNextConfigInChain, readFile);
+      for (
+        let configPathIndex = 0;
+        configPathIndex < configPaths.length;
+        configPathIndex++
+      ) {
+        const configPath = configPaths[configPathIndex];
+        const result = ts.readConfigFile(configPath, readFile);
 
         // Return diagnostics.
         if (result.error) {
           return {
-            configFilePath,
+            configFilePath: rootConfigPath,
             config: { errors: [result.error], fileNames: [], options: {} },
             tsNodeOptionsFromTsconfig: {},
             optionBasePaths: {},
@@ -195,37 +202,48 @@ export function readConfig(
         }
 
         const c = result.config;
-        const bp = dirname(pathToNextConfigInChain);
+        const bp = dirname(configPath);
         configChain.push({
           config: c,
           basePath: bp,
-          configPath: pathToNextConfigInChain,
+          configPath: configPath,
         });
 
-        if (c.extends == null) break;
-        const resolvedExtendedConfigPath = tsInternals.getExtendsConfigPath(
-          c.extends,
-          {
-            fileExists,
-            readDirectory: ts.sys.readDirectory,
-            readFile,
-            useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
-            trace: tsTrace,
-          },
-          bp,
-          errors,
-          (ts as unknown as TSInternal).createCompilerDiagnostic
-        );
-        if (errors.length) {
-          return {
-            configFilePath,
-            config: { errors, fileNames: [], options: {} },
-            tsNodeOptionsFromTsconfig: {},
-            optionBasePaths: {},
-          };
+        if (c.extends == null) continue;
+        const extendsArray = Array.isArray(c.extends) ? c.extends : [c.extends];
+        for (const e of extendsArray) {
+          const resolvedExtendedConfigPath = tsInternals.getExtendsConfigPath(
+            e,
+            {
+              fileExists,
+              readDirectory: ts.sys.readDirectory,
+              readFile,
+              useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
+              trace: tsTrace,
+            },
+            bp,
+            errors,
+            (ts as unknown as TSInternal).createCompilerDiagnostic
+          );
+          if (errors.length) {
+            return {
+              configFilePath: rootConfigPath,
+              config: { errors, fileNames: [], options: {} },
+              tsNodeOptionsFromTsconfig: {},
+              optionBasePaths: {},
+            };
+          }
+          if (resolvedExtendedConfigPath != null) {
+            // Tricky! If "extends" array is [a, c] then this will splice them into this order:
+            // [root, c, a]
+            // This is what we want.
+            configPaths.splice(
+              configPathIndex + 1,
+              0,
+              resolvedExtendedConfigPath
+            );
+          }
         }
-        if (resolvedExtendedConfigPath == null) break;
-        pathToNextConfigInChain = resolvedExtendedConfigPath;
       }
 
       ({ config, basePath } = configChain[0]);
@@ -277,7 +295,7 @@ export function readConfig(
     rawApiOptions.files ?? tsNodeOptionsFromTsconfig.files ?? DEFAULTS.files;
 
   // Only if a config file is *not* loaded, load an implicit configuration from @tsconfig/bases
-  const skipDefaultCompilerOptions = configFilePath != null;
+  const skipDefaultCompilerOptions = rootConfigPath != null;
   const defaultCompilerOptionsForNodeVersion = skipDefaultCompilerOptions
     ? undefined
     : {
@@ -316,12 +334,12 @@ export function readConfig(
       },
       basePath,
       undefined,
-      configFilePath
+      rootConfigPath
     )
   );
 
   return {
-    configFilePath,
+    configFilePath: rootConfigPath,
     config: fixedConfig,
     tsNodeOptionsFromTsconfig,
     optionBasePaths,
