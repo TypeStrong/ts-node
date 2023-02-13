@@ -160,7 +160,10 @@ test.suite('should read ts-node options from tsconfig.json', (test) => {
         );
 
         // From b
-        const key = process.platform === 'win32' ? 'b\\\\module-types-from-b' : 'b/module-types-from-b';
+        const key =
+          process.platform === 'win32'
+            ? 'b\\\\module-types-from-b'
+            : 'b/module-types-from-b';
         expect(config['ts-node'].moduleTypes).toStrictEqual({
           [key]: 'cjs',
         });
