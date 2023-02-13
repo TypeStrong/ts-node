@@ -148,12 +148,15 @@ test.suite('should read ts-node options from tsconfig.json', (test) => {
 
         // From a
         expect(config['ts-node'].require).toEqual([
-          resolve(TEST_DIR, 'tsconfig-extends/a/require-hook-from-a.js'),
+          resolve(
+            TEST_DIR,
+            'tsconfig-extends-multiple/a/require-hook-from-a.js'
+          ),
         ]);
 
         // From a, overrides declaration in b
         expect(config['ts-node'].scopeDir).toBe(
-          resolve(TEST_DIR, 'tsconfig-extends/other/scopedir-from-a')
+          resolve(TEST_DIR, 'tsconfig-extends-multiple/other/scopedir-from-a')
         );
 
         // From b
