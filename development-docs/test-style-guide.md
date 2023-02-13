@@ -14,8 +14,9 @@ If the reusable function implements all the necessary assertions within itself, 
 
 ### Function args
 
-Plain functions w/many options should accept a single option-bag.
+Plain functions w/many options should accept a single option-bag.  
 Should also have `setOptions` method to overlay additional options, and `getOptions` to inspect.
+*At time of writing, I have not implemented `setOptions` nor `getOptions`*
 
 Never destructure `t`
 Never destructure `test`
