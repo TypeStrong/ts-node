@@ -3119,10 +3119,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"path-equal@npm:1.1.2":
-  version: 1.1.2
-  resolution: "path-equal@npm:1.1.2"
-  checksum: 9dc43572eb8f438000c9e74ef87644a7cdae432dcdffd14b831cf1918ae20f907603fd5a6ade5c9e8273f43fbe8238d7af28d984e11242c827ba6c6e3965f716
+"path-equal@npm:^1.1.2":
+  version: 1.2.5
+  resolution: "path-equal@npm:1.2.5"
+  checksum: 2bef7bcb98c7ae371c52c1562b2fc515bfd03bc1a5571df9a8591038db8d742ba2d1ff39aa5130853e6afb69e773ccba5095f54d2e6d17422ca03ef9047992d7
   languageName: node
   linkType: hard
 
@@ -3847,7 +3847,7 @@ __metadata:
     throat: ^6.0.1
     typedoc: ^0.22.10
     typescript: 4.7.4
-    typescript-json-schema: ^0.53.0
+    typescript-json-schema: ^0.54.0
     v8-compile-cache-lib: ^3.0.1
     yn: 3.1.1
   peerDependencies:
@@ -3909,21 +3909,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript-json-schema@npm:^0.53.0":
-  version: 0.53.1
-  resolution: "typescript-json-schema@npm:0.53.1"
+"typescript-json-schema@npm:^0.54.0":
+  version: 0.54.0
+  resolution: "typescript-json-schema@npm:0.54.0"
   dependencies:
     "@types/json-schema": ^7.0.9
     "@types/node": ^16.9.2
     glob: ^7.1.7
-    path-equal: 1.1.2
+    path-equal: ^1.1.2
     safe-stable-stringify: ^2.2.0
     ts-node: ^10.2.1
     typescript: ~4.6.0
     yargs: ^17.1.1
   bin:
     typescript-json-schema: bin/typescript-json-schema
-  checksum: 70fd5880b4b3c564cde114439ce8234b90dc192522bc35ca695372fe5c5d431be37964157abecf7da28cb42e7872f092b3945c7b002f01d899e0ed23d870eed2
+  checksum: 49e03bd2612f79fe3ee9e9afcea34ae563da9aa799a8b4cf12b73feb60eb62a0786300eedb30261c69c482ed7e545acf1e5617d59861e6deee4f6570a658de88
   languageName: node
   linkType: hard
 
