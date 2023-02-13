@@ -100,7 +100,7 @@ test.suite(
               modulePath: typeof module !== 'undefined' && module.path,
               moduleFilename: typeof module !== 'undefined' && module.filename,
               modulePaths: typeof module !== 'undefined' && [...module.paths],
-              exportsTest: typeof exports !== 'undefined' ? module.exports === exports : null,
+              exportsTest: typeof exports !== 'undefined' && typeof module !== 'undefined' ? module.exports === exports : null,
               stackTest: new Error().stack!.split('\\n')[1],
               moduleAccessorsTest: eval('typeof fs') === 'undefined' ? null : eval('fs') === require('fs'),
               argv: [...process.argv]
