@@ -156,19 +156,21 @@ test.suite('should read ts-node options from tsconfig.json', (test) => {
 
         // From a, overrides declaration in b
         expect(config['ts-node'].scopeDir).toBe(
-          resolve(TEST_DIR, 'tsconfig-extends-multiple/other/scopedir-from-a')
+          resolve(TEST_DIR, 'tsconfig-extends-multiple/a/scopedir-from-a')
         );
 
         // From b
-        expect(config['ts-node'].moduleTypes).toBe({
-          'modules-types-from-b': 'cjs',
+        expect(config['ts-node'].moduleTypes).toStrictEqual({
+          'b/module-types-from-b': 'cjs',
         });
 
         // From c, overrides declaration in b
         expect(config['ts-node'].transpiler).toBe('transpiler-from-c');
 
         // From d, inherited by c, overrides value from b
-        expect(config['ts-node'].ignore).toBe(['ignore-pattern-from-d']);
+        expect(config['ts-node'].ignore).toStrictEqual([
+          'ignore-pattern-from-d',
+        ]);
       });
     }
   );
