@@ -1,0 +1,11 @@
+{
+  "ts-node": {
+    "ignore": ["ignore-pattern-from-b"],
+    "transpiler": "transpiler-from-b",
+    "scopeDir": "./scopedir-from-b",
+    "moduleTypes": { "module-types-from-b": "cjs" }
+  },
+  "compilerOptions": {
+    "target": "ES2016"
+  }
+}

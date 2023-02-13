@@ -1,0 +1,9 @@
+{
+  "extends": "../d/tsconfig.json",
+  "ts-node": {
+    "transpiler": "transpiler-from-c"
+  },
+  "compilerOptions": {
+    "target": "ES2017"
+  }
+}
