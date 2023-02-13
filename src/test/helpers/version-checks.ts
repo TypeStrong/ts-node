@@ -38,6 +38,8 @@ export const tsSupportsAllowImportingTsExtensions = semver.gte(
   ts.version,
   '4.999.999'
 );
+// TS 5.0 adds ability for tsconfig to `"extends": []` an array of configs
+export const tsSupportsExtendsArray = semver.gte(ts.version, '4.999.999');
 // Relevant when @tsconfig/bases refers to es2021 and we run tests against
 // old TS versions.
 export const tsSupportsEs2021 = semver.gte(ts.version, '4.3.0');

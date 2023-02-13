@@ -1,0 +1,10 @@
+{
+  "extends": "../d/tsconfig.json",
+  "ts-node": {
+    "transpiler": "transpiler-from-c",
+    "transpileOnly": true
+  },
+  "compilerOptions": {
+    "target": "ES2017"
+  }
+}
