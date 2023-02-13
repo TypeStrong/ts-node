@@ -160,8 +160,9 @@ test.suite('should read ts-node options from tsconfig.json', (test) => {
         );
 
         // From b
+        const key = process.platform === 'win32' ? 'b\\\\module-types-from-b' : 'b/module-types-from-b';
         expect(config['ts-node'].moduleTypes).toStrictEqual({
-          'b/module-types-from-b': 'cjs',
+          [key]: 'cjs',
         });
 
         // From c, overrides declaration in b
