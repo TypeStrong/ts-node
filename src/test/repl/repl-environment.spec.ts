@@ -197,7 +197,7 @@ test.suite(
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
           stackTest: expect.stringContaining(
-            `    at ${join(TEST_DIR, '<repl>.ts')}:4:`
+            `    at ${join(TEST_DIR, '<repl>.cts')}:4:`
           ),
           moduleAccessorsTest: true,
           argv: [tsNodeExe],
@@ -350,7 +350,7 @@ test.suite(
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
           stackTest: expect.stringContaining(
-            `    at ${join(TEST_DIR, '<repl>.ts')}:4:`
+            `    at ${join(TEST_DIR, '<repl>.cts')}:4:`
           ),
           moduleAccessorsTest: true,
           argv: [tsNodeExe],
@@ -428,7 +428,7 @@ test.suite(
 
             // Note: vanilla node uses different name. See #1360
             stackTest: expect.stringContaining(
-              `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
+              `    at ${join(TEST_DIR, '<repl>.cts')}:1:`
             ),
           },
         });
@@ -459,7 +459,7 @@ test.suite(
             exportsTest: true,
             // Note: vanilla node uses different name. See #1360
             stackTest: expect.stringContaining(
-              `    at ${join(TEST_DIR, '<repl>.ts')}:1:`
+              `    at ${join(TEST_DIR, '<repl>.cts')}:1:`
             ),
             moduleAccessorsTest: true,
           },

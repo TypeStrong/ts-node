@@ -43,7 +43,7 @@ export const STDIN_FILENAME = `[stdin].ts`;
 /** @internal */
 export const STDIN_NAME = `[stdin]`;
 /** @internal */
-export const REPL_FILENAME = '<repl>.ts';
+export const REPL_FILENAME = '<repl>.cts';
 /** @internal */
 export const REPL_NAME = '<repl>';
 
