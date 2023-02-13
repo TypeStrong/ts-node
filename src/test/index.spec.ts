@@ -1,19 +1,19 @@
 import { context, ExecutionContext } from './testlib';
 import * as expect from 'expect';
 import { join, resolve, sep as pathSep } from 'path';
-import { tmpdir } from 'os';
 import semver = require('semver');
+import { project as fsProject } from '@TypeStrong/fs-fixture-builder';
 import {
   BIN_PATH_JS,
   CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
+  ctxTmpDir,
   ts,
   tsSupportsEs2021,
   tsSupportsEs2022,
   tsSupportsMtsCtsExtensions,
   tsSupportsStableNodeNextNode16,
 } from './helpers';
-import { lstatSync, mkdtempSync } from 'fs';
-import { npath } from '@yarnpkg/fslib';
+import { lstatSync } from 'fs';
 import type _createRequire from 'create-require';
 import { createExec } from './exec-helpers';
 import {
@@ -24,8 +24,6 @@ import {
   ROOT_DIR,
   TEST_DIR,
   testsDirRequire,
-  tsNodeTypes,
-  xfs,
   ctxTsNode,
   CMD_TS_NODE_WITH_PROJECT_FLAG,
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
@@ -713,9 +711,7 @@ test.suite('ts-node', (test) => {
     test.suite(
       'should use implicit @tsconfig/bases config when one is not loaded from disk',
       ({ contextEach }) => {
-        const test = contextEach(async (t) => ({
-          tempDir: mkdtempSync(join(tmpdir(), 'ts-node-spec')),
-        }));
+        const test = contextEach(ctxTmpDir);
         const libAndTarget =
           semver.gte(process.versions.node, '18.0.0') && tsSupportsEs2022
             ? 'es2022'
@@ -723,10 +719,9 @@ test.suite('ts-node', (test) => {
             ? 'es2021'
             : 'es2020';
         test('implicitly uses @tsconfig/node14, @tsconfig/node16, or @tsconfig/node18 compilerOptions when both TS and node versions support it', async (t) => {
-          const {
-            context: { tempDir },
-          } = t;
-          const r1 = await exec(`${BIN_PATH} --showConfig`, { cwd: tempDir });
+          const r1 = await exec(`${BIN_PATH} --showConfig`, {
+            cwd: t.context.tmpDir,
+          });
           expect(r1.err).toBe(null);
           t.like(JSON.parse(r1.stdout), {
             compilerOptions: {
@@ -734,29 +729,26 @@ test.suite('ts-node', (test) => {
               lib: [libAndTarget],
             },
           });
-          const r2 = await exec(`${BIN_PATH} -pe 10n`, { cwd: tempDir });
+          const r2 = await exec(`${BIN_PATH} -pe 10n`, {
+            cwd: t.context.tmpDir,
+          });
           expect(r2.err).toBe(null);
           expect(r2.stdout).toBe('10n\n');
         });
-        test('implicitly loads @types/node even when not installed within local directory', async ({
-          context: { tempDir },
-        }) => {
+        test('implicitly loads @types/node even when not installed within local directory', async (t) => {
           const r = await exec(`${BIN_PATH} -pe process.env.foo`, {
-            cwd: tempDir,
+            cwd: t.context.tmpDir,
             env: { ...process.env, foo: 'hello world' },
           });
           expect(r.err).toBe(null);
           expect(r.stdout).toBe('hello world\n');
         });
-        test('implicitly loads local @types/node', async ({
-          context: { tempDir },
-        }) => {
-          await xfs.copyPromise(
-            npath.toPortablePath(tempDir),
-            npath.toPortablePath(join(TEST_DIR, 'local-types-node'))
-          );
+        test('implicitly loads local @types/node', async (t) => {
+          const fixture = fsProject('local-types-node');
+          fixture.readFrom(join(TEST_DIR, 'local-types-node'), undefined, []);
+          fixture.write();
           const r = await exec(`${BIN_PATH} -pe process.env.foo`, {
-            cwd: tempDir,
+            cwd: fixture.cwd,
             env: { ...process.env, foo: 'hello world' },
           });
           expect(r.err).not.toBe(null);
