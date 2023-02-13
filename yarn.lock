@@ -5,12 +5,12 @@ __metadata:
   version: 6
   cacheKey: 8
 
-"@TypeStrong/fs-fixture-builder@github:TypeStrong/fs-fixture-builder#32fd81e9d0b124a9acc774f66cfd5fd51f1e3616":
+"@TypeStrong/fs-fixture-builder@github:TypeStrong/fs-fixture-builder#4684cbd51afec26db8bc29cbfab4aceda4e39c47":
   version: 0.0.0
-  resolution: "@TypeStrong/fs-fixture-builder@https://github.com/TypeStrong/fs-fixture-builder.git#commit=32fd81e9d0b124a9acc774f66cfd5fd51f1e3616"
+  resolution: "@TypeStrong/fs-fixture-builder@https://github.com/TypeStrong/fs-fixture-builder.git#commit=4684cbd51afec26db8bc29cbfab4aceda4e39c47"
   bin:
     capture-fs-fixture: ./dist/capture-fixture.ts
-  checksum: 5d61ec26588e4a93e42378c60edacbb2bf745399346b16078aa216f5c8e2f7abac2311a9cfd8952210f10b15e1e28856d967d152bb7ebc4ce4dc6ffa310520b9
+  checksum: 9cb1160f2476f2b547b067831e7c2c14c676be5548235690cbc12d3a22f111e16b62d46d5bc15a4fa7c834300ecd220ceccf8a2ca8a570a65df7b4f4e6d8977d
   languageName: node
   linkType: hard
 
@@ -3809,7 +3809,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "ts-node@workspace:."
   dependencies:
-    "@TypeStrong/fs-fixture-builder": "github:TypeStrong/fs-fixture-builder#32fd81e9d0b124a9acc774f66cfd5fd51f1e3616"
+    "@TypeStrong/fs-fixture-builder": "github:TypeStrong/fs-fixture-builder#4684cbd51afec26db8bc29cbfab4aceda4e39c47"
     "@cspotcode/ava-lib": "github:cspotcode/ava-lib#edcc1885d192d08d5af83490af9341468402ec41"
     "@cspotcode/expect-stream": "github:cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f"
     "@cspotcode/source-map-support": ^0.8.0

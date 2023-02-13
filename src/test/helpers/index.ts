@@ -5,4 +5,3 @@ export * from './paths';
 export * from './command-lines';
 export * from './reset-node-environment';
 export * from './version-checks';
-console.dir(Object.entries(exports).map(([k, v]) => [k, typeof v]));

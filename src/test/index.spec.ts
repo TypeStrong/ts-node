@@ -6,7 +6,7 @@ import { project as fsProject } from '@TypeStrong/fs-fixture-builder';
 import {
   BIN_PATH_JS,
   CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
-  ctxTmpDir,
+  ctxTmpDirOutsideCheckout,
   ts,
   tsSupportsEs2021,
   tsSupportsEs2022,
@@ -711,7 +711,7 @@ test.suite('ts-node', (test) => {
     test.suite(
       'should use implicit @tsconfig/bases config when one is not loaded from disk',
       ({ contextEach }) => {
-        const test = contextEach(ctxTmpDir);
+        const test = contextEach(ctxTmpDirOutsideCheckout);
         const libAndTarget =
           semver.gte(process.versions.node, '18.0.0') && tsSupportsEs2022
             ? 'es2022'
@@ -744,11 +744,14 @@ test.suite('ts-node', (test) => {
           expect(r.stdout).toBe('hello world\n');
         });
         test('implicitly loads local @types/node', async (t) => {
-          const fixture = fsProject('local-types-node');
-          fixture.readFrom(join(TEST_DIR, 'local-types-node'), undefined, []);
-          fixture.write();
+          t.context.fixture.readFrom(
+            join(TEST_DIR, 'local-types-node'),
+            undefined,
+            []
+          );
+          t.context.fixture.write();
           const r = await exec(`${BIN_PATH} -pe process.env.foo`, {
-            cwd: fixture.cwd,
+            cwd: t.context.fixture.cwd,
             env: { ...process.env, foo: 'hello world' },
           });
           expect(r.err).not.toBe(null);
