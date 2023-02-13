@@ -7,7 +7,10 @@ import {
   tsSupportsMtsCtsExtensions,
   tsSupportsStableNodeNextNode16,
 } from './helpers';
-import { project as fsProject, Project as FsProject } from './fs-helpers';
+import {
+  project as fsProject,
+  Project as FsProject,
+} from '@TypeStrong/fs-fixture-builder';
 import { join } from 'path';
 import * as semver from 'semver';
 import { padStart } from 'lodash';
@@ -157,8 +160,8 @@ const targetPackageStyles = [
 ] as const;
 
 test.suite('Resolver hooks', (test) => {
-  test.runSerially();
-  test.runIf(tsSupportsMtsCtsExtensions);
+  test.serial();
+  test.if(tsSupportsMtsCtsExtensions);
 
   //
   // Generate all permutations of projects

@@ -9,7 +9,12 @@ import {
 import * as Path from 'path';
 import { ctxTsNode } from '../helpers';
 import { exec } from '../exec-helpers';
-import { file, project, ProjectAPI as ProjectAPI } from '../fs-helpers';
+import {
+  file,
+  project,
+  ProjectAPI as ProjectAPI,
+  StringFile,
+} from '@TypeStrong/fs-fixture-builder';
 
 const test = context(ctxTsNode);
 test.beforeEach(async () => {
@@ -19,7 +24,7 @@ type Test = typeof test;
 
 // Declare one test case for each permutations of project configuration
 test.suite('TypeScript module=NodeNext and Node16', (test) => {
-  test.runIf(
+  test.if(
     tsSupportsStableNodeNextNode16 && nodeSupportsImportingTransformedCjsFromEsm
   );
 
@@ -59,14 +64,14 @@ function declareTest(test: Test, testParams: TestParams) {
 
     // All assertions happen within the fixture scripts
     // Zero exit code indicates a passing test
-    const { stdout, stderr, err } = await exec(
+    const r = await exec(
       `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --esm ./index.mjs`,
       { cwd: proj.cwd }
     );
-    t.log(stdout);
-    t.log(stderr);
-    expect(err).toBe(null);
-    expect(stdout).toMatch(/done\n$/);
+    t.log(r.stdout);
+    t.log(r.stderr);
+    expect(r.err).toBe(null);
+    expect(r.stdout).toMatch(/done\n$/);
   });
 }
 
@@ -254,6 +259,7 @@ function createImporter(
     return;
 
   const importer = {
+    type: 'string',
     path: `${name.replace(/ /g, '_')}.${importerExtension.ext}`,
     imports: '',
     assertions: '',
@@ -267,7 +273,7 @@ function createImporter(
         `;
     },
   };
-  proj.add(importer);
+  proj.add(importer as StringFile);
 
   if (!importerExtension.isJs) importer.imports += `export {};\n`;
 

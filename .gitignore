@@ -13,6 +13,7 @@ npm-debug.log
 /website/static/api
 /tsconfig.tsbuildinfo
 /temp
+/tmp
 /yarn-error.log
 /.yarn/install-state.gz
 /tests/.yarn/install-state.gz

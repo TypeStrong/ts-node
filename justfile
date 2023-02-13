@@ -21,6 +21,12 @@ regenerate:
 install:
   yarn
 
+yarn *ARGS:
+  yarn "$@"
+
+node *ARGS:
+  node "$@"
+
 # EVERYTHING BELOW THIS LINE IS AUTO-GENERATED FROM PACKAGE.JSON
 # DO NOT MODIFY BY HAND
 

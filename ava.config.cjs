@@ -12,7 +12,8 @@ module.exports = {
     // This avoids passing it to spawned processes under test, which would negatively affect
     // their behavior.
     FORCE_COLOR: '3',
-    NODE_PATH: ''
+    NODE_PATH: '',
+    CONCURRENT_TESTS: '4'
   },
   require: ['./src/test/remove-env-var-force-color.js'],
   nodeArguments: ['--loader', './src/test/test-loader.mjs', '--no-warnings'],

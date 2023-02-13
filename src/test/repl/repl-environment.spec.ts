@@ -4,7 +4,7 @@
  */
 
 import { context, expect } from '../testlib';
-import * as getStream from 'get-stream';
+import { expectStream } from '@cspotcode/expect-stream';
 import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
   ctxTsNode,
@@ -16,7 +16,7 @@ import { createExec, createExecTester } from '../exec-helpers';
 import { homedir } from 'os';
 import { ctxRepl } from './helpers';
 
-const test = context(ctxTsNode).context(ctxRepl);
+const test = context(ctxTsNode).contextEach(ctxRepl);
 
 const exec = createExec({
   cwd: TEST_DIR,
@@ -84,8 +84,8 @@ test.suite(
           done = true;
           stdout.end();
           stderr.end();
-          expect(await getStream(stderr)).toBe('');
-          await assertions(await getStream(stdout));
+          expect(await expectStream(stderr)).toBe('');
+          await assertions(await expectStream(stdout));
         }
     );
 
@@ -149,11 +149,11 @@ test.suite(
     const tsNodeExe = expect.stringMatching(/\b(ts-node|bin.js)$/);
 
     test('stdin', async (t) => {
-      const { stdout } = await execTester({
+      const r = await execTester({
         stdin: `${setReportGlobal('stdin')};${printReports}`,
         flags: '',
       });
-      const report = parseStdout(stdout);
+      const report = parseStdout(r.stdout);
       expect(report).toMatchObject({
         stdinReport: {
           __filename: '[stdin]',
@@ -176,11 +176,11 @@ test.suite(
       });
     });
     test('repl', async (t) => {
-      const { stdout } = await execTester({
+      const r = await execTester({
         stdin: `${setReportGlobal('repl')};${printReports}`,
         flags: '-i',
       });
-      const report = parseStdoutStripReplPrompt(stdout);
+      const report = parseStdoutStripReplPrompt(r.stdout);
       expect(report).toMatchObject({
         stdinReport: false,
         evalReport: false,
@@ -214,11 +214,11 @@ test.suite(
 
     // Should ignore -i and run the entrypoint
     test('-i w/entrypoint ignores -i', async (t) => {
-      const { stdout } = await execTester({
+      const r = await execTester({
         stdin: `${setReportGlobal('repl')};${printReports}`,
         flags: '-i ./repl/script.js',
       });
-      const report = parseStdout(stdout);
+      const report = parseStdout(r.stdout);
       expect(report).toMatchObject({
         stdinReport: false,
         evalReport: false,
@@ -229,11 +229,11 @@ test.suite(
     // Should not execute stdin
     // Should not interpret positional arg as an entrypoint script
     test('-e', async (t) => {
-      const { stdout } = await execTester({
+      const r = await execTester({
         stdin: `throw new Error()`,
         flags: `-e "${setReportGlobal('eval')};${printReports}"`,
       });
-      const report = parseStdout(stdout);
+      const report = parseStdout(r.stdout);
       expect(report).toMatchObject({
         stdinReport: false,
         evalReport: {
@@ -256,13 +256,13 @@ test.suite(
       });
     });
     test('-e w/entrypoint arg does not execute entrypoint', async (t) => {
-      const { stdout } = await execTester({
+      const r = await execTester({
         stdin: `throw new Error()`,
         flags: `-e "${setReportGlobal(
           'eval'
         )};${printReports}" ./repl/script.js`,
       });
-      const report = parseStdout(stdout);
+      const report = parseStdout(r.stdout);
       expect(report).toMatchObject({
         stdinReport: false,
         evalReport: {
@@ -285,13 +285,13 @@ test.suite(
       });
     });
     test('-e w/non-path arg', async (t) => {
-      const { stdout } = await execTester({
+      const r = await execTester({
         stdin: `throw new Error()`,
         flags: `-e "${setReportGlobal(
           'eval'
         )};${printReports}" ./does-not-exist.js`,
       });
-      const report = parseStdout(stdout);
+      const report = parseStdout(r.stdout);
       expect(report).toMatchObject({
         stdinReport: false,
         evalReport: {
@@ -314,11 +314,11 @@ test.suite(
       });
     });
     test('-e -i', async (t) => {
-      const { stdout } = await execTester({
+      const r = await execTester({
         stdin: `${setReportGlobal('repl')};${printReports}`,
         flags: `-e "${setReportGlobal('eval')}" -i`,
       });
-      const report = parseStdoutStripReplPrompt(stdout);
+      const report = parseStdoutStripReplPrompt(r.stdout);
       expect(report).toMatchObject({
         stdinReport: false,
         evalReport: {
@@ -366,11 +366,11 @@ test.suite(
     });
 
     test('-e -i w/entrypoint ignores -e and -i, runs entrypoint', async (t) => {
-      const { stdout } = await execTester({
+      const r = await execTester({
         stdin: `throw new Error()`,
         flags: '-e "throw new Error()" -i ./repl/script.js',
       });
-      const report = parseStdout(stdout);
+      const report = parseStdout(r.stdout);
       expect(report).toMatchObject({
         stdinReport: false,
         evalReport: false,
@@ -379,14 +379,14 @@ test.suite(
     });
 
     test('-e -i when -e throws error, -i does not run', async (t) => {
-      const { stdout, stderr, err } = await execTester({
+      const r = await execTester({
         stdin: `console.log('hello')`,
         flags: `-e "throw new Error('error from -e')" -i`,
         expectError: true,
       });
-      expect(err).toBeDefined();
-      expect(stdout).toBe('');
-      expect(stderr).toContain('error from -e');
+      expect(r.err).toBeDefined();
+      expect(r.stdout).toBe('');
+      expect(r.stderr).toContain('error from -e');
     });
 
     // Serial because it's timing-sensitive

@@ -21,14 +21,12 @@ const createOptions: tsNodeTypes.CreateOptions = {
   },
 };
 
-const test = context(ctxTsNode).context(
-  once(async (t) => {
-    return {
-      moduleTestPath: resolve(__dirname, '../../tests/module.ts'),
-      service: t.context.tsNodeUnderTest.create(createOptions),
-    };
-  })
-);
+const test = context(ctxTsNode).context(async (t) => {
+  return {
+    moduleTestPath: resolve(__dirname, '../../tests/module.ts'),
+    service: t.context.tsNodeUnderTest.create(createOptions),
+  };
+});
 test.beforeEach(async (t) => {
   // Un-install all hook and remove our test module from cache
   resetNodeEnvironment();
@@ -38,7 +36,7 @@ test.beforeEach(async (t) => {
     "Unexpected token 'export'"
   );
 });
-test.runSerially();
+test.serial();
 
 test('create() does not register()', async (t) => {
   // nyc sets its own `require.extensions` hooks; to truly detect if we're
@@ -136,7 +134,7 @@ test.suite('register(create(options))', (test) => {
   test.suite('JSX preserve', (test) => {
     let compiled: string;
 
-    test.beforeAll(async () => {
+    test.before(async () => {
       const old = require.extensions['.tsx']!;
       require.extensions['.tsx'] = (m: any, fileName) => {
         const _compile = m._compile;

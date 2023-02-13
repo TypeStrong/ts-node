@@ -5,6 +5,15 @@ __metadata:
   version: 6
   cacheKey: 8
 
+"@TypeStrong/fs-fixture-builder@github:TypeStrong/fs-fixture-builder#8abd1494280116ff5318dde2c50ad01e1663790c":
+  version: 0.0.0
+  resolution: "@TypeStrong/fs-fixture-builder@https://github.com/TypeStrong/fs-fixture-builder.git#commit=8abd1494280116ff5318dde2c50ad01e1663790c"
+  bin:
+    capture-fs-fixture: ./dist/capture-fixture.ts
+  checksum: f9fc2cdf58b79470373fbac56449540c8c727553f13b9a402e5dcec47b0c909fca2d246cb09f6b55632ff823fa4da3332a593f18720e4227f88478be566898c1
+  languageName: node
+  linkType: hard
+
 "@ampproject/remapping@npm:^2.1.0":
   version: 2.2.0
   resolution: "@ampproject/remapping@npm:2.2.0"
@@ -229,6 +238,26 @@ __metadata:
     "@babel/helper-validator-identifier": ^7.18.6
     to-fast-properties: ^2.0.0
   checksum: f0e0147267895fd8a5b82133e711ce7ce99941f3ce63647e0e3b00656a7afe48a8aa48edbae27543b701794d2b29a562a08f51f88f41df401abce7c3acc5e13a
+  languageName: node
+  linkType: hard
+
+"@cspotcode/ava-lib@github:cspotcode/ava-lib#edcc1885d192d08d5af83490af9341468402ec41":
+  version: 0.0.1
+  resolution: "@cspotcode/ava-lib@https://github.com/cspotcode/ava-lib.git#commit=edcc1885d192d08d5af83490af9341468402ec41"
+  dependencies:
+    "@types/node": "*"
+    throat: ^6.0.1
+  peerDependencies:
+    ava: "*"
+    expect: "*"
+  checksum: 82a6ad95a7bb32d9183fdf77e2bd4b16cb4c7e97c9dfee34e30c8ffcabc4dd3c10fa5b2c5781cf4a443e12d43ad3b01df59814492d81777d4f3876fc4846d3f2
+  languageName: node
+  linkType: hard
+
+"@cspotcode/expect-stream@github:cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f":
+  version: 0.0.0
+  resolution: "@cspotcode/expect-stream@https://github.com/cspotcode/node-expect-stream.git#commit=4e425ff1eef240003af8716291e80fbaf3e3ae8f"
+  checksum: 32d78cccd0df519e7c6ac8a38d980d857877178e86ee5c82cce94ffbeecc11808c7eada0a83188bb1fe32852cc48a56c40b1f5a7bacb2a1d59881a214f999eaf
   languageName: node
   linkType: hard
 
@@ -639,13 +668,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/emscripten@npm:^1.38.0":
-  version: 1.39.6
-  resolution: "@types/emscripten@npm:1.39.6"
-  checksum: 437f2f9cdfd9057255662508fa9a415fe704ba484c6198f3549c5b05feebcdcd612b1ec7b10026d2566935d05d3c36f9366087cb42bc90bd25772a88fcfc9343
-  languageName: node
-  linkType: hard
-
 "@types/glob@npm:*":
   version: 7.2.0
   resolution: "@types/glob@npm:7.2.0"
@@ -815,26 +837,6 @@ __metadata:
   dependencies:
     "@types/yargs-parser": "*"
   checksum: caa21d2c957592fe2184a8368c8cbe5a82a6c2e2f2893722e489f842dc5963293d2f3120bc06fe3933d60a3a0d1e2eb269649fd6b1947fe1820f8841ba611dd9
-  languageName: node
-  linkType: hard
-
-"@yarnpkg/fslib@npm:^2.4.0":
-  version: 2.7.0
-  resolution: "@yarnpkg/fslib@npm:2.7.0"
-  dependencies:
-    "@yarnpkg/libzip": ^2.2.4
-    tslib: ^1.13.0
-  checksum: ebb28ffbec67339a365fa97394f78a05c3c640e463b19d32fe1d435fd45b62a5c810e90d5b41941855c2717e16a04323d0307273349a71bed14b3f2129dc4246
-  languageName: node
-  linkType: hard
-
-"@yarnpkg/libzip@npm:^2.2.4":
-  version: 2.2.4
-  resolution: "@yarnpkg/libzip@npm:2.2.4"
-  dependencies:
-    "@types/emscripten": ^1.38.0
-    tslib: ^1.13.0
-  checksum: 974a286d4e7ff52bd924d56cb39492898a2306e95774362e4a3eb94690f180273a078243bf4044909e0fe29354552acc1cddd7d10d71ce332f7b1e1ff8eb54d9
   languageName: node
   linkType: hard
 
@@ -1980,13 +1982,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"get-stream@npm:^6.0.0":
-  version: 6.0.1
-  resolution: "get-stream@npm:6.0.1"
-  checksum: e04ecece32c92eebf5b8c940f51468cd53554dcbb0ea725b2748be583c9523d00128137966afce410b9b051eb2ef16d657cd2b120ca8edafcf5a65e81af63cad
-  languageName: node
-  linkType: hard
-
 "glob-parent@npm:^5.1.2, glob-parent@npm:~5.1.2":
   version: 5.1.2
   resolution: "glob-parent@npm:5.1.2"
@@ -3124,10 +3119,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"path-equal@npm:1.1.2":
-  version: 1.1.2
-  resolution: "path-equal@npm:1.1.2"
-  checksum: 9dc43572eb8f438000c9e74ef87644a7cdae432dcdffd14b831cf1918ae20f907603fd5a6ade5c9e8273f43fbe8238d7af28d984e11242c827ba6c6e3965f716
+"path-equal@npm:^1.1.2":
+  version: 1.2.5
+  resolution: "path-equal@npm:1.2.5"
+  checksum: 2bef7bcb98c7ae371c52c1562b2fc515bfd03bc1a5571df9a8591038db8d742ba2d1ff39aa5130853e6afb69e773ccba5095f54d2e6d17422ca03ef9047992d7
   languageName: node
   linkType: hard
 
@@ -3814,6 +3809,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "ts-node@workspace:."
   dependencies:
+    "@TypeStrong/fs-fixture-builder": "github:TypeStrong/fs-fixture-builder#8abd1494280116ff5318dde2c50ad01e1663790c"
+    "@cspotcode/ava-lib": "github:cspotcode/ava-lib#edcc1885d192d08d5af83490af9341468402ec41"
+    "@cspotcode/expect-stream": "github:cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f"
     "@cspotcode/source-map-support": ^0.8.0
     "@microsoft/api-extractor": ^7.19.4
     "@swc/core": ">=1.3.32"
@@ -3829,7 +3827,6 @@ __metadata:
     "@types/react": ^16.14.19
     "@types/rimraf": ^3.0.0
     "@types/semver": ^7.1.0
-    "@yarnpkg/fslib": ^2.4.0
     acorn: ^8.4.1
     acorn-walk: ^8.1.1
     arg: ^4.1.0
@@ -3839,7 +3836,6 @@ __metadata:
     diff: ^4.0.1
     dprint: ^0.25.0
     expect: 27.0.2
-    get-stream: ^6.0.0
     lodash: ^4.17.15
     make-error: ^1.1.1
     nyc: ^15.0.1
@@ -3851,7 +3847,7 @@ __metadata:
     throat: ^6.0.1
     typedoc: ^0.22.10
     typescript: 4.7.4
-    typescript-json-schema: ^0.53.0
+    typescript-json-schema: ^0.54.0
     v8-compile-cache-lib: ^3.0.1
     yn: 3.1.1
   peerDependencies:
@@ -3872,13 +3868,6 @@ __metadata:
     ts-node-transpile-only: dist/bin-transpile.js
   languageName: unknown
   linkType: soft
-
-"tslib@npm:^1.13.0":
-  version: 1.14.1
-  resolution: "tslib@npm:1.14.1"
-  checksum: dbe628ef87f66691d5d2959b3e41b9ca0045c3ee3c7c7b906cc1e328b39f199bb1ad9e671c39025bd56122ac57dfbf7385a94843b1cc07c60a4db74795829acd
-  languageName: node
-  linkType: hard
 
 "type-fest@npm:^0.13.1":
   version: 0.13.1
@@ -3920,21 +3909,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript-json-schema@npm:^0.53.0":
-  version: 0.53.1
-  resolution: "typescript-json-schema@npm:0.53.1"
+"typescript-json-schema@npm:^0.54.0":
+  version: 0.54.0
+  resolution: "typescript-json-schema@npm:0.54.0"
   dependencies:
     "@types/json-schema": ^7.0.9
     "@types/node": ^16.9.2
     glob: ^7.1.7
-    path-equal: 1.1.2
+    path-equal: ^1.1.2
     safe-stable-stringify: ^2.2.0
     ts-node: ^10.2.1
     typescript: ~4.6.0
     yargs: ^17.1.1
   bin:
     typescript-json-schema: bin/typescript-json-schema
-  checksum: 70fd5880b4b3c564cde114439ce8234b90dc192522bc35ca695372fe5c5d431be37964157abecf7da28cb42e7872f092b3945c7b002f01d899e0ed23d870eed2
+  checksum: 49e03bd2612f79fe3ee9e9afcea34ae563da9aa799a8b4cf12b73feb60eb62a0786300eedb30261c69c482ed7e545acf1e5617d59861e6deee4f6570a658de88
   languageName: node
   linkType: hard
 

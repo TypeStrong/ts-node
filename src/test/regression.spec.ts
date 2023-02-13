@@ -26,14 +26,16 @@ test('#1488 regression test', async () => {
   // `./package.json` needs to be fetched into cache via `assertScriptCanLoadAsCJS` which caused a recursive `require()` call
   // Circular dependency warning is emitted by node
 
-  const { stdout, stderr } = await exec({
+  const r = await exec({
     exec: createExec({
       cwd: join(TEST_DIR, '1488'),
     }),
     cmd: `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} ./index.js`,
   });
 
+  exp(r.err).toBeNull();
+
   // Assert that we do *not* get `Warning: Accessing non-existent property 'getOptionValue' of module exports inside circular dependency`
-  exp(stdout).toBe('foo\n'); // prove that it ran
-  exp(stderr).toBe(''); // prove that no warnings
+  exp(r.stdout).toBe('foo\n'); // prove that it ran
+  exp(r.stderr).toBe(''); // prove that no warnings
 });
