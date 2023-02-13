@@ -1,0 +1,66 @@
+{
+  "Test: macro": {
+    "prefix": "macro",
+    "body": [
+      "const macro = test.macro(($1) => async (t) => {",
+      "  $0",
+      "});"
+    ]
+  },
+  "Test: macro w/title": {
+    "prefix": "macroTitle",
+    "body": [
+      "const macro = test.macro(($1) => [",
+      "  (given) => given,",
+      "  async (t) => {",
+      "    $0",
+      "  }",
+      "]);"
+    ]
+  },
+  "Test: suite": {
+    "prefix": "suite",
+    "body": [
+      "test.suite(\"$1\", (${2|test,{context},{contextEach}|}) => {",
+      "  ${2/(test$)|(\\{context\\}$)|(\\{contextEach\\}$)/${2:+const test = context(}${3:+const test = contextEach(}/m}$0",
+      "});"
+    ]
+  },
+  "Test: context builder": {
+    "prefix": "ctx",
+    "body": [
+      "export const ctx${1:Name} = async (t) => {",
+      "  $0",
+      "  return {};",
+      "};",
+      "export namespace ctx$1 {",
+      "  export type Ctx = Awaited<ReturnType<typeof ctx$1>>;",
+      "  export type T = ExecutionContext<Ctx>;",
+      "}"
+    ]
+  },
+  "Test: before": {
+    "prefix": "before",
+    "body": [
+      "test.before(async (t) => {",
+      "  $0",
+      "});"
+    ]
+  },
+  "Test: beforeEach": {
+    "prefix": "beforeEach",
+    "body": [
+      "test.beforeEach(async (t) => {",
+      "  $0",
+      "});"
+    ]
+  },
+  "Test: teardown": {
+    "prefix": "teardown",
+    "body": [
+      "t.teardown(async (t) => {",
+      "  $0",
+      "});"
+    ]
+  }
+}
