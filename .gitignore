@@ -18,3 +18,4 @@ npm-debug.log
 /.yarn/install-state.gz
 /tests/.yarn/install-state.gz
 /tests/.yarn/cache
+/.eslintcache

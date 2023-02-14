@@ -37,7 +37,7 @@ lint *ARGS:
 fmt *ARGS:
   dprint fmt "$@"
 fmt-eslint *ARGS:
-  eslint --fix --ext ts,mts,cts,js,mjs,cjs . "$@"
+  eslint --fix --ext ts,mts,cts,js,mjs,cjs --cache . "$@"
 clean *ARGS:
   rimraf temp dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz tests/node_modules tests/tmp "$@"
 rebuild *ARGS:
