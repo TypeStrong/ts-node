@@ -39,6 +39,7 @@ export async function installTsNode() {
     while (true) {
       try {
         rimrafSync(join(TEST_DIR, '.yarn/cache/ts-node-file-*'));
+        writeFileSync(join(TEST_DIR, 'yarn.lock'), '');
         const result = await promisify(childProcessExec)(
           `yarn --no-immutable`,
           {

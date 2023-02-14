@@ -1,15 +1,23 @@
 import { context, expect } from '../testlib';
-import { delay, resetNodeEnvironment, ts } from '../helpers';
+import {
+  CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
+  delay,
+  resetNodeEnvironment,
+  ts,
+  tsSupportsMtsCtsExtensions,
+} from '../helpers';
 import semver = require('semver');
 import { CMD_TS_NODE_WITH_PROJECT_FLAG, ctxTsNode, TEST_DIR } from '../helpers';
 import { createExec, createExecTester } from '../exec-helpers';
 import { upstreamTopLevelAwaitTests } from './node-repl-tla';
+import { replFile } from './helpers/misc';
+import { expectStream } from '@cspotcode/expect-stream';
+import { join } from 'path';
+import { ctxRepl } from './helpers/ctx-repl';
 import {
-  ctxRepl,
   macroReplNoErrorsAndStdoutContains,
   macroReplStderrContains,
-} from './helpers';
-import { expectStream } from '@cspotcode/expect-stream';
+} from './helpers/macros';
 
 const test = context(ctxTsNode).contextEach(ctxRepl);
 test.serial();
@@ -219,7 +227,7 @@ test.suite('top level await', ({ contextEach }) => {
 
       expect(r.stdout).toBe('> > ');
       expect(r.stderr.replace(/\r\n/g, '\n')).toBe(
-        '<repl>.ts(4,7): error TS2322: ' +
+        `${replFile}(4,7): error TS2322: ` +
           (semver.gte(ts.version, '4.0.0')
             ? `Type 'number' is not assignable to type 'string'.\n`
             : `Type '1' is not assignable to type 'string'.\n`) +
@@ -614,5 +622,22 @@ test.suite('REPL treats object literals and block scopes correctly', (test) => {
       '{ key: 123 }["foo"]',
       "Property 'foo' does not exist on type"
     );
+  });
+});
+
+test.suite('repl executes input as cjs even in esm projects', (test) => {
+  test.if(tsSupportsMtsCtsExtensions);
+  test('test', async (t) => {
+    // Must exec child process, because we need a different cwd.
+    const p = exec(`${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} -i`, {
+      cwd: join(TEST_DIR, 'repl-in-esm-package'),
+    });
+    p.child.stdin!.write(
+      'import fs2 from "fs"; fs2.existsSync("does not exist")'
+    );
+    p.child.stdin!.end();
+    const r = await p;
+    expect(r.stdout).toBe('> false\n> ');
+    expect(r.stderr).toBe('');
   });
 });

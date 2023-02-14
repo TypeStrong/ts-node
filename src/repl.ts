@@ -15,6 +15,7 @@ import * as assert from 'assert';
 import type * as tty from 'tty';
 import type * as Module from 'module';
 import { builtinModules } from 'module';
+import { tsSupportsMtsCtsExts } from './file-extensions';
 
 // Lazy-loaded.
 let _processTopLevelAwait: (src: string) => string | null;
@@ -43,7 +44,9 @@ export const STDIN_FILENAME = `[stdin].ts`;
 /** @internal */
 export const STDIN_NAME = `[stdin]`;
 /** @internal */
-export const REPL_FILENAME = '<repl>.ts';
+export function REPL_FILENAME(tsVersion: string) {
+  return tsSupportsMtsCtsExts(tsVersion) ? '<repl>.cts' : '<repl>.ts';
+}
 /** @internal */
 export const REPL_NAME = '<repl>';
 
@@ -130,6 +133,11 @@ export interface CreateReplOptions {
   ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl?: boolean;
 }
 
+interface StartReplInternalOptions extends ReplOptions {
+  code?: string;
+  forceToBeModule?: boolean;
+}
+
 /**
  * Create a ts-node REPL instance.
  *
@@ -148,13 +156,21 @@ export interface CreateReplOptions {
  */
 export function createRepl(options: CreateReplOptions = {}) {
   const { ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl = true } = options;
-  let service = options.service;
   let nodeReplServer: REPLServer;
   // If `useGlobal` is not true, then REPL creates a context when started.
   // This stores a reference to it or to `global`, whichever is used, after REPL has started.
   let context: Context | undefined;
-  const state =
-    options.state ?? new EvalState(join(process.cwd(), REPL_FILENAME));
+  let state: EvalState;
+  let mustSetStatePath = false;
+  if (options.state) {
+    state = options.state;
+  } else {
+    // Correct path set later
+    state = new EvalState('');
+    mustSetStatePath = true;
+  }
+  let service: Service;
+  if (options.service) setService(options.service);
   const evalAwarePartialHost = createEvalAwarePartialHost(
     state,
     options.composeWithEvalAwarePartialHost
@@ -166,6 +182,8 @@ export function createRepl(options: CreateReplOptions = {}) {
     stdout === process.stdout && stderr === process.stderr
       ? console
       : new Console(stdout, stderr);
+
+  const declaredExports = new Set();
 
   const replService: ReplService = {
     state: options.state ?? new EvalState(join(process.cwd(), EVAL_FILENAME)),
@@ -186,6 +204,8 @@ export function createRepl(options: CreateReplOptions = {}) {
 
   function setService(_service: Service) {
     service = _service;
+    if (mustSetStatePath)
+      state.path = join(process.cwd(), REPL_FILENAME(service.ts.version));
     if (ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl) {
       service.addDiagnosticFilter({
         appliesToAllFiles: false,
@@ -200,7 +220,19 @@ export function createRepl(options: CreateReplOptions = {}) {
     }
   }
 
+  // Hard fix for TypeScript forcing `Object.defineProperty(exports, ...)`.
+  function declareExports() {
+    if (declaredExports.has(context)) return;
+    runInContext(
+      'exports = typeof module === "undefined" ? {} : module.exports;',
+      state.path,
+      context
+    );
+    declaredExports.add(context);
+  }
+
   function evalCode(code: string) {
+    declareExports();
     const result = appendCompileAndEvalInput({
       service: service!,
       state,
@@ -218,6 +250,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     context: Context;
   }) {
     const { code, enableTopLevelAwait, context } = options;
+    declareExports();
     return appendCompileAndEvalInput({
       service: service!,
       state,
@@ -321,9 +354,7 @@ export function createRepl(options: CreateReplOptions = {}) {
   }
 
   // Note: `code` argument is deprecated
-  function startInternal(
-    options?: ReplOptions & { code?: string; forceToBeModule?: boolean }
-  ) {
+  function startInternal(options?: StartReplInternalOptions) {
     const { code, forceToBeModule = true, ...optionsOverride } = options ?? {};
     // TODO assert that `service` is set; remove all `service!` non-null assertions
 
@@ -362,12 +393,11 @@ export function createRepl(options: CreateReplOptions = {}) {
 
     // Bookmark the point where we should reset the REPL state.
     const resetEval = appendToEvalState(state, '');
-
     function reset() {
       resetEval();
 
-      // Hard fix for TypeScript forcing `Object.defineProperty(exports, ...)`.
-      runInContext('exports = module.exports', state.path, context);
+      declareExports();
+
       if (forceToBeModule) {
         state.input += 'export {};void 0;\n';
       }
