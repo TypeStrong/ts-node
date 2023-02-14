@@ -1,0 +1,47 @@
+{
+  "ignorePatterns": [
+    "/dist-raw/**",
+    "/esm/**",
+    "/esm-usage-example/**",
+    "/raw/**",
+    "/register/**",
+    "/scripts/**",
+    "/tests/**",
+    "/transpilers/**",
+    "/website/**",
+    "/*.js",
+    "/*.cjs",
+    "/*.mjs",
+    "*.json"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+      // "project": ["./tsconfig.json"],
+      "sourceType": "module"
+  },
+  "plugins": ["import"],
+  "rules": {
+    "sort-imports": ["error", {
+      "ignoreDeclarationSort": true
+    }],
+    "import/first": "error",
+    "import/newline-after-import": "error",
+    "import/no-duplicates": "error",
+    "import/order": [
+      "error",
+      {
+        "groups": [
+          "builtin",
+          "external",
+          "parent",
+          "sibling",
+          "index"
+        ],
+        "newlines-between": "always",
+        "alphabetize": {
+          "order": "asc"
+        }
+      }
+    ]
+  }
+}
