@@ -15,6 +15,7 @@ import * as assert from 'assert';
 import type * as tty from 'tty';
 import type * as Module from 'module';
 import { builtinModules } from 'module';
+import { tsSupportsMtsCtsExts } from './file-extensions';
 
 // Lazy-loaded.
 let _processTopLevelAwait: (src: string) => string | null;
@@ -43,7 +44,9 @@ export const STDIN_FILENAME = `[stdin].ts`;
 /** @internal */
 export const STDIN_NAME = `[stdin]`;
 /** @internal */
-export const REPL_FILENAME = '<repl>.cts';
+export function REPL_FILENAME(tsVersion: string) {
+  return tsSupportsMtsCtsExts(tsVersion) ? '<repl>.cts' : '<repl>.ts';
+}
 /** @internal */
 export const REPL_NAME = '<repl>';
 
@@ -153,13 +156,21 @@ interface StartReplInternalOptions extends ReplOptions {
  */
 export function createRepl(options: CreateReplOptions = {}) {
   const { ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl = true } = options;
-  let service = options.service;
   let nodeReplServer: REPLServer;
   // If `useGlobal` is not true, then REPL creates a context when started.
   // This stores a reference to it or to `global`, whichever is used, after REPL has started.
   let context: Context | undefined;
-  const state =
-    options.state ?? new EvalState(join(process.cwd(), REPL_FILENAME));
+  let state: EvalState;
+  let mustSetStatePath = false;
+  if (options.state) {
+    state = options.state;
+  } else {
+    // Correct path set later
+    state = new EvalState('');
+    mustSetStatePath = true;
+  }
+  let service: Service;
+  if (options.service) setService(options.service);
   const evalAwarePartialHost = createEvalAwarePartialHost(
     state,
     options.composeWithEvalAwarePartialHost
@@ -193,6 +204,8 @@ export function createRepl(options: CreateReplOptions = {}) {
 
   function setService(_service: Service) {
     service = _service;
+    if (mustSetStatePath)
+      state.path = join(process.cwd(), REPL_FILENAME(service.ts.version));
     if (ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl) {
       service.addDiagnosticFilter({
         appliesToAllFiles: false,

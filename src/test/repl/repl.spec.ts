@@ -4,6 +4,7 @@ import {
   delay,
   resetNodeEnvironment,
   ts,
+  tsSupportsMtsCtsExtensions,
 } from '../helpers';
 import semver = require('semver');
 import { CMD_TS_NODE_WITH_PROJECT_FLAG, ctxTsNode, TEST_DIR } from '../helpers';
@@ -623,16 +624,19 @@ test.suite('REPL treats object literals and block scopes correctly', (test) => {
   });
 });
 
-test('repl executes input as cjs even in esm projects', async (t) => {
-  // Must exec child process, because we need a different cwd.
-  const p = exec(`${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} -i`, {
-    cwd: join(TEST_DIR, 'repl-in-esm-package'),
+test.suite('repl executes input as cjs even in esm projects', (test) => {
+  test.if(tsSupportsMtsCtsExtensions);
+  test('test', async (t) => {
+    // Must exec child process, because we need a different cwd.
+    const p = exec(`${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} -i`, {
+      cwd: join(TEST_DIR, 'repl-in-esm-package'),
+    });
+    p.child.stdin!.write(
+      'import fs2 from "fs"; fs2.existsSync("does not exist")'
+    );
+    p.child.stdin!.end();
+    const r = await p;
+    expect(r.stdout).toBe('> false\n> ');
+    expect(r.stderr).toBe('');
   });
-  p.child.stdin!.write(
-    'import fs2 from "fs"; fs2.existsSync("does not exist")'
-  );
-  p.child.stdin!.end();
-  const r = await p;
-  expect(r.stdout).toBe('> false\n> ');
-  expect(r.stderr).toBe('');
 });

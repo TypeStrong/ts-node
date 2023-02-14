@@ -50,6 +50,10 @@ const nodeDoesNotUnderstand: readonly string[] = [
   '.mts',
 ];
 
+export function tsSupportsMtsCtsExts(tsVersion: string) {
+  return versionGteLt(tsVersion, '4.5.0');
+}
+
 /**
  * [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
  * @internal
@@ -60,7 +64,7 @@ export function getExtensions(
   tsVersion: string
 ) {
   // TS 4.5 is first version to understand .cts, .mts, .cjs, and .mjs extensions
-  const tsSupportsMtsCtsExts = versionGteLt(tsVersion, '4.5.0');
+  const supportMtsCtsExts = tsSupportsMtsCtsExts(tsVersion);
 
   const requiresHigherTypescriptVersion: string[] = [];
   if (!tsSupportsMtsCtsExts)
@@ -78,11 +82,11 @@ export function getExtensions(
   const compiledJsxUnsorted: string[] = [];
 
   if (config.options.jsx) compiledJsxUnsorted.push('.tsx');
-  if (tsSupportsMtsCtsExts) compiledJsUnsorted.push('.mts', '.cts');
+  if (supportMtsCtsExts) compiledJsUnsorted.push('.mts', '.cts');
   if (config.options.allowJs) {
     compiledJsUnsorted.push('.js');
     if (config.options.jsx) compiledJsxUnsorted.push('.jsx');
-    if (tsSupportsMtsCtsExts) compiledJsUnsorted.push('.mjs', '.cjs');
+    if (supportMtsCtsExts) compiledJsUnsorted.push('.mjs', '.cjs');
   }
 
   const compiledUnsorted = [...compiledJsUnsorted, ...compiledJsxUnsorted];
