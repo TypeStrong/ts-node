@@ -1,13 +1,22 @@
-import * as ynModule from 'yn';
 import { dirname } from 'path';
 
 /**
- * Wrapper around yn module that returns `undefined` instead of `null`.
- * This is implemented by yn v4, but we're staying on v3 to avoid v4's node 10 requirement.
  * @internal
+ * Copied from https://unpkg.com/yn@3.1.1/index.js
+ * Because people get weird when they see you have dependencies. /jk
+ * This is a lazy way to make the dep number go down, we haven't touched this
+ * dep in ages, and we didn't use all its features, so we stripped them.
  */
-export function yn(value: string | undefined) {
-  return ynModule(value) ?? undefined;
+export function yn(input: string | undefined) {
+  input = String(input).trim();
+
+  if (/^(?:y|yes|true|1)$/i.test(input)) {
+    return true;
+  }
+
+  if (/^(?:n|no|false|0)$/i.test(input)) {
+    return false;
+  }
 }
 
 /**
