@@ -1,20 +1,23 @@
-import type * as _diff from 'diff';
+import * as assert from 'assert';
+import { Console } from 'console';
+import { readFileSync, statSync } from 'fs';
+import type * as Module from 'module';
+import { builtinModules } from 'module';
 import { homedir } from 'os';
 import { join } from 'path';
 import {
+  REPLServer,
   Recoverable,
   ReplOptions,
-  REPLServer,
   start as nodeReplStart,
 } from 'repl';
-import { Context, createContext, Script } from 'vm';
-import { Service, CreateOptions, TSError, env } from './index';
-import { readFileSync, statSync } from 'fs';
-import { Console } from 'console';
-import * as assert from 'assert';
 import type * as tty from 'tty';
-import type * as Module from 'module';
-import { builtinModules } from 'module';
+import { Context, Script, createContext } from 'vm';
+
+import type * as _diff from 'diff';
+
+import { CreateOptions, Service, TSError, env } from './index';
+
 
 // Lazy-loaded.
 let _processTopLevelAwait: (src: string) => string | null;

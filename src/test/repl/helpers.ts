@@ -1,8 +1,11 @@
 import { PassThrough } from 'stream';
-import { delay, TEST_DIR, tsNodeTypes, ctxTsNode } from '../helpers';
-import type { ExecutionContext } from 'ava';
-import { test, expect } from '../testlib';
+
 import { expectStream } from '@cspotcode/expect-stream';
+import type { ExecutionContext } from 'ava';
+
+import { TEST_DIR, ctxTsNode, delay, tsNodeTypes } from '../helpers';
+import { expect, test } from '../testlib';
+
 
 export interface CreateReplViaApiOptions {
   registerHooks: boolean;

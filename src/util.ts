@@ -2,9 +2,10 @@ import {
   createRequire as nodeCreateRequire,
   createRequireFromPath as nodeCreateRequireFromPath,
 } from 'module';
+import { dirname } from 'path';
+
 import type _createRequire from 'create-require';
 import * as ynModule from 'yn';
-import { dirname } from 'path';
 
 /** @internal */
 export const createRequire =

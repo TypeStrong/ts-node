@@ -1,8 +1,10 @@
-import type * as ts from 'typescript';
-import type * as swcWasm from '@swc/wasm';
 import type * as swcTypes from '@swc/core';
-import type { CreateTranspilerOptions, Transpiler } from './types';
+import type * as swcWasm from '@swc/wasm';
+import type * as ts from 'typescript';
+
 import type { NodeModuleEmitKind } from '..';
+
+import type { CreateTranspilerOptions, Transpiler } from './types';
 
 type SwcInstance = typeof swcWasm;
 export interface SwcTranspilerOptions extends CreateTranspilerOptions {

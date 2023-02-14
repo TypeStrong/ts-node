@@ -1,7 +1,9 @@
 import { isAbsolute, resolve } from 'path';
-import { cachedLookup, normalizeSlashes } from './util';
+
 import type * as _ts from 'typescript';
+
 import type { TSCommon, TSInternal } from './ts-compiler-types';
+import { cachedLookup, normalizeSlashes } from './util';
 
 /** @internal */
 export const createTsInternals = cachedLookup(createTsInternalsUncached);

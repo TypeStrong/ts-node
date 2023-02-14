@@ -6,6 +6,7 @@ import type {
   TranspileOptions,
   TranspileOutput,
 } from 'typescript';
+
 import type { TSCommon } from './ts-compiler-types';
 
 /** @internal */

@@ -1,9 +1,11 @@
-import { expect } from '../testlib';
 import type { Key } from 'readline';
 import { Stream } from 'stream';
+
 import semver = require('semver');
+
 import { ts } from '../helpers';
 import type { ctxTsNode } from '../helpers';
+import { expect } from '../testlib';
 
 interface SharedObjects extends ctxTsNode.Ctx {
   TEST_DIR: string;

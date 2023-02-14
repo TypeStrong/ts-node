@@ -1,35 +1,42 @@
 #!/usr/bin/env node
 
-import { join, resolve, dirname, parse as parsePath, relative } from 'path';
-import { inspect } from 'util';
 import Module = require('module');
-let arg: typeof import('arg');
-import { parse, createRequire, hasOwnProperty, versionGteLt } from './util';
-import {
-  EVAL_FILENAME,
-  EvalState,
-  createRepl,
-  ReplService,
-  setupContext,
-  STDIN_FILENAME,
-  EvalAwarePartialHost,
-  EVAL_NAME,
-  STDIN_NAME,
-  REPL_FILENAME,
-} from './repl';
-import {
-  VERSION,
-  TSError,
-  register,
-  createEsmHooks,
-  createFromPreloadedConfig,
-  DEFAULTS,
-  ExperimentalSpecifierResolution,
-} from './index';
-import type { TSInternal } from './ts-compiler-types';
+import { dirname, join, parse as parsePath, relative, resolve } from 'path';
+import { inspect } from 'util';
+
+
+
+
 import { addBuiltinLibsToObject } from '../dist-raw/node-internal-modules-cjs-helpers';
+
 import { callInChild } from './child/spawn-child';
 import { findAndReadConfig } from './configuration';
+import {
+  EVAL_FILENAME,
+  EVAL_NAME,
+  EvalAwarePartialHost,
+  EvalState,
+  REPL_FILENAME,
+  ReplService,
+  STDIN_FILENAME,
+  STDIN_NAME,
+  createRepl,
+  setupContext,
+} from './repl';
+import type { TSInternal } from './ts-compiler-types';
+import { createRequire, hasOwnProperty, parse, versionGteLt } from './util';
+
+import {
+  DEFAULTS,
+  ExperimentalSpecifierResolution,
+  TSError,
+  VERSION,
+  createEsmHooks,
+  createFromPreloadedConfig,
+  register,
+} from './index';
+
+let arg: typeof import('arg');
 
 /**
  * Main `bin` functionality.

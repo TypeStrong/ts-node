@@ -1,4 +1,5 @@
 import type * as ts from 'typescript';
+
 import type { NodeModuleEmitKind, Service } from '../index';
 import type { ProjectLocalResolveHelper } from '../util';
 

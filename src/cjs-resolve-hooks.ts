@@ -1,4 +1,5 @@
 import type Module = require('module');
+
 import type { Service } from '.';
 
 /** @internal */

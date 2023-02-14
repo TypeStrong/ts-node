@@ -1,14 +1,15 @@
-import { context } from './testlib';
+import { project as fsProject } from '@TypeStrong/fs-fixture-builder';
 import * as expect from 'expect';
+import { outdent as o } from 'outdent';
+
 import { createExec } from './exec-helpers';
 import {
+  CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   TEST_DIR,
   ctxTsNode,
-  CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   tsSupportsAllowImportingTsExtensions,
 } from './helpers';
-import { project as fsProject } from '@TypeStrong/fs-fixture-builder';
-import { outdent as o } from 'outdent';
+import { context } from './testlib';
 
 const exec = createExec({
   cwd: TEST_DIR,

@@ -1,6 +1,8 @@
-import type { BootstrapState } from '../bin';
 import { spawn } from 'child_process';
 import { pathToFileURL } from 'url';
+
+import type { BootstrapState } from '../bin';
+
 import { argPrefix, compress } from './argv-payload';
 
 /**

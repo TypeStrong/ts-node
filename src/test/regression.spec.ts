@@ -1,12 +1,14 @@
 // Misc regression tests go here if they do not have a better home
 
-import * as exp from 'expect';
 import { join } from 'path';
+
+import * as exp from 'expect';
+
 import { createExec, createExecTester } from './exec-helpers';
 import {
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
-  ctxTsNode,
   TEST_DIR,
+  ctxTsNode,
 } from './helpers';
 import { context } from './testlib';
 

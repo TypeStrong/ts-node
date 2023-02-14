@@ -1,15 +1,18 @@
-import { register, RegisterOptions, Service } from './index';
+import * as assert from 'assert';
+import { createRequire } from 'module';
+import { extname, resolve as pathResolve } from 'path';
 import {
-  parse as parseUrl,
-  format as formatUrl,
   UrlWithStringQuery,
   fileURLToPath,
+  format as formatUrl,
+  parse as parseUrl,
   pathToFileURL,
 } from 'url';
-import { extname, resolve as pathResolve } from 'path';
-import * as assert from 'assert';
+
 import { normalizeSlashes, versionGteLt } from './util';
-import { createRequire } from 'module';
+
+
+import { RegisterOptions, Service, register } from './index';
 
 // Note: On Windows, URLs look like this: file:///D:/dev/@TypeStrong/ts-node-examples/foo.ts
 

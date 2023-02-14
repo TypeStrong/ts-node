@@ -1,6 +1,7 @@
-import type { ModuleTypeOverride, ModuleTypes } from '.';
 import { getPatternFromSpec } from './ts-internals';
 import { cachedLookup, normalizeSlashes } from './util';
+
+import type { ModuleTypeOverride, ModuleTypes } from '.';
 
 // Logic to support our `moduleTypes` option, which allows overriding node's default ESM / CJS
 // classification of `.js` files based on package.json `type` field.

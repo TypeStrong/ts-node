@@ -1,4 +1,20 @@
-import { context, ExecutionContext, expect, TestInterface } from './testlib';
+import * as fs from 'fs';
+import { join } from 'path';
+import * as Path from 'path';
+import { pathToFileURL } from 'url';
+
+import {
+  Project as FsProject,
+  project as fsProject,
+} from '@TypeStrong/fs-fixture-builder';
+import { padStart } from 'lodash';
+import _ = require('lodash');
+import * as semver from 'semver';
+
+
+import type { RegisterOptions } from '..';
+
+
 import {
   ctxTsNode,
   isOneOf,
@@ -7,18 +23,7 @@ import {
   tsSupportsMtsCtsExtensions,
   tsSupportsStableNodeNextNode16,
 } from './helpers';
-import {
-  project as fsProject,
-  Project as FsProject,
-} from '@TypeStrong/fs-fixture-builder';
-import { join } from 'path';
-import * as semver from 'semver';
-import { padStart } from 'lodash';
-import _ = require('lodash');
-import { pathToFileURL } from 'url';
-import type { RegisterOptions } from '..';
-import * as fs from 'fs';
-import * as Path from 'path';
+import { ExecutionContext, TestInterface, context, expect } from './testlib';
 
 /*
  * Each test case is a separate TS project, with a different permutation of

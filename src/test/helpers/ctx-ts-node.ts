@@ -1,12 +1,15 @@
 import { exec as childProcessExec } from 'child_process';
-import { lock } from 'proper-lockfile';
-import { promisify } from 'util';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import type { ExecutionContext } from '../testlib';
+import { promisify } from 'util';
+
+import { lock } from 'proper-lockfile';
 import { sync as rimrafSync } from 'rimraf';
-import { TEST_DIR } from './paths';
+
+import type { ExecutionContext } from '../testlib';
+
 import { testsDirRequire, tsNodeTypes } from './misc';
+import { TEST_DIR } from './paths';
 
 /** Pass to `test.context()` to get access to the ts-node API under test */
 export async function ctxTsNode() {

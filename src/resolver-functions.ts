@@ -1,8 +1,10 @@
 import { resolve } from 'path';
-import type { CreateOptions } from '.';
+
 import type { Extensions } from './file-extensions';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
 import type { ProjectLocalResolveHelper } from './util';
+
+import type { CreateOptions } from '.';
 
 /**
  * @internal

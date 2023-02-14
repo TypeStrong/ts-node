@@ -9,6 +9,7 @@ const defaultRequireExtensions = captureObjectState(require.extensions);
 // Avoid node deprecation warning for accessing _channel
 const defaultProcess = captureObjectState(process, ['_channel']);
 const defaultModule = captureObjectState(require('module'));
+
 const defaultError = captureObjectState(Error);
 const defaultGlobal = captureObjectState(global);
 

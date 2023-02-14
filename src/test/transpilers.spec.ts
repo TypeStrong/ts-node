@@ -2,16 +2,18 @@
 // TODO: at the time of writing, other transpiler tests have not been moved into this file.
 // Should consolidate them here.
 
-import { context } from './testlib';
+import * as expect from 'expect';
+import { outdent } from 'outdent';
+
+import { createSwcOptions } from '../transpilers/swc';
+
 import {
   ctxTsNode,
   testsDirRequire,
   tsSupportsImportAssertions,
   tsSupportsReact17JsxFactories,
 } from './helpers';
-import { createSwcOptions } from '../transpilers/swc';
-import * as expect from 'expect';
-import { outdent } from 'outdent';
+import { context } from './testlib';
 
 const test = context(ctxTsNode);
 

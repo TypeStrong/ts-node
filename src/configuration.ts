@@ -1,13 +1,7 @@
-import { resolve, dirname, join } from 'path';
+import { dirname, join, resolve } from 'path';
+
 import type * as _ts from 'typescript';
-import {
-  CreateOptions,
-  DEFAULTS,
-  OptionBasePaths,
-  RegisterOptions,
-  TSCommon,
-  TsConfigOptions,
-} from './index';
+
 import type { TSInternal } from './ts-compiler-types';
 import { createTsInternals } from './ts-internals';
 import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs';
@@ -17,6 +11,15 @@ import {
   createProjectLocalResolveHelper,
   getBasePathForProjectLocalDependencyResolution,
 } from './util';
+
+import {
+  CreateOptions,
+  DEFAULTS,
+  OptionBasePaths,
+  RegisterOptions,
+  TSCommon,
+  TsConfigOptions,
+} from './index';
 
 /**
  * TypeScript compiler option values required by `ts-node` which cannot be overridden.

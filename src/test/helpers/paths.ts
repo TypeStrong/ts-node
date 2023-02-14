@@ -1,5 +1,6 @@
-import { setFixturesRootDir } from '@TypeStrong/fs-fixture-builder';
 import { join, resolve } from 'path';
+
+import { setFixturesRootDir } from '@TypeStrong/fs-fixture-builder';
 
 //#region Paths
 export const ROOT_DIR = resolve(__dirname, '../../..');

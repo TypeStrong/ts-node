@@ -1,7 +1,10 @@
-import { context } from './testlib';
-import { ctxTsNode, resetNodeEnvironment, TEST_DIR } from './helpers';
-import * as expect from 'expect';
 import { resolve } from 'path';
+
+import * as expect from 'expect';
+
+import { TEST_DIR, ctxTsNode, resetNodeEnvironment } from './helpers';
+import { context } from './testlib';
+
 
 const test = context(ctxTsNode);
 

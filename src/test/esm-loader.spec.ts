@@ -2,29 +2,32 @@
 // TODO: at the time of writing, other ESM loader hook tests have not been moved into this file.
 // Should consolidate them here.
 
-import { context } from './testlib';
+import { join, resolve } from 'path';
+import { pathToFileURL } from 'url';
+
+import * as expect from 'expect';
 import semver = require('semver');
+
+import type { NodeLoaderHooksAPI2 } from '../';
+
+import { ExecReturn, createExec, createSpawn } from './exec-helpers';
 import {
   BIN_ESM_PATH,
   BIN_PATH,
   BIN_PATH_JS,
   CMD_ESM_LOADER_WITHOUT_PROJECT,
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
+  TEST_DIR,
   ctxTsNode,
   delay,
   nodeSupportsImportAssertions,
   nodeSupportsUnflaggedJsonImports,
   nodeUsesNewHooksApi,
   resetNodeEnvironment,
-  TEST_DIR,
   tsSupportsImportAssertions,
   tsSupportsStableNodeNextNode16,
 } from './helpers';
-import { createExec, createSpawn, ExecReturn } from './exec-helpers';
-import { join, resolve } from 'path';
-import * as expect from 'expect';
-import type { NodeLoaderHooksAPI2 } from '../';
-import { pathToFileURL } from 'url';
+import { context } from './testlib';
 
 const test = context(ctxTsNode);
 

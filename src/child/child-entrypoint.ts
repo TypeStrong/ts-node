@@ -1,4 +1,5 @@
 import { BootstrapState, bootstrap } from '../bin';
+
 import { argPrefix, compress, decompress } from './argv-payload';
 
 const base64ConfigArg = process.argv[2];

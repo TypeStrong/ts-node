@@ -1,15 +1,18 @@
+import { join, resolve } from 'path';
+
+import * as exp from 'expect';
 import { once } from 'lodash';
+import proxyquire = require('proxyquire');
+
 import {
-  ctxTsNode,
   PROJECT_TRANSPILE_ONLY,
-  resetNodeEnvironment,
   TEST_DIR,
+  ctxTsNode,
+  resetNodeEnvironment,
   tsNodeTypes,
 } from './helpers';
 import { context, expect } from './testlib';
-import * as exp from 'expect';
-import { join, resolve } from 'path';
-import proxyquire = require('proxyquire');
+
 
 const SOURCE_MAP_REGEXP =
   /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/;

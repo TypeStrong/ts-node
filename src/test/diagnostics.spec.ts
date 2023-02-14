@@ -1,8 +1,11 @@
+import { once } from 'lodash';
+import * as semver from 'semver';
+
 import type { TSError } from '..';
+
 import { ctxTsNode, ts } from './helpers';
 import { context, expect } from './testlib';
-import * as semver from 'semver';
-import { once } from 'lodash';
+
 const test = context(ctxTsNode);
 
 test.suite('TSError diagnostics', ({ context }) => {

@@ -1,12 +1,13 @@
+import { join } from 'path';
+
 import { createExec } from '../exec-helpers';
 import {
-  ctxTsNode,
-  TEST_DIR,
-  tsSupportsStableNodeNextNode16,
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
+  TEST_DIR,
+  ctxTsNode,
+  tsSupportsStableNodeNextNode16,
 } from '../helpers';
 import { context, expect } from '../testlib';
-import { join } from 'path';
 
 const exec = createExec({
   cwd: TEST_DIR,

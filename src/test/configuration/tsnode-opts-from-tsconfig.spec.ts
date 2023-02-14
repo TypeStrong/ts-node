@@ -1,10 +1,10 @@
-import { BIN_PATH } from '../helpers/paths';
-import { createExec } from '../exec-helpers';
-import { TEST_DIR } from '../helpers/paths';
-import { context, expect } from '../testlib';
 import { join, resolve } from 'path';
-import { tsSupportsExtendsArray } from '../helpers/version-checks';
+
+import { createExec } from '../exec-helpers';
 import { ctxTsNode } from '../helpers';
+import { BIN_PATH , TEST_DIR } from '../helpers/paths';
+import { tsSupportsExtendsArray } from '../helpers/version-checks';
+import { context, expect } from '../testlib';
 
 const test = context(ctxTsNode);
 

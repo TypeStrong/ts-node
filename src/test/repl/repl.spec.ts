@@ -1,15 +1,18 @@
-import { context, expect } from '../testlib';
-import { delay, resetNodeEnvironment, ts } from '../helpers';
+import { expectStream } from '@cspotcode/expect-stream';
 import semver = require('semver');
-import { CMD_TS_NODE_WITH_PROJECT_FLAG, ctxTsNode, TEST_DIR } from '../helpers';
+
 import { createExec, createExecTester } from '../exec-helpers';
-import { upstreamTopLevelAwaitTests } from './node-repl-tla';
+import { CMD_TS_NODE_WITH_PROJECT_FLAG, TEST_DIR, ctxTsNode , delay, resetNodeEnvironment, ts } from '../helpers';
+import { context, expect } from '../testlib';
+
+
 import {
   ctxRepl,
   macroReplNoErrorsAndStdoutContains,
   macroReplStderrContains,
 } from './helpers';
-import { expectStream } from '@cspotcode/expect-stream';
+import { upstreamTopLevelAwaitTests } from './node-repl-tla';
+
 
 const test = context(ctxTsNode).contextEach(ctxRepl);
 test.serial();

@@ -1,44 +1,46 @@
-import { relative, basename, extname, dirname, join } from 'path';
 import { Module } from 'module';
-import * as util from 'util';
+import { basename, dirname, extname, join, relative } from 'path';
 import { fileURLToPath } from 'url';
+import * as util from 'util';
 
 import type * as _sourceMapSupport from '@cspotcode/source-map-support';
 import { BaseError } from 'make-error';
 import type * as _ts from 'typescript';
 
-import type { Transpiler, TranspilerFactory } from './transpilers/types';
+import type * as _nodeInternalModulesCjsLoader from '../dist-raw/node-internal-modules-cjs-loader';
+import { assertScriptCanLoadAsCJS } from '../dist-raw/node-internal-modules-cjs-loader';
+import type * as _nodeInternalModulesEsmGetFormat from '../dist-raw/node-internal-modules-esm-get_format';
+import type * as _nodeInternalModulesEsmResolve from '../dist-raw/node-internal-modules-esm-resolve';
+
 import {
+  ModuleConstructorWithInternals,
+  installCommonjsResolveHooksIfNecessary,
+} from './cjs-resolve-hooks';
+import { findAndReadConfig, loadCompiler } from './configuration';
+import type { createEsmHooks as createEsmHooksFn } from './esm';
+import { Extensions, getExtensions } from './file-extensions';
+import {
+  ModuleTypeClassifier,
+  createModuleTypeClassifier,
+} from './module-type-classifier';
+import { classifyModule } from './node-module-type-classifier';
+import { createResolverFunctions } from './resolver-functions';
+import type { Transpiler, TranspilerFactory } from './transpilers/types';
+import type { TSCommon, TSInternal } from './ts-compiler-types';
+import { createTsTranspileModule } from './ts-transpile-module';
+import {
+  ProjectLocalResolveHelper,
   cachedLookup,
   createProjectLocalResolveHelper,
   hasOwnProperty,
   normalizeSlashes,
   once,
   parse,
-  ProjectLocalResolveHelper,
   split,
   versionGteLt,
   yn,
 } from './util';
-import { findAndReadConfig, loadCompiler } from './configuration';
-import type { TSCommon, TSInternal } from './ts-compiler-types';
-import {
-  createModuleTypeClassifier,
-  ModuleTypeClassifier,
-} from './module-type-classifier';
-import { createResolverFunctions } from './resolver-functions';
-import type { createEsmHooks as createEsmHooksFn } from './esm';
-import {
-  installCommonjsResolveHooksIfNecessary,
-  ModuleConstructorWithInternals,
-} from './cjs-resolve-hooks';
-import { classifyModule } from './node-module-type-classifier';
-import type * as _nodeInternalModulesEsmResolve from '../dist-raw/node-internal-modules-esm-resolve';
-import type * as _nodeInternalModulesEsmGetFormat from '../dist-raw/node-internal-modules-esm-get_format';
-import type * as _nodeInternalModulesCjsLoader from '../dist-raw/node-internal-modules-cjs-loader';
-import { Extensions, getExtensions } from './file-extensions';
-import { createTsTranspileModule } from './ts-transpile-module';
-import { assertScriptCanLoadAsCJS } from '../dist-raw/node-internal-modules-cjs-loader';
+
 
 export { TSCommon };
 export {

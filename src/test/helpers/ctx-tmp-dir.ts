@@ -1,6 +1,8 @@
 import { tmpdir } from 'os';
-import type { ExecutionContext } from '../testlib';
+
 import { tempdirProject } from '@TypeStrong/fs-fixture-builder';
+
+import type { ExecutionContext } from '../testlib';
 
 /**
  * This helpers gives you an empty directory in the OS temp directory, *outside*
