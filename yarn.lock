@@ -1515,13 +1515,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"create-require@npm:^1.1.0":
-  version: 1.1.1
-  resolution: "create-require@npm:1.1.1"
-  checksum: a9a1503d4390d8b59ad86f4607de7870b39cad43d929813599a23714831e81c520bddf61bcdd1f8e30f05fd3a2b71ae8538e946eb2786dc65c2bbc520f692eff
-  languageName: node
-  linkType: hard
-
 "cross-spawn@npm:^7.0.0, cross-spawn@npm:^7.0.3":
   version: 7.0.3
   resolution: "cross-spawn@npm:7.0.3"
@@ -3832,7 +3825,6 @@ __metadata:
     arg: ^4.1.0
     ava: ^5.1.1
     axios: ^0.21.1
-    create-require: ^1.1.0
     diff: ^4.0.1
     dprint: ^0.25.0
     expect: 27.0.2
@@ -3849,7 +3841,6 @@ __metadata:
     typescript: 4.7.4
     typescript-json-schema: ^0.54.0
     v8-compile-cache-lib: ^3.0.1
-    yn: 3.1.1
   peerDependencies:
     "@swc/core": ">=1.2.50"
     "@swc/wasm": ">=1.2.50"
@@ -4215,13 +4206,6 @@ __metadata:
     y18n: ^5.0.5
     yargs-parser: ^21.1.1
   checksum: 47da1b0d854fa16d45a3ded57b716b013b2179022352a5f7467409da5a04a1eef5b3b3d97a2dfc13e8bbe5f2ffc0afe3bc6a4a72f8254e60f5a4bd7947138643
-  languageName: node
-  linkType: hard
-
-"yn@npm:3.1.1":
-  version: 3.1.1
-  resolution: "yn@npm:3.1.1"
-  checksum: 2c487b0e149e746ef48cda9f8bad10fc83693cd69d7f9dcd8be4214e985de33a29c9e24f3c0d6bcf2288427040a8947406ab27f7af67ee9456e6b84854f02dd6
   languageName: node
   linkType: hard
 
