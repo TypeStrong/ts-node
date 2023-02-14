@@ -1,16 +1,5 @@
-import {
-  createRequire as nodeCreateRequire,
-  createRequireFromPath as nodeCreateRequireFromPath,
-} from 'module';
-import type _createRequire from 'create-require';
 import * as ynModule from 'yn';
 import { dirname } from 'path';
-
-/** @internal */
-export const createRequire =
-  nodeCreateRequire ??
-  nodeCreateRequireFromPath ??
-  (require('create-require') as typeof _createRequire);
 
 /**
  * Wrapper around yn module that returns `undefined` instead of `null`.

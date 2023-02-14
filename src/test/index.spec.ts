@@ -14,7 +14,6 @@ import {
   tsSupportsStableNodeNextNode16,
 } from './helpers';
 import { lstatSync } from 'fs';
-import type _createRequire from 'create-require';
 import { createExec } from './exec-helpers';
 import {
   BIN_CWD_PATH,

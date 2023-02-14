@@ -4,7 +4,7 @@ import { join, resolve, dirname, parse as parsePath, relative } from 'path';
 import { inspect } from 'util';
 import Module = require('module');
 let arg: typeof import('arg');
-import { parse, createRequire, hasOwnProperty, versionGteLt } from './util';
+import { parse, hasOwnProperty, versionGteLt } from './util';
 import {
   EVAL_FILENAME,
   EvalState,
@@ -739,7 +739,7 @@ function requireResolveNonCached(absoluteModuleSpecifier: string) {
   const { dir, base } = parsePath(absoluteModuleSpecifier);
   const relativeModuleSpecifier = `./${base}`;
 
-  const req = createRequire(
+  const req = Module.createRequire(
     join(dir, 'imaginaryUncacheableRequireResolveScript')
   );
   return req.resolve(relativeModuleSpecifier, {

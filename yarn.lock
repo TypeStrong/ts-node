@@ -1515,13 +1515,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"create-require@npm:^1.1.0":
-  version: 1.1.1
-  resolution: "create-require@npm:1.1.1"
-  checksum: a9a1503d4390d8b59ad86f4607de7870b39cad43d929813599a23714831e81c520bddf61bcdd1f8e30f05fd3a2b71ae8538e946eb2786dc65c2bbc520f692eff
-  languageName: node
-  linkType: hard
-
 "cross-spawn@npm:^7.0.0, cross-spawn@npm:^7.0.3":
   version: 7.0.3
   resolution: "cross-spawn@npm:7.0.3"
@@ -3832,7 +3825,6 @@ __metadata:
     arg: ^4.1.0
     ava: ^5.1.1
     axios: ^0.21.1
-    create-require: ^1.1.0
     diff: ^4.0.1
     dprint: ^0.25.0
     expect: 27.0.2
