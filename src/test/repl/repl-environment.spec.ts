@@ -14,7 +14,8 @@ import {
 import { dirname, join } from 'path';
 import { createExec, createExecTester } from '../exec-helpers';
 import { homedir } from 'os';
-import { ctxRepl } from './helpers';
+import { replFile } from './helpers/misc';
+import { ctxRepl } from './helpers/ctx-repl';
 
 const test = context(ctxTsNode).contextEach(ctxRepl);
 
@@ -197,7 +198,7 @@ test.suite(
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
           stackTest: expect.stringContaining(
-            `    at ${join(TEST_DIR, '<repl>.cts')}:4:`
+            `    at ${join(TEST_DIR, replFile)}:4:`
           ),
           moduleAccessorsTest: true,
           argv: [tsNodeExe],
@@ -350,7 +351,7 @@ test.suite(
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
           stackTest: expect.stringContaining(
-            `    at ${join(TEST_DIR, '<repl>.cts')}:4:`
+            `    at ${join(TEST_DIR, replFile)}:4:`
           ),
           moduleAccessorsTest: true,
           argv: [tsNodeExe],
@@ -428,7 +429,7 @@ test.suite(
 
             // Note: vanilla node uses different name. See #1360
             stackTest: expect.stringContaining(
-              `    at ${join(TEST_DIR, '<repl>.cts')}:1:`
+              `    at ${join(TEST_DIR, replFile)}:1:`
             ),
           },
         });
@@ -459,7 +460,7 @@ test.suite(
             exportsTest: true,
             // Note: vanilla node uses different name. See #1360
             stackTest: expect.stringContaining(
-              `    at ${join(TEST_DIR, '<repl>.cts')}:1:`
+              `    at ${join(TEST_DIR, replFile)}:1:`
             ),
             moduleAccessorsTest: true,
           },

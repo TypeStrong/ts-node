@@ -10,13 +10,14 @@ import semver = require('semver');
 import { CMD_TS_NODE_WITH_PROJECT_FLAG, ctxTsNode, TEST_DIR } from '../helpers';
 import { createExec, createExecTester } from '../exec-helpers';
 import { upstreamTopLevelAwaitTests } from './node-repl-tla';
-import {
-  ctxRepl,
-  macroReplNoErrorsAndStdoutContains,
-  macroReplStderrContains,
-} from './helpers';
+import { replFile } from './helpers/misc';
 import { expectStream } from '@cspotcode/expect-stream';
 import { join } from 'path';
+import { ctxRepl } from './helpers/ctx-repl';
+import {
+  macroReplNoErrorsAndStdoutContains,
+  macroReplStderrContains,
+} from './helpers/macros';
 
 const test = context(ctxTsNode).contextEach(ctxRepl);
 test.serial();
@@ -226,7 +227,7 @@ test.suite('top level await', ({ contextEach }) => {
 
       expect(r.stdout).toBe('> > ');
       expect(r.stderr.replace(/\r\n/g, '\n')).toBe(
-        '<repl>.cts(4,7): error TS2322: ' +
+        `${replFile}(4,7): error TS2322: ` +
           (semver.gte(ts.version, '4.0.0')
             ? `Type 'number' is not assignable to type 'string'.\n`
             : `Type '1' is not assignable to type 'string'.\n`) +
