@@ -240,6 +240,7 @@ export function createSwcOptions(
         transform: {
           decoratorMetadata: emitDecoratorMetadata,
           legacyDecorator: true,
+          useDefineForClassFields: false,
           react: {
             throwIfNamespace: false,
             development: jsxDevelopment,
