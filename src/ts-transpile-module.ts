@@ -1,3 +1,6 @@
+// Derived from
+// https://github.com/microsoft/TypeScript/blob/ae1b3db8ceaae7e93bddffa1eed26309068249d7/src/services/transpile.ts
+
 import type {
   CompilerHost,
   CompilerOptions,
@@ -7,6 +10,12 @@ import type {
   TranspileOutput,
 } from 'typescript';
 import type { TSCommon } from './ts-compiler-types';
+
+const optionsRedundantWithVerbatimModuleSyntax = new Set([
+  'isolatedModules',
+  'preserveValueImports',
+  'importsNotUsedAsValues',
+]);
 
 /** @internal */
 export function createTsTranspileModule(
@@ -29,7 +38,6 @@ export function createTsTranspileModule(
     Debug,
     toPath,
     getSetExternalModuleIndicator,
-    getEntries,
     addRange,
     hasProperty,
     getEmitScriptTarget,
@@ -54,6 +62,14 @@ export function createTsTranspileModule(
   }
 
   for (const option of transpileOptionValueCompilerOptions) {
+    // Do not set redundant config options if `verbatimModuleSyntax` was supplied.
+    if (
+      options.verbatimModuleSyntax &&
+      optionsRedundantWithVerbatimModuleSyntax.has(option.name)
+    ) {
+      continue;
+    }
+
     options[option.name] = option.transpileOptionValue;
   }
 
@@ -109,12 +125,18 @@ export function createTsTranspileModule(
 
   return transpileModule;
 
+  /*
+   * This function will compile source text from 'input' argument using specified compiler options.
+   * If not options are provided - it will use a set of default compiler options.
+   * Extra compiler options that will unconditionally be used by this function are:
+   * - isolatedModules = true
+   * - allowNonTsExtensions = true
+   * - noLib = true
+   * - noResolve = true
+   */
   function transpileModule(
     input: string,
-    transpileOptions2: Pick<
-      TranspileOptions,
-      'fileName' | 'moduleName' | 'renamedDependencies'
-    >,
+    transpileOptions2: TranspileOptions,
     packageJsonType: 'module' | 'commonjs' = 'commonjs'
   ): TranspileOutput {
     // if jsx is specified then treat file as .tsx
@@ -142,7 +164,7 @@ export function createTsTranspileModule(
 
     if (transpileOptions2.renamedDependencies) {
       (sourceFile as any).renamedDependencies = new Map(
-        getEntries(transpileOptions2.renamedDependencies)
+        Object.entries(transpileOptions2.renamedDependencies)
       );
     }
 

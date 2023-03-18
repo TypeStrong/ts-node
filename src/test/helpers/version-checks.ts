@@ -40,6 +40,8 @@ export const tsSupportsAllowImportingTsExtensions = semver.gte(
 );
 // TS 5.0 adds ability for tsconfig to `"extends": []` an array of configs
 export const tsSupportsExtendsArray = semver.gte(ts.version, '4.999.999');
+// TS 5.0 adds verbatimModuleSyntax
+export const tsSupportsVerbatimModuleSyntax = semver.gte(ts.version, '5.0.0');
 // Relevant when @tsconfig/bases refers to es2021 and we run tests against
 // old TS versions.
 export const tsSupportsEs2021 = semver.gte(ts.version, '4.3.0');
