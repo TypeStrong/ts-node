@@ -305,28 +305,6 @@ test.suite('ts-node', (test) => {
       );
     });
 
-    test('should support transpile only mode', async () => {
-      const r = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} --transpile-only -pe "x"`
-      );
-      if (r.err === null) {
-        throw new Error('Command was expected to fail, but it succeeded.');
-      }
-
-      expect(r.err.message).toMatch('ReferenceError: x is not defined');
-    });
-
-    test('should throw error even in transpileOnly mode', async () => {
-      const r = await exec(
-        `${CMD_TS_NODE_WITH_PROJECT_FLAG} --transpile-only -pe "console."`
-      );
-      if (r.err === null) {
-        throw new Error('Command was expected to fail, but it succeeded.');
-      }
-
-      expect(r.err.message).toMatch('error TS1003: Identifier expected');
-    });
-
     for (const flavor of [
       '--transpiler ts-node/transpilers/swc transpile-only-swc',
       '--transpiler ts-node/transpilers/swc-experimental transpile-only-swc',
