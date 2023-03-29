@@ -64,9 +64,9 @@ pre-debug *ARGS:
   just build-tsc && just build-pack "$@"
 coverage-report *ARGS:
   nyc report --reporter=lcov "$@"
-__prepare_template__ *ARGS:
+__prepack_template__ *ARGS:
   just clean && just build-nopack "$@"
-prepare *ARGS:
+prepack *ARGS:
   rimraf temp dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz tests/node_modules tests/tmp && tsc -b ./tsconfig.build-dist.json && typescript-json-schema --topRef --refs --validationKeywords allOf --out tsconfig.schema.json tsconfig.build-schema.json TsConfigSchema && node --require ./register ./scripts/create-merged-schema "$@"
 api-extractor *ARGS:
   api-extractor run --local --verbose "$@"
