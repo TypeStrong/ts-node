@@ -5,8 +5,10 @@ import {
   Recoverable,
   ReplOptions,
   REPLServer,
-  start as nodeReplStart,
 } from 'repl';
+import {
+  start as nodeReplStart,
+} from 'pretty-repl';
 import { Context, createContext, Script } from 'vm';
 import { Service, CreateOptions, TSError, env } from './index';
 import { readFileSync, statSync } from 'fs';
@@ -386,7 +388,7 @@ export function createRepl(options: CreateReplOptions = {}) {
       eval: nodeEval,
       useGlobal: true,
       ...optionsOverride,
-    });
+    }) as REPLServer;
 
     nodeReplServer = repl;
     context = repl.context;
