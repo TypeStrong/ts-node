@@ -140,6 +140,7 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
         '--scope': Boolean,
         '--scopeDir': String,
         '--noExperimentalReplAwait': Boolean,
+        '--preprocessor': String,
         '--experimentalSpecifierResolution': String,
 
         // Aliases.
@@ -218,6 +219,7 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
     '--scope': scope = undefined,
     '--scopeDir': scopeDir = undefined,
     '--noExperimentalReplAwait': noExperimentalReplAwait,
+    '--preprocessor': preprocessor,
     '--experimentalSpecifierResolution': experimentalSpecifierResolution,
     '--esm': esm,
     _: restArgs,
@@ -257,6 +259,7 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
     scope,
     scopeDir,
     noExperimentalReplAwait,
+    preprocessor,
     experimentalSpecifierResolution,
     esm,
   };
@@ -278,6 +281,7 @@ Options:
 
   --esm                           Bootstrap with the ESM loader, enabling full ESM support
   --swc                           Use the faster swc transpiler
+  --preprocessor                  Runs at the start of CLI
 
   -h, --help                      Print CLI usage
   -v, --version                   Print module version information.  -vvv to print additional information
@@ -355,6 +359,7 @@ function phase3(payload: BootstrapState) {
     scopeDir,
     esm,
     experimentalSpecifierResolution,
+    preprocessor,
   } = payload.parseArgvResult;
   const { cwd } = payload.phase2Result!;
 
@@ -398,6 +403,7 @@ function phase3(payload: BootstrapState) {
     esm,
     experimentalSpecifierResolution:
       experimentalSpecifierResolution as ExperimentalSpecifierResolution,
+    preprocessor,
   });
 
   // If ESM is enabled through the parsed tsconfig, stage4 should be run in a child

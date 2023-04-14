@@ -1,13 +1,9 @@
 import type * as _diff from 'diff';
 import { homedir } from 'os';
 import { join } from 'path';
-import {
-  Recoverable,
-  ReplOptions,
-  REPLServer,
-  start as nodeReplStart,
-} from 'repl';
-import { Context, createContext, Script } from 'vm';
+import { Recoverable, ReplOptions, REPLServer } from 'repl';
+import { start as nodeReplStart } from 'pretty-repl';
+import { Context, Script } from 'vm';
 import { Service, CreateOptions, TSError, env } from './index';
 import { readFileSync, statSync } from 'fs';
 import { Console } from 'console';
@@ -386,7 +382,7 @@ export function createRepl(options: CreateReplOptions = {}) {
       eval: nodeEval,
       useGlobal: true,
       ...optionsOverride,
-    });
+    }) as REPLServer;
 
     nodeReplServer = repl;
     context = repl.context;
@@ -420,6 +416,13 @@ export function createRepl(options: CreateReplOptions = {}) {
           )
           .map((name) => `declare import ${name} = require('${name}')`)
           .join(';')}\n`;
+      }
+      if (service!.options.preprocessor) {
+        const preprocessorContent = readFileSync(
+          service!.options.preprocessor,
+          'utf8'
+        );
+        state.input += `${preprocessorContent}; void 0;\n`;
       }
     }
 

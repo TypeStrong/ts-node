@@ -924,7 +924,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ansi-regex@npm:^5.0.1":
+"ansi-regex@npm:^5.0.0, ansi-regex@npm:^5.0.1":
   version: 5.0.1
   resolution: "ansi-regex@npm:5.0.1"
   checksum: 2aa4bb54caf2d622f1afdad09441695af2a83aa3fe8b8afa581d205e57ed4261c183c4d3877cee25794443fde5876417d859c108078ab788d6af7e4fe52eb66b
@@ -1261,7 +1261,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:^4.0.0":
+"chalk@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "chalk@npm:3.0.0"
+  dependencies:
+    ansi-styles: ^4.1.0
+    supports-color: ^7.1.0
+  checksum: 8e3ddf3981c4da405ddbd7d9c8d91944ddf6e33d6837756979f7840a29272a69a5189ecae0ff84006750d6d1e92368d413335eab4db5476db6e6703a1d1e0505
+  languageName: node
+  linkType: hard
+
+"chalk@npm:^4.0.0, chalk@npm:^4.1.1":
   version: 4.1.2
   resolution: "chalk@npm:4.1.2"
   dependencies:
@@ -1676,6 +1686,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"emphasize@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "emphasize@npm:3.0.0"
+  dependencies:
+    chalk: ^3.0.0
+    highlight.js: ~9.12.0
+    lowlight: ~1.9.0
+  checksum: fef6b2ff83edc12863fa85dc4e0dbf075fbc3de8cc8cb67bdc65c7967e5e49057d6f58fed4c199c91720aba11317b21a1c1a7b0a2a845bd4b9e180586ed13f4a
+  languageName: node
+  linkType: hard
+
 "encoding@npm:^0.1.13":
   version: 0.1.13
   resolution: "encoding@npm:0.1.13"
@@ -1808,6 +1829,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"fault@npm:^1.0.2":
+  version: 1.0.4
+  resolution: "fault@npm:1.0.4"
+  dependencies:
+    format: ^0.2.0
+  checksum: 5ac610d8b09424e0f2fa8cf913064372f2ee7140a203a79957f73ed557c0e79b1a3d096064d7f40bde8132a69204c1fe25ec23634c05c6da2da2039cff26c4e7
+  languageName: node
+  linkType: hard
+
 "figures@npm:^5.0.0":
   version: 5.0.0
   resolution: "figures@npm:5.0.0"
@@ -1885,6 +1915,13 @@ __metadata:
     cross-spawn: ^7.0.0
     signal-exit: ^3.0.2
   checksum: f77ec9aff621abd6b754cb59e690743e7639328301fbea6ff09df27d2befaf7dd5b77cec51c32323d73a81a7d91caaf9413990d305cbe3d873eec4fe58960956
+  languageName: node
+  linkType: hard
+
+"format@npm:^0.2.0":
+  version: 0.2.2
+  resolution: "format@npm:0.2.2"
+  checksum: 646a60e1336250d802509cf24fb801e43bd4a70a07510c816fa133aa42cdbc9c21e66e9cc0801bb183c5b031c9d68be62e7fbb6877756e52357850f92aa28799
   languageName: node
   linkType: hard
 
@@ -2075,6 +2112,13 @@ __metadata:
     is-stream: ^2.0.0
     type-fest: ^0.8.0
   checksum: 06cc474bed246761ff61c19d629977eb5f53fa817be4313a255a64ae0f433e831a29e83acb6555e3f4592b348497596f1d1653751008dda4f21c9c21ca60ac5a
+  languageName: node
+  linkType: hard
+
+"highlight.js@npm:~9.12.0":
+  version: 9.12.0
+  resolution: "highlight.js@npm:9.12.0"
+  checksum: 46b357bdaac95da903736222f1662b1e1423d35c954407bf18ed35f9f2aa87947e28d83cada2a887105d0e95990199ae11bd8a448b7bf0bb3331b9efcd136037
   languageName: node
   linkType: hard
 
@@ -2606,6 +2650,16 @@ __metadata:
   version: 4.17.21
   resolution: "lodash@npm:4.17.21"
   checksum: eb835a2e51d381e561e508ce932ea50a8e5a68f4ebdd771ea240d3048244a8d13658acbd502cd4829768c56f2e16bdd4340b9ea141297d472517b83868e677f7
+  languageName: node
+  linkType: hard
+
+"lowlight@npm:~1.9.0":
+  version: 1.9.2
+  resolution: "lowlight@npm:1.9.2"
+  dependencies:
+    fault: ^1.0.2
+    highlight.js: ~9.12.0
+  checksum: a83edeab0a696733e88bde2e55e407227189969fa2084701b69fbebf38f1763584f802cd66df2c5834e7e56533b1e81f27d610d60868202215b1de9d3a77c149
   languageName: node
   linkType: hard
 
@@ -3223,6 +3277,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pretty-repl@npm:^3.1.1":
+  version: 3.1.1
+  resolution: "pretty-repl@npm:3.1.1"
+  dependencies:
+    ansi-regex: ^5.0.0
+    chalk: ^4.1.1
+    emphasize: ^3.0.0
+    strip-ansi: ^6.0.0
+  checksum: f4e54e079979cb7f536fd1907262fff39dc15ab13a366335dfcad15474dc3e8f41967bd5cb1dbe406281b1770b6fb2a43201710f5c9f9ac7986693e629df88e4
+  languageName: node
+  linkType: hard
+
 "process-on-spawn@npm:^1.0.0":
   version: 1.0.0
   resolution: "process-on-spawn@npm:1.0.0"
@@ -3832,6 +3898,7 @@ __metadata:
     make-error: ^1.1.1
     nyc: ^15.0.1
     outdent: ^0.8.0
+    pretty-repl: ^3.1.1
     proper-lockfile: ^4.1.2
     proxyquire: ^2.0.0
     rimraf: ^3.0.0
