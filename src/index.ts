@@ -302,6 +302,10 @@ export interface CreateOptions {
    */
   experimentalReplAwait?: boolean;
   /**
+   * Runs at the start of CLI.
+   */
+  preprocessor?: string;
+  /**
    * Override certain paths to be compiled and executed as CommonJS or ECMAScript modules.
    * When overridden, the tsconfig "module" and package.json "type" fields are overridden, and
    * the file extension is ignored.

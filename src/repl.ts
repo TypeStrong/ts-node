@@ -1,14 +1,8 @@
 import type * as _diff from 'diff';
 import { homedir } from 'os';
-import { join } from 'path';
-import {
-  Recoverable,
-  ReplOptions,
-  REPLServer,
-} from 'repl';
-import {
-  start as nodeReplStart,
-} from 'pretty-repl';
+import { join, basename } from 'path';
+import { Recoverable, ReplOptions, REPLServer } from 'repl';
+import { start as nodeReplStart } from 'pretty-repl';
 import { Context, createContext, Script } from 'vm';
 import { Service, CreateOptions, TSError, env } from './index';
 import { readFileSync, statSync } from 'fs';
@@ -19,6 +13,7 @@ import type * as Module from 'module';
 import { builtinModules } from 'module';
 import { tsSupportsMtsCtsExts } from './file-extensions';
 
+import { globSync } from 'glob';
 // Lazy-loaded.
 let _processTopLevelAwait: (src: string) => string | null;
 function getProcessTopLevelAwait() {
@@ -422,6 +417,13 @@ export function createRepl(options: CreateReplOptions = {}) {
           )
           .map((name) => `declare import ${name} = require('${name}')`)
           .join(';')}\n`;
+      }
+      if (service!.options.preprocessor) {
+        const preprocessorContent = readFileSync(
+          service!.options.preprocessor,
+          'utf8'
+        );
+        state.input += `${preprocessorContent}; void 0;\n`;
       }
     }
 

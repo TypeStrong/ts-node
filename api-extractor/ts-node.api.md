@@ -28,6 +28,7 @@ export interface CreateOptions {
     emit?: boolean;
     esm?: boolean;
     experimentalReplAwait?: boolean;
+    preprocessor?: string;
     experimentalSpecifierResolution?: 'node' | 'explicit';
     experimentalTsImportSpecifiers?: boolean;
     // (undocumented)
