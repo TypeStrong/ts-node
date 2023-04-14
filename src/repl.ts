@@ -1,9 +1,9 @@
 import type * as _diff from 'diff';
 import { homedir } from 'os';
-import { join, basename } from 'path';
+import { join } from 'path';
 import { Recoverable, ReplOptions, REPLServer } from 'repl';
 import { start as nodeReplStart } from 'pretty-repl';
-import { Context, createContext, Script } from 'vm';
+import { Context, Script } from 'vm';
 import { Service, CreateOptions, TSError, env } from './index';
 import { readFileSync, statSync } from 'fs';
 import { Console } from 'console';
@@ -13,7 +13,6 @@ import type * as Module from 'module';
 import { builtinModules } from 'module';
 import { tsSupportsMtsCtsExts } from './file-extensions';
 
-import { globSync } from 'glob';
 // Lazy-loaded.
 let _processTopLevelAwait: (src: string) => string | null;
 function getProcessTopLevelAwait() {
