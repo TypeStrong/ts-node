@@ -26,16 +26,17 @@
     // "checkJs": true,
     // "noImplicitAny": false
   },
-  "include": [
-    "src/**/*"
-  ],
+  "include": ["src/**/*"],
   "typedocOptions": {
     "entryPoints": ["./src/index.ts"],
     "readme": "none",
     "out": "website/static/api",
-    "excludeTags": ["allof"],
+    "excludeTags": ["@allOf"],
     "categorizeByGroup": false,
     "categoryOrder": ["Basic", "REPL", "Transpiler", "ESM Loader", "Other"],
-    "defaultCategory": "Other"
+    "defaultCategory": "Other",
+    "navigation": {
+      "includeCategories": true,
+    }
   }
 }

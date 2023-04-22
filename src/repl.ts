@@ -86,10 +86,11 @@ export interface ReplService {
    * node REPL instance and delegate eval to this `ReplService`.
    *
    * Example:
-   *
-   *     import {start} from 'repl';
-   *     const replService: tsNode.ReplService = ...; // assuming you have already created a ts-node ReplService
-   *     const nodeRepl = start({eval: replService.eval});
+   * ```ts
+   * import {start} from 'repl';
+   * const replService: tsNode.ReplService = ...; // assuming you have already created a ts-node ReplService
+   * const nodeRepl = start({eval: replService.eval});
+   * ```
    */
   nodeEval(
     code: string,
@@ -147,10 +148,12 @@ interface StartReplInternalOptions extends ReplOptions {
  *
  * Usage example:
  *
- *     const repl = tsNode.createRepl();
- *     const service = tsNode.create({...repl.evalAwarePartialHost});
- *     repl.setService(service);
- *     repl.start();
+ * ```ts
+ * const repl = tsNode.createRepl();
+ * const service = tsNode.create({...repl.evalAwarePartialHost});
+ * repl.setService(service);
+ * repl.start();
+ * ```
  *
  * @category REPL
  */
