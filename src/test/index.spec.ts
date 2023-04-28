@@ -80,6 +80,7 @@ test.suite('ts-node', (test) => {
     testsDirRequire.resolve('ts-node/node14/tsconfig.json');
     testsDirRequire.resolve('ts-node/node16/tsconfig.json');
     testsDirRequire.resolve('ts-node/node18/tsconfig.json');
+    testsDirRequire.resolve('ts-node/node20/tsconfig.json');
   });
 
   test('should not load typescript outside of loadConfig', async () => {
@@ -581,7 +582,7 @@ test.suite('ts-node', (test) => {
             : semver.gte(process.versions.node, '16.0.0') && tsSupportsEs2021
             ? 'es2021'
             : 'es2020';
-        test('implicitly uses @tsconfig/node14, @tsconfig/node16, or @tsconfig/node18 compilerOptions when both TS and node versions support it', async (t) => {
+        test('implicitly uses @tsconfig/node14, @tsconfig/node16, @tsconfig/node18, or @tsconfig/node20 compilerOptions when both TS and node versions support it', async (t) => {
           const r1 = await exec(`${BIN_PATH} --showConfig`, {
             cwd: t.context.tmpDir,
           });
@@ -646,6 +647,7 @@ test.suite('ts-node', (test) => {
         test(`ts-node/node14/tsconfig.json`, macro, 'node14');
         test(`ts-node/node16/tsconfig.json`, macro, 'node16');
         test(`ts-node/node18/tsconfig.json`, macro, 'node18');
+        test(`ts-node/node20/tsconfig.json`, macro, 'node20');
       }
     );
 

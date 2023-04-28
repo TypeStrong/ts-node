@@ -87,10 +87,21 @@ jobs:
             nodeFlag: 18
             typescript: next
             typescriptFlag: next
-          # Node nightly
+          # Node 20
           - flavor: 5
-            node: 20-nightly
-            nodeFlag: 20_nightly
+            node: 20
+            nodeFlag: 20
+            typescript: latest
+            typescriptFlag: latest
+          - flavor: 6
+            node: 20
+            nodeFlag: 20
+            typescript: next
+            typescriptFlag: next
+          # Node nightly
+          - flavor: 7
+            node: nightly
+            nodeFlag: nightly
             typescript: latest
             typescriptFlag: latest
     steps:

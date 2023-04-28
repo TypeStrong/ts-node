@@ -654,6 +654,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tsconfig/node20@npm:*":
+  version: 1.0.0
+  resolution: "@tsconfig/node20@npm:1.0.0"
+  checksum: bb2f9ffeb73d1317f3ebfb260109b5e382cab228da2bc8b6202979605820a771fa7cf7a8defc19c9c9ae9d91d6da7b586ca3d9a1e7e1547af6a5118c462bacef
+  languageName: node
+  linkType: hard
+
 "@types/argparse@npm:1.0.38":
   version: 1.0.38
   resolution: "@types/argparse@npm:1.0.38"
@@ -3812,6 +3819,7 @@ __metadata:
     "@tsconfig/node14": "*"
     "@tsconfig/node16": "*"
     "@tsconfig/node18": "*"
+    "@tsconfig/node20": "*"
     "@types/diff": ^4.0.2
     "@types/lodash": ^4.14.151
     "@types/node": 13.13.5
