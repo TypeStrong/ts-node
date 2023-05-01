@@ -406,6 +406,7 @@ function filterRecognizedTsConfigTsNodeOptions(jsonObject: any): {
     esm,
     experimentalSpecifierResolution,
     experimentalTsImportSpecifiers,
+    installSourceMapSupport,
     ...unrecognized
   } = jsonObject as TsConfigOptions;
   const filteredTsConfigOptions = {
@@ -433,6 +434,7 @@ function filterRecognizedTsConfigTsNodeOptions(jsonObject: any): {
     esm,
     experimentalSpecifierResolution,
     experimentalTsImportSpecifiers,
+    installSourceMapSupport,
   };
   // Use the typechecker to make sure this implementation has the correct set of properties
   const catchExtraneousProps: keyof TsConfigOptions =
