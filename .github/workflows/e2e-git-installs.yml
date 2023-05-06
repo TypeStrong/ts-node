@@ -1,17 +1,10 @@
 name: E2E Install from git
-# TODO test global install too?
-# TODO devise strategy to test against newest swc
 on:
-  # Only while testing this PR NOTE ALSO CHANGE BRANCH NAME FOR INSTALL COMMANDS BEFORE MERGE
-  push:
-    branches:
-      - e2e-git-installs
   # nightly
   schedule:
     - cron:  '0 0 * * *'
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
 permissions:
   contents: read # to fetch code (actions/checkout)
 jobs:
@@ -31,7 +24,7 @@ jobs:
         run: |
           npm --version
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
-          npm install https://github.com/TypeStrong/ts-node#e2e-git-installs
+          npm install https://github.com/TypeStrong/ts-node#main
           npm test
   pnpm:
     name: "pnpm"
@@ -51,7 +44,7 @@ jobs:
           corepack prepare pnpm@latest --activate
           pnpm --version
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
-          pnpm install https://github.com/TypeStrong/ts-node#e2e-git-installs
+          pnpm install https://github.com/TypeStrong/ts-node#main
           pnpm test
   yarn:
     name: "yarn"
@@ -71,7 +64,7 @@ jobs:
           corepack prepare yarn@stable --activate
           yarn --version
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
-          yarn add ts-node@https://github.com/TypeStrong/ts-node#e2e-git-installs
+          yarn add ts-node@https://github.com/TypeStrong/ts-node#main
           yarn add typescript
           yarn test
   yarn1:
@@ -92,5 +85,5 @@ jobs:
           yarn --version
           yarn cache list
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
-          yarn add https://github.com/TypeStrong/ts-node#e2e-git-installs
+          yarn add https://github.com/TypeStrong/ts-node#main
           yarn test
