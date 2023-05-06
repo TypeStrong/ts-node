@@ -61,7 +61,7 @@ jobs:
           node-version: 18
       - run: |
           corepack enable
-          corepack prepare yarn@latest --activate
+          corepack prepare yarn@stable --activate
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
           yarn add https://github.com/TypeStrong/ts-node#main
           yarn test
