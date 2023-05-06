@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: 18
       - run: |
-          cat '{"scripts": {"test": "ts-node --version"}}' | package.json
+          cat '{"scripts": {"test": "ts-node --version"}}' > package.json
           npm install https://github.com/TypeStrong/ts-node#main
           npm test
   pnpm:
@@ -42,6 +42,6 @@ jobs:
         with:
           node-version: 18
       - run: |
-          cat '{"scripts": {"test": "ts-node --version"}}' | package.json
+          cat '{"scripts": {"test": "ts-node --version"}}' > package.json
           pnpm install https://github.com/TypeStrong/ts-node#main
           pnpm test
