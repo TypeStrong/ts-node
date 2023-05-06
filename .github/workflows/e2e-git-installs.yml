@@ -42,6 +42,8 @@ jobs:
         with:
           node-version: 18
       - run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
           echo '{"scripts": {"test": "ts-node --version"}}' > package.json
           pnpm install https://github.com/TypeStrong/ts-node#main
           pnpm test
