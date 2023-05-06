@@ -63,5 +63,5 @@ jobs:
           corepack enable
           corepack prepare yarn@stable --activate
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
-          yarn add https://github.com/TypeStrong/ts-node#main
+          yarn add ts-node@https://github.com/TypeStrong/ts-node#main
           yarn test
