@@ -1,4 +1,6 @@
 name: E2E Install from git
+# TODO test global install too?
+# TODO devise strategy to test against newest swc
 on:
   # Only while testing this PR NOTE ALSO CHANGE BRANCH NAME FOR INSTALL COMMANDS BEFORE MERGE
   push:
