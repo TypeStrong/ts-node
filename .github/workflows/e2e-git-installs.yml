@@ -26,6 +26,7 @@ jobs:
         with:
           node-version: 18
       - run: |
+          npm --version
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
           npm install https://github.com/TypeStrong/ts-node#main
           npm test
@@ -44,6 +45,7 @@ jobs:
       - run: |
           corepack enable
           corepack prepare pnpm@latest --activate
+          pnpm --version
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
           pnpm install https://github.com/TypeStrong/ts-node#main
           pnpm test
@@ -62,6 +64,7 @@ jobs:
       - run: |
           corepack enable
           corepack prepare yarn@stable --activate
+          yarn --version
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
           yarn add ts-node@https://github.com/TypeStrong/ts-node#main
           yarn test
@@ -78,8 +81,8 @@ jobs:
         with:
           node-version: 18
       - run: |
-          corepack enable
-          corepack prepare yarn@1 --activate
+          npm install -g yarn
+          yarn --version
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
           yarn add https://github.com/TypeStrong/ts-node#main
           yarn test
