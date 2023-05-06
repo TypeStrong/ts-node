@@ -15,65 +15,65 @@ concurrency:
 permissions:
   contents: read # to fetch code (actions/checkout)
 jobs:
-  npm:
-    name: "npm"
-    runs-on: ${{ matrix.os }}-latest
-    strategy:
-      matrix:
-        os: [ubuntu, windows]
-    steps:
-      # install node
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - name: Test
-        run: |
-          npm --version
-          echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
-          npm install https://github.com/TypeStrong/ts-node#e2e-git-installs
-          npm test
-  pnpm:
-    name: "pnpm"
-    runs-on: ${{ matrix.os }}-latest
-    strategy:
-      matrix:
-        os: [ubuntu, windows]
-    steps:
-      # install node
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - name: Test
-        run: |
-          corepack enable
-          corepack prepare pnpm@latest --activate
-          pnpm --version
-          echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
-          pnpm install https://github.com/TypeStrong/ts-node#e2e-git-installs
-          pnpm test
-  yarn:
-    name: "yarn"
-    runs-on: ${{ matrix.os }}-latest
-    strategy:
-      matrix:
-        os: [ubuntu, windows]
-    steps:
-      # install node
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - name: Test
-        run: |
-          corepack enable
-          corepack prepare yarn@stable --activate
-          yarn --version
-          echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
-          yarn add ts-node@https://github.com/TypeStrong/ts-node#e2e-git-installs
-          yarn add typescript
-          yarn test
+  # npm:
+  #   name: "npm"
+  #   runs-on: ${{ matrix.os }}-latest
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu, windows]
+  #   steps:
+  #     # install node
+  #     - name: Use Node.js 18
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 18
+  #     - name: Test
+  #       run: |
+  #         npm --version
+  #         echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
+  #         npm install https://github.com/TypeStrong/ts-node#e2e-git-installs
+  #         npm test
+  # pnpm:
+  #   name: "pnpm"
+  #   runs-on: ${{ matrix.os }}-latest
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu, windows]
+  #   steps:
+  #     # install node
+  #     - name: Use Node.js 18
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 18
+  #     - name: Test
+  #       run: |
+  #         corepack enable
+  #         corepack prepare pnpm@latest --activate
+  #         pnpm --version
+  #         echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
+  #         pnpm install https://github.com/TypeStrong/ts-node#e2e-git-installs
+  #         pnpm test
+  # yarn:
+  #   name: "yarn"
+  #   runs-on: ${{ matrix.os }}-latest
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu, windows]
+  #   steps:
+  #     # install node
+  #     - name: Use Node.js 18
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 18
+  #     - name: Test
+  #       run: |
+  #         corepack enable
+  #         corepack prepare yarn@stable --activate
+  #         yarn --version
+  #         echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
+  #         yarn add ts-node@https://github.com/TypeStrong/ts-node#e2e-git-installs
+  #         yarn add typescript
+  #         yarn test
   yarn1:
     name: "yarn1"
     runs-on: ${{ matrix.os }}-latest
@@ -90,6 +90,7 @@ jobs:
         run: |
           npm install -g yarn
           yarn --version
+          yarn cache list
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
           yarn add https://github.com/TypeStrong/ts-node#e2e-git-installs
           yarn test
