@@ -1,0 +1,47 @@
+name: E2E Install from git
+on:
+  # Only while testing this PR
+  push:
+    branches:
+      - e2e-git-installs
+  # nightly
+  schedule:
+    - cron:  '0 0 * * *'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+permissions:
+  contents: read # to fetch code (actions/checkout)
+jobs:
+  npm:
+    name: "npm"
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      matrix:
+        os: [ubuntu, windows]
+    steps:
+      # install node
+      - name: Use Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: |
+          cat '{"scripts": {"test": "ts-node --version"}}' | package.json
+          npm install https://github.com/TypeStrong/ts-node#main
+          npm test
+  pnpm:
+    name: "pnpm"
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      matrix:
+        os: [ubuntu, windows]
+    steps:
+      # install node
+      - name: Use Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: |
+          cat '{"scripts": {"test": "ts-node --version"}}' | package.json
+          pnpm install https://github.com/TypeStrong/ts-node#main
+          pnpm test
