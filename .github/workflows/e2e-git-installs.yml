@@ -92,5 +92,7 @@ jobs:
           yarn --version
           yarn cache list
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
-          yarn add https://github.com/TypeStrong/ts-node#e2e-git-installs
+          yarn add https://github.com/TypeStrong/ts-node#e2e-git-installs || true
+          yarn add https://github.com/TypeStrong/ts-node#e2e-git-installs || true
+          yarn
           yarn test
