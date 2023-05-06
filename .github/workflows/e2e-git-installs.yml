@@ -1,4 +1,5 @@
 name: E2E Install from git
+# TODO test global installs, too?
 on:
   # nightly
   schedule:
