@@ -27,7 +27,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-      - run: |
+      - name: Test
+        run: |
           npm --version
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
           npm install https://github.com/TypeStrong/ts-node#e2e-git-installs
@@ -44,7 +45,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-      - run: |
+      - name: Test
+        run: |
           corepack enable
           corepack prepare pnpm@latest --activate
           pnpm --version
@@ -63,7 +65,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-      - run: |
+      - name: Test
+        run: |
           corepack enable
           corepack prepare yarn@stable --activate
           yarn --version
@@ -83,7 +86,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-      - run: |
+      - name: Test
+        run: |
           npm install -g yarn
           yarn --version
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
