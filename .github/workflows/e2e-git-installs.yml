@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: 18
       - run: |
-          echo '{"scripts": {"test": "ts-node --version"}}' > package.json
+          echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
           npm install https://github.com/TypeStrong/ts-node#main
           npm test
   pnpm:
@@ -44,6 +44,24 @@ jobs:
       - run: |
           corepack enable
           corepack prepare pnpm@latest --activate
-          echo '{"scripts": {"test": "ts-node --version"}}' > package.json
+          echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
           pnpm install https://github.com/TypeStrong/ts-node#main
           pnpm test
+  yarn1:
+    name: "yarn"
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      matrix:
+        os: [ubuntu, windows]
+    steps:
+      # install node
+      - name: Use Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: |
+          corepack enable
+          corepack prepare yarn@latest --activate
+          echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
+          yarn add https://github.com/TypeStrong/ts-node#main
+          yarn test
