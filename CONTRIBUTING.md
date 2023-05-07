@@ -14,11 +14,11 @@ We use package.json scripts for building, testing, and linting.  Read the script
 ```
 yarn
 yarn build
-yarn test-local
+yarn test
 yarn fmt
 ```
 
-`npm prepare` / `yarn prepare` is maintained so that anyone can install `ts-node` from git, which is useful for testing experimental branches and unreleased features.
+`yarn prepack` / `pnpm prepack`/ `npm prepare` are maintained so that anyone can install `ts-node` from git, which is useful for testing experimental branches and unreleased features.
 
 Source lives in `src` and is compiled to `dist`.  Some shim files live outside of `src` so that they can be imported at
 certain paths.  For example, to allow users to import `ts-node/register`, we have `register/index.js` which is a shim to
@@ -28,7 +28,7 @@ compiled code in `dist`.
 
 ## Tests
 
-Test cases are declared in `src/test/*.spec.ts`, and test fixtures live in `./tests`.  They can be run with `yarn test-local`.
+Test cases are declared in `src/test/*.spec.ts`, and test fixtures live in `./tests`.  They can be run with `yarn test`.
 
 To run a subset of tests:
 
@@ -36,7 +36,11 @@ To run a subset of tests:
 # Use ava's --match flag to match the name of a test or suite
 # https://github.com/avajs/ava/blob/main/docs/05-command-line.md
 # Don't forget the * wildcards
-yarn test-local --match '*esm loader*'
+yarn test --match '*esm loader*'
+
+# Or pass a filename as it exists in the compiled output
+# To run the tests in ./src/test/diagnostics.spec.ts
+yarn test ./dist/test/diagnostics.spec.js
 ```
 
 Tests are run with AVA, but using a custom wrapper API to enable some TS-friendly features and grouped test suites.
@@ -83,7 +87,7 @@ By convention, if a macro function is meant to be imported and reused in multipl
 
 Macros can also be declared to require a certain "context," thanks to the namespace types described in "Test Context" above.
 
-See examples in `helpers.ts`.
+See examples in `helpers/*.ts`.
 
 ## Documentation
 
