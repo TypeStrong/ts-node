@@ -46,3 +46,4 @@ export const tsSupportsVerbatimModuleSyntax = semver.gte(ts.version, '5.0.0');
 // old TS versions.
 export const tsSupportsEs2021 = semver.gte(ts.version, '4.3.0');
 export const tsSupportsEs2022 = semver.gte(ts.version, '4.6.0');
+export const tsSupportsLibEs2023 = semver.gte(ts.version, '5.0.0');
