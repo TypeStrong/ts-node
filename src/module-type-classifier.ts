@@ -21,43 +21,33 @@ export interface ModuleTypeClassifierOptions {
   patterns?: ModuleTypes;
 }
 /** @internal */
-export type ModuleTypeClassifier = ReturnType<
-  typeof createModuleTypeClassifier
->;
+export type ModuleTypeClassifier = ReturnType<typeof createModuleTypeClassifier>;
 /**
  * @internal
  * May receive non-normalized options -- basePath and patterns -- and will normalize them
  * internally.
  * However, calls to `classifyModule` must pass pre-normalized paths!
  */
-export function createModuleTypeClassifier(
-  options: ModuleTypeClassifierOptions
-) {
+export function createModuleTypeClassifier(options: ModuleTypeClassifierOptions) {
   const { patterns, basePath: _basePath } = options;
-  const basePath =
-    _basePath !== undefined
-      ? normalizeSlashes(_basePath).replace(/\/$/, '')
-      : undefined;
+  const basePath = _basePath !== undefined ? normalizeSlashes(_basePath).replace(/\/$/, '') : undefined;
 
-  const patternTypePairs = Object.entries(patterns ?? []).map(
-    ([_pattern, type]) => {
-      const pattern = normalizeSlashes(_pattern);
-      return { pattern: parsePattern(basePath!, pattern), type };
-    }
-  );
+  const patternTypePairs = Object.entries(patterns ?? []).map(([_pattern, type]) => {
+    const pattern = normalizeSlashes(_pattern);
+    return { pattern: parsePattern(basePath!, pattern), type };
+  });
 
-  const classifications: Record<ModuleTypeOverride, ModuleTypeClassification> =
-    {
-      package: {
-        moduleType: 'auto',
-      },
-      cjs: {
-        moduleType: 'cjs',
-      },
-      esm: {
-        moduleType: 'esm',
-      },
-    };
+  const classifications: Record<ModuleTypeOverride, ModuleTypeClassification> = {
+    package: {
+      moduleType: 'auto',
+    },
+    cjs: {
+      moduleType: 'cjs',
+    },
+    esm: {
+      moduleType: 'esm',
+    },
+  };
   const auto = classifications.package;
 
   // Passed path must be normalized!
@@ -74,9 +64,7 @@ export function createModuleTypeClassifier(
   }
 
   return {
-    classifyModuleByModuleTypeOverrides: patternTypePairs.length
-      ? classifyModule
-      : classifyModuleAuto,
+    classifyModuleByModuleTypeOverrides: patternTypePairs.length ? classifyModule : classifyModuleAuto,
   };
 }
 
@@ -85,11 +73,7 @@ function parsePattern(basePath: string, patternString: string): RegExp {
   return pattern !== undefined ? new RegExp(pattern) : /(?:)/;
 }
 
-function matchPatterns<T>(
-  objects: T[],
-  getPattern: (t: T) => RegExp,
-  candidate: string
-): T | undefined {
+function matchPatterns<T>(objects: T[], getPattern: (t: T) => RegExp, candidate: string): T | undefined {
   for (let i = objects.length - 1; i >= 0; i--) {
     const object = objects[i];
     const pattern = getPattern(object);

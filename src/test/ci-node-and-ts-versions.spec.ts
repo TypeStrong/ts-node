@@ -28,10 +28,9 @@ test.suite('Confirm node and typescript versions on CI', (test) => {
     t.log({ expectedVersion, actualVersion });
     expect(expectedVersion).toBeDefined();
     if (expectedVersion === 'next' || expectedVersion === 'latest') {
-      const stdout = execSync(
-        `npm view typescript@${expectedVersion} version --json`,
-        { encoding: 'utf8' }
-      );
+      const stdout = execSync(`npm view typescript@${expectedVersion} version --json`, {
+        encoding: 'utf8',
+      });
       t.log({ stdout });
       expectedVersion = JSON.parse(stdout);
       expect(ts.version).toBe(expectedVersion);

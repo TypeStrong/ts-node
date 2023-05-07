@@ -167,7 +167,8 @@
     "v8-compile-cache-lib": "^3.0.1"
   },
   "prettier": {
-    "singleQuote": true
+    "singleQuote": true,
+    "printWidth": 120
   },
   "volta": {
     "node": "18.14.0",

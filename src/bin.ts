@@ -42,10 +42,7 @@ import { findAndReadConfig } from './configuration';
  *
  * @internal
  */
-export function main(
-  argv: string[] = process.argv.slice(2),
-  entrypointArgs: Record<string, any> = {}
-) {
+export function main(argv: string[] = process.argv.slice(2), entrypointArgs: Record<string, any> = {}) {
   const args = parseArgv(argv, entrypointArgs);
   const state: BootstrapState = {
     shouldUseChildProcess: false,
@@ -174,8 +171,7 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
         '--log-error': '--logError',
         '--scope-dir': '--scopeDir',
         '--no-experimental-repl-await': '--noExperimentalReplAwait',
-        '--experimental-specifier-resolution':
-          '--experimentalSpecifierResolution',
+        '--experimental-specifier-resolution': '--experimentalSpecifierResolution',
       },
       {
         argv,
@@ -379,12 +375,7 @@ function phase3(payload: BootstrapState) {
     compilerHost,
     ignore,
     logError,
-    projectSearchDir: getProjectSearchDir(
-      cwd,
-      scriptMode,
-      cwdMode,
-      entryPointPath
-    ),
+    projectSearchDir: getProjectSearchDir(cwd, scriptMode, cwdMode, entryPointPath),
     project,
     skipProject,
     skipIgnore,
@@ -396,8 +387,7 @@ function phase3(payload: BootstrapState) {
     scopeDir,
     preferTsExts,
     esm,
-    experimentalSpecifierResolution:
-      experimentalSpecifierResolution as ExperimentalSpecifierResolution,
+    experimentalSpecifierResolution: experimentalSpecifierResolution as ExperimentalSpecifierResolution,
   });
 
   // If ESM is enabled through the parsed tsconfig, stage4 should be run in a child
@@ -432,20 +422,14 @@ function getEntryPointInfo(state: BootstrapState) {
   // `node -e code -i ./script.js` ignores -e
   const executeEval = code != null && !(interactive && restArgs.length);
   const executeEntrypoint = !executeEval && restArgs.length > 0;
-  const executeRepl =
-    !executeEntrypoint &&
-    (interactive || (process.stdin.isTTY && !executeEval));
+  const executeRepl = !executeEntrypoint && (interactive || (process.stdin.isTTY && !executeEval));
   const executeStdin = !executeEval && !executeRepl && !executeEntrypoint;
 
   /**
    * Unresolved. May point to a symlink, not realpath. May be missing file extension
    * NOTE: resolution relative to cwd option (not `process.cwd()`) is legacy backwards-compat; should be changed in next major: https://github.com/TypeStrong/ts-node/issues/1834
    */
-  const entryPointPath = executeEntrypoint
-    ? isCli
-      ? resolve(cwd, restArgs[0])
-      : resolve(restArgs[0])
-    : undefined;
+  const entryPointPath = executeEntrypoint ? (isCli ? resolve(cwd, restArgs[0]) : resolve(restArgs[0])) : undefined;
 
   return {
     executeEval,
@@ -458,18 +442,11 @@ function getEntryPointInfo(state: BootstrapState) {
 
 function phase4(payload: BootstrapState) {
   const { isInChildProcess, tsNodeScript } = payload;
-  const { version, showConfig, restArgs, code, print, argv } =
-    payload.parseArgvResult;
+  const { version, showConfig, restArgs, code, print, argv } = payload.parseArgvResult;
   const { cwd } = payload.phase2Result!;
   const { preloadedConfig } = payload.phase3Result!;
 
-  const {
-    entryPointPath,
-    executeEntrypoint,
-    executeEval,
-    executeRepl,
-    executeStdin,
-  } = getEntryPointInfo(payload);
+  const { entryPointPath, executeEntrypoint, executeEval, executeRepl, executeStdin } = getEntryPointInfo(payload);
 
   /**
    * <repl>, [stdin], and [eval] are all essentially virtual files that do not exist on disc and are backed by a REPL
@@ -543,13 +520,10 @@ function phase4(payload: BootstrapState) {
   });
   register(service);
 
-  if (replStuff)
-    replStuff.state.path = join(cwd, REPL_FILENAME(service.ts.version));
+  if (replStuff) replStuff.state.path = join(cwd, REPL_FILENAME(service.ts.version));
 
   if (isInChildProcess)
-    (
-      require('./child/child-loader') as typeof import('./child/child-loader')
-    ).lateBindHooks(createEsmHooks(service));
+    (require('./child/child-loader') as typeof import('./child/child-loader')).lateBindHooks(createEsmHooks(service));
 
   // Bind REPL service to ts-node compiler service (chicken-and-egg problem)
   replStuff?.repl.setService(service);
@@ -566,18 +540,14 @@ function phase4(payload: BootstrapState) {
   if (version >= 3) {
     console.log(`ts-node v${VERSION} ${dirname(__dirname)}`);
     console.log(`node ${process.version}`);
-    console.log(
-      `compiler v${service.ts.version} ${service.compilerPath ?? ''}`
-    );
+    console.log(`compiler v${service.ts.version} ${service.compilerPath ?? ''}`);
     process.exit(0);
   }
 
   if (showConfig) {
     const ts = service.ts as any as TSInternal;
     if (typeof ts.convertToTSConfig !== 'function') {
-      console.error(
-        'Error: --showConfig requires a typescript versions >=3.2 that support --showConfig'
-      );
+      console.error('Error: --showConfig requires a typescript versions >=3.2 that support --showConfig');
       process.exit(1);
     }
     let moduleTypes = undefined;
@@ -586,20 +556,13 @@ function phase4(payload: BootstrapState) {
       const showRelativeTo = dirname(service.configFilePath!);
       moduleTypes = {} as Record<string, string>;
       for (const [key, value] of Object.entries(service.options.moduleTypes)) {
-        moduleTypes[
-          relative(
-            showRelativeTo,
-            resolve(service.options.optionBasePaths?.moduleTypes!, key)
-          )
-        ] = value;
+        moduleTypes[relative(showRelativeTo, resolve(service.options.optionBasePaths?.moduleTypes!, key))] = value;
       }
     }
     const json = {
       ['ts-node']: {
         ...service.options,
-        require: service.options.require?.length
-          ? service.options.require
-          : undefined,
+        require: service.options.require?.length ? service.options.require : undefined,
         moduleTypes,
         optionBasePaths: undefined,
         compilerOptions: undefined,
@@ -621,10 +584,7 @@ function phase4(payload: BootstrapState) {
   }
 
   // Prepend `ts-node` arguments to CLI for child processes.
-  process.execArgv.push(
-    tsNodeScript,
-    ...argv.slice(2, argv.length - restArgs.length)
-  );
+  process.execArgv.push(tsNodeScript, ...argv.slice(2, argv.length - restArgs.length));
 
   // TODO this comes from BootstrapState
   process.argv = [process.argv[1]]
@@ -633,10 +593,7 @@ function phase4(payload: BootstrapState) {
 
   // Execute the main contents (either eval, script or piped).
   if (executeEntrypoint) {
-    if (
-      payload.isInChildProcess &&
-      versionGteLt(process.versions.node, '18.6.0', '18.7.0')
-    ) {
+    if (payload.isInChildProcess && versionGteLt(process.versions.node, '18.6.0', '18.7.0')) {
       // HACK workaround node regression
       require('../dist-raw/runmain-hack.js').run(entryPointPath);
     } else {
@@ -647,13 +604,7 @@ function phase4(payload: BootstrapState) {
     // If stdin runs, eval and repl will not.
     if (executeEval) {
       addBuiltinLibsToObject(global);
-      evalAndExitOnTsError(
-        evalStuff!.repl,
-        evalStuff!.module!,
-        code!,
-        print,
-        'eval'
-      );
+      evalAndExitOnTsError(evalStuff!.repl, evalStuff!.module!, code!, print, 'eval');
     }
 
     if (executeRepl) {
@@ -680,23 +631,15 @@ function phase4(payload: BootstrapState) {
 /**
  * Get project search path from args.
  */
-function getProjectSearchDir(
-  cwd?: string,
-  scriptMode?: boolean,
-  cwdMode?: boolean,
-  scriptPath?: string
-) {
+function getProjectSearchDir(cwd?: string, scriptMode?: boolean, cwdMode?: boolean, scriptPath?: string) {
   // Validate `--script-mode` / `--cwd-mode` / `--cwd` usage is correct.
   if (scriptMode && cwdMode) {
     throw new TypeError('--cwd-mode cannot be combined with --script-mode');
   }
   if (scriptMode && !scriptPath) {
-    throw new TypeError(
-      '--script-mode must be used with a script name, e.g. `ts-node --script-mode <script.ts>`'
-    );
+    throw new TypeError('--script-mode must be used with a script name, e.g. `ts-node --script-mode <script.ts>`');
   }
-  const doScriptMode =
-    scriptMode === true ? true : cwdMode === true ? false : !!scriptPath;
+  const doScriptMode = scriptMode === true ? true : cwdMode === true ? false : !!scriptPath;
   if (doScriptMode) {
     // Use node's own resolution behavior to ensure we follow symlinks.
     // scriptPath may omit file extension or point to a directory with or without package.json.
@@ -739,9 +682,7 @@ function requireResolveNonCached(absoluteModuleSpecifier: string) {
   const { dir, base } = parsePath(absoluteModuleSpecifier);
   const relativeModuleSpecifier = `./${base}`;
 
-  const req = Module.createRequire(
-    join(dir, 'imaginaryUncacheableRequireResolveScript')
-  );
+  const req = Module.createRequire(join(dir, 'imaginaryUncacheableRequireResolveScript'));
   return req.resolve(relativeModuleSpecifier, {
     paths: [
       `${guaranteedNonexistentDirectoryPrefix}${guaranteedNonexistentDirectorySuffix++}`,
@@ -775,11 +716,7 @@ function evalAndExitOnTsError(
   }
 
   if (isPrinted) {
-    console.log(
-      typeof result === 'string'
-        ? result
-        : inspect(result, { colors: process.stdout.isTTY })
-    );
+    console.log(typeof result === 'string' ? result : inspect(result, { colors: process.stdout.isTTY }));
   }
 }
 

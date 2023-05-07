@@ -2,27 +2,14 @@ import type { ctxRepl, ExecuteInReplOptions } from './ctx-repl';
 import { expect, test } from '../../testlib';
 
 export const macroReplNoErrorsAndStdoutContains = test.macro(
-  (script: string, contains: string, options?: Partial<ExecuteInReplOptions>) =>
-    async (t: ctxRepl.T) => {
-      macroReplInternal(t, script, contains, undefined, contains, options);
-    }
+  (script: string, contains: string, options?: Partial<ExecuteInReplOptions>) => async (t: ctxRepl.T) => {
+    macroReplInternal(t, script, contains, undefined, contains, options);
+  }
 );
 export const macroReplStderrContains = test.macro(
-  (
-      script: string,
-      errorContains: string,
-      options?: Partial<ExecuteInReplOptions>
-    ) =>
-    async (t: ctxRepl.T) => {
-      macroReplInternal(
-        t,
-        script,
-        undefined,
-        errorContains,
-        errorContains,
-        options
-      );
-    }
+  (script: string, errorContains: string, options?: Partial<ExecuteInReplOptions>) => async (t: ctxRepl.T) => {
+    macroReplInternal(t, script, undefined, errorContains, errorContains, options);
+  }
 );
 
 async function macroReplInternal(

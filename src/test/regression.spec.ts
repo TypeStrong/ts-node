@@ -3,11 +3,7 @@
 import * as exp from 'expect';
 import { join } from 'path';
 import { createExec, createExecTester } from './exec-helpers';
-import {
-  CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
-  ctxTsNode,
-  TEST_DIR,
-} from './helpers';
+import { CMD_TS_NODE_WITHOUT_PROJECT_FLAG, ctxTsNode, TEST_DIR } from './helpers';
 import { context } from './testlib';
 
 const test = context(ctxTsNode);

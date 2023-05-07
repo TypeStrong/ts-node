@@ -16,6 +16,4 @@ function createHook(name) {
 export const resolve = createHook('resolve');
 export const load = newHooksAPI ? createHook('load') : null;
 export const getFormat = !newHooksAPI ? createHook('getFormat') : null;
-export const transformSource = !newHooksAPI
-  ? createHook('transformSource')
-  : null;
+export const transformSource = !newHooksAPI ? createHook('transformSource') : null;

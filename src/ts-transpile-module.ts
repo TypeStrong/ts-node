@@ -20,10 +20,7 @@ const optionsRedundantWithVerbatimModuleSyntax = new Set([
 /** @internal */
 export function createTsTranspileModule(
   ts: TSCommon,
-  transpileOptions: Pick<
-    TranspileOptions,
-    'compilerOptions' | 'reportDiagnostics' | 'transformers'
-  >
+  transpileOptions: Pick<TranspileOptions, 'compilerOptions' | 'reportDiagnostics' | 'transformers'>
 ) {
   const {
     createProgram,
@@ -47,10 +44,7 @@ export function createTsTranspileModule(
   const compilerOptionsDiagnostics: Diagnostic[] = [];
 
   const options: CompilerOptions = transpileOptions.compilerOptions
-    ? fixupCompilerOptions(
-        transpileOptions.compilerOptions,
-        compilerOptionsDiagnostics
-      )
+    ? fixupCompilerOptions(transpileOptions.compilerOptions, compilerOptionsDiagnostics)
     : {};
 
   // mix in default options
@@ -63,10 +57,7 @@ export function createTsTranspileModule(
 
   for (const option of transpileOptionValueCompilerOptions) {
     // Do not set redundant config options if `verbatimModuleSyntax` was supplied.
-    if (
-      options.verbatimModuleSyntax &&
-      optionsRedundantWithVerbatimModuleSyntax.has(option.name)
-    ) {
+    if (options.verbatimModuleSyntax && optionsRedundantWithVerbatimModuleSyntax.has(option.name)) {
       continue;
     }
 
@@ -82,24 +73,13 @@ export function createTsTranspileModule(
   const newLine = getNewLineCharacter(options);
   // Create a compilerHost object to allow the compiler to read and write files
   const compilerHost: CompilerHost = {
-    getSourceFile: (fileName) =>
-      fileName === normalizePath(inputFileName) ? sourceFile : undefined,
+    getSourceFile: (fileName) => (fileName === normalizePath(inputFileName) ? sourceFile : undefined),
     writeFile: (name, text) => {
       if (fileExtensionIs(name, '.map')) {
-        Debug.assertEqual(
-          sourceMapText,
-          undefined,
-          'Unexpected multiple source map outputs, file:',
-          name
-        );
+        Debug.assertEqual(sourceMapText, undefined, 'Unexpected multiple source map outputs, file:', name);
         sourceMapText = text;
       } else {
-        Debug.assertEqual(
-          outputText,
-          undefined,
-          'Unexpected multiple outputs, file:',
-          name
-        );
+        Debug.assertEqual(outputText, undefined, 'Unexpected multiple outputs, file:', name);
         outputText = text;
       }
     },
@@ -108,10 +88,8 @@ export function createTsTranspileModule(
     getCanonicalFileName: (fileName) => fileName,
     getCurrentDirectory: () => '',
     getNewLine: () => newLine,
-    fileExists: (fileName): boolean =>
-      fileName === inputFileName || fileName === packageJsonFileName,
-    readFile: (fileName) =>
-      fileName === packageJsonFileName ? `{"type": "${_packageJsonType}"}` : '',
+    fileExists: (fileName): boolean => fileName === inputFileName || fileName === packageJsonFileName,
+    readFile: (fileName) => (fileName === packageJsonFileName ? `{"type": "${_packageJsonType}"}` : ''),
     directoryExists: () => true,
     getDirectories: () => [],
   };
@@ -142,9 +120,7 @@ export function createTsTranspileModule(
     // if jsx is specified then treat file as .tsx
     inputFileName =
       transpileOptions2.fileName ||
-      (transpileOptions.compilerOptions && transpileOptions.compilerOptions.jsx
-        ? 'module.tsx'
-        : 'module.ts');
+      (transpileOptions.compilerOptions && transpileOptions.compilerOptions.jsx ? 'module.tsx' : 'module.ts');
     packageJsonFileName = getDirectoryPath(inputFileName) + '/package.json';
     _packageJsonType = packageJsonType;
 
@@ -163,9 +139,7 @@ export function createTsTranspileModule(
     }
 
     if (transpileOptions2.renamedDependencies) {
-      (sourceFile as any).renamedDependencies = new Map(
-        Object.entries(transpileOptions2.renamedDependencies)
-      );
+      (sourceFile as any).renamedDependencies = new Map(Object.entries(transpileOptions2.renamedDependencies));
     }
 
     // Output
@@ -177,10 +151,7 @@ export function createTsTranspileModule(
     const diagnostics = compilerOptionsDiagnostics.slice();
 
     if (transpileOptions.reportDiagnostics) {
-      addRange(
-        /*to*/ diagnostics,
-        /*from*/ program.getSyntacticDiagnostics(sourceFile)
-      );
+      addRange(/*to*/ diagnostics, /*from*/ program.getSyntacticDiagnostics(sourceFile));
       addRange(/*to*/ diagnostics, /*from*/ program.getOptionsDiagnostics());
     }
     // Emit

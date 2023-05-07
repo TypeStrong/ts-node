@@ -9,12 +9,7 @@ import {
 import * as Path from 'path';
 import { ctxTsNode } from '../helpers';
 import { exec } from '../exec-helpers';
-import {
-  file,
-  project,
-  ProjectAPI as ProjectAPI,
-  StringFile,
-} from '@TypeStrong/fs-fixture-builder';
+import { file, project, ProjectAPI as ProjectAPI, StringFile } from '@TypeStrong/fs-fixture-builder';
 
 const test = context(ctxTsNode);
 test.beforeEach(async () => {
@@ -24,21 +19,11 @@ type Test = typeof test;
 
 // Declare one test case for each permutations of project configuration
 test.suite('TypeScript module=NodeNext and Node16', (test) => {
-  test.if(
-    tsSupportsStableNodeNextNode16 && nodeSupportsImportingTransformedCjsFromEsm
-  );
+  test.if(tsSupportsStableNodeNextNode16 && nodeSupportsImportingTransformedCjsFromEsm);
 
   for (const allowJs of [true, false]) {
-    for (const typecheckMode of [
-      'typecheck',
-      'transpileOnly',
-      'swc',
-    ] as const) {
-      for (const packageJsonType of [
-        undefined,
-        'commonjs',
-        'module',
-      ] as const) {
+    for (const typecheckMode of ['typecheck', 'transpileOnly', 'swc'] as const) {
+      for (const packageJsonType of [undefined, 'commonjs', 'module'] as const) {
         for (const tsModuleMode of ['NodeNext', 'Node16'] as const) {
           declareTest(test, {
             allowJs,
@@ -58,16 +43,13 @@ function declareTest(test: Test, testParams: TestParams) {
   test(name, async (t) => {
     const proj = writeFixturesToFilesystem(name, testParams);
 
-    t.log(
-      `Running this command: ( cd ${proj.cwd} ; ${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --esm ./index.mjs )`
-    );
+    t.log(`Running this command: ( cd ${proj.cwd} ; ${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --esm ./index.mjs )`);
 
     // All assertions happen within the fixture scripts
     // Zero exit code indicates a passing test
-    const r = await exec(
-      `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --esm ./index.mjs`,
-      { cwd: proj.cwd }
-    );
+    const r = await exec(`${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --esm ./index.mjs`, {
+      cwd: proj.cwd,
+    });
     t.log(r.stdout);
     t.log(r.stderr);
     expect(r.err).toBe(null);
@@ -78,12 +60,7 @@ function declareTest(test: Test, testParams: TestParams) {
 type PackageJsonType = typeof packageJsonTypes[number];
 const packageJsonTypes = [undefined, 'commonjs', 'module'] as const;
 const typecheckModes = ['typecheck', 'transpileOnly', 'swc'] as const;
-const importStyles = [
-  'static import',
-  'require',
-  'dynamic import',
-  'import = require',
-] as const;
+const importStyles = ['static import', 'require', 'dynamic import', 'import = require'] as const;
 const importExtension = ['js', 'ts', 'omitted'] as const;
 
 interface Extension {
@@ -150,9 +127,7 @@ const extensions: Extension[] = [
 function getExtensionTreatment(ext: Extension, testParams: TestParams) {
   // JSX and any TS extensions get compiled.  Everything is compiled in allowJs mode
   const isCompiled = testParams.allowJs || !ext.isJs || ext.isJsxExt;
-  const isExecutedAsEsm =
-    ext.forcesEsm ||
-    (!ext.forcesCjs && testParams.packageJsonType === 'module');
+  const isExecutedAsEsm = ext.forcesEsm || (!ext.forcesCjs && testParams.packageJsonType === 'module');
   const isExecutedAsCjs = !isExecutedAsEsm;
   // if allowJs:false, then .jsx files are not allowed
   const isAllowed = !ext.isJsxExt || !ext.isJs || testParams.allowJs;
@@ -217,10 +192,7 @@ function writeFixturesToFilesystem(name: string, testParams: TestParams) {
       if (!importer) continue;
 
       let importSpecifier = `./${Path.relative(proj.cwd, importer.path)}`;
-      importSpecifier = replaceExtension(
-        importSpecifier,
-        importerExtension.jsEquivalentExt ?? importerExtension.ext
-      );
+      importSpecifier = replaceExtension(importSpecifier, importerExtension.jsEquivalentExt ?? importerExtension.ext);
       indexFile.content += `await import('${importSpecifier}');\n`;
     }
   }
@@ -232,18 +204,11 @@ function writeFixturesToFilesystem(name: string, testParams: TestParams) {
   return proj;
 }
 
-function createImporter(
-  proj: ProjectAPI,
-  testParams: TestParams,
-  importerParams: ImporterParams
-) {
+function createImporter(proj: ProjectAPI, testParams: TestParams, importerParams: ImporterParams) {
   const { importStyle, importerExtension } = importerParams;
   const name = `${importStyle} from ${importerExtension.ext}`;
 
-  const importerTreatment = getExtensionTreatment(
-    importerExtension,
-    testParams
-  );
+  const importerTreatment = getExtensionTreatment(importerExtension, testParams);
 
   if (!importerTreatment.isAllowed) return;
   // import = require only allowed in non-js files
@@ -251,11 +216,7 @@ function createImporter(
   // const = require not allowed in ESM
   if (importStyle === 'require' && importerTreatment.isExecutedAsEsm) return;
   // swc bug: import = require will not work in ESM, because swc does not emit necessary `__require = createRequire()`
-  if (
-    testParams.typecheckMode === 'swc' &&
-    importStyle === 'import = require' &&
-    importerTreatment.isExecutedAsEsm
-  )
+  if (testParams.typecheckMode === 'swc' && importStyle === 'import = require' && importerTreatment.isExecutedAsEsm)
     return;
 
   const importer = {
@@ -284,30 +245,16 @@ function createImporter(
     proj.add(importee);
 
     // dynamic import is the only way to import ESM from CJS
-    if (
-      importeeTreatment.isExecutedAsEsm &&
-      importerTreatment.isExecutedAsCjs &&
-      importStyle !== 'dynamic import'
-    )
+    if (importeeTreatment.isExecutedAsEsm && importerTreatment.isExecutedAsCjs && importStyle !== 'dynamic import')
       continue;
     // Cannot import = require an ESM file
-    if (importeeTreatment.isExecutedAsEsm && importStyle === 'import = require')
-      continue;
+    if (importeeTreatment.isExecutedAsEsm && importStyle === 'import = require') continue;
     // Cannot use static imports in non-compiled non-ESM
-    if (
-      importStyle === 'static import' &&
-      !importerTreatment.isCompiled &&
-      importerTreatment.isExecutedAsCjs
-    )
-      continue;
+    if (importStyle === 'static import' && !importerTreatment.isCompiled && importerTreatment.isExecutedAsCjs) continue;
 
     let importSpecifier = `./${importeeExtension.ext}`;
-    if (
-      !importeeExtension.cjsAllowsOmittingExt ||
-      isOneOf(importStyle, ['dynamic import', 'static import'])
-    )
-      importSpecifier +=
-        '.' + (importeeExtension.jsEquivalentExt ?? importeeExtension.ext);
+    if (!importeeExtension.cjsAllowsOmittingExt || isOneOf(importStyle, ['dynamic import', 'static import']))
+      importSpecifier += '.' + (importeeExtension.jsEquivalentExt ?? importeeExtension.ext);
 
     switch (importStyle) {
       case 'dynamic import':
@@ -325,18 +272,13 @@ function createImporter(
     }
 
     // Check both namespace.ext and namespace.default.ext, because node can't detect named exports from files we transform
-    const namespaceAsAny = importerExtension.isJs
-      ? importeeExtension.ext
-      : `(${importeeExtension.ext} as any)`;
+    const namespaceAsAny = importerExtension.isJs ? importeeExtension.ext : `(${importeeExtension.ext} as any)`;
     importer.assertions += `if((${importeeExtension.ext}.ext ?? ${namespaceAsAny}.default.ext) !== '${importeeExtension.ext}')\n`;
     importer.assertions += `  throw new Error('Wrong export from importee: expected ${importeeExtension.ext} but got ' + ${importeeExtension.ext}.ext + '(importee has these keys: ' + Object.keys(${importeeExtension.ext}) + ')');\n`;
   }
   return importer;
 }
-function createImportee(
-  testParams: TestParams,
-  importeeParams: ImporteeParams
-) {
+function createImportee(testParams: TestParams, importeeParams: ImporteeParams) {
   const { importeeExtension } = importeeParams;
   const importee = file(`${importeeExtension.ext}.${importeeExtension.ext}`);
   const treatment = getExtensionTreatment(importeeExtension, testParams);

@@ -40,12 +40,9 @@ export async function installTsNode() {
       try {
         rimrafSync(join(TEST_DIR, '.yarn/cache/ts-node-file-*'));
         writeFileSync(join(TEST_DIR, 'yarn.lock'), '');
-        const result = await promisify(childProcessExec)(
-          `yarn --no-immutable`,
-          {
-            cwd: TEST_DIR,
-          }
-        );
+        const result = await promisify(childProcessExec)(`yarn --no-immutable`, {
+          cwd: TEST_DIR,
+        });
         // You can uncomment this to aid debugging
         // console.log(result.stdout, result.stderr);
         rimrafSync(join(TEST_DIR, '.yarn/cache/ts-node-file-*'));
@@ -63,10 +60,7 @@ export async function installTsNode() {
  * Attempt an operation once across multiple processes, using filesystem locking.
  * If it was executed already by another process, and it errored, throw the same error message.
  */
-async function lockedMemoizedOperation(
-  lockPath: string,
-  operation: () => Promise<void>
-) {
+async function lockedMemoizedOperation(lockPath: string, operation: () => Promise<void>) {
   const releaseLock = await lock(lockPath, {
     realpath: false,
     stale: 120e3,
@@ -78,9 +72,7 @@ async function lockedMemoizedOperation(
   try {
     const operationHappened = existsSync(lockPath);
     if (operationHappened) {
-      const result: InstallationResult = JSON.parse(
-        readFileSync(lockPath, 'utf8')
-      );
+      const result: InstallationResult = JSON.parse(readFileSync(lockPath, 'utf8'));
       if (result.error) throw result.error;
     } else {
       const result: InstallationResult = { error: null };

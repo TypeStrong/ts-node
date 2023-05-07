@@ -1,13 +1,5 @@
-import type {
-  ChildProcess,
-  ExecException,
-  ExecOptions,
-  SpawnOptions,
-} from 'child_process';
-import {
-  exec as childProcessExec,
-  spawn as childProcessSpawn,
-} from 'child_process';
+import type { ChildProcess, ExecException, ExecOptions, SpawnOptions } from 'child_process';
+import { exec as childProcessExec, spawn as childProcessSpawn } from 'child_process';
 import { ExpectStream, expectStream } from '@cspotcode/expect-stream';
 import { expect } from './testlib';
 
@@ -19,9 +11,7 @@ export interface ExecResult {
   child: ChildProcess;
 }
 
-export function createExec<T extends Partial<ExecOptions>>(
-  preBoundOptions?: T
-) {
+export function createExec<T extends Partial<ExecOptions>>(preBoundOptions?: T) {
   /**
    * Helper to exec a child process.
    * Returns a Promise and a reference to the child process to suite multiple situations.
@@ -61,9 +51,7 @@ export interface SpawnResult {
   child: ChildProcess;
 }
 
-export function createSpawn<T extends Partial<SpawnOptions>>(
-  preBoundOptions?: T
-) {
+export function createSpawn<T extends Partial<SpawnOptions>>(preBoundOptions?: T) {
   /**
    * Helper to spawn a child process.
    * Returns a Promise and a reference to the child process to suite multiple situations.
@@ -122,14 +110,9 @@ export interface ExecTesterOptions {
  * Create a function that launches a CLI command, optionally pipes stdin, optionally sets env vars,
  * optionally runs a couple baked-in assertions, and returns the results for additional assertions.
  */
-export function createExecTester<T extends Partial<ExecTesterOptions>>(
-  preBoundOptions: T
-) {
+export function createExecTester<T extends Partial<ExecTesterOptions>>(preBoundOptions: T) {
   return async function (
-    options: Pick<
-      ExecTesterOptions,
-      Exclude<keyof ExecTesterOptions, keyof T>
-    > &
+    options: Pick<ExecTesterOptions, Exclude<keyof ExecTesterOptions, keyof T>> &
       Partial<Pick<ExecTesterOptions, keyof T & keyof ExecTesterOptions>>
   ) {
     const {

@@ -16,17 +16,12 @@ export interface TranspilerModule {
  *
  * @category Transpiler
  */
-export type TranspilerFactory = (
-  options: CreateTranspilerOptions
-) => Transpiler;
+export type TranspilerFactory = (options: CreateTranspilerOptions) => Transpiler;
 /** @category Transpiler */
 export interface CreateTranspilerOptions {
   // TODO this is confusing because its only a partial Service.  Rename?
   // Careful: must avoid stripInternal breakage by guarding with Extract<>
-  service: Pick<
-    Service,
-    Extract<'config' | 'options' | 'projectLocalResolveHelper', keyof Service>
-  >;
+  service: Pick<Service, Extract<'config' | 'options' | 'projectLocalResolveHelper', keyof Service>>;
   /**
    * If `"transpiler"` option is declared in an "extends" tsconfig, this path might be different than
    * the `projectLocalResolveHelper`

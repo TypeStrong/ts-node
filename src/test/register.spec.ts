@@ -1,18 +1,11 @@
 import { once } from 'lodash';
-import {
-  ctxTsNode,
-  PROJECT_TRANSPILE_ONLY,
-  resetNodeEnvironment,
-  TEST_DIR,
-  tsNodeTypes,
-} from './helpers';
+import { ctxTsNode, PROJECT_TRANSPILE_ONLY, resetNodeEnvironment, TEST_DIR, tsNodeTypes } from './helpers';
 import { context, expect } from './testlib';
 import * as exp from 'expect';
 import { join, resolve } from 'path';
 import proxyquire = require('proxyquire');
 
-const SOURCE_MAP_REGEXP =
-  /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/;
+const SOURCE_MAP_REGEXP = /\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/;
 
 const createOptions: tsNodeTypes.CreateOptions = {
   project: PROJECT_TRANSPILE_ONLY,
@@ -32,9 +25,7 @@ test.beforeEach(async (t) => {
   resetNodeEnvironment();
   delete require.cache[t.context.moduleTestPath];
   // Paranoid check that we are truly uninstalled
-  exp(() => require(t.context.moduleTestPath)).toThrow(
-    "Unexpected token 'export'"
-  );
+  exp(() => require(t.context.moduleTestPath)).toThrow("Unexpected token 'export'");
 });
 test.serial();
 
@@ -43,9 +34,7 @@ test('create() does not register()', async (t) => {
   // installed we must attempt to load a TS file
   t.context.tsNodeUnderTest.create(createOptions);
   // This error indicates node attempted to run the code as .js
-  exp(() => require(t.context.moduleTestPath)).toThrow(
-    "Unexpected token 'export'"
-  );
+  exp(() => require(t.context.moduleTestPath)).toThrow("Unexpected token 'export'");
 });
 
 test('register(options) is shorthand for register(create(options))', (t) => {
@@ -66,17 +55,13 @@ test.suite('register(create(options))', (test) => {
     t.context.service.installSourceMapSupport();
   });
 
-  test('should be able to require typescript', ({
-    context: { moduleTestPath },
-  }) => {
+  test('should be able to require typescript', ({ context: { moduleTestPath } }) => {
     const m = require(moduleTestPath);
 
     expect(m.example('foo')).toBe('FOO');
   });
 
-  test('should support dynamically disabling', ({
-    context: { service, moduleTestPath },
-  }) => {
+  test('should support dynamically disabling', ({ context: { service, moduleTestPath } }) => {
     delete require.cache[moduleTestPath];
 
     expect(service.enabled(false)).toBe(false);
@@ -123,10 +108,7 @@ test.suite('register(create(options))', (test) => {
       require('../../tests/throw error');
     } catch (error: any) {
       exp(error.stack).toMatch(
-        [
-          'Error: this is a demo',
-          `    at Foo.bar (${join(TEST_DIR, './throw error.ts')}:100:17)`,
-        ].join('\n')
+        ['Error: this is a demo', `    at Foo.bar (${join(TEST_DIR, './throw error.ts')}:100:17)`].join('\n')
       );
     }
   });
@@ -193,10 +175,7 @@ test('should support compiler scopes w/multiple registered compiler services at 
     compilers.forEach((c) => c.enabled(false));
   }
 
-  expect(calls).toEqual([
-    join(TEST_DIR, 'scope/a/index.ts'),
-    join(TEST_DIR, 'scope/b/index.ts'),
-  ]);
+  expect(calls).toEqual([join(TEST_DIR, 'scope/a/index.ts'), join(TEST_DIR, 'scope/b/index.ts')]);
 
   delete require.cache[moduleTestPath];
 

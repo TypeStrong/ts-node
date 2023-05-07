@@ -1,6 +1,6 @@
 {
   "incremental": true,
-  "lineWidth": 80,
+  "lineWidth": 120,
   "prettier": {
     "associations": [
       "**/*.{ts,tsx,js,mjs,cjs,jsx,json,md}"

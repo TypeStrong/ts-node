@@ -31,18 +31,13 @@ function Home() {
           <div className={styles.buttons}>
             <Link
               style={{ margin: '0 20px' }}
-              className={clsx(
-                'button button--secondary button--lg',
-                styles.getStarted
-              )}
+              className={clsx('button button--secondary button--lg', styles.getStarted)}
               to={useBaseUrl('docs/')}
             >
               Get Started
             </Link>
             <iframe
-              src={
-                'https://ghbtns.com/github-btn.html?user=TypeStrong&repo=ts-node&type=star&count=true&size=large'
-              }
+              src={'https://ghbtns.com/github-btn.html?user=TypeStrong&repo=ts-node&type=star&count=true&size=large'}
               frameBorder="0"
               scrolling="0"
               width="160px"
@@ -56,10 +51,7 @@ function Home() {
         <section className={styles.features}>
           <div className="container">
             <div className="text--center">
-              <img
-                src={useBaseUrl('img/screenshot.png')}
-                alt="screenshot of ts-node"
-              />
+              <img src={useBaseUrl('img/screenshot.png')} alt="screenshot of ts-node" />
             </div>
           </div>
         </section>

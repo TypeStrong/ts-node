@@ -6,12 +6,9 @@ const { default: dynamicCarData } = await import('./car.json', {
   assert: { type: 'json' },
 });
 
-if (dynamicCarData.doors !== 'open')
-  throw new Error('failed to dynamically import json');
+if (dynamicCarData.doors !== 'open') throw new Error('failed to dynamically import json');
 
-console.log(
-  `A ${carData.color} car has ${carData.seats} seats and the doors are ${dynamicCarData.doors}.`
-);
+console.log(`A ${carData.color} car has ${carData.seats} seats and the doors are ${dynamicCarData.doors}.`);
 
 // Test that omitting the assertion causes node to throw an error
 await import('./car.json').then(
