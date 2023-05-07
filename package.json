@@ -76,6 +76,7 @@
     "coverage-report": "nyc report --reporter=lcov",
     "__prepack_template__": "yarn clean && yarn build-nopack",
     "prepack": "rimraf temp dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz tests/node_modules tests/tmp && tsc -b ./tsconfig.build-dist.json && typescript-json-schema --topRef --refs --validationKeywords allOf --out tsconfig.schema.json tsconfig.build-schema.json TsConfigSchema && node --require ./register ./scripts/create-merged-schema",
+    "prepare": "workaround-broken-npm-prepack-behavior prepack",
     "api-extractor": "api-extractor run --local --verbose"
   },
   "repository": {
@@ -108,12 +109,12 @@
   },
   "homepage": "https://typestrong.org/ts-node",
   "devDependencies": {
-    "@TypeStrong/fs-fixture-builder": "github:TypeStrong/fs-fixture-builder#8abd1494280116ff5318dde2c50ad01e1663790c",
-    "@cspotcode/ava-lib": "github:cspotcode/ava-lib#edcc1885d192d08d5af83490af9341468402ec41",
-    "@cspotcode/expect-stream": "github:cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f",
+    "@TypeStrong/fs-fixture-builder": "https://github.com/Typestrong/fs-fixture-builder.git#3099e53621daf99db971af29c96145dc115693cd",
+    "@cspotcode/ava-lib": "https://github.com/cspotcode/ava-lib#bbbed83f393342b51dc6caf2ddf775a3e89371d8",
+    "@cspotcode/expect-stream": "https://github.com/cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f",
     "@microsoft/api-extractor": "^7.19.4",
-    "@swc/core": ">=1.3.32",
-    "@swc/wasm": ">=1.3.32",
+    "@swc/core": "1.3.32",
+    "@swc/wasm": "1.3.32",
     "@types/diff": "^4.0.2",
     "@types/lodash": "^4.14.151",
     "@types/node": "13.13.5",
@@ -136,7 +137,8 @@
     "throat": "^6.0.1",
     "typedoc": "^0.22.10",
     "typescript": "4.7.4",
-    "typescript-json-schema": "^0.54.0"
+    "typescript-json-schema": "^0.54.0",
+    "workaround-broken-npm-prepack-behavior": "https://github.com/cspotcode/workaround-broken-npm-prepack-behavior#1a7adbbb8a527784daf97edad6ba42d6e96611f6"
   },
   "peerDependencies": {
     "@swc/core": ">=1.2.50",
