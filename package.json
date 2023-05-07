@@ -109,7 +109,7 @@
   },
   "homepage": "https://typestrong.org/ts-node",
   "devDependencies": {
-    "@TypeStrong/fs-fixture-builder": "https://github.com/Typestrong/fs-fixture-builder.git#8abd1494280116ff5318dde2c50ad01e1663790c",
+    "@TypeStrong/fs-fixture-builder": "https://github.com/Typestrong/fs-fixture-builder.git#3099e53621daf99db971af29c96145dc115693cd",
     "@cspotcode/ava-lib": "https://github.com/cspotcode/ava-lib#bbbed83f393342b51dc6caf2ddf775a3e89371d8",
     "@cspotcode/expect-stream": "https://github.com/cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f",
     "@microsoft/api-extractor": "^7.19.4",
@@ -138,7 +138,7 @@
     "typedoc": "^0.22.10",
     "typescript": "4.7.4",
     "typescript-json-schema": "^0.54.0",
-    "workaround-broken-npm-prepack-behavior": "https://github.com/cspotcode/workaround-broken-npm-prepack-behavior#aae0e765a60e416c4c3ba7ea94c7a63dff6f2b07"
+    "workaround-broken-npm-prepack-behavior": "https://github.com/cspotcode/workaround-broken-npm-prepack-behavior#1a7adbbb8a527784daf97edad6ba42d6e96611f6"
   },
   "peerDependencies": {
     "@swc/core": ">=1.2.50",

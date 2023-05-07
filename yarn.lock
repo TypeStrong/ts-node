@@ -5,12 +5,12 @@ __metadata:
   version: 6
   cacheKey: 8
 
-"@TypeStrong/fs-fixture-builder@https://github.com/Typestrong/fs-fixture-builder.git#8abd1494280116ff5318dde2c50ad01e1663790c":
+"@TypeStrong/fs-fixture-builder@https://github.com/Typestrong/fs-fixture-builder.git#3099e53621daf99db971af29c96145dc115693cd":
   version: 0.0.0
-  resolution: "@TypeStrong/fs-fixture-builder@https://github.com/Typestrong/fs-fixture-builder.git#commit=8abd1494280116ff5318dde2c50ad01e1663790c"
+  resolution: "@TypeStrong/fs-fixture-builder@https://github.com/Typestrong/fs-fixture-builder.git#commit=3099e53621daf99db971af29c96145dc115693cd"
   bin:
-    capture-fs-fixture: ./dist/capture-fixture.ts
-  checksum: f9fc2cdf58b79470373fbac56449540c8c727553f13b9a402e5dcec47b0c909fca2d246cb09f6b55632ff823fa4da3332a593f18720e4227f88478be566898c1
+    capture-fs-fixture: ./dist/capture-fixture.js
+  checksum: f95f5f84c8f578a3ca1862a1b43d5e063fb3cda86dc585ea84d5b612aa3f7e6a5d80d17440e81f659ed32ba7bc4ad2830b7695d953ef06ecbe7796482ad754e1
   languageName: node
   linkType: hard
 
@@ -3802,7 +3802,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "ts-node@workspace:."
   dependencies:
-    "@TypeStrong/fs-fixture-builder": "https://github.com/Typestrong/fs-fixture-builder.git#8abd1494280116ff5318dde2c50ad01e1663790c"
+    "@TypeStrong/fs-fixture-builder": "https://github.com/Typestrong/fs-fixture-builder.git#3099e53621daf99db971af29c96145dc115693cd"
     "@cspotcode/ava-lib": "https://github.com/cspotcode/ava-lib#bbbed83f393342b51dc6caf2ddf775a3e89371d8"
     "@cspotcode/expect-stream": "https://github.com/cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f"
     "@cspotcode/source-map-support": ^0.8.0
@@ -3841,7 +3841,7 @@ __metadata:
     typescript: 4.7.4
     typescript-json-schema: ^0.54.0
     v8-compile-cache-lib: ^3.0.1
-    workaround-broken-npm-prepack-behavior: "https://github.com/cspotcode/workaround-broken-npm-prepack-behavior#aae0e765a60e416c4c3ba7ea94c7a63dff6f2b07"
+    workaround-broken-npm-prepack-behavior: "https://github.com/cspotcode/workaround-broken-npm-prepack-behavior#1a7adbbb8a527784daf97edad6ba42d6e96611f6"
   peerDependencies:
     "@swc/core": ">=1.2.50"
     "@swc/wasm": ">=1.2.50"
@@ -4065,12 +4065,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"workaround-broken-npm-prepack-behavior@https://github.com/cspotcode/workaround-broken-npm-prepack-behavior#aae0e765a60e416c4c3ba7ea94c7a63dff6f2b07":
+"workaround-broken-npm-prepack-behavior@https://github.com/cspotcode/workaround-broken-npm-prepack-behavior#1a7adbbb8a527784daf97edad6ba42d6e96611f6":
   version: 0.0.1
-  resolution: "workaround-broken-npm-prepack-behavior@https://github.com/cspotcode/workaround-broken-npm-prepack-behavior.git#commit=aae0e765a60e416c4c3ba7ea94c7a63dff6f2b07"
+  resolution: "workaround-broken-npm-prepack-behavior@https://github.com/cspotcode/workaround-broken-npm-prepack-behavior.git#commit=1a7adbbb8a527784daf97edad6ba42d6e96611f6"
   bin:
     workaround-broken-npm-prepack-behavior: bin.mjs
-  checksum: c2b0e693f4e74e8a7a0f067c6d543695ffccaa06118d9a3c539b13e47b55dfb0b33a40ab24479614fe30d61d0321f48362ad6d7089d717b2b499c7426ad6fcf1
+  checksum: aa4f5bb6ff0560f510abb9f4290f1e239ce97166da108880e41b2247928039a709ffe237d1255231e427cc9848d969eea54574d58aebe9174296cc6efbbe4e9a
   languageName: node
   linkType: hard
 
