@@ -241,16 +241,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cspotcode/ava-lib@https://github.com/cspotcode/ava-lib#985cb086fac0cb49b710f3815c1d6e3362efefc0":
+"@cspotcode/ava-lib@https://github.com/cspotcode/ava-lib#bbbed83f393342b51dc6caf2ddf775a3e89371d8":
   version: 0.0.1
-  resolution: "@cspotcode/ava-lib@https://github.com/cspotcode/ava-lib.git#commit=985cb086fac0cb49b710f3815c1d6e3362efefc0"
+  resolution: "@cspotcode/ava-lib@https://github.com/cspotcode/ava-lib.git#commit=bbbed83f393342b51dc6caf2ddf775a3e89371d8"
   dependencies:
     "@types/node": "*"
     throat: ^6.0.1
   peerDependencies:
     ava: "*"
     expect: "*"
-  checksum: ef13cee2e4bbed46487d6aa384ae2a1185d1a7b180fe16603869e3cb8f17d0b4e2026471e495890996cfd87ef8e7f207357222d6cfe0b6beb1bfc2768778c2fa
+  checksum: 3ca30bbfe81abb537e1e96addd272b34daf19ecba56f13a5785115bc3433dc5309e733ab8440384531b7a74b88f58eb11c9151e62b75c5c219eccc7dd8b058ec
   languageName: node
   linkType: hard
 
@@ -3803,7 +3803,7 @@ __metadata:
   resolution: "ts-node@workspace:."
   dependencies:
     "@TypeStrong/fs-fixture-builder": "https://github.com/Typestrong/fs-fixture-builder.git#8abd1494280116ff5318dde2c50ad01e1663790c"
-    "@cspotcode/ava-lib": "https://github.com/cspotcode/ava-lib#985cb086fac0cb49b710f3815c1d6e3362efefc0"
+    "@cspotcode/ava-lib": "https://github.com/cspotcode/ava-lib#bbbed83f393342b51dc6caf2ddf775a3e89371d8"
     "@cspotcode/expect-stream": "https://github.com/cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f"
     "@cspotcode/source-map-support": ^0.8.0
     "@microsoft/api-extractor": ^7.19.4
