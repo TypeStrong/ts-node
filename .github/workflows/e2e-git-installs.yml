@@ -28,7 +28,7 @@ jobs:
         run: |
           npm --version
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
-          npm install https://github.com/TypeStrong/ts-node#main
+          npm install https://github.com/TypeStrong/ts-node#e2e-git-installs
           npm test
   pnpm:
     name: "pnpm"
@@ -48,7 +48,7 @@ jobs:
           corepack prepare pnpm@latest --activate
           pnpm --version
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
-          pnpm install https://github.com/TypeStrong/ts-node#main
+          pnpm install https://github.com/TypeStrong/ts-node#e2e-git-installs
           pnpm test
   yarn:
     name: "yarn"
@@ -68,7 +68,7 @@ jobs:
           corepack prepare yarn@stable --activate
           yarn --version
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
-          yarn add ts-node@https://github.com/TypeStrong/ts-node#main
+          yarn add ts-node@https://github.com/TypeStrong/ts-node#e2e-git-installs
           yarn add typescript
           yarn test
   yarn1:
@@ -89,5 +89,5 @@ jobs:
           yarn --version
           yarn cache list
           echo '{"scripts": {"test": "ts-node -vvv"}}' > package.json
-          yarn add https://github.com/TypeStrong/ts-node#main
+          yarn add https://github.com/TypeStrong/ts-node#e2e-git-installs
           yarn test
