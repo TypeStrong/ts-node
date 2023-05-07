@@ -10,6 +10,7 @@ import {
 } from './helpers/version-checks';
 import { context, expect } from './testlib';
 import semver = require('semver');
+import { testsDirRequire } from './helpers';
 
 const exec = createExec({
   cwd: TEST_DIR,
@@ -95,7 +96,7 @@ test.suite(
     test.if(tsSupportsEs2022 && tsSupportsLibEs2023);
 
     const macro = test.macro((nodeVersion: string) => async (t) => {
-      const config = require(`@tsconfig/${nodeVersion}/tsconfig.json`);
+      const config = testsDirRequire(`@tsconfig/${nodeVersion}/tsconfig.json`);
       const r = await exec(`${BIN_PATH} --showConfig -e 10n`, {
         cwd: join(TEST_DIR, 'tsconfig-bases', nodeVersion),
       });
