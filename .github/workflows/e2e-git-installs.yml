@@ -77,6 +77,7 @@ jobs:
   yarn1:
     name: "yarn1 (officially *not* supported)"
     runs-on: ${{ matrix.os }}-latest
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
