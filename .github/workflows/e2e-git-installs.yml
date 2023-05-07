@@ -1,6 +1,9 @@
 name: E2E Install from git
 # TODO test global installs, too?
 on:
+  push:
+    branches:
+      - e2e-git-installs
   # nightly
   schedule:
     - cron:  '0 0 * * *'
