@@ -4,6 +4,8 @@ on:
   # nightly
   schedule:
     - cron:  '0 0 * * *'
+  # To temporarily enable on your branch for verification
+  push: {}
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
 permissions:
