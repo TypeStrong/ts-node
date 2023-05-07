@@ -3841,6 +3841,7 @@ __metadata:
     typescript: 4.7.4
     typescript-json-schema: ^0.54.0
     v8-compile-cache-lib: ^3.0.1
+    workaround-broken-npm-prepack-behavior: "https://github.com/cspotcode/workaround-broken-npm-prepack-behavior#5a3cebc7b2d33d580f31f47c6eacc83b5e02b90e"
   peerDependencies:
     "@swc/core": ">=1.2.50"
     "@swc/wasm": ">=1.2.50"
@@ -4061,6 +4062,15 @@ __metadata:
   dependencies:
     string-width: ^1.0.2 || 2 || 3 || 4
   checksum: d5fc37cd561f9daee3c80e03b92ed3e84d80dde3365a8767263d03dacfc8fa06b065ffe1df00d8c2a09f731482fcacae745abfbb478d4af36d0a891fad4834d3
+  languageName: node
+  linkType: hard
+
+"workaround-broken-npm-prepack-behavior@https://github.com/cspotcode/workaround-broken-npm-prepack-behavior#5a3cebc7b2d33d580f31f47c6eacc83b5e02b90e":
+  version: 0.0.1
+  resolution: "workaround-broken-npm-prepack-behavior@https://github.com/cspotcode/workaround-broken-npm-prepack-behavior.git#commit=5a3cebc7b2d33d580f31f47c6eacc83b5e02b90e"
+  bin:
+    workaround-broken-npm-prepack-behavior: bin.mjs
+  checksum: d6463d2e385fe54fb673c842e19b3cbc25f9fef0e88765377b61f078ad32448c7875a4708d3da850c9fa868321b3850ad71a36e49c4770732baecd37ee22e485
   languageName: node
   linkType: hard
 
