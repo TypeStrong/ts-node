@@ -17,11 +17,7 @@ if (Array.isArray(_process._events.warning)) {
 const messageMatch = /(?:--(?:experimental-)?loader\b|\bCustom ESM Loaders\b)/;
 function onWarning(this: any, warning: Error, ...rest: any[]) {
   // Suppress warning about how `--loader` is experimental
-  if (
-    warning?.name === 'ExperimentalWarning' &&
-    messageMatch.test(warning?.message)
-  )
-    return;
+  if (warning?.name === 'ExperimentalWarning' && messageMatch.test(warning?.message)) return;
   // Will be undefined if `--no-warnings`
   return originalOnWarning?.call(this, warning, ...rest);
 }

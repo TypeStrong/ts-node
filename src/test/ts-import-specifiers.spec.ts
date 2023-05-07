@@ -1,12 +1,7 @@
 import { context } from './testlib';
 import * as expect from 'expect';
 import { createExec } from './exec-helpers';
-import {
-  TEST_DIR,
-  ctxTsNode,
-  CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
-  tsSupportsAllowImportingTsExtensions,
-} from './helpers';
+import { TEST_DIR, ctxTsNode, CMD_TS_NODE_WITHOUT_PROJECT_FLAG, tsSupportsAllowImportingTsExtensions } from './helpers';
 import { project as fsProject } from '@TypeStrong/fs-fixture-builder';
 import { outdent as o } from 'outdent';
 
@@ -47,9 +42,7 @@ test('Supports .ts extensions in import specifiers with typechecking, even thoug
     },
     compilerOptions: {
       jsx: 'react',
-      allowImportingTsExtensions: tsSupportsAllowImportingTsExtensions
-        ? true
-        : undefined,
+      allowImportingTsExtensions: tsSupportsAllowImportingTsExtensions ? true : undefined,
     },
   });
   p.write();

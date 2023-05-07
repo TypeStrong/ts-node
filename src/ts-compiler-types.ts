@@ -47,19 +47,15 @@ export namespace TSCommon {
   export type ModuleResolutionHost = _ts.ModuleResolutionHost;
   export type ParsedCommandLine = _ts.ParsedCommandLine;
   export type ResolvedModule = _ts.ResolvedModule;
-  export type ResolvedTypeReferenceDirective =
-    _ts.ResolvedTypeReferenceDirective;
+  export type ResolvedTypeReferenceDirective = _ts.ResolvedTypeReferenceDirective;
   export type CompilerOptions = _ts.CompilerOptions;
   export type ResolvedProjectReference = _ts.ResolvedProjectReference;
-  export type ResolvedModuleWithFailedLookupLocations =
-    _ts.ResolvedModuleWithFailedLookupLocations;
+  export type ResolvedModuleWithFailedLookupLocations = _ts.ResolvedModuleWithFailedLookupLocations;
   export type FileReference = _ts.FileReference;
   export type SourceFile = _ts.SourceFile;
   // Hack until we start building against TS >= 4.7.0
   export type ModuleKindEnum = typeof _ts.ModuleKind & {
-    Node16: typeof _ts.ModuleKind extends { Node16: any }
-      ? typeof _ts.ModuleKind['Node16']
-      : 100;
+    Node16: typeof _ts.ModuleKind extends { Node16: any } ? typeof _ts.ModuleKind['Node16'] : 100;
   };
   // Can't figure out how to re-export an enum
   // `export import ... =` complains that _ts is type-only import
@@ -75,9 +71,7 @@ export namespace TSCommon {
  */
 export interface TSInternal {
   // https://github.com/microsoft/TypeScript/blob/4a34294908bed6701dcba2456ca7ac5eafe0ddff/src/compiler/core.ts#L1906-L1909
-  createGetCanonicalFileName(
-    useCaseSensitiveFileNames: boolean
-  ): TSInternal.GetCanonicalFileName;
+  createGetCanonicalFileName(useCaseSensitiveFileNames: boolean): TSInternal.GetCanonicalFileName;
   // https://github.com/microsoft/TypeScript/blob/c117c266e09c80e8a06b24a6e94b9d018f5fae6b/src/compiler/commandLineParser.ts#L2054
   convertToTSConfig(
     configParseResult: _ts.ParsedCommandLine,
@@ -88,10 +82,7 @@ export interface TSInternal {
   Diagnostics: {
     File_0_not_found: _ts.DiagnosticMessage;
   };
-  createCompilerDiagnostic(
-    message: _ts.DiagnosticMessage,
-    ...args: (string | number | undefined)[]
-  ): _ts.Diagnostic;
+  createCompilerDiagnostic(message: _ts.DiagnosticMessage, ...args: (string | number | undefined)[]): _ts.Diagnostic;
   nodeModuleNameResolver(
     moduleName: string,
     containingFile: string,
@@ -107,11 +98,7 @@ export interface TSInternal {
     containingFileMode: _ts.SourceFile['impliedNodeFormat']
   ) => _ts.SourceFile['impliedNodeFormat'];
   // TODO do we need these?  Which TS version adds them?
-  getPatternFromSpec(
-    spec: string,
-    basePath: string,
-    usage: 'files' | 'directories' | 'exclude'
-  ): string | undefined;
+  getPatternFromSpec(spec: string, basePath: string, usage: 'files' | 'directories' | 'exclude'): string | undefined;
   getRegularExpressionForWildcard(
     specs: readonly string[] | undefined,
     basePath: string,

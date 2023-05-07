@@ -24,10 +24,7 @@ export function yn(input: string | undefined) {
  *
  * @internal
  */
-export function assign<T extends object>(
-  initialValue: T,
-  ...sources: Array<T>
-): T {
+export function assign<T extends object>(initialValue: T, ...sources: Array<T>): T {
   for (const source of sources) {
     for (const key of Object.keys(source)) {
       const value = (source as any)[key];
@@ -43,9 +40,7 @@ export function assign<T extends object>(
  * @internal
  */
 export function split(value: string | undefined) {
-  return typeof value === 'string'
-    ? value.split(/ *, */g).filter((v) => v !== '')
-    : undefined;
+  return typeof value === 'string' ? value.split(/ *, */g).filter((v) => v !== '') : undefined;
 }
 
 /**
@@ -95,14 +90,9 @@ export function cachedLookup<T, R>(fn: (arg: T) => R): (arg: T) => R {
  * Require something with v8-compile-cache, which should make subsequent requires faster.
  * Do lots of error-handling so that, worst case, we require without the cache, and users are not blocked.
  */
-export function attemptRequireWithV8CompileCache(
-  requireFn: typeof require,
-  specifier: string
-) {
+export function attemptRequireWithV8CompileCache(requireFn: typeof require, specifier: string) {
   try {
-    const v8CC = (
-      require('v8-compile-cache-lib') as typeof import('v8-compile-cache-lib')
-    ).install();
+    const v8CC = (require('v8-compile-cache-lib') as typeof import('v8-compile-cache-lib')).install();
     try {
       return requireFn(specifier);
     } finally {
@@ -121,21 +111,14 @@ export function attemptRequireWithV8CompileCache(
  * @internal
  */
 export function createProjectLocalResolveHelper(localDirectory: string) {
-  return function projectLocalResolveHelper(
-    specifier: string,
-    fallbackToTsNodeRelative: boolean
-  ) {
+  return function projectLocalResolveHelper(specifier: string, fallbackToTsNodeRelative: boolean) {
     return require.resolve(specifier, {
-      paths: fallbackToTsNodeRelative
-        ? [localDirectory, __dirname]
-        : [localDirectory],
+      paths: fallbackToTsNodeRelative ? [localDirectory, __dirname] : [localDirectory],
     });
   };
 }
 /** @internal */
-export type ProjectLocalResolveHelper = ReturnType<
-  typeof createProjectLocalResolveHelper
->;
+export type ProjectLocalResolveHelper = ReturnType<typeof createProjectLocalResolveHelper>;
 
 /**
  * Used as a reminder of all the factors we must consider when finding project-local dependencies and when a config file
@@ -169,24 +152,15 @@ export function once<Fn extends (...args: any[]) => any>(fn: Fn) {
 }
 
 /** @internal */
-export function versionGteLt(
-  version: string,
-  gteRequirement: string,
-  ltRequirement?: string
-) {
+export function versionGteLt(version: string, gteRequirement: string, ltRequirement?: string) {
   const [major, minor, patch, extra] = parse(version);
   const [gteMajor, gteMinor, gtePatch] = parse(gteRequirement);
   const isGte =
-    major > gteMajor ||
-    (major === gteMajor &&
-      (minor > gteMinor || (minor === gteMinor && patch >= gtePatch)));
+    major > gteMajor || (major === gteMajor && (minor > gteMinor || (minor === gteMinor && patch >= gtePatch)));
   let isLt = true;
   if (ltRequirement) {
     const [ltMajor, ltMinor, ltPatch] = parse(ltRequirement);
-    isLt =
-      major < ltMajor ||
-      (major === ltMajor &&
-        (minor < ltMinor || (minor === ltMinor && patch < ltPatch)));
+    isLt = major < ltMajor || (major === ltMajor && (minor < ltMinor || (minor === ltMinor && patch < ltPatch)));
   }
   return isGte && isLt;
 

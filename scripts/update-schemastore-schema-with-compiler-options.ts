@@ -32,9 +32,7 @@ import { getSchemastoreSchema } from './create-merged-schema';
 
 async function main() {
   const schemastoreSchema = await getSchemastoreSchema();
-  const compilerOptions =
-    schemastoreSchema.definitions.compilerOptionsDefinition.properties
-      .compilerOptions.properties;
+  const compilerOptions = schemastoreSchema.definitions.compilerOptionsDefinition.properties.compilerOptions.properties;
 
   // These options are only available via CLI flags, not in a tsconfig file.
   const excludedOptions = [

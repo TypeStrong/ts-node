@@ -54,53 +54,17 @@ test.suite(
     test(macro, 'tsconfig-swc-wasm.json', 'root @swc/wasm');
     test(macro, 'tsconfig-swc.json', 'root @swc/core');
 
-    test(
-      macro,
-      'node_modules/shared-config/tsconfig-custom-compiler.json',
-      'shared-config custom compiler'
-    );
-    test(
-      macro,
-      'node_modules/shared-config/tsconfig-custom-transpiler.json',
-      'shared-config custom transpiler'
-    );
-    test(
-      macro,
-      'node_modules/shared-config/tsconfig-swc-custom-backend.json',
-      'shared-config custom swc backend'
-    );
-    test(
-      macro,
-      'node_modules/shared-config/tsconfig-swc-core.json',
-      'shared-config @swc/core'
-    );
-    test(
-      macro,
-      'node_modules/shared-config/tsconfig-swc-wasm.json',
-      'shared-config @swc/wasm'
-    );
-    test(
-      macro,
-      'node_modules/shared-config/tsconfig-swc.json',
-      'shared-config @swc/core'
-    );
+    test(macro, 'node_modules/shared-config/tsconfig-custom-compiler.json', 'shared-config custom compiler');
+    test(macro, 'node_modules/shared-config/tsconfig-custom-transpiler.json', 'shared-config custom transpiler');
+    test(macro, 'node_modules/shared-config/tsconfig-swc-custom-backend.json', 'shared-config custom swc backend');
+    test(macro, 'node_modules/shared-config/tsconfig-swc-core.json', 'shared-config @swc/core');
+    test(macro, 'node_modules/shared-config/tsconfig-swc-wasm.json', 'shared-config @swc/wasm');
+    test(macro, 'node_modules/shared-config/tsconfig-swc.json', 'shared-config @swc/core');
 
     test.suite('"extends"', (test) => {
-      test(
-        macro,
-        'tsconfig-extend-custom-compiler.json',
-        'shared-config custom compiler'
-      );
-      test(
-        macro,
-        'tsconfig-extend-custom-transpiler.json',
-        'shared-config custom transpiler'
-      );
-      test(
-        macro,
-        'tsconfig-extend-swc-custom-backend.json',
-        'shared-config custom swc backend'
-      );
+      test(macro, 'tsconfig-extend-custom-compiler.json', 'shared-config custom compiler');
+      test(macro, 'tsconfig-extend-custom-transpiler.json', 'shared-config custom transpiler');
+      test(macro, 'tsconfig-extend-swc-custom-backend.json', 'shared-config custom swc backend');
       test(macro, 'tsconfig-extend-swc-core.json', 'shared-config @swc/core');
       test(macro, 'tsconfig-extend-swc-wasm.json', 'shared-config @swc/wasm');
       test(macro, 'tsconfig-extend-swc.json', 'shared-config @swc/core');

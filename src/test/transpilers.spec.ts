@@ -3,12 +3,7 @@
 // Should consolidate them here.
 
 import { context } from './testlib';
-import {
-  ctxTsNode,
-  testsDirRequire,
-  tsSupportsImportAssertions,
-  tsSupportsReact17JsxFactories,
-} from './helpers';
+import { ctxTsNode, testsDirRequire, tsSupportsImportAssertions, tsSupportsReact17JsxFactories } from './helpers';
 import { createSwcOptions } from '../transpilers/swc';
 import * as expect from 'expect';
 import { outdent } from 'outdent';
@@ -26,9 +21,7 @@ test.suite('swc', (test) => {
     for (const key of Object.keys(ts.ScriptTarget)) {
       if (/^\d+$/.test(key)) continue;
       if (key === 'JSON') continue;
-      expect(
-        swcTranspiler.targetMapping.has(ts.ScriptTarget[key as any] as any)
-      ).toBe(true);
+      expect(swcTranspiler.targetMapping.has(ts.ScriptTarget[key as any] as any)).toBe(true);
     }
 
     // Detect when mapping is missing any swc targets
@@ -54,31 +47,20 @@ test.suite('swc', (test) => {
 
   test.suite('converts TS config to swc config', (test) => {
     test.suite('jsx', (test) => {
-      const macro = test.macro(
-        (jsx: string, runtime?: string, development?: boolean) => [
-          () => `jsx=${jsx}`,
-          async (t) => {
-            const tsNode = t.context.tsNodeUnderTest.create({
-              compilerOptions: {
-                jsx,
-              },
-            });
-            const swcOptions = createSwcOptions(
-              tsNode.config.options,
-              undefined,
-              require('@swc/core'),
-              '@swc/core'
-            );
-            expect(swcOptions.tsxOptions.jsc?.transform?.react).toBeDefined();
-            expect(
-              swcOptions.tsxOptions.jsc?.transform?.react?.development
-            ).toBe(development);
-            expect(swcOptions.tsxOptions.jsc?.transform?.react?.runtime).toBe(
-              runtime
-            );
-          },
-        ]
-      );
+      const macro = test.macro((jsx: string, runtime?: string, development?: boolean) => [
+        () => `jsx=${jsx}`,
+        async (t) => {
+          const tsNode = t.context.tsNodeUnderTest.create({
+            compilerOptions: {
+              jsx,
+            },
+          });
+          const swcOptions = createSwcOptions(tsNode.config.options, undefined, require('@swc/core'), '@swc/core');
+          expect(swcOptions.tsxOptions.jsc?.transform?.react).toBeDefined();
+          expect(swcOptions.tsxOptions.jsc?.transform?.react?.development).toBe(development);
+          expect(swcOptions.tsxOptions.jsc?.transform?.react?.runtime).toBe(runtime);
+        },
+      ]);
 
       test(macro, 'react', undefined, undefined);
       test.suite('react 17 jsx factories', (test) => {
@@ -89,38 +71,29 @@ test.suite('swc', (test) => {
     });
   });
 
-  const compileMacro = test.macro(
-    (compilerOptions: object, input: string, expectedOutput: string) => [
-      (title?: string) => title ?? `${JSON.stringify(compilerOptions)}`,
-      async (t) => {
-        const code = t.context.tsNodeUnderTest
-          .create({
-            swc: true,
-            skipProject: true,
-            compilerOptions: {
-              module: 'esnext',
-              ...compilerOptions,
-            },
-          })
-          .compile(input, 'input.tsx');
-        expect(code.replace(/\/\/# sourceMappingURL.*/, '').trim()).toBe(
-          expectedOutput
-        );
-      },
-    ]
-  );
+  const compileMacro = test.macro((compilerOptions: object, input: string, expectedOutput: string) => [
+    (title?: string) => title ?? `${JSON.stringify(compilerOptions)}`,
+    async (t) => {
+      const code = t.context.tsNodeUnderTest
+        .create({
+          swc: true,
+          skipProject: true,
+          compilerOptions: {
+            module: 'esnext',
+            ...compilerOptions,
+          },
+        })
+        .compile(input, 'input.tsx');
+      expect(code.replace(/\/\/# sourceMappingURL.*/, '').trim()).toBe(expectedOutput);
+    },
+  ]);
 
   test.suite('transforms various forms of jsx', (test) => {
     const input = outdent`
       const div = <div></div>;
     `;
 
-    test(
-      compileMacro,
-      { jsx: 'react' },
-      input,
-      `const div = /*#__PURE__*/ React.createElement("div", null);`
-    );
+    test(compileMacro, { jsx: 'react' }, input, `const div = /*#__PURE__*/ React.createElement("div", null);`);
     test.suite('react 17 jsx factories', (test) => {
       test.if(tsSupportsReact17JsxFactories);
       test(

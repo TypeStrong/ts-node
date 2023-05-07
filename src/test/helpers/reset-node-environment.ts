@@ -19,22 +19,14 @@ const defaultGlobal = captureObjectState(global);
  * Must also play nice with `nyc`'s environmental mutations.
  */
 export function resetNodeEnvironment() {
-  const sms =
-    require('@cspotcode/source-map-support') as typeof import('@cspotcode/source-map-support');
+  const sms = require('@cspotcode/source-map-support') as typeof import('@cspotcode/source-map-support');
   // We must uninstall so that it resets its internal state; otherwise it won't know it needs to reinstall in the next test.
   sms.uninstall();
   // Must remove handlers to avoid a memory leak
   sms.resetRetrieveHandlers();
 
   // Modified by ts-node hooks
-  resetObject(
-    require.extensions,
-    defaultRequireExtensions,
-    undefined,
-    undefined,
-    undefined,
-    true
-  );
+  resetObject(require.extensions, defaultRequireExtensions, undefined, undefined, undefined, true);
 
   // ts-node attaches a property when it registers an instance
   // source-map-support monkey-patches the emit function
@@ -84,10 +76,8 @@ function resetObject(
   // Trigger nyc's setter functions
   for (const [key, value] of Object.entries(state.values)) {
     try {
-      if (doNotSetTheseKeys === true || doNotSetTheseKeys.includes(key))
-        continue;
-      if (avoidSetterIfUnchanged.includes(key) && object[key] === value)
-        continue;
+      if (doNotSetTheseKeys === true || doNotSetTheseKeys.includes(key)) continue;
+      if (avoidSetterIfUnchanged.includes(key) && object[key] === value) continue;
       state.descriptors[key].set?.call(object, value);
     } catch {}
   }

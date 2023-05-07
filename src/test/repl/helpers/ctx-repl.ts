@@ -15,9 +15,7 @@ export interface ExecuteInReplOptions extends CreateReplViaApiOptions {
   waitMs?: number;
   waitPattern?: string | RegExp;
   /** When specified, calls `startInternal` instead of `start` and passes options */
-  startInternalOptions?: Parameters<
-    tsNodeTypes.ReplService['startInternal']
-  >[0];
+  startInternalOptions?: Parameters<tsNodeTypes.ReplService['startInternal']>[0];
 }
 
 export namespace ctxRepl {
@@ -32,11 +30,7 @@ export async function ctxRepl(t: ctxTsNode.T) {
   const { tsNodeUnderTest } = t.context;
   return { createReplViaApi, executeInRepl };
 
-  function createReplViaApi({
-    registerHooks,
-    createReplOpts,
-    createServiceOpts,
-  }: CreateReplViaApiOptions) {
+  function createReplViaApi({ registerHooks, createReplOpts, createServiceOpts }: CreateReplViaApiOptions) {
     const stdin = new PassThrough();
     const stdout = new PassThrough();
     const stderr = new PassThrough();
@@ -46,9 +40,7 @@ export async function ctxRepl(t: ctxTsNode.T) {
       stderr,
       ...createReplOpts,
     });
-    const service = (
-      registerHooks ? tsNodeUnderTest.register : tsNodeUnderTest.create
-    )({
+    const service = (registerHooks ? tsNodeUnderTest.register : tsNodeUnderTest.create)({
       ...replService.evalAwarePartialHost,
       project: `${TEST_DIR}/tsconfig.json`,
       ...createServiceOpts,

@@ -27,13 +27,7 @@ const tsResolverEquivalents = new Map<string, readonly string[]>([
 ]);
 
 // All extensions understood by vanilla node
-const vanillaNodeExtensions: readonly string[] = [
-  '.js',
-  '.json',
-  '.node',
-  '.mjs',
-  '.cjs',
-];
+const vanillaNodeExtensions: readonly string[] = ['.js', '.json', '.node', '.mjs', '.cjs'];
 
 // Extensions added by vanilla node's require() if you omit them:
 // js, json, node
@@ -42,13 +36,7 @@ const vanillaNodeExtensions: readonly string[] = [
 // Extensions added by ESM codepath's legacy package.json "main" resolver
 // js, json, node (not mjs!)
 
-const nodeDoesNotUnderstand: readonly string[] = [
-  '.ts',
-  '.tsx',
-  '.jsx',
-  '.cts',
-  '.mts',
-];
+const nodeDoesNotUnderstand: readonly string[] = ['.ts', '.tsx', '.jsx', '.cts', '.mts'];
 
 export function tsSupportsMtsCtsExts(tsVersion: string) {
   return versionGteLt(tsVersion, '4.5.0');
@@ -58,17 +46,12 @@ export function tsSupportsMtsCtsExts(tsVersion: string) {
  * [MUST_UPDATE_FOR_NEW_FILE_EXTENSIONS]
  * @internal
  */
-export function getExtensions(
-  config: _ts.ParsedCommandLine,
-  options: RegisterOptions,
-  tsVersion: string
-) {
+export function getExtensions(config: _ts.ParsedCommandLine, options: RegisterOptions, tsVersion: string) {
   // TS 4.5 is first version to understand .cts, .mts, .cjs, and .mjs extensions
   const supportMtsCtsExts = tsSupportsMtsCtsExts(tsVersion);
 
   const requiresHigherTypescriptVersion: string[] = [];
-  if (!tsSupportsMtsCtsExts)
-    requiresHigherTypescriptVersion.push('.cts', '.cjs', '.mts', '.mjs');
+  if (!tsSupportsMtsCtsExts) requiresHigherTypescriptVersion.push('.cts', '.cjs', '.mts', '.mjs');
 
   const allPossibleExtensionsSortedByPreference = Array.from(
     new Set([
@@ -90,13 +73,9 @@ export function getExtensions(
   }
 
   const compiledUnsorted = [...compiledJsUnsorted, ...compiledJsxUnsorted];
-  const compiled = allPossibleExtensionsSortedByPreference.filter((ext) =>
-    compiledUnsorted.includes(ext)
-  );
+  const compiled = allPossibleExtensionsSortedByPreference.filter((ext) => compiledUnsorted.includes(ext));
 
-  const compiledNodeDoesNotUnderstand = nodeDoesNotUnderstand.filter((ext) =>
-    compiled.includes(ext)
-  );
+  const compiledNodeDoesNotUnderstand = nodeDoesNotUnderstand.filter((ext) => compiled.includes(ext));
 
   /**
    * TS's resolver can resolve foo.js to foo.ts, by replacing .js extension with several source extensions.
@@ -108,15 +87,11 @@ export function getExtensions(
   const r = allPossibleExtensionsSortedByPreference.filter((ext) =>
     [...compiledUnsorted, '.js', '.mjs', '.cjs', '.mts', '.cts'].includes(ext)
   );
-  const replacementsForJs = r.filter((ext) =>
-    ['.js', '.jsx', '.ts', '.tsx'].includes(ext)
-  );
+  const replacementsForJs = r.filter((ext) => ['.js', '.jsx', '.ts', '.tsx'].includes(ext));
   const replacementsForJsx = r.filter((ext) => ['.jsx', '.tsx'].includes(ext));
   const replacementsForMjs = r.filter((ext) => ['.mjs', '.mts'].includes(ext));
   const replacementsForCjs = r.filter((ext) => ['.cjs', '.cts'].includes(ext));
-  const replacementsForJsOrMjs = r.filter((ext) =>
-    ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.mts'].includes(ext)
-  );
+  const replacementsForJsOrMjs = r.filter((ext) => ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.mts'].includes(ext));
 
   // Node allows omitting .js or .mjs extension in certain situations (CJS, ESM w/experimental flag)
   // So anything that compiles to .js or .mjs can also be omitted.
@@ -124,9 +99,7 @@ export function getExtensions(
     new Set([...replacementsForJsOrMjs, '.json', '.node'])
   );
   // Same as above, except node curiuosly doesn't do .mjs here
-  const legacyMainResolveAddsIfOmitted = Array.from(
-    new Set([...replacementsForJs, '.json', '.node'])
-  );
+  const legacyMainResolveAddsIfOmitted = Array.from(new Set([...replacementsForJs, '.json', '.node']));
 
   return {
     /** All file extensions we transform, ordered by resolution preference according to preferTsExts */
