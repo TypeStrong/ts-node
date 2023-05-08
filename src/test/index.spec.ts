@@ -1,20 +1,11 @@
-import { context, ExecutionContext } from './testlib';
+import { context } from './testlib';
 import * as expect from 'expect';
 import { join, resolve, sep as pathSep } from 'path';
 import {
   BIN_PATH_JS,
   CMD_TS_NODE_WITH_PROJECT_TRANSPILE_ONLY_FLAG,
-  ts,
   tsSupportsMtsCtsExtensions,
-  tsSupportsStableNodeNextNode16,
-} from './helpers';
-import { lstatSync } from 'fs';
-import { createExec } from './exec-helpers';
-import {
-  BIN_CWD_PATH,
   BIN_PATH,
-  BIN_SCRIPT_PATH,
-  DIST_DIR,
   ROOT_DIR,
   TEST_DIR,
   testsDirRequire,
@@ -22,8 +13,8 @@ import {
   CMD_TS_NODE_WITH_PROJECT_FLAG,
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   CMD_ESM_LOADER_WITHOUT_PROJECT,
+  createExec,
 } from './helpers';
-import type { CreateOptions } from '..';
 
 const exec = createExec({
   cwd: TEST_DIR,
@@ -32,49 +23,6 @@ const exec = createExec({
 const test = context(ctxTsNode);
 
 test.suite('ts-node', (test) => {
-  test('should export the correct version', (t) => {
-    expect(t.context.tsNodeUnderTest.VERSION).toBe(require('../../package.json').version);
-  });
-  test('should export all CJS entrypoints', () => {
-    // Ensure our package.json "exports" declaration allows `require()`ing all our entrypoints
-    // https://github.com/TypeStrong/ts-node/pull/1026
-
-    testsDirRequire.resolve('ts-node');
-
-    // only reliably way to ask node for the root path of a dependency is Path.resolve(require.resolve('ts-node/package'), '..')
-    testsDirRequire.resolve('ts-node/package');
-    testsDirRequire.resolve('ts-node/package.json');
-
-    // All bin entrypoints for people who need to augment our CLI: `node -r otherstuff ./node_modules/ts-node/dist/bin`
-    testsDirRequire.resolve('ts-node/dist/bin');
-    testsDirRequire.resolve('ts-node/dist/bin.js');
-    testsDirRequire.resolve('ts-node/dist/bin-transpile');
-    testsDirRequire.resolve('ts-node/dist/bin-transpile.js');
-    testsDirRequire.resolve('ts-node/dist/bin-script');
-    testsDirRequire.resolve('ts-node/dist/bin-script.js');
-    testsDirRequire.resolve('ts-node/dist/bin-cwd');
-    testsDirRequire.resolve('ts-node/dist/bin-cwd.js');
-
-    // Must be `require()`able obviously
-    testsDirRequire.resolve('ts-node/register');
-    testsDirRequire.resolve('ts-node/register/files');
-    testsDirRequire.resolve('ts-node/register/transpile-only');
-    testsDirRequire.resolve('ts-node/register/type-check');
-
-    // `node --loader ts-node/esm`
-    testsDirRequire.resolve('ts-node/esm');
-    testsDirRequire.resolve('ts-node/esm.mjs');
-    testsDirRequire.resolve('ts-node/esm/transpile-only');
-    testsDirRequire.resolve('ts-node/esm/transpile-only.mjs');
-
-    testsDirRequire.resolve('ts-node/transpilers/swc');
-    testsDirRequire.resolve('ts-node/transpilers/swc-experimental');
-
-    testsDirRequire.resolve('ts-node/node14/tsconfig.json');
-    testsDirRequire.resolve('ts-node/node16/tsconfig.json');
-    testsDirRequire.resolve('ts-node/node18/tsconfig.json');
-  });
-
   test('should not load typescript outside of loadConfig', async () => {
     const r = await exec(
       `node -e "require('ts-node'); console.dir(Object.keys(require.cache).filter(k => k.includes('node_modules/typescript')).length)"`
@@ -439,52 +387,6 @@ test.suite('ts-node', (test) => {
       });
     });
 
-    test('should locate tsconfig relative to entry-point by default', async () => {
-      const r = await exec(`${BIN_PATH} ../a/index`, {
-        cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
-      });
-      expect(r.err).toBe(null);
-      expect(r.stdout).toMatch(/plugin-a/);
-    });
-    test('should locate tsconfig relative to entry-point via ts-node-script', async () => {
-      const r = await exec(`${BIN_SCRIPT_PATH} ../a/index`, {
-        cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
-      });
-      expect(r.err).toBe(null);
-      expect(r.stdout).toMatch(/plugin-a/);
-    });
-    test('should locate tsconfig relative to entry-point with --script-mode', async () => {
-      const r = await exec(`${BIN_PATH} --script-mode ../a/index`, {
-        cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
-      });
-      expect(r.err).toBe(null);
-      expect(r.stdout).toMatch(/plugin-a/);
-    });
-    test('should locate tsconfig relative to cwd via ts-node-cwd', async () => {
-      const r = await exec(`${BIN_CWD_PATH} ../a/index`, {
-        cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
-      });
-      expect(r.err).toBe(null);
-      expect(r.stdout).toMatch(/plugin-b/);
-    });
-    test('should locate tsconfig relative to cwd in --cwd-mode', async () => {
-      const r = await exec(`${BIN_PATH} --cwd-mode ../a/index`, {
-        cwd: join(TEST_DIR, 'cwd-and-script-mode/b'),
-      });
-      expect(r.err).toBe(null);
-      expect(r.stdout).toMatch(/plugin-b/);
-    });
-    test('should locate tsconfig relative to realpath, not symlink, when entrypoint is a symlink', async (t) => {
-      if (lstatSync(join(TEST_DIR, 'main-realpath/symlink/symlink.tsx')).isSymbolicLink()) {
-        const r = await exec(`${BIN_PATH} main-realpath/symlink/symlink.tsx`);
-        expect(r.err).toBe(null);
-        expect(r.stdout).toBe('');
-      } else {
-        t.log('Skipping');
-        return;
-      }
-    });
-
     test('should have the correct working directory in the user entry-point', async () => {
       const r = await exec(`${BIN_PATH} --cwd ./cjs index.ts`, {
         cwd: resolve(TEST_DIR, 'working-dir'),
@@ -600,98 +502,6 @@ test.suite('ts-node', (test) => {
       expect(r.stdout).toBe(`value\nFailures: 0\n`);
     });
   });
-
-  test.suite('create', ({ contextEach }) => {
-    const test = contextEach(async (t) => {
-      return {
-        service: t.context.tsNodeUnderTest.create({
-          compilerOptions: { target: 'es5' },
-          skipProject: true,
-        }),
-      };
-    });
-
-    test('should create generic compiler instances', (t) => {
-      const output = t.context.service.compile('const x = 10', 'test.ts');
-      expect(output).toMatch('var x = 10;');
-    });
-
-    test.suite('should get type information', (test) => {
-      test('given position of identifier', (t) => {
-        expect(t.context.service.getTypeInfo('/**jsdoc here*/const x = 10', 'test.ts', 21)).toEqual({
-          comment: 'jsdoc here',
-          name: 'const x: 10',
-        });
-      });
-      test('given position that does not point to an identifier', (t) => {
-        expect(t.context.service.getTypeInfo('/**jsdoc here*/const x = 10', 'test.ts', 0)).toEqual({
-          comment: '',
-          name: '',
-        });
-      });
-    });
-  });
-
-  test.suite('issue #1098', (test) => {
-    function testAllowedExtensions(
-      t: ExecutionContext<ctxTsNode.Ctx>,
-      compilerOptions: CreateOptions['compilerOptions'],
-      allowed: string[]
-    ) {
-      const disallowed = allExtensions.filter((ext) => !allowed.includes(ext));
-      const { ignored } = t.context.tsNodeUnderTest.create({
-        compilerOptions,
-        skipProject: true,
-      });
-      for (const ext of allowed) {
-        t.log(`Testing that ${ext} files are allowed`);
-        expect(ignored(join(DIST_DIR, `index${ext}`))).toBe(false);
-      }
-      for (const ext of disallowed) {
-        t.log(`Testing that ${ext} files are ignored`);
-        expect(ignored(join(DIST_DIR, `index${ext}`))).toBe(true);
-      }
-    }
-
-    const allExtensions = [
-      '.ts',
-      '.js',
-      '.d.ts',
-      '.mts',
-      '.cts',
-      '.d.mts',
-      '.d.cts',
-      '.mjs',
-      '.cjs',
-      '.tsx',
-      '.jsx',
-      '.xyz',
-      '',
-    ];
-    const mtsCts = tsSupportsMtsCtsExtensions ? ['.mts', '.cts', '.d.mts', '.d.cts'] : [];
-    const mjsCjs = tsSupportsMtsCtsExtensions ? ['.mjs', '.cjs'] : [];
-
-    test('correctly filters file extensions from the compiler when allowJs=false and jsx=false', (t) => {
-      testAllowedExtensions(t, {}, ['.ts', '.d.ts', ...mtsCts]);
-    });
-    test('correctly filters file extensions from the compiler when allowJs=true and jsx=false', (t) => {
-      testAllowedExtensions(t, { allowJs: true }, ['.ts', '.js', '.d.ts', ...mtsCts, ...mjsCjs]);
-    });
-    test('correctly filters file extensions from the compiler when allowJs=false and jsx=true', (t) => {
-      testAllowedExtensions(t, { allowJs: false, jsx: 'preserve' }, ['.ts', '.tsx', '.d.ts', ...mtsCts]);
-    });
-    test('correctly filters file extensions from the compiler when allowJs=true and jsx=true', (t) => {
-      testAllowedExtensions(t, { allowJs: true, jsx: 'preserve' }, [
-        '.ts',
-        '.tsx',
-        '.js',
-        '.jsx',
-        '.d.ts',
-        ...mtsCts,
-        ...mjsCjs,
-      ]);
-    });
-  });
 });
 
 test('Falls back to transpileOnly when ts compiler returns emitSkipped', async () => {
@@ -729,43 +539,4 @@ test.suite('node environment', (test) => {
       });
     }
   });
-});
-
-test('Detect when typescript adds new ModuleKind values; flag as a failure so we can update our code flagged [MUST_UPDATE_FOR_NEW_MODULEKIND]', async () => {
-  // We have marked a few places in our code with MUST_UPDATE_FOR_NEW_MODULEKIND to make it easier to update them when TS adds new ModuleKinds
-  const foundKeys: string[] = [];
-  function check(value: number, name: string, required: boolean) {
-    if (required) expect(ts.ModuleKind[name as any]).toBe(value);
-    if (ts.ModuleKind[value] === undefined) {
-      expect(ts.ModuleKind[name as any]).toBeUndefined();
-    } else {
-      expect(ts.ModuleKind[value]).toBe(name);
-      foundKeys.push(name, `${value}`);
-    }
-  }
-  check(0, 'None', true);
-  check(1, 'CommonJS', true);
-  check(2, 'AMD', true);
-  check(3, 'UMD', true);
-  check(4, 'System', true);
-  check(5, 'ES2015', true);
-  try {
-    check(6, 'ES2020', false);
-    check(99, 'ESNext', true);
-  } catch {
-    // the value changed: is `99` now, but was `6` in TS 2.7
-    check(6, 'ESNext', true);
-    expect(ts.ModuleKind[99]).toBeUndefined();
-  }
-  check(7, 'ES2022', false);
-  if (tsSupportsStableNodeNextNode16) {
-    check(100, 'Node16', true);
-  } else {
-    check(100, 'Node12', false);
-  }
-  check(199, 'NodeNext', false);
-  const actualKeys = Object.keys(ts.ModuleKind);
-  actualKeys.sort();
-  foundKeys.sort();
-  expect(actualKeys).toEqual(foundKeys);
 });

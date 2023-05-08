@@ -8,7 +8,7 @@ import {
 } from '../helpers';
 import semver = require('semver');
 import { CMD_TS_NODE_WITH_PROJECT_FLAG, ctxTsNode, TEST_DIR } from '../helpers';
-import { createExec, createExecTester } from '../exec-helpers';
+import { createExec, createExecTester } from '../helpers/exec';
 import { upstreamTopLevelAwaitTests } from './node-repl-tla';
 import { replFile } from './helpers/misc';
 import { expectStream } from '@cspotcode/expect-stream';

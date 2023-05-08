@@ -7,7 +7,7 @@ import { context, expect } from '../testlib';
 import { expectStream } from '@cspotcode/expect-stream';
 import { CMD_TS_NODE_WITH_PROJECT_FLAG, ctxTsNode, delay, TEST_DIR } from '../helpers';
 import { dirname, join } from 'path';
-import { createExec, createExecTester } from '../exec-helpers';
+import { createExec, createExecTester } from '../helpers/exec';
 import { homedir } from 'os';
 import { replFile } from './helpers/misc';
 import { ctxRepl } from './helpers/ctx-repl';

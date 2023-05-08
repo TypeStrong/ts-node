@@ -1,6 +1,5 @@
 import * as expect from 'expect';
-import { createExec, createExecTester } from './exec-helpers';
-import { CMD_TS_NODE_WITH_PROJECT_FLAG, ctxTsNode, TEST_DIR } from './helpers';
+import { createExec, createExecTester, CMD_TS_NODE_WITH_PROJECT_FLAG, ctxTsNode, TEST_DIR } from './helpers';
 import { context } from './testlib';
 const test = context(ctxTsNode);
 

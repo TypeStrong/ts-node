@@ -1,4 +1,4 @@
-import { createExec } from './exec-helpers';
+import { createExec } from './helpers/exec';
 import { ctxTsNode, tsSupportsVerbatimModuleSyntax } from './helpers';
 import { CMD_TS_NODE_WITH_PROJECT_FLAG } from './helpers/command-lines';
 import { TEST_DIR } from './helpers/paths';
