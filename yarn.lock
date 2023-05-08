@@ -3825,6 +3825,7 @@ __metadata:
     arg: ^4.1.0
     ava: ^5.1.1
     axios: ^0.21.1
+    cross-spawn: ^7.0.3
     diff: ^4.0.1
     dprint: ^0.25.0
     expect: 27.0.2
