@@ -1,5 +1,5 @@
 import { BIN_PATH } from '../helpers/paths';
-import { createExec } from '../exec-helpers';
+import { createExec } from '../helpers/exec';
 import { TEST_DIR } from '../helpers/paths';
 import { context, expect } from '../testlib';
 import { join, resolve } from 'path';

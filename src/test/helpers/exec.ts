@@ -1,7 +1,7 @@
 import type { ChildProcess, ExecException, ExecOptions, SpawnOptions } from 'child_process';
 import { exec as childProcessExec, spawn as childProcessSpawn } from 'child_process';
 import { ExpectStream, expectStream } from '@cspotcode/expect-stream';
-import { expect } from './testlib';
+import { expect } from '../testlib';
 
 export type ExecReturn = Promise<ExecResult> & { child: ChildProcess };
 export interface ExecResult {

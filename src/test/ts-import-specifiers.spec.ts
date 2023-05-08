@@ -1,6 +1,6 @@
 import { context } from './testlib';
 import * as expect from 'expect';
-import { createExec } from './exec-helpers';
+import { createExec } from './helpers/exec';
 import { TEST_DIR, ctxTsNode, CMD_TS_NODE_WITHOUT_PROJECT_FLAG, tsSupportsAllowImportingTsExtensions } from './helpers';
 import { project as fsProject } from '@TypeStrong/fs-fixture-builder';
 import { outdent as o } from 'outdent';

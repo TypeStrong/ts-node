@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { createExec } from './exec-helpers';
+import { createExec } from './helpers/exec';
 import { ctxTmpDirOutsideCheckout } from './helpers/ctx-tmp-dir';
 import { ctxTsNode } from './helpers/ctx-ts-node';
 import { BIN_PATH, TEST_DIR } from './helpers/paths';

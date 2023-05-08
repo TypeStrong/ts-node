@@ -11,16 +11,16 @@ import {
   CMD_ESM_LOADER_WITHOUT_PROJECT,
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   ctxTsNode,
-  delay,
   nodeSupportsImportAssertions,
   nodeSupportsUnflaggedJsonImports,
   nodeUsesNewHooksApi,
   resetNodeEnvironment,
   TEST_DIR,
   tsSupportsImportAssertions,
-  tsSupportsStableNodeNextNode16,
+  createExec,
+  createSpawn,
+  ExecReturn,
 } from './helpers';
-import { createExec, createSpawn, ExecReturn } from './exec-helpers';
 import { join, resolve } from 'path';
 import * as expect from 'expect';
 import type { NodeLoaderHooksAPI2 } from '../';

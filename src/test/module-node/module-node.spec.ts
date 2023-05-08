@@ -8,7 +8,7 @@ import {
 } from '../helpers';
 import * as Path from 'path';
 import { ctxTsNode } from '../helpers';
-import { exec } from '../exec-helpers';
+import { exec } from '../helpers/exec';
 import { file, project, ProjectAPI as ProjectAPI, StringFile } from '@TypeStrong/fs-fixture-builder';
 
 const test = context(ctxTsNode);

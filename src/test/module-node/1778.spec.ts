@@ -1,4 +1,4 @@
-import { createExec } from '../exec-helpers';
+import { createExec } from '../helpers/exec';
 import { ctxTsNode, TEST_DIR, tsSupportsStableNodeNextNode16, CMD_TS_NODE_WITHOUT_PROJECT_FLAG } from '../helpers';
 import { context, expect } from '../testlib';
 import { join } from 'path';
