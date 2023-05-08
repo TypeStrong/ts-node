@@ -4,9 +4,9 @@ const { npm_execpath } = process.env;
 // So cannot assume yarn
 
 if (process.env.TS_NODE_SKIP_PREPACK == null) {
-  const crossSpawn = require('cross-spawn');
+  const crossSpawn = await import('cross-spawn');
   const result = crossSpawn.sync(npm_execpath, ['run', 'prepack-worker'], {
-    stdio: 'inherit'
+    stdio: 'inherit',
   });
   process.exit(result.status);
 }
