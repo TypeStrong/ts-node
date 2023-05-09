@@ -222,8 +222,8 @@ test.suite('top level await', ({ contextEach }) => {
   });
 
   test('should pass upstream test cases', async (t) => {
-    const { tsNodeUnderTest } = t.context;
-    await upstreamTopLevelAwaitTests({ TEST_DIR, tsNodeUnderTest });
+    const { tsNodeUnderTest, tsNodeBin } = t.context;
+    await upstreamTopLevelAwaitTests({ TEST_DIR, tsNodeUnderTest, tsNodeBin });
   });
 });
 

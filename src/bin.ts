@@ -94,90 +94,101 @@ export function bootstrap(state: BootstrapState) {
   return phase4(state);
 }
 
-function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
+/** @internal */
+export type ParsedArgv = ReturnType<typeof parseArgv>;
+
+/** @internal */
+export function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
   arg ??= require('arg');
 
+  // Attempt parsing w/two specs to support `-p 123` or `-pe 123`
+  const StringArray = [String] as [StringConstructor];
+  const spec1 = {
+    // Node.js-like options.
+    '--eval': String,
+    '--interactive': Boolean,
+    '--print': String,
+    '--require': StringArray,
+
+    // CLI options.
+    '--help': Boolean,
+    '--cwdMode': Boolean,
+    '--scriptMode': Boolean,
+    '--version': arg.COUNT,
+    '--showConfig': Boolean,
+    '--esm': Boolean,
+
+    // Project options.
+    '--cwd': String,
+    '--files': Boolean,
+    '--compiler': String,
+    '--compilerOptions': parse,
+    '--project': String,
+    '--ignoreDiagnostics': StringArray,
+    '--ignore': StringArray,
+    '--transpileOnly': Boolean,
+    '--transpiler': String,
+    '--swc': Boolean,
+    '--typeCheck': Boolean,
+    '--compilerHost': Boolean,
+    '--pretty': Boolean,
+    '--skipProject': Boolean,
+    '--skipIgnore': Boolean,
+    '--preferTsExts': Boolean,
+    '--logError': Boolean,
+    '--emit': Boolean,
+    '--scope': Boolean,
+    '--scopeDir': String,
+    '--noExperimentalReplAwait': Boolean,
+    '--experimentalSpecifierResolution': String,
+
+    // Aliases.
+    '-e': '--eval',
+    '-i': '--interactive',
+    '-p': '--print',
+    '-r': '--require',
+    '-h': '--help',
+    '-s': '--script-mode',
+    '-v': '--version',
+    '-T': '--transpileOnly',
+    '-H': '--compilerHost',
+    '-I': '--ignore',
+    '-P': '--project',
+    '-C': '--compiler',
+    '-D': '--ignoreDiagnostics',
+    '-O': '--compilerOptions',
+    '--dir': '--cwd',
+
+    // Support both tsc-style camelCase and node-style hypen-case for *all* flags
+    '--cwd-mode': '--cwdMode',
+    '--script-mode': '--scriptMode',
+    '--show-config': '--showConfig',
+    '--compiler-options': '--compilerOptions',
+    '--ignore-diagnostics': '--ignoreDiagnostics',
+    '--transpile-only': '--transpileOnly',
+    '--type-check': '--typeCheck',
+    '--compiler-host': '--compilerHost',
+    '--skip-project': '--skipProject',
+    '--skip-ignore': '--skipIgnore',
+    '--prefer-ts-exts': '--preferTsExts',
+    '--log-error': '--logError',
+    '--scope-dir': '--scopeDir',
+    '--no-experimental-repl-await': '--noExperimentalReplAwait',
+    '--experimental-specifier-resolution': '--experimentalSpecifierResolution',
+  };
+  const spec2 = {
+    ...spec1,
+    '--print': Boolean,
+  };
+  let argParse;
+  try {
+    argParse = arg(spec1, { argv, stopAtPositional: true });
+  } catch (e) {
+    argParse = arg(spec2, { argv, stopAtPositional: true });
+  }
   const args = {
     ...entrypointArgs,
-    ...arg(
-      {
-        // Node.js-like options.
-        '--eval': String,
-        '--interactive': Boolean,
-        '--print': Boolean,
-        '--require': [String],
-
-        // CLI options.
-        '--help': Boolean,
-        '--cwdMode': Boolean,
-        '--scriptMode': Boolean,
-        '--version': arg.COUNT,
-        '--showConfig': Boolean,
-        '--esm': Boolean,
-
-        // Project options.
-        '--cwd': String,
-        '--files': Boolean,
-        '--compiler': String,
-        '--compilerOptions': parse,
-        '--project': String,
-        '--ignoreDiagnostics': [String],
-        '--ignore': [String],
-        '--transpileOnly': Boolean,
-        '--transpiler': String,
-        '--swc': Boolean,
-        '--typeCheck': Boolean,
-        '--compilerHost': Boolean,
-        '--pretty': Boolean,
-        '--skipProject': Boolean,
-        '--skipIgnore': Boolean,
-        '--preferTsExts': Boolean,
-        '--logError': Boolean,
-        '--emit': Boolean,
-        '--scope': Boolean,
-        '--scopeDir': String,
-        '--noExperimentalReplAwait': Boolean,
-        '--experimentalSpecifierResolution': String,
-
-        // Aliases.
-        '-e': '--eval',
-        '-i': '--interactive',
-        '-p': '--print',
-        '-r': '--require',
-        '-h': '--help',
-        '-s': '--script-mode',
-        '-v': '--version',
-        '-T': '--transpileOnly',
-        '-H': '--compilerHost',
-        '-I': '--ignore',
-        '-P': '--project',
-        '-C': '--compiler',
-        '-D': '--ignoreDiagnostics',
-        '-O': '--compilerOptions',
-        '--dir': '--cwd',
-
-        // Support both tsc-style camelCase and node-style hypen-case for *all* flags
-        '--cwd-mode': '--cwdMode',
-        '--script-mode': '--scriptMode',
-        '--show-config': '--showConfig',
-        '--compiler-options': '--compilerOptions',
-        '--ignore-diagnostics': '--ignoreDiagnostics',
-        '--transpile-only': '--transpileOnly',
-        '--type-check': '--typeCheck',
-        '--compiler-host': '--compilerHost',
-        '--skip-project': '--skipProject',
-        '--skip-ignore': '--skipIgnore',
-        '--prefer-ts-exts': '--preferTsExts',
-        '--log-error': '--logError',
-        '--scope-dir': '--scopeDir',
-        '--no-experimental-repl-await': '--noExperimentalReplAwait',
-        '--experimental-specifier-resolution': '--experimentalSpecifierResolution',
-      },
-      {
-        argv,
-        stopAtPositional: true,
-      }
-    ),
+    ...argParse,
   };
 
   // Only setting defaults for CLI-specific flags
@@ -191,8 +202,8 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
     '--version': version = 0,
     '--showConfig': showConfig,
     '--require': argsRequire = [],
-    '--eval': code = undefined,
-    '--print': print = false,
+    '--eval': _code = undefined,
+    '--print': _print = false,
     '--interactive': interactive = false,
     '--files': files,
     '--compiler': compiler,
@@ -218,6 +229,22 @@ function parseArgv(argv: string[], entrypointArgs: Record<string, any>) {
     '--esm': esm,
     _: restArgs,
   } = args;
+
+  let print: boolean;
+  let code: string | undefined;
+  if (typeof _print === 'string') {
+    // Reject `-p 123 -e 456`
+    if (_code != null) {
+      throw new Error('Conflicting options -p and -e.  Hint: to specify tsconfig, use -P instead of -p');
+    }
+    code = _print;
+    print = true;
+  } else {
+    // Deliberately allow -p withotu any code
+    print = _print;
+    code = _code;
+  }
+
   return {
     // Note: argv and restArgs may be overwritten by child process
     argv: process.argv,
