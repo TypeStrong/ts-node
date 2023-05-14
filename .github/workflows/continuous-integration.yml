@@ -63,7 +63,7 @@ jobs:
       matrix:
         os: [ubuntu, windows]
         # Don't forget to add all new flavors to this list!
-        flavor: [1, 2, 3, 4, 5]
+        flavor: [1, 2, 3, 4, 5, 6]
         include:
           # Node 16
           - flavor: 1
@@ -93,13 +93,8 @@ jobs:
             nodeFlag: 20
             typescript: latest
             typescriptFlag: latest
-          - flavor: 6
-            node: 20
-            nodeFlag: 20
-            typescript: next
-            typescriptFlag: next
           # Node nightly
-          - flavor: 7
+          - flavor: 6
             node: nightly
             nodeFlag: nightly
             typescript: latest
