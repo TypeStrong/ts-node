@@ -4,9 +4,7 @@ import { filterHooksByAPIVersion } from '../esm';
 let hooks: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2;
 
 /** @internal */
-export function lateBindHooks(
-  _hooks: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2
-) {
+export function lateBindHooks(_hooks: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2) {
   hooks = _hooks as NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2;
 }
 
@@ -26,5 +24,5 @@ const proxy: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2 = {
 };
 
 /** @internal */
-export const { resolve, load, getFormat, transformSource } =
-  filterHooksByAPIVersion(proxy) as NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2;
+export const { resolve, load, getFormat, transformSource } = filterHooksByAPIVersion(proxy) as NodeLoaderHooksAPI1 &
+  NodeLoaderHooksAPI2;

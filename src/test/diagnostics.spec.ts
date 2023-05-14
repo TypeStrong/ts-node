@@ -24,8 +24,7 @@ test.suite('TSError diagnostics', ({ context }) => {
   });
 
   const diagnosticCode = 2345;
-  const diagnosticMessage =
-    /Argument of type '.*?' is not assignable to parameter of type 'string( \| undefined)?'./;
+  const diagnosticMessage = /Argument of type '.*?' is not assignable to parameter of type 'string( \| undefined)?'./;
   const diagnosticErrorMessage =
     /TS2345: Argument of type '.*?' is not assignable to parameter of type 'string( \| undefined)?'./;
 

@@ -40,14 +40,11 @@ async function main() {
 
   const sidebar = sidebars.primarySidebar;
   for (const category of sidebar) {
-    const generateReadmeHeader =
-      generateReadmeHeadersForCategories[category.label];
+    const generateReadmeHeader = generateReadmeHeadersForCategories[category.label];
     if (generateReadmeHeader) {
       readmeNodes.push(headerNode(1, category.label));
     } else if (generateReadmeHeader == null) {
-      throw new Error(
-        `Update ${import.meta.url} to include all sidebar categories`
-      );
+      throw new Error(`Update ${import.meta.url} to include all sidebar categories`);
     }
     for (const page of category.items) {
       await appendMarkdownFileToReadmeAst({
@@ -73,12 +70,7 @@ async function main() {
       .use(() => (ast) => {
         const { frontmatter } = ast;
         if (frontmatter && !frontmatter.omitHeaderOnMerge) {
-          readmeNodes.push(
-            headerNode(
-              headerLevel,
-              (frontmatter && frontmatter.title) || Path.basename(absPath)
-            )
-          );
+          readmeNodes.push(headerNode(headerLevel, (frontmatter && frontmatter.title) || Path.basename(absPath)));
         }
         readmeNodes.push(...ast.children);
       })
@@ -104,12 +96,8 @@ async function main() {
   fs.writeFileSync(readmePath, renderedReadme.contents);
 
   console.error(vfileReporter(renderedReadme));
-  if (renderedReadme.messages.length)
-    throw new Error('Aborting on diagnostics.');
-  const lintResults = await remark()
-    .use(remarkValidateLinks)
-    .use(remarkRecommended)
-    .process(renderedReadme);
+  if (renderedReadme.messages.length) throw new Error('Aborting on diagnostics.');
+  const lintResults = await remark().use(remarkValidateLinks).use(remarkRecommended).process(renderedReadme);
   console.error(vfileReporter(lintResults));
   if (lintResults.messages.length) throw new Error('Aborting on diagnostics.');
 }
@@ -135,10 +123,7 @@ function rewritePageLinksToAnchorLinks() {
     visit(ast, 'link', (node) => {
       if (node.url?.match?.(/^https?\:\/\//)) return;
       // TODO take page title into account
-      node.url = node.url.replace(
-        /^[\.\/]*(?:recipes\/)?(?:([^#]+)|.*#(.*))$/,
-        '#$1$2'
-      );
+      node.url = node.url.replace(/^[\.\/]*(?:recipes\/)?(?:([^#]+)|.*#(.*))$/, '#$1$2');
       node.url = node.url.replace(/\.md$/, '');
     });
   };
@@ -158,9 +143,7 @@ function trimCutFromTwoslashCode() {
     const lookingFor = '\n// ---cut---\n';
     visit(ast, 'code', (node) => {
       if (node.meta?.includes('twoslash') && node.value.includes(lookingFor)) {
-        node.value = node.value.slice(
-          node.value.lastIndexOf(lookingFor) + lookingFor.length
-        );
+        node.value = node.value.slice(node.value.lastIndexOf(lookingFor) + lookingFor.length);
       }
     });
   };

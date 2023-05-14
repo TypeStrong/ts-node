@@ -30,9 +30,7 @@ export function getDefaultTsconfigJsonForNodeVersion(ts: TSCommon): any {
     };
   }) {
     return (
-      typeof (ts.ScriptTarget as any)[
-        config.compilerOptions.target.toUpperCase()
-      ] === 'number' &&
+      typeof (ts.ScriptTarget as any)[config.compilerOptions.target.toUpperCase()] === 'number' &&
       tsInternal.libs &&
       config.compilerOptions.lib.every((lib) => tsInternal.libs!.includes(lib))
     );

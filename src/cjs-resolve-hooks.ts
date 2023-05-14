@@ -27,8 +27,7 @@ export function installCommonjsResolveHooksIfNecessary(tsNodeService: Service) {
   const originalFindPath = Module._findPath;
   const shouldInstallHook = tsNodeService.options.experimentalResolver;
   if (shouldInstallHook) {
-    const { Module_findPath, Module_resolveFilename } =
-      tsNodeService.getNodeCjsLoader();
+    const { Module_findPath, Module_resolveFilename } = tsNodeService.getNodeCjsLoader();
     Module._resolveFilename = _resolveFilename;
     Module._findPath = _findPath;
     function _resolveFilename(
@@ -40,27 +39,12 @@ export function installCommonjsResolveHooksIfNecessary(tsNodeService: Service) {
       ...rest: []
     ): string {
       if (!tsNodeService.enabled())
-        return originalResolveFilename.call(
-          this,
-          request,
-          parent,
-          isMain,
-          options,
-          ...rest
-        );
+        return originalResolveFilename.call(this, request, parent, isMain, options, ...rest);
 
-      return Module_resolveFilename.call(
-        this,
-        request,
-        parent,
-        isMain,
-        options,
-        ...rest
-      );
+      return Module_resolveFilename.call(this, request, parent, isMain, options, ...rest);
     }
     function _findPath(this: any): string {
-      if (!tsNodeService.enabled())
-        return originalFindPath.apply(this, arguments as any);
+      if (!tsNodeService.enabled()) return originalFindPath.apply(this, arguments as any);
       return Module_findPath.apply(this, arguments as any);
     }
   }

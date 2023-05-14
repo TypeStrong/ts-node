@@ -20,15 +20,7 @@ module.exports = {
       type: 'category',
       label: 'Advanced',
       collapsed: false,
-      items: [
-        'how-it-works',
-        'scope',
-        'paths',
-        'compilers',
-        'transpilers',
-        'module-type-overrides',
-        'api',
-      ],
+      items: ['how-it-works', 'scope', 'paths', 'compilers', 'transpilers', 'module-type-overrides', 'api'],
     },
     {
       type: 'category',

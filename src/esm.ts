@@ -1,11 +1,5 @@
 import { register, RegisterOptions, Service } from './index';
-import {
-  parse as parseUrl,
-  format as formatUrl,
-  UrlWithStringQuery,
-  fileURLToPath,
-  pathToFileURL,
-} from 'url';
+import { parse as parseUrl, format as formatUrl, UrlWithStringQuery, fileURLToPath, pathToFileURL } from 'url';
 import { extname, resolve as pathResolve } from 'path';
 import * as assert from 'assert';
 import { normalizeSlashes, versionGteLt } from './util';
@@ -82,13 +76,7 @@ export namespace NodeLoaderHooksAPI2 {
   }
 }
 
-export type NodeLoaderHooksFormat =
-  | 'builtin'
-  | 'commonjs'
-  | 'dynamic'
-  | 'json'
-  | 'module'
-  | 'wasm';
+export type NodeLoaderHooksFormat = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
 
 export type NodeImportConditions = unknown;
 export interface NodeImportAssertions {
@@ -137,19 +125,14 @@ export function createEsmHooks(tsNodeService: Service) {
     return protocol === null || protocol === 'file:';
   }
 
-  const runMainHackUrl = pathToFileURL(
-    pathResolve(__dirname, '../dist-raw/runmain-hack.js')
-  ).toString();
+  const runMainHackUrl = pathToFileURL(pathResolve(__dirname, '../dist-raw/runmain-hack.js')).toString();
 
   /**
    * Named "probably" as a reminder that this is a guess.
    * node does not explicitly tell us if we're resolving the entrypoint or not.
    */
   function isProbablyEntrypoint(specifier: string, parentURL: string) {
-    return (
-      (parentURL === undefined || parentURL === runMainHackUrl) &&
-      specifier.startsWith('file://')
-    );
+    return (parentURL === undefined || parentURL === runMainHackUrl) && specifier.startsWith('file://');
   }
   // Side-channel between `resolve()` and `load()` hooks
   const rememberIsProbablyEntrypoint = new Set();
@@ -171,25 +154,18 @@ export function createEsmHooks(tsNodeService: Service) {
     ): ReturnType<typeof resolve> {
       try {
         const resolution = await cb();
-        if (
-          resolution?.url &&
-          isProbablyEntrypoint(specifier, context.parentURL)
-        )
+        if (resolution?.url && isProbablyEntrypoint(specifier, context.parentURL))
           rememberIsProbablyEntrypoint.add(resolution.url);
         return resolution;
       } catch (esmResolverError) {
-        if (!isProbablyEntrypoint(specifier, context.parentURL))
-          throw esmResolverError;
+        if (!isProbablyEntrypoint(specifier, context.parentURL)) throw esmResolverError;
         try {
           let cjsSpecifier = specifier;
           // Attempt to convert from ESM file:// to CommonJS path
           try {
-            if (specifier.startsWith('file://'))
-              cjsSpecifier = fileURLToPath(specifier);
+            if (specifier.startsWith('file://')) cjsSpecifier = fileURLToPath(specifier);
           } catch {}
-          const resolution = pathToFileURL(
-            createRequire(process.cwd()).resolve(cjsSpecifier)
-          ).toString();
+          const resolution = pathToFileURL(createRequire(process.cwd()).resolve(cjsSpecifier)).toString();
           rememberIsProbablyEntrypoint.add(resolution);
           rememberResolvedViaCommonjsFallback.add(resolution);
           return { url: resolution, format: 'commonjs' };
@@ -219,13 +195,7 @@ export function createEsmHooks(tsNodeService: Service) {
 
       // pathname is the path to be resolved
 
-      return entrypointFallback(() =>
-        nodeResolveImplementation.defaultResolve(
-          specifier,
-          context,
-          defaultResolve
-        )
-      );
+      return entrypointFallback(() => nodeResolveImplementation.defaultResolve(specifier, context, defaultResolve));
     });
   }
 
@@ -245,14 +215,7 @@ export function createEsmHooks(tsNodeService: Service) {
       // If we get a format hint from resolve() on the context then use it
       // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
       const format =
-        context.format ??
-        (
-          await getFormat(
-            url,
-            context,
-            nodeGetFormatImplementation.defaultGetFormat
-          )
-        ).format;
+        context.format ?? (await getFormat(url, context, nodeGetFormatImplementation.defaultGetFormat)).format;
 
       let source = undefined;
       if (format !== 'builtin' && format !== 'commonjs') {
@@ -267,24 +230,16 @@ export function createEsmHooks(tsNodeService: Service) {
         );
 
         if (rawSource === undefined || rawSource === null) {
-          throw new Error(
-            `Failed to load raw source: Format was '${format}' and url was '${url}''.`
-          );
+          throw new Error(`Failed to load raw source: Format was '${format}' and url was '${url}''.`);
         }
 
         // Emulate node's built-in old defaultTransformSource() so we can re-use the old transformSource() hook
-        const defaultTransformSource: typeof transformSource = async (
+        const defaultTransformSource: typeof transformSource = async (source, _context, _defaultTransformSource) => ({
           source,
-          _context,
-          _defaultTransformSource
-        ) => ({ source });
+        });
 
         // Call the old hook
-        const { source: transformedSource } = await transformSource(
-          rawSource,
-          { url, format },
-          defaultTransformSource
-        );
+        const { source: transformedSource } = await transformSource(rawSource, { url, format }, defaultTransformSource);
         source = transformedSource;
       }
 
@@ -297,14 +252,11 @@ export function createEsmHooks(tsNodeService: Service) {
     context: {},
     defaultGetFormat: typeof getFormat
   ): Promise<{ format: NodeLoaderHooksFormat }> {
-    const defer = (overrideUrl: string = url) =>
-      defaultGetFormat(overrideUrl, context, defaultGetFormat);
+    const defer = (overrideUrl: string = url) => defaultGetFormat(overrideUrl, context, defaultGetFormat);
 
     // See: https://github.com/nodejs/node/discussions/41711
     // nodejs will likely implement a similar fallback.  Till then, we can do our users a favor and fallback today.
-    async function entrypointFallback(
-      cb: () => ReturnType<typeof getFormat>
-    ): ReturnType<typeof getFormat> {
+    async function entrypointFallback(cb: () => ReturnType<typeof getFormat>): ReturnType<typeof getFormat> {
       try {
         return await cb();
       } catch (getFormatError) {
@@ -320,10 +272,7 @@ export function createEsmHooks(tsNodeService: Service) {
     }
 
     const { pathname } = parsed;
-    assert(
-      pathname !== null,
-      'ESM getFormat() hook: URL should never have null pathname'
-    );
+    assert(pathname !== null, 'ESM getFormat() hook: URL should never have null pathname');
 
     const nativePath = fileURLToPath(url);
 
@@ -335,18 +284,12 @@ export function createEsmHooks(tsNodeService: Service) {
     const tsNodeIgnored = tsNodeService.ignored(nativePath);
     const nodeEquivalentExt = extensions.nodeEquivalents.get(ext);
     if (nodeEquivalentExt && !tsNodeIgnored) {
-      nodeSays = await entrypointFallback(() =>
-        defer(formatUrl(pathToFileURL(nativePath + nodeEquivalentExt)))
-      );
+      nodeSays = await entrypointFallback(() => defer(formatUrl(pathToFileURL(nativePath + nodeEquivalentExt))));
     } else {
       try {
         nodeSays = await entrypointFallback(defer);
       } catch (e) {
-        if (
-          e instanceof Error &&
-          tsNodeIgnored &&
-          extensions.nodeDoesNotUnderstand.includes(ext)
-        ) {
+        if (e instanceof Error && tsNodeIgnored && extensions.nodeDoesNotUnderstand.includes(ext)) {
           e.message +=
             `\n\n` +
             `Hint:\n` +
@@ -358,14 +301,10 @@ export function createEsmHooks(tsNodeService: Service) {
       }
     }
     // For files compiled by ts-node that node believes are either CJS or ESM, check if we should override that classification
-    if (
-      !tsNodeService.ignored(nativePath) &&
-      (nodeSays.format === 'commonjs' || nodeSays.format === 'module')
-    ) {
-      const { moduleType } =
-        tsNodeService.moduleTypeClassifier.classifyModuleByModuleTypeOverrides(
-          normalizeSlashes(nativePath)
-        );
+    if (!tsNodeService.ignored(nativePath) && (nodeSays.format === 'commonjs' || nodeSays.format === 'module')) {
+      const { moduleType } = tsNodeService.moduleTypeClassifier.classifyModuleByModuleTypeOverrides(
+        normalizeSlashes(nativePath)
+      );
       if (moduleType === 'cjs') {
         return { format: 'commonjs' };
       } else if (moduleType === 'esm') {
@@ -384,11 +323,9 @@ export function createEsmHooks(tsNodeService: Service) {
       throw new Error('No source');
     }
 
-    const defer = () =>
-      defaultTransformSource(source, context, defaultTransformSource);
+    const defer = () => defaultTransformSource(source, context, defaultTransformSource);
 
-    const sourceAsString =
-      typeof source === 'string' ? source : source.toString('utf8');
+    const sourceAsString = typeof source === 'string' ? source : source.toString('utf8');
 
     const { url } = context;
     const parsed = parseUrl(url);

@@ -11,16 +11,16 @@ import {
   CMD_ESM_LOADER_WITHOUT_PROJECT,
   CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
   ctxTsNode,
-  delay,
   nodeSupportsImportAssertions,
   nodeSupportsUnflaggedJsonImports,
   nodeUsesNewHooksApi,
   resetNodeEnvironment,
   TEST_DIR,
   tsSupportsImportAssertions,
-  tsSupportsStableNodeNextNode16,
+  createExec,
+  createSpawn,
+  ExecReturn,
 } from './helpers';
-import { createExec, createSpawn, ExecReturn } from './exec-helpers';
 import { join, resolve } from 'path';
 import * as expect from 'expect';
 import type { NodeLoaderHooksAPI2 } from '../';
@@ -48,9 +48,7 @@ test.suite('esm', (test) => {
       cwd: join(TEST_DIR, './esm'),
     });
     expect(r.err).not.toBe(null);
-    const expectedModuleUrl = pathToFileURL(
-      join(TEST_DIR, './esm/throw error.ts')
-    ).toString();
+    const expectedModuleUrl = pathToFileURL(join(TEST_DIR, './esm/throw error.ts')).toString();
     expect(r.err!.message).toMatch(
       [
         `${expectedModuleUrl}:100`,
@@ -64,10 +62,9 @@ test.suite('esm', (test) => {
 
   test.suite('supports experimental-specifier-resolution=node', (test) => {
     test('via --experimental-specifier-resolution', async () => {
-      const r = await exec(
-        `${CMD_ESM_LOADER_WITHOUT_PROJECT} --experimental-specifier-resolution=node index.ts`,
-        { cwd: join(TEST_DIR, './esm-node-resolver') }
-      );
+      const r = await exec(`${CMD_ESM_LOADER_WITHOUT_PROJECT} --experimental-specifier-resolution=node index.ts`, {
+        cwd: join(TEST_DIR, './esm-node-resolver'),
+      });
       expect(r.err).toBe(null);
       expect(r.stdout).toBe('foo bar baz biff libfoo\n');
     });
@@ -89,9 +86,7 @@ test.suite('esm', (test) => {
       cwd: join(TEST_DIR, './esm-err-require-esm'),
     });
     expect(r.err).not.toBe(null);
-    expect(r.stderr).toMatch(
-      'Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:'
-    );
+    expect(r.stderr).toMatch('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:');
   });
 
   test('defers to fallback loaders when URL should not be handled by ts-node', async () => {
@@ -100,9 +95,7 @@ test.suite('esm', (test) => {
     });
     expect(r.err).not.toBe(null);
     // expect error from node's default resolver
-    expect(r.stderr).toMatch(
-      /Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,2}\n *at defaultResolve/
-    );
+    expect(r.stderr).toMatch(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,2}\n *at defaultResolve/);
   });
 
   test('should bypass import cache when changing search params', async () => {
@@ -114,12 +107,9 @@ test.suite('esm', (test) => {
   });
 
   test('should support transpile only mode via dedicated loader entrypoint', async () => {
-    const r = await exec(
-      `${CMD_ESM_LOADER_WITHOUT_PROJECT}/transpile-only index.ts`,
-      {
-        cwd: join(TEST_DIR, './esm-transpile-only'),
-      }
-    );
+    const r = await exec(`${CMD_ESM_LOADER_WITHOUT_PROJECT}/transpile-only index.ts`, {
+      cwd: join(TEST_DIR, './esm-transpile-only'),
+    });
     expect(r.err).toBe(null);
     expect(r.stdout).toBe('');
   });
@@ -133,14 +123,10 @@ test.suite('esm', (test) => {
 
     expect(r.err.message).toMatch('Unable to compile TypeScript');
     expect(r.err.message).toMatch(
-      new RegExp(
-        "TS2345: Argument of type '(?:number|1101)' is not assignable to parameter of type 'string'\\."
-      )
+      new RegExp("TS2345: Argument of type '(?:number|1101)' is not assignable to parameter of type 'string'\\.")
     );
     expect(r.err.message).toMatch(
-      new RegExp(
-        "TS2322: Type '(?:\"hello world\"|string)' is not assignable to type 'number'\\."
-      )
+      new RegExp("TS2322: Type '(?:\"hello world\"|string)' is not assignable to type 'number'\\.")
     );
     expect(r.stdout).toBe('');
   });
@@ -161,27 +147,22 @@ test.suite('esm', (test) => {
         });
         test('should allow importing CJS in an otherwise ESM project', async (t) => {
           await run('override-to-cjs', tsconfig, 'cjs');
-          if (semver.gte(process.version, '14.13.1'))
-            await run('override-to-cjs', tsconfig, 'mjs');
+          if (semver.gte(process.version, '14.13.1')) await run('override-to-cjs', tsconfig, 'mjs');
         });
         test('should allow importing ESM in an otherwise CJS project', async (t) => {
           await run('override-to-esm', tsconfig, 'cjs');
           // Node 14.13.0 has a bug(?) where it checks for ESM-only syntax *before* we transform the code.
-          if (semver.gte(process.version, '14.13.1'))
-            await run('override-to-esm', tsconfig, 'mjs');
+          if (semver.gte(process.version, '14.13.1')) await run('override-to-esm', tsconfig, 'mjs');
         });
       });
     }
     async function run(project: string, config: string, ext: string) {
-      const r = await exec(
-        `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./module-types/${project}/test.${ext}`,
-        {
-          env: {
-            ...process.env,
-            TS_NODE_PROJECT: `./module-types/${project}/${config}`,
-          },
-        }
-      );
+      const r = await exec(`${CMD_ESM_LOADER_WITHOUT_PROJECT} ./module-types/${project}/test.${ext}`, {
+        env: {
+          ...process.env,
+          TS_NODE_PROJECT: `./module-types/${project}/${config}`,
+        },
+      });
       expect(r.err).toBe(null);
       expect(r.stdout).toBe(`Failures: 0\n`);
     }
@@ -237,73 +218,50 @@ test.suite('esm', (test) => {
     test.if(nodeSupportsImportAssertions && tsSupportsImportAssertions);
 
     const macro = test.macro((flags: string) => async (t) => {
-      const r = await exec(
-        `${CMD_ESM_LOADER_WITHOUT_PROJECT} ${flags} ./importJson.ts`,
-        {
-          cwd: resolve(TEST_DIR, 'esm-import-assertions'),
-        }
-      );
+      const r = await exec(`${CMD_ESM_LOADER_WITHOUT_PROJECT} ${flags} ./importJson.ts`, {
+        cwd: resolve(TEST_DIR, 'esm-import-assertions'),
+      });
       expect(r.err).toBe(null);
-      expect(r.stdout.trim()).toBe(
-        'A fuchsia car has 2 seats and the doors are open.\nDone!'
-      );
+      expect(r.stdout.trim()).toBe('A fuchsia car has 2 seats and the doors are open.\nDone!');
     });
 
-    test.suite(
-      'when node does not require --experimental-json-modules',
-      (test) => {
-        test.if(nodeSupportsUnflaggedJsonImports);
-        test('Can import JSON modules with appropriate assertion', macro, '');
-      }
-    );
+    test.suite('when node does not require --experimental-json-modules', (test) => {
+      test.if(nodeSupportsUnflaggedJsonImports);
+      test('Can import JSON modules with appropriate assertion', macro, '');
+    });
     test.suite('when node requires --experimental-json-modules', (test) => {
       test.if(!nodeSupportsUnflaggedJsonImports);
-      test(
-        'Can import JSON using the appropriate flag and assertion',
-        macro,
-        '--experimental-json-modules'
-      );
+      test('Can import JSON using the appropriate flag and assertion', macro, '--experimental-json-modules');
     });
   });
 
-  test.suite(
-    'Entrypoint resolution falls back to CommonJS resolver and format',
-    (test) => {
-      test('extensionless entrypoint', async (t) => {
-        const r = await exec(
-          `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./esm-loader-entrypoint-cjs-fallback/extensionless-entrypoint`
-        );
-        expect(r.err).toBe(null);
-        expect(r.stdout.trim()).toBe('Hello world!');
-      });
-      test('relies upon CommonJS resolution', async (t) => {
-        const r = await exec(
-          `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./esm-loader-entrypoint-cjs-fallback/relies-upon-cjs-resolution`
-        );
-        expect(r.err).toBe(null);
-        expect(r.stdout.trim()).toBe('Hello world!');
-      });
-      test('fails as expected when entrypoint does not exist at all', async (t) => {
-        const r = await exec(
-          `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./esm-loader-entrypoint-cjs-fallback/does-not-exist`
-        );
-        expect(r.err).toBeDefined();
-        expect(r.stderr).toContain(`Cannot find module `);
-      });
-    }
-  );
+  test.suite('Entrypoint resolution falls back to CommonJS resolver and format', (test) => {
+    test('extensionless entrypoint', async (t) => {
+      const r = await exec(
+        `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./esm-loader-entrypoint-cjs-fallback/extensionless-entrypoint`
+      );
+      expect(r.err).toBe(null);
+      expect(r.stdout.trim()).toBe('Hello world!');
+    });
+    test('relies upon CommonJS resolution', async (t) => {
+      const r = await exec(
+        `${CMD_ESM_LOADER_WITHOUT_PROJECT} ./esm-loader-entrypoint-cjs-fallback/relies-upon-cjs-resolution`
+      );
+      expect(r.err).toBe(null);
+      expect(r.stdout.trim()).toBe('Hello world!');
+    });
+    test('fails as expected when entrypoint does not exist at all', async (t) => {
+      const r = await exec(`${CMD_ESM_LOADER_WITHOUT_PROJECT} ./esm-loader-entrypoint-cjs-fallback/does-not-exist`);
+      expect(r.err).toBeDefined();
+      expect(r.stderr).toContain(`Cannot find module `);
+    });
+  });
 
   test.suite('spawns child process', async (test) => {
-    basic('ts-node-esm executable', () =>
-      exec(`${BIN_ESM_PATH} ./esm-child-process/via-flag/index.ts foo bar`)
-    );
-    basic('ts-node --esm flag', () =>
-      exec(`${BIN_PATH} --esm ./esm-child-process/via-flag/index.ts foo bar`)
-    );
+    basic('ts-node-esm executable', () => exec(`${BIN_ESM_PATH} ./esm-child-process/via-flag/index.ts foo bar`));
+    basic('ts-node --esm flag', () => exec(`${BIN_PATH} --esm ./esm-child-process/via-flag/index.ts foo bar`));
     basic('ts-node w/tsconfig esm:true', () =>
-      exec(
-        `${BIN_PATH} --esm ./esm-child-process/via-tsconfig/index.ts foo bar`
-      )
+      exec(`${BIN_PATH} --esm ./esm-child-process/via-tsconfig/index.ts foo bar`)
     );
 
     function basic(title: string, cb: () => ExecReturn) {
@@ -316,9 +274,7 @@ test.suite('esm', (test) => {
     }
 
     test('extensionless entrypoint, regression test for #1943', async (t) => {
-      const r = await exec(
-        `${BIN_ESM_PATH} ./esm-loader-entrypoint-cjs-fallback/extensionless-entrypoint`
-      );
+      const r = await exec(`${BIN_ESM_PATH} ./esm-loader-entrypoint-cjs-fallback/extensionless-entrypoint`);
       expect(r.err).toBe(null);
       expect(r.stdout.trim()).toBe('Hello world!');
     });
@@ -410,9 +366,7 @@ test.suite('esm', (test) => {
       cwd: join(TEST_DIR, './esm-err-require-esm'),
     });
     expect(r.err).not.toBe(null);
-    expect(r.stderr).toMatch(
-      'Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:'
-    );
+    expect(r.stderr).toMatch('Error [ERR_REQUIRE_ESM]: Must use import to load ES Module:');
   });
 });
 
@@ -440,11 +394,7 @@ test.suite("Catch unexpected changes to node's loader context", (test) => {
         loadContextKeys?: string[];
       };
       if (json.resolveContextKeys) {
-        expect(json.resolveContextKeys).toEqual([
-          'conditions',
-          'importAssertions',
-          'parentURL',
-        ]);
+        expect(json.resolveContextKeys).toEqual(['conditions', 'importAssertions', 'parentURL']);
       } else if (json.loadContextKeys) {
         expect(json.loadContextKeys).toEqual(['format', 'importAssertions']);
       } else {

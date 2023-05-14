@@ -25,30 +25,15 @@ function createTsInternalsUncached(_ts: TSCommon) {
     host: _ts.ParseConfigHost,
     basePath: string,
     errors: _ts.Push<_ts.Diagnostic>,
-    createDiagnostic: (
-      message: _ts.DiagnosticMessage,
-      arg1?: string
-    ) => _ts.Diagnostic
+    createDiagnostic: (message: _ts.DiagnosticMessage, arg1?: string) => _ts.Diagnostic
   ) {
     extendedConfig = normalizeSlashes(extendedConfig);
-    if (
-      isRootedDiskPath(extendedConfig) ||
-      startsWith(extendedConfig, './') ||
-      startsWith(extendedConfig, '../')
-    ) {
-      let extendedConfigPath = getNormalizedAbsolutePath(
-        extendedConfig,
-        basePath
-      );
-      if (
-        !host.fileExists(extendedConfigPath) &&
-        !endsWith(extendedConfigPath, ts.Extension.Json)
-      ) {
+    if (isRootedDiskPath(extendedConfig) || startsWith(extendedConfig, './') || startsWith(extendedConfig, '../')) {
+      let extendedConfigPath = getNormalizedAbsolutePath(extendedConfig, basePath);
+      if (!host.fileExists(extendedConfigPath) && !endsWith(extendedConfigPath, ts.Extension.Json)) {
         extendedConfigPath = `${extendedConfigPath}.json`;
         if (!host.fileExists(extendedConfigPath)) {
-          errors.push(
-            createDiagnostic(ts.Diagnostics.File_0_not_found, extendedConfig)
-          );
+          errors.push(createDiagnostic(ts.Diagnostics.File_0_not_found, extendedConfig));
           return undefined;
         }
       }
@@ -67,9 +52,7 @@ function createTsInternalsUncached(_ts: TSCommon) {
     if (resolved.resolvedModule) {
       return resolved.resolvedModule.resolvedFileName;
     }
-    errors.push(
-      createDiagnostic(ts.Diagnostics.File_0_not_found, extendedConfig)
-    );
+    errors.push(createDiagnostic(ts.Diagnostics.File_0_not_found, extendedConfig));
     return undefined;
   }
 
@@ -81,19 +64,10 @@ function isRootedDiskPath(path: string) {
   return isAbsolute(path);
 }
 function combinePaths(path: string, ...paths: (string | undefined)[]): string {
-  return normalizeSlashes(
-    resolve(path, ...(paths.filter((path) => path) as string[]))
-  );
+  return normalizeSlashes(resolve(path, ...(paths.filter((path) => path) as string[])));
 }
-function getNormalizedAbsolutePath(
-  fileName: string,
-  currentDirectory: string | undefined
-) {
-  return normalizeSlashes(
-    currentDirectory != null
-      ? resolve(currentDirectory!, fileName)
-      : resolve(fileName)
-  );
+function getNormalizedAbsolutePath(fileName: string, currentDirectory: string | undefined) {
+  return normalizeSlashes(currentDirectory != null ? resolve(currentDirectory!, fileName) : resolve(fileName));
 }
 
 function startsWith(str: string, prefix: string): boolean {
@@ -120,11 +94,7 @@ export function getPatternFromSpec(spec: string, basePath: string) {
 function getSubPatternFromSpec(
   spec: string,
   basePath: string,
-  {
-    singleAsteriskRegexFragment,
-    doubleAsteriskRegexFragment,
-    replaceWildcardCharacter,
-  }: WildcardMatcher
+  { singleAsteriskRegexFragment, doubleAsteriskRegexFragment, replaceWildcardCharacter }: WildcardMatcher
 ): string {
   let subpattern = '';
   let hasWrittenComponent = false;
@@ -147,10 +117,7 @@ function getSubPatternFromSpec(
       if (hasWrittenComponent) {
         subpattern += directorySeparator;
       }
-      subpattern += component.replace(
-        reservedCharacterPattern,
-        replaceWildcardCharacter
-      );
+      subpattern += component.replace(reservedCharacterPattern, replaceWildcardCharacter);
     }
 
     hasWrittenComponent = true;
@@ -175,22 +142,14 @@ const directoriesMatcher: WildcardMatcher = {
    * files or directories, does not match subdirectories that start with a . character
    */
   doubleAsteriskRegexFragment: `(/[^/.][^/]*)*?`,
-  replaceWildcardCharacter: (match) =>
-    replaceWildcardCharacter(
-      match,
-      directoriesMatcher.singleAsteriskRegexFragment
-    ),
+  replaceWildcardCharacter: (match) => replaceWildcardCharacter(match, directoriesMatcher.singleAsteriskRegexFragment),
 };
 const excludeMatcher: WildcardMatcher = {
   singleAsteriskRegexFragment: '[^/]*',
   doubleAsteriskRegexFragment: '(/.+?)?',
-  replaceWildcardCharacter: (match) =>
-    replaceWildcardCharacter(match, excludeMatcher.singleAsteriskRegexFragment),
+  replaceWildcardCharacter: (match) => replaceWildcardCharacter(match, excludeMatcher.singleAsteriskRegexFragment),
 };
-function getNormalizedPathComponents(
-  path: string,
-  currentDirectory: string | undefined
-) {
+function getNormalizedPathComponents(path: string, currentDirectory: string | undefined) {
   return reducePathComponents(getPathComponents(path, currentDirectory));
 }
 function getPathComponents(path: string, currentDirectory = '') {
@@ -228,10 +187,7 @@ function getEncodedRootLength(path: string): number {
   if (ch0 === CharacterCodes.slash || ch0 === CharacterCodes.backslash) {
     if (path.charCodeAt(1) !== ch0) return 1; // POSIX: "/" (or non-normalized "\")
 
-    const p1 = path.indexOf(
-      ch0 === CharacterCodes.slash ? directorySeparator : altDirectorySeparator,
-      2
-    );
+    const p1 = path.indexOf(ch0 === CharacterCodes.slash ? directorySeparator : altDirectorySeparator, 2);
     if (p1 < 0) return path.length; // UNC: "//server" or "\\server"
 
     return p1 + 1; // UNC: "//server/" or "\\server\"
@@ -240,8 +196,7 @@ function getEncodedRootLength(path: string): number {
   // DOS
   if (isVolumeCharacter(ch0) && path.charCodeAt(1) === CharacterCodes.colon) {
     const ch2 = path.charCodeAt(2);
-    if (ch2 === CharacterCodes.slash || ch2 === CharacterCodes.backslash)
-      return 3; // DOS: "c:/" or "c:\"
+    if (ch2 === CharacterCodes.slash || ch2 === CharacterCodes.backslash) return 3; // DOS: "c:/" or "c:\"
     if (path.length === 2) return 2; // DOS: "c:" (but not "c:d")
   }
 
@@ -262,10 +217,7 @@ function getEncodedRootLength(path: string): number {
         (authority === '' || authority === 'localhost') &&
         isVolumeCharacter(path.charCodeAt(authorityEnd + 1))
       ) {
-        const volumeSeparatorEnd = getFileUrlVolumeSeparatorEnd(
-          path,
-          authorityEnd + 2
-        );
+        const volumeSeparatorEnd = getFileUrlVolumeSeparatorEnd(path, authorityEnd + 2);
         if (volumeSeparatorEnd !== -1) {
           if (path.charCodeAt(volumeSeparatorEnd) === CharacterCodes.slash) {
             // URL: "file:///c:/", "file://localhost/c:/", "file:///c%3a/", "file://localhost/c%3a/"
@@ -294,14 +246,10 @@ function ensureTrailingDirectorySeparator(path: string) {
   return path;
 }
 function hasTrailingDirectorySeparator(path: string) {
-  return (
-    path.length > 0 && isAnyDirectorySeparator(path.charCodeAt(path.length - 1))
-  );
+  return path.length > 0 && isAnyDirectorySeparator(path.charCodeAt(path.length - 1));
 }
 function isAnyDirectorySeparator(charCode: number): boolean {
-  return (
-    charCode === CharacterCodes.slash || charCode === CharacterCodes.backslash
-  );
+  return charCode === CharacterCodes.slash || charCode === CharacterCodes.backslash;
 }
 function removeTrailingDirectorySeparator(path: string) {
   if (hasTrailingDirectorySeparator(path)) {
@@ -322,24 +270,15 @@ function isVolumeCharacter(charCode: number) {
 function getFileUrlVolumeSeparatorEnd(url: string, start: number) {
   const ch0 = url.charCodeAt(start);
   if (ch0 === CharacterCodes.colon) return start + 1;
-  if (
-    ch0 === CharacterCodes.percent &&
-    url.charCodeAt(start + 1) === CharacterCodes._3
-  ) {
+  if (ch0 === CharacterCodes.percent && url.charCodeAt(start + 1) === CharacterCodes._3) {
     const ch2 = url.charCodeAt(start + 2);
     if (ch2 === CharacterCodes.a || ch2 === CharacterCodes.A) return start + 3;
   }
   return -1;
 }
 function some<T>(array: readonly T[] | undefined): array is readonly T[];
-function some<T>(
-  array: readonly T[] | undefined,
-  predicate: (value: T) => boolean
-): boolean;
-function some<T>(
-  array: readonly T[] | undefined,
-  predicate?: (value: T) => boolean
-): boolean {
+function some<T>(array: readonly T[] | undefined, predicate: (value: T) => boolean): boolean;
+function some<T>(array: readonly T[] | undefined, predicate?: (value: T) => boolean): boolean {
   if (array) {
     if (predicate) {
       for (const v of array) {
@@ -380,15 +319,8 @@ function last<T>(array: readonly T[]): T {
   // Debug.assert(array.length !== 0);
   return array[array.length - 1];
 }
-function replaceWildcardCharacter(
-  match: string,
-  singleAsteriskRegexFragment: string
-) {
-  return match === '*'
-    ? singleAsteriskRegexFragment
-    : match === '?'
-    ? '[^/]'
-    : '\\' + match;
+function replaceWildcardCharacter(match: string, singleAsteriskRegexFragment: string) {
+  return match === '*' ? singleAsteriskRegexFragment : match === '?' ? '[^/]' : '\\' + match;
 }
 /**
  * An "includes" path "foo" is implicitly a glob "foo/** /*" (without the space) if its last component has no extension,

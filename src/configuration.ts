@@ -1,13 +1,6 @@
 import { resolve, dirname, join } from 'path';
 import type * as _ts from 'typescript';
-import {
-  CreateOptions,
-  DEFAULTS,
-  OptionBasePaths,
-  RegisterOptions,
-  TSCommon,
-  TsConfigOptions,
-} from './index';
+import { CreateOptions, DEFAULTS, OptionBasePaths, RegisterOptions, TSCommon, TsConfigOptions } from './index';
 import type { TSInternal } from './ts-compiler-types';
 import { createTsInternals } from './ts-internals';
 import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs';
@@ -57,9 +50,7 @@ function fixConfig(ts: TSCommon, config: _ts.ParsedCommandLine) {
 
 /** @internal */
 export function findAndReadConfig(rawOptions: CreateOptions) {
-  const cwd = resolve(
-    rawOptions.cwd ?? rawOptions.dir ?? DEFAULTS.cwd ?? process.cwd()
-  );
+  const cwd = resolve(rawOptions.cwd ?? rawOptions.dir ?? DEFAULTS.cwd ?? process.cwd());
   const compilerName = rawOptions.compiler ?? DEFAULTS.compiler;
 
   // Compute minimum options to read the config file.
@@ -69,14 +60,10 @@ export function findAndReadConfig(rawOptions: CreateOptions) {
     rawOptions.project,
     cwd
   );
-  let { compiler, ts } = resolveAndLoadCompiler(
-    compilerName,
-    projectLocalResolveDir
-  );
+  let { compiler, ts } = resolveAndLoadCompiler(compilerName, projectLocalResolveDir);
 
   // Read config file and merge new options between env and CLI options.
-  const { configFilePath, config, tsNodeOptionsFromTsconfig, optionBasePaths } =
-    readConfig(cwd, ts, rawOptions);
+  const { configFilePath, config, tsNodeOptionsFromTsconfig, optionBasePaths } = readConfig(cwd, ts, rawOptions);
 
   const options = assign<RegisterOptions>(
     {},
@@ -85,10 +72,7 @@ export function findAndReadConfig(rawOptions: CreateOptions) {
     { optionBasePaths },
     rawOptions
   );
-  options.require = [
-    ...(tsNodeOptionsFromTsconfig.require || []),
-    ...(rawOptions.require || []),
-  ];
+  options.require = [...(tsNodeOptionsFromTsconfig.require || []), ...(rawOptions.require || [])];
 
   // Re-resolve the compiler in case it has changed.
   // Compiler is loaded relative to tsconfig.json, so tsconfig discovery may cause us to load a
@@ -100,10 +84,7 @@ export function findAndReadConfig(rawOptions: CreateOptions) {
       rawOptions.project,
       cwd
     );
-    ({ compiler } = resolveCompiler(
-      options.compiler,
-      optionBasePaths.compiler ?? projectLocalResolveDir
-    ));
+    ({ compiler } = resolveCompiler(options.compiler, optionBasePaths.compiler ?? projectLocalResolveDir));
   }
 
   return {
@@ -183,11 +164,7 @@ export function readConfig(
       const errors: Array<_ts.Diagnostic> = [];
 
       // Follow chain of "extends"
-      for (
-        let configPathIndex = 0;
-        configPathIndex < configPaths.length;
-        configPathIndex++
-      ) {
+      for (let configPathIndex = 0; configPathIndex < configPaths.length; configPathIndex++) {
         const configPath = configPaths[configPathIndex];
         const result = ts.readConfigFile(configPath, readFile);
 
@@ -237,11 +214,7 @@ export function readConfig(
             // Tricky! If "extends" array is [a, c] then this will splice them into this order:
             // [root, c, a]
             // This is what we want.
-            configPaths.splice(
-              configPathIndex + 1,
-              0,
-              resolvedExtendedConfigPath
-            );
+            configPaths.splice(configPathIndex + 1, 0, resolvedExtendedConfigPath);
           }
         }
       }
@@ -255,19 +228,13 @@ export function readConfig(
   const optionBasePaths: OptionBasePaths = {};
   for (let i = configChain.length - 1; i >= 0; i--) {
     const { config, basePath, configPath } = configChain[i];
-    const options = filterRecognizedTsConfigTsNodeOptions(
-      config['ts-node']
-    ).recognized;
+    const options = filterRecognizedTsConfigTsNodeOptions(config['ts-node']).recognized;
 
     // Some options are relative to the config file, so must be converted to absolute paths here
     if (options.require) {
       // Modules are found relative to the tsconfig file, not the `dir` option
-      const tsconfigRelativeResolver = createProjectLocalResolveHelper(
-        dirname(configPath)
-      );
-      options.require = options.require.map((path: string) =>
-        tsconfigRelativeResolver(path, false)
-      );
+      const tsconfigRelativeResolver = createProjectLocalResolveHelper(dirname(configPath));
+      options.require = options.require.map((path: string) => tsconfigRelativeResolver(path, false));
     }
     if (options.scopeDir) {
       options.scopeDir = resolve(basePath, options.scopeDir!);
@@ -291,8 +258,7 @@ export function readConfig(
   }
 
   // Remove resolution of "files".
-  const files =
-    rawApiOptions.files ?? tsNodeOptionsFromTsconfig.files ?? DEFAULTS.files;
+  const files = rawApiOptions.files ?? tsNodeOptionsFromTsconfig.files ?? DEFAULTS.files;
 
   // Only if a config file is *not* loaded, load an implicit configuration from @tsconfig/bases
   const skipDefaultCompilerOptions = rootConfigPath != null;
@@ -351,18 +317,14 @@ export function readConfig(
  * be changed by the tsconfig, so we have to do this twice.
  * @internal
  */
-export function resolveAndLoadCompiler(
-  name: string | undefined,
-  relativeToPath: string
-) {
+export function resolveAndLoadCompiler(name: string | undefined, relativeToPath: string) {
   const { compiler } = resolveCompiler(name, relativeToPath);
   const ts = loadCompiler(compiler);
   return { compiler, ts };
 }
 
 function resolveCompiler(name: string | undefined, relativeToPath: string) {
-  const projectLocalResolveHelper =
-    createProjectLocalResolveHelper(relativeToPath);
+  const projectLocalResolveHelper = createProjectLocalResolveHelper(relativeToPath);
   const compiler = projectLocalResolveHelper(name || 'typescript', true);
   return { compiler };
 }
@@ -435,10 +397,8 @@ function filterRecognizedTsConfigTsNodeOptions(jsonObject: any): {
     experimentalTsImportSpecifiers,
   };
   // Use the typechecker to make sure this implementation has the correct set of properties
-  const catchExtraneousProps: keyof TsConfigOptions =
-    null as any as keyof typeof filteredTsConfigOptions;
-  const catchMissingProps: keyof typeof filteredTsConfigOptions =
-    null as any as keyof TsConfigOptions;
+  const catchExtraneousProps: keyof TsConfigOptions = null as any as keyof typeof filteredTsConfigOptions;
+  const catchMissingProps: keyof typeof filteredTsConfigOptions = null as any as keyof TsConfigOptions;
   return { recognized: filteredTsConfigOptions, unrecognized };
 }
 
@@ -458,8 +418,7 @@ export function getTsConfigDefaults(
   _exclude: string[] | undefined
 ) {
   const { composite = false } = config.options;
-  let rootDir: string | typeof ComputeAsCommonRootOfFiles =
-    config.options.rootDir!;
+  let rootDir: string | typeof ComputeAsCommonRootOfFiles = config.options.rootDir!;
   if (rootDir == null) {
     if (composite) rootDir = basePath;
     // Return this symbol to avoid computing from `files`, which would require fs calls

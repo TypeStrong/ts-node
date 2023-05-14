@@ -12,7 +12,5 @@ export function compress(object: any) {
 
 /** @internal */
 export function decompress(str: string) {
-  return JSON.parse(
-    brotliDecompressSync(Buffer.from(str, 'base64')).toString()
-  );
+  return JSON.parse(brotliDecompressSync(Buffer.from(str, 'base64')).toString());
 }

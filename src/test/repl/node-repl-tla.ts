@@ -10,10 +10,7 @@ interface SharedObjects extends ctxTsNode.Ctx {
 }
 
 // Based on https://github.com/nodejs/node/blob/88799930794045795e8abac874730f9eba7e2300/test/parallel/test-repl-top-level-await.js
-export async function upstreamTopLevelAwaitTests({
-  TEST_DIR,
-  tsNodeUnderTest,
-}: SharedObjects) {
+export async function upstreamTopLevelAwaitTests({ TEST_DIR, tsNodeUnderTest }: SharedObjects) {
   const PROMPT = 'await repl > ';
 
   const putIn = new REPLStream();
@@ -59,10 +56,7 @@ export async function upstreamTopLevelAwaitTests({
     return promise;
   }
 
-  await runAndWait([
-    'function foo(x) { return x; }',
-    'function koo() { return Promise.resolve(4); }',
-  ]);
+  await runAndWait(['function foo(x) { return x; }', 'function koo() { return Promise.resolve(4); }']);
 
   const testCases = [
     ['await Promise.resolve(0)', '0'],
@@ -98,10 +92,7 @@ export async function upstreamTopLevelAwaitTests({
     //   ['const n = foo(await\r', '... koo());\r', 'undefined'],
     // ],
 
-    [
-      '`status: ${(await Promise.resolve({ status: 200 })).status}`',
-      "'status: 200'",
-    ],
+    ['`status: ${(await Promise.resolve({ status: 200 })).status}`', "'status: 200'"],
     ['for (let i = 0; i < 2; ++i) await i'],
     ['for (let i = 0; i < 2; ++i) { await i }'],
     ['await 0', '0'],
@@ -154,13 +145,7 @@ export async function upstreamTopLevelAwaitTests({
     ['s', '2'],
     [
       'for await (let i of [1,2,3]) console.log(i)',
-      [
-        'for await (let i of [1,2,3]) console.log(i)\r',
-        '1',
-        '2',
-        '3',
-        'undefined',
-      ],
+      ['for await (let i of [1,2,3]) console.log(i)\r', '1', '2', '3', 'undefined'],
     ],
 
     // issue: REPL is expecting more input to finish execution
@@ -183,44 +168,19 @@ export async function upstreamTopLevelAwaitTests({
     ],
     [
       'for (const x of [1,2,3]) {\nawait x;\n}',
-      [
-        'for (const x of [1,2,3]) {\r',
-        '... await x;\r',
-        '... }\r',
-        'undefined',
-      ],
+      ['for (const x of [1,2,3]) {\r', '... await x;\r', '... }\r', 'undefined'],
     ],
     [
       'for await (const x of [1,2,3]) {\nconsole.log(x)\n}',
-      [
-        'for await (const x of [1,2,3]) {\r',
-        '... console.log(x)\r',
-        '... }\r',
-        '1',
-        '2',
-        '3',
-        'undefined',
-      ],
+      ['for await (const x of [1,2,3]) {\r', '... console.log(x)\r', '... }\r', '1', '2', '3', 'undefined'],
     ],
     [
       'for await (const x of [1,2,3]) {\nconsole.log(x);\n}',
-      [
-        'for await (const x of [1,2,3]) {\r',
-        '... console.log(x);\r',
-        '... }\r',
-        '1',
-        '2',
-        '3',
-        'undefined',
-      ],
+      ['for await (const x of [1,2,3]) {\r', '... console.log(x);\r', '... }\r', '1', '2', '3', 'undefined'],
     ],
   ] as const;
 
-  for (const [
-    input,
-    expected = [`${input}\r`],
-    options = {} as { line?: number },
-  ] of testCases) {
+  for (const [input, expected = [`${input}\r`], options = {} as { line?: number }] of testCases) {
     const toBeRun = input.split('\n');
     const lines = await runAndWait(toBeRun);
     if (Array.isArray(expected)) {

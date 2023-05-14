@@ -1,12 +1,7 @@
 import type * as _diff from 'diff';
 import { homedir } from 'os';
 import { join } from 'path';
-import {
-  Recoverable,
-  ReplOptions,
-  REPLServer,
-  start as nodeReplStart,
-} from 'repl';
+import { Recoverable, ReplOptions, REPLServer, start as nodeReplStart } from 'repl';
 import { Context, createContext, Script } from 'vm';
 import { Service, CreateOptions, TSError, env } from './index';
 import { readFileSync, statSync } from 'fs';
@@ -21,9 +16,7 @@ import { tsSupportsMtsCtsExts } from './file-extensions';
 let _processTopLevelAwait: (src: string) => string | null;
 function getProcessTopLevelAwait() {
   if (_processTopLevelAwait === undefined) {
-    ({
-      processTopLevelAwait: _processTopLevelAwait,
-    } = require('../dist-raw/node-internal-repl-await'));
+    ({ processTopLevelAwait: _processTopLevelAwait } = require('../dist-raw/node-internal-repl-await'));
   }
   return _processTopLevelAwait;
 }
@@ -66,11 +59,7 @@ export interface ReplService {
    */
   evalCode(code: string): any;
   /** @internal */
-  evalCodeInternal(opts: {
-    code: string;
-    enableTopLevelAwait?: boolean;
-    context?: Context;
-  }):
+  evalCodeInternal(opts: { code: string; enableTopLevelAwait?: boolean; context?: Context }):
     | {
         containsTopLevelAwait: true;
         valuePromise: Promise<any>;
@@ -91,12 +80,7 @@ export interface ReplService {
    *     const replService: tsNode.ReplService = ...; // assuming you have already created a ts-node ReplService
    *     const nodeRepl = start({eval: replService.eval});
    */
-  nodeEval(
-    code: string,
-    context: Context,
-    _filename: string,
-    callback: (err: Error | null, result?: any) => any
-  ): void;
+  nodeEval(code: string, context: Context, _filename: string, callback: (err: Error | null, result?: any) => any): void;
   evalAwarePartialHost: EvalAwarePartialHost;
   /** Start a node REPL */
   start(): void;
@@ -171,17 +155,11 @@ export function createRepl(options: CreateReplOptions = {}) {
   }
   let service: Service;
   if (options.service) setService(options.service);
-  const evalAwarePartialHost = createEvalAwarePartialHost(
-    state,
-    options.composeWithEvalAwarePartialHost
-  );
+  const evalAwarePartialHost = createEvalAwarePartialHost(state, options.composeWithEvalAwarePartialHost);
   const stdin = options.stdin ?? process.stdin;
   const stdout = options.stdout ?? process.stdout;
   const stderr = options.stderr ?? process.stderr;
-  const _console =
-    stdout === process.stdout && stderr === process.stderr
-      ? console
-      : new Console(stdout, stderr);
+  const _console = stdout === process.stdout && stderr === process.stderr ? console : new Console(stdout, stderr);
 
   const declaredExports = new Set();
 
@@ -204,8 +182,7 @@ export function createRepl(options: CreateReplOptions = {}) {
 
   function setService(_service: Service) {
     service = _service;
-    if (mustSetStatePath)
-      state.path = join(process.cwd(), REPL_FILENAME(service.ts.version));
+    if (mustSetStatePath) state.path = join(process.cwd(), REPL_FILENAME(service.ts.version));
     if (ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl) {
       service.addDiagnosticFilter({
         appliesToAllFiles: false,
@@ -223,11 +200,7 @@ export function createRepl(options: CreateReplOptions = {}) {
   // Hard fix for TypeScript forcing `Object.defineProperty(exports, ...)`.
   function declareExports() {
     if (declaredExports.has(context)) return;
-    runInContext(
-      'exports = typeof module === "undefined" ? {} : module.exports;',
-      state.path,
-      context
-    );
+    runInContext('exports = typeof module === "undefined" ? {} : module.exports;', state.path, context);
     declaredExports.add(context);
   }
 
@@ -244,11 +217,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     return result.value;
   }
 
-  function evalCodeInternal(options: {
-    code: string;
-    enableTopLevelAwait?: boolean;
-    context: Context;
-  }) {
+  function evalCodeInternal(options: { code: string; enableTopLevelAwait?: boolean; context: Context }) {
     const { code, enableTopLevelAwait, context } = options;
     declareExports();
     return appendCompileAndEvalInput({
@@ -299,9 +268,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     // TODO should evalCode API get the same error-handling benefits?
     function handleError(error: unknown) {
       // Don't show TLA hint if the user explicitly disabled repl top level await
-      const canLogTopLevelAwaitHint =
-        service!.options.experimentalReplAwait !== false &&
-        !service!.shouldReplAwait;
+      const canLogTopLevelAwaitHint = service!.options.experimentalReplAwait !== false && !service!.shouldReplAwait;
       if (error instanceof TSError) {
         // Support recoverable compilations using >= node 6.
         if (Recoverable && isRecoverable(error)) {
@@ -312,9 +279,7 @@ export function createRepl(options: CreateReplOptions = {}) {
 
           if (
             canLogTopLevelAwaitHint &&
-            error.diagnosticCodes.some((dC) =>
-              topLevelAwaitDiagnosticCodes.includes(dC)
-            )
+            error.diagnosticCodes.some((dC) => topLevelAwaitDiagnosticCodes.includes(dC))
           ) {
             _console.error(getTopLevelAwaitHint());
           }
@@ -330,10 +295,7 @@ export function createRepl(options: CreateReplOptions = {}) {
           try {
             // Only way I know to make our hint appear after the error
             _error.message += `\n\n${getTopLevelAwaitHint()}`;
-            _error.stack = _error.stack?.replace(
-              /(SyntaxError:.*)/,
-              (_, $1) => `${$1}\n\n${getTopLevelAwaitHint()}`
-            );
+            _error.stack = _error.stack?.replace(/(SyntaxError:.*)/, (_, $1) => `${$1}\n\n${getTopLevelAwaitHint()}`);
           } catch {}
         }
         callback(_error as Error);
@@ -342,9 +304,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     function getTopLevelAwaitHint() {
       return `Hint: REPL top-level await requires TypeScript version 3.8 or higher and target ES2018 or higher. You are using TypeScript ${
         service!.ts.version
-      } and target ${
-        service!.ts.ScriptTarget[service!.config.options.target!]
-      }.`;
+      } and target ${service!.ts.ScriptTarget[service!.config.options.target!]}.`;
     }
   }
 
@@ -380,9 +340,7 @@ export function createRepl(options: CreateReplOptions = {}) {
       input: replService.stdin,
       output: replService.stdout,
       // Mimicking node's REPL implementation: https://github.com/nodejs/node/blob/168b22ba073ee1cbf8d0bcb4ded7ff3099335d04/lib/internal/repl.js#L28-L30
-      terminal:
-        (stdout as tty.WriteStream).isTTY &&
-        !parseInt(env.NODE_NO_READLINE!, 10),
+      terminal: (stdout as tty.WriteStream).isTTY && !parseInt(env.NODE_NO_READLINE!, 10),
       eval: nodeEval,
       useGlobal: true,
       ...optionsOverride,
@@ -413,10 +371,7 @@ export function createRepl(options: CreateReplOptions = {}) {
       if (!service?.transpileOnly) {
         state.input += `// @ts-ignore\n${builtinModules
           .filter(
-            (name) =>
-              !name.startsWith('_') &&
-              !name.includes('/') &&
-              !['console', 'module', 'process'].includes(name)
+            (name) => !name.startsWith('_') && !name.includes('/') && !['console', 'module', 'process'].includes(name)
           )
           .map((name) => `declare import ${name} = require('${name}')`)
           .join(';')}\n`;
@@ -435,11 +390,7 @@ export function createRepl(options: CreateReplOptions = {}) {
         }
 
         const undo = appendToEvalState(state, identifier);
-        const { name, comment } = service!.getTypeInfo(
-          state.input,
-          state.path,
-          state.input.length
-        );
+        const { name, comment } = service!.getTypeInfo(state.input, state.path, state.input.length);
 
         undo();
 
@@ -451,8 +402,7 @@ export function createRepl(options: CreateReplOptions = {}) {
 
     // Set up REPL history when available natively via node.js >= 11.
     if (repl.setupHistory) {
-      const historyPath =
-        env.TS_NODE_HISTORY || join(homedir(), '.ts_node_repl_history');
+      const historyPath = env.TS_NODE_HISTORY || join(homedir(), '.ts_node_repl_history');
 
       repl.setupHistory(historyPath, (err) => {
         if (!err) return;
@@ -488,15 +438,9 @@ export class EvalState {
  * Filesystem host functions which are aware of the "virtual" `[eval].ts`, `<repl>`, or `[stdin].ts` file used to compile REPL inputs.
  * Must be passed to `create()` to create a ts-node compiler service which can compile REPL inputs.
  */
-export type EvalAwarePartialHost = Pick<
-  CreateOptions,
-  'readFile' | 'fileExists'
->;
+export type EvalAwarePartialHost = Pick<CreateOptions, 'readFile' | 'fileExists'>;
 
-export function createEvalAwarePartialHost(
-  state: EvalState,
-  composeWith?: EvalAwarePartialHost
-): EvalAwarePartialHost {
+export function createEvalAwarePartialHost(state: EvalState, composeWith?: EvalAwarePartialHost): EvalAwarePartialHost {
   function readFile(path: string) {
     if (path === state.path) return state.input;
 
@@ -549,14 +493,7 @@ function appendCompileAndEvalInput(options: {
    */
   overrideIsCompletion?: boolean;
 }): AppendCompileAndEvalInputResult {
-  const {
-    service,
-    state,
-    wrappedErr,
-    enableTopLevelAwait = false,
-    context,
-    overrideIsCompletion,
-  } = options;
+  const { service, state, wrappedErr, enableTopLevelAwait = false, context, overrideIsCompletion } = options;
   let { input } = options;
 
   // It's confusing for `{ a: 1 }` to be interpreted as a block statement
@@ -611,16 +548,10 @@ function appendCompileAndEvalInput(options: {
   // has the sourcemap appended to it.
   // We might also need to integrate with our sourcemap hooks' cache; I'm not sure.
   const outputWithoutSourcemapComment = output.replace(sourcemapCommentRe, '');
-  const oldOutputWithoutSourcemapComment = state.output.replace(
-    sourcemapCommentRe,
-    ''
-  );
+  const oldOutputWithoutSourcemapComment = state.output.replace(sourcemapCommentRe, '');
 
   // Use `diff` to check for new JavaScript to execute.
-  const changes = getDiffLines()(
-    oldOutputWithoutSourcemapComment,
-    outputWithoutSourcemapComment
-  );
+  const changes = getDiffLines()(oldOutputWithoutSourcemapComment, outputWithoutSourcemapComment);
 
   if (isCompletion) {
     undo();
@@ -631,13 +562,10 @@ function appendCompileAndEvalInput(options: {
     // for example to prevent `2\n+ 2` from producing 4.
     // This is safe since the output will not change since we can only get here with successful inputs,
     // and adding a semicolon to the end of a successful input won't ever change the output.
-    state.input = state.input.replace(
-      /([^\n\s])([\n\s]*)$/,
-      (all, lastChar, whitespace) => {
-        if (lastChar !== ';') return `${lastChar};${whitespace}`;
-        return all;
-      }
-    );
+    state.input = state.input.replace(/([^\n\s])([\n\s]*)$/, (all, lastChar, whitespace) => {
+      if (lastChar !== ';') return `${lastChar};${whitespace}`;
+      return all;
+    });
   }
 
   let commands: Array<{ mustAwait?: true; execCommand: () => any }> = [];
@@ -646,11 +574,7 @@ function appendCompileAndEvalInput(options: {
   // Build a list of "commands": bits of JS code in the diff that must be executed.
   for (const change of changes) {
     if (change.added) {
-      if (
-        enableTopLevelAwait &&
-        service.shouldReplAwait &&
-        change.value.indexOf('await') > -1
-      ) {
+      if (enableTopLevelAwait && service.shouldReplAwait && change.value.indexOf('await') > -1) {
         const processTopLevelAwait = getProcessTopLevelAwait();
 
         // Newline prevents comments to mess with wrapper
@@ -784,10 +708,7 @@ const topLevelAwaitDiagnosticCodes = [
 function isRecoverable(error: TSError) {
   return error.diagnosticCodes.every((code) => {
     const deps = RECOVERY_CODES.get(code);
-    return (
-      deps === null ||
-      (deps && error.diagnosticCodes.some((code) => deps.has(code)))
-    );
+    return deps === null || (deps && error.diagnosticCodes.some((code) => deps.has(code)));
   });
 }
 
@@ -795,11 +716,7 @@ function isRecoverable(error: TSError) {
  * @internal
  * Set properties on `context` before eval-ing [stdin] or [eval] input.
  */
-export function setupContext(
-  context: any,
-  module: Module,
-  filenameAndDirname: 'eval' | 'stdin' | null
-) {
+export function setupContext(context: any, module: Module, filenameAndDirname: 'eval' | 'stdin' | null) {
   if (filenameAndDirname) {
     context.__dirname = '.';
     context.__filename = `[${filenameAndDirname}]`;

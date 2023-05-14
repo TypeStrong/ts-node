@@ -5,12 +5,12 @@ __metadata:
   version: 6
   cacheKey: 8
 
-"@TypeStrong/fs-fixture-builder@github:TypeStrong/fs-fixture-builder#8abd1494280116ff5318dde2c50ad01e1663790c":
+"@TypeStrong/fs-fixture-builder@https://github.com/Typestrong/fs-fixture-builder.git#3099e53621daf99db971af29c96145dc115693cd":
   version: 0.0.0
-  resolution: "@TypeStrong/fs-fixture-builder@https://github.com/TypeStrong/fs-fixture-builder.git#commit=8abd1494280116ff5318dde2c50ad01e1663790c"
+  resolution: "@TypeStrong/fs-fixture-builder@https://github.com/Typestrong/fs-fixture-builder.git#commit=3099e53621daf99db971af29c96145dc115693cd"
   bin:
-    capture-fs-fixture: ./dist/capture-fixture.ts
-  checksum: f9fc2cdf58b79470373fbac56449540c8c727553f13b9a402e5dcec47b0c909fca2d246cb09f6b55632ff823fa4da3332a593f18720e4227f88478be566898c1
+    capture-fs-fixture: ./dist/capture-fixture.js
+  checksum: f95f5f84c8f578a3ca1862a1b43d5e063fb3cda86dc585ea84d5b612aa3f7e6a5d80d17440e81f659ed32ba7bc4ad2830b7695d953ef06ecbe7796482ad754e1
   languageName: node
   linkType: hard
 
@@ -241,20 +241,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cspotcode/ava-lib@github:cspotcode/ava-lib#edcc1885d192d08d5af83490af9341468402ec41":
+"@cspotcode/ava-lib@https://github.com/cspotcode/ava-lib#bbbed83f393342b51dc6caf2ddf775a3e89371d8":
   version: 0.0.1
-  resolution: "@cspotcode/ava-lib@https://github.com/cspotcode/ava-lib.git#commit=edcc1885d192d08d5af83490af9341468402ec41"
+  resolution: "@cspotcode/ava-lib@https://github.com/cspotcode/ava-lib.git#commit=bbbed83f393342b51dc6caf2ddf775a3e89371d8"
   dependencies:
     "@types/node": "*"
     throat: ^6.0.1
   peerDependencies:
     ava: "*"
     expect: "*"
-  checksum: 82a6ad95a7bb32d9183fdf77e2bd4b16cb4c7e97c9dfee34e30c8ffcabc4dd3c10fa5b2c5781cf4a443e12d43ad3b01df59814492d81777d4f3876fc4846d3f2
+  checksum: 3ca30bbfe81abb537e1e96addd272b34daf19ecba56f13a5785115bc3433dc5309e733ab8440384531b7a74b88f58eb11c9151e62b75c5c219eccc7dd8b058ec
   languageName: node
   linkType: hard
 
-"@cspotcode/expect-stream@github:cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f":
+"@cspotcode/expect-stream@https://github.com/cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f":
   version: 0.0.0
   resolution: "@cspotcode/expect-stream@https://github.com/cspotcode/node-expect-stream.git#commit=4e425ff1eef240003af8716291e80fbaf3e3ae8f"
   checksum: 32d78cccd0df519e7c6ac8a38d980d857877178e86ee5c82cce94ffbeecc11808c7eada0a83188bb1fe32852cc48a56c40b1f5a7bacb2a1d59881a214f999eaf
@@ -580,7 +580,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@swc/core@npm:>=1.3.32":
+"@swc/core@npm:1.3.32":
   version: 1.3.32
   resolution: "@swc/core@npm:1.3.32"
   dependencies:
@@ -619,7 +619,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@swc/wasm@npm:>=1.3.32":
+"@swc/wasm@npm:1.3.32":
   version: 1.3.32
   resolution: "@swc/wasm@npm:1.3.32"
   checksum: 80df9b6983f4211e049592f210762dfbbd19899a24d37bf3dad7d8c2ede6fee70c7945cca3c508dae24e6b7f4a14b0ca6d645648fab01694ac4e93fda1ced379
@@ -3809,13 +3809,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "ts-node@workspace:."
   dependencies:
-    "@TypeStrong/fs-fixture-builder": "github:TypeStrong/fs-fixture-builder#8abd1494280116ff5318dde2c50ad01e1663790c"
-    "@cspotcode/ava-lib": "github:cspotcode/ava-lib#edcc1885d192d08d5af83490af9341468402ec41"
-    "@cspotcode/expect-stream": "github:cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f"
+    "@TypeStrong/fs-fixture-builder": "https://github.com/Typestrong/fs-fixture-builder.git#3099e53621daf99db971af29c96145dc115693cd"
+    "@cspotcode/ava-lib": "https://github.com/cspotcode/ava-lib#bbbed83f393342b51dc6caf2ddf775a3e89371d8"
+    "@cspotcode/expect-stream": "https://github.com/cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f"
     "@cspotcode/source-map-support": ^0.8.0
     "@microsoft/api-extractor": ^7.19.4
-    "@swc/core": ">=1.3.32"
-    "@swc/wasm": ">=1.3.32"
+    "@swc/core": 1.3.32
+    "@swc/wasm": 1.3.32
     "@tsconfig/node14": "*"
     "@tsconfig/node16": "*"
     "@tsconfig/node18": "*"
@@ -3833,6 +3833,7 @@ __metadata:
     arg: ^4.1.0
     ava: ^5.1.1
     axios: ^0.21.1
+    cross-spawn: ^7.0.3
     diff: ^4.0.1
     dprint: ^0.25.0
     expect: 27.0.2
@@ -3849,6 +3850,7 @@ __metadata:
     typescript: 4.7.4
     typescript-json-schema: ^0.54.0
     v8-compile-cache-lib: ^3.0.1
+    workaround-broken-npm-prepack-behavior: "https://github.com/cspotcode/workaround-broken-npm-prepack-behavior#1a7adbbb8a527784daf97edad6ba42d6e96611f6"
   peerDependencies:
     "@swc/core": ">=1.2.50"
     "@swc/wasm": ">=1.2.50"
@@ -4069,6 +4071,15 @@ __metadata:
   dependencies:
     string-width: ^1.0.2 || 2 || 3 || 4
   checksum: d5fc37cd561f9daee3c80e03b92ed3e84d80dde3365a8767263d03dacfc8fa06b065ffe1df00d8c2a09f731482fcacae745abfbb478d4af36d0a891fad4834d3
+  languageName: node
+  linkType: hard
+
+"workaround-broken-npm-prepack-behavior@https://github.com/cspotcode/workaround-broken-npm-prepack-behavior#1a7adbbb8a527784daf97edad6ba42d6e96611f6":
+  version: 0.0.1
+  resolution: "workaround-broken-npm-prepack-behavior@https://github.com/cspotcode/workaround-broken-npm-prepack-behavior.git#commit=1a7adbbb8a527784daf97edad6ba42d6e96611f6"
+  bin:
+    workaround-broken-npm-prepack-behavior: bin.mjs
+  checksum: aa4f5bb6ff0560f510abb9f4290f1e239ce97166da108880e41b2247928039a709ffe237d1255231e427cc9848d969eea54574d58aebe9174296cc6efbbe4e9a
   languageName: node
   linkType: hard
 

@@ -68,5 +68,7 @@ __prepack_template__ *ARGS:
   just clean && just build-nopack "$@"
 prepack *ARGS:
   rimraf temp dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz tests/node_modules tests/tmp && tsc -b ./tsconfig.build-dist.json && typescript-json-schema --topRef --refs --validationKeywords allOf --out tsconfig.schema.json tsconfig.build-schema.json TsConfigSchema && node --require ./register ./scripts/create-merged-schema "$@"
+prepare *ARGS:
+  workaround-broken-npm-prepack-behavior prepack "$@"
 api-extractor *ARGS:
   api-extractor run --local --verbose "$@"

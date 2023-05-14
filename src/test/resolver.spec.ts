@@ -7,10 +7,7 @@ import {
   tsSupportsMtsCtsExtensions,
   tsSupportsStableNodeNextNode16,
 } from './helpers';
-import {
-  project as fsProject,
-  Project as FsProject,
-} from '@TypeStrong/fs-fixture-builder';
+import { project as fsProject, Project as FsProject } from '@TypeStrong/fs-fixture-builder';
 import { join } from 'path';
 import * as semver from 'semver';
 import { padStart } from 'lodash';
@@ -179,9 +176,7 @@ test.suite('Resolver hooks', (test) => {
               identifier += allowJs ? '-allowJs' : '--------';
               identifier += useTsNodeNext ? '-useTsNodenext' : '--------------';
               identifier += skipIgnore ? '-skipIgnore' : '-----------';
-              identifier += experimentalSpecifierResolutionNode
-                ? '-experimentalSpecifierResolutionNode'
-                : '';
+              identifier += experimentalSpecifierResolutionNode ? '-experimentalSpecifierResolutionNode' : '';
 
               const project: Project = {
                 identifier,
@@ -202,10 +197,7 @@ test.suite('Resolver hooks', (test) => {
 });
 
 function declareProject(_test: Test, project: Project) {
-  const test =
-    project.useTsNodeNext && !tsSupportsStableNodeNextNode16
-      ? _test.skip
-      : _test;
+  const test = project.useTsNodeNext && !tsSupportsStableNodeNextNode16 ? _test.skip : _test;
   test(`${project.identifier}`, async (t) => {
     t.teardown(() => {
       resetNodeEnvironment();
@@ -222,19 +214,14 @@ function declareProject(_test: Test, project: Project) {
         experimentalResolver: true,
         preferTsExts: project.preferSrc,
         transpileOnly: true,
-        experimentalSpecifierResolution:
-          project.experimentalSpecifierResolutionNode ? 'node' : undefined,
+        experimentalSpecifierResolution: project.experimentalSpecifierResolutionNode ? 'node' : undefined,
         skipIgnore: project.skipIgnore,
       } as RegisterOptions,
       compilerOptions: {
         allowJs: project.allowJs,
         skipLibCheck: true,
         // TODO add nodenext permutation
-        module: project.useTsNodeNext
-          ? 'NodeNext'
-          : project.typeModule
-          ? 'esnext'
-          : 'commonjs',
+        module: project.useTsNodeNext ? 'NodeNext' : project.typeModule ? 'esnext' : 'commonjs',
         jsx: 'react',
         target: 'esnext',
       },
@@ -256,24 +243,11 @@ function generateTargets(project: Project, p: FsProject) {
   // TODO does allowJs matter?
   for (const inOut of [false, true]) {
     for (const inSrc of [false, true]) {
-      for (const srcExt of [
-        'ts',
-        'tsx',
-        'cts',
-        'mts',
-        'jsx',
-        'js',
-        'cjs',
-        'mjs',
-      ]) {
+      for (const srcExt of ['ts', 'tsx', 'cts', 'mts', 'jsx', 'js', 'cjs', 'mjs']) {
         for (const targetPackageStyle of targetPackageStyles) {
-          const packageTypeModulePermutations = targetPackageStyle
-            ? [true, false]
-            : [project.typeModule];
+          const packageTypeModulePermutations = targetPackageStyle ? [true, false] : [project.typeModule];
           for (const packageTypeModule of packageTypeModulePermutations) {
-            const isIndexPermutations = targetPackageStyle
-              ? [false]
-              : [true, false];
+            const isIndexPermutations = targetPackageStyle ? [false] : [true, false];
             // TODO test main pointing to a directory containing an `index.` file?
             for (const isIndex of isIndexPermutations) {
               //#region SKIPPING
@@ -283,8 +257,7 @@ function generateTargets(project: Project, p: FsProject) {
               // TODO Get rid of this?  "Just work" in this case?
               if (srcExt === 'jsx' && !project.allowJs) continue;
               // Don't bother with src-only extensions when only emitting to `out`
-              if (!inSrc && ['ts', 'tsx', 'cts', 'mts', 'jsx'].includes(srcExt))
-                continue;
+              if (!inSrc && ['ts', 'tsx', 'cts', 'mts', 'jsx'].includes(srcExt)) continue;
 
               // TODO re-enable with src <-> out mapping
               if (
@@ -334,36 +307,16 @@ function generateTargets(project: Project, p: FsProject) {
   return targets;
 }
 
-function generateTarget(
-  project: Project,
-  p: FsProject,
-  options: GenerateTargetOptions
-) {
-  const {
-    inSrc,
-    inOut,
-    srcExt,
-    targetPackageStyle,
-    packageTypeModule,
-    isIndex,
-  } = options;
+function generateTarget(project: Project, p: FsProject, options: GenerateTargetOptions) {
+  const { inSrc, inOut, srcExt, targetPackageStyle, packageTypeModule, isIndex } = options;
 
   const outExt = srcExt.replace('ts', 'js').replace('x', '');
-  let targetIdentifier = `target-${targetSeq()}-${
-    inOut && inSrc ? 'inboth' : inOut ? 'onlyout' : 'onlysrc'
-  }-${srcExt}`;
+  let targetIdentifier = `target-${targetSeq()}-${inOut && inSrc ? 'inboth' : inOut ? 'onlyout' : 'onlysrc'}-${srcExt}`;
 
   if (targetPackageStyle)
-    targetIdentifier = `${targetIdentifier}-${targetPackageStyle}-${
-      packageTypeModule ? 'module' : 'commonjs'
-    }`;
+    targetIdentifier = `${targetIdentifier}-${targetPackageStyle}-${packageTypeModule ? 'module' : 'commonjs'}`;
   let prefix = targetPackageStyle ? `node_modules/${targetIdentifier}/` : '';
-  let suffix =
-    targetPackageStyle === 'empty-manifest'
-      ? 'index'
-      : targetPackageStyle
-      ? 'target'
-      : targetIdentifier;
+  let suffix = targetPackageStyle === 'empty-manifest' ? 'index' : targetPackageStyle ? 'target' : targetIdentifier;
   if (isIndex) suffix += '-dir/index';
   const srcDirInfix = targetPackageStyle === 'empty-manifest' ? '' : 'src/';
   const outDirInfix = targetPackageStyle === 'empty-manifest' ? '' : 'out/';
@@ -386,11 +339,7 @@ function generateTarget(
     packageStyle: targetPackageStyle,
     typeModule: packageTypeModule,
   };
-  const { isMjs: targetIsMjs } = fileInfo(
-    '.' + srcExt,
-    packageTypeModule,
-    project.allowJs
-  );
+  const { isMjs: targetIsMjs } = fileInfo('.' + srcExt, packageTypeModule, project.allowJs);
   function targetContent(loc: string) {
     let content = '';
     if (targetIsMjs) {
@@ -425,8 +374,7 @@ function generateTarget(
   }
   if (targetPackageStyle) {
     const selfImporterIsCompiled = project.allowJs;
-    const cjsSelfImporterMustUseDynamicImportHack =
-      !project.useTsNodeNext && selfImporterIsCompiled && targetIsMjs;
+    const cjsSelfImporterMustUseDynamicImportHack = !project.useTsNodeNext && selfImporterIsCompiled && targetIsMjs;
     p.addFile(
       selfImporterCjsName,
       targetIsMjs
@@ -508,20 +456,13 @@ function generateTarget(
 /**
  * Generate all entrypoint-* files
  */
-function generateEntrypoints(
-  project: Project,
-  p: FsProject,
-  targets: Target[]
-) {
+function generateEntrypoints(project: Project, p: FsProject, targets: Target[]) {
   /** Array of entrypoint files to be imported during the test */
   let entrypoints: string[] = [];
   for (const entrypointExt of ['cjs', 'mjs'] as const) {
     // TODO consider removing this logic; deferring to conditionals in the generateEntrypoint which emit meaningful comments
     const withExtPermutations =
-      entrypointExt == 'mjs' &&
-      project.experimentalSpecifierResolutionNode === false
-        ? [true]
-        : [false, true];
+      entrypointExt == 'mjs' && project.experimentalSpecifierResolutionNode === false ? [true] : [false, true];
     for (const withExt of withExtPermutations) {
       // Location of the entrypoint
       for (const entrypointLocation of ['src', 'out'] as const) {
@@ -546,14 +487,8 @@ function generateEntrypoints(
   return entrypoints;
 }
 
-function generateEntrypoint(
-  project: Project,
-  p: FsProject,
-  targets: Target[],
-  opts: EntrypointPermutation
-) {
-  const { entrypointExt, withExt, entrypointLocation, entrypointTargetting } =
-    opts;
+function generateEntrypoint(project: Project, p: FsProject, targets: Target[], opts: EntrypointPermutation) {
+  const { entrypointExt, withExt, entrypointLocation, entrypointTargetting } = opts;
   const entrypointFilename = `entrypoint-${entrypointSeq()}-${entrypointLocation}-to-${entrypointTargetting}${
     withExt ? '-withext' : ''
   }.${entrypointExt}`;
@@ -574,10 +509,8 @@ function generateEntrypoint(
 
   for (const target of targets) {
     // TODO re-enable these when we have outDir <-> rootDir mapping
-    if (target.srcName.includes('onlyout') && entrypointTargetting === 'src')
-      continue;
-    if (target.srcName.includes('onlysrc') && entrypointTargetting === 'out')
-      continue;
+    if (target.srcName.includes('onlyout') && entrypointTargetting === 'src') continue;
+    if (target.srcName.includes('onlysrc') && entrypointTargetting === 'out') continue;
 
     const {
       ext: targetSrcExt,
@@ -596,9 +529,7 @@ function generateEntrypoint(
         targetExtPermutations = [target.srcExt];
       }
     }
-    const externalPackageSelfImportPermutations = target.isPackage
-      ? [false, true]
-      : [false];
+    const externalPackageSelfImportPermutations = target.isPackage ? [false, true] : [false];
     for (const targetExt of targetExtPermutations) {
       for (const externalPackageSelfImport of externalPackageSelfImportPermutations) {
         entrypointContent += `\n// ${target.targetIdentifier}`;
@@ -634,29 +565,19 @@ function generateEntrypoint(
             continue;
           }
           // Do not try to import mjs/mts unless experimental-specifier-resolution is turned on
-          if (
-            target.outExt === 'mjs' &&
-            !project.experimentalSpecifierResolutionNode
-          ) {
+          if (target.outExt === 'mjs' && !project.experimentalSpecifierResolutionNode) {
             entrypointContent += `// skipping ${specifier} because we cannot omit extension from mjs/mts unless experimental-specifier-resolution=node\n`;
             continue;
           }
           // Do not try to import anything extensionless via ESM loader unless experimental-specifier-resolution is turned on
-          if (
-            (targetIsMjs || entrypointIsMjs) &&
-            !project.experimentalSpecifierResolutionNode
-          ) {
+          if ((targetIsMjs || entrypointIsMjs) && !project.experimentalSpecifierResolutionNode) {
             entrypointContent += `// skipping ${specifier} because we cannot omit extension via esm loader unless experimental-specifier-resolution=node\n`;
             continue;
           }
         }
         if (
           target.isPackage &&
-          isOneOf(target.packageStyle, [
-            'empty-manifest',
-            'main-out-extensionless',
-            'main-src-extensionless',
-          ]) &&
+          isOneOf(target.packageStyle, ['empty-manifest', 'main-out-extensionless', 'main-src-extensionless']) &&
           isOneOf(target.outExt, ['cjs', 'mjs'])
         ) {
           entrypointContent += `// skipping ${specifier} because it points to a node_modules package that tries to omit file extension, and node does not allow omitting cjs/mjs extension\n`;
@@ -677,10 +598,7 @@ function generateEntrypoint(
 
         // Do not try to import index from a directory if is forbidden by node's ESM resolver
         if (target.isIndex) {
-          if (
-            (targetIsMjs || entrypointIsMjs) &&
-            !project.experimentalSpecifierResolutionNode
-          ) {
+          if ((targetIsMjs || entrypointIsMjs) && !project.experimentalSpecifierResolutionNode) {
             entrypointContent += `// skipping ${specifier} because esm loader does not allow directory ./index imports unless experimental-specifier-resolution=node\n`;
             continue;
           }
@@ -700,22 +618,15 @@ function generateEntrypoint(
             (!target.isIndex && targetExt === target.srcExt && withExt) ||
             target.srcExt === target.outExt || // <-- TODO re-enable when we have src <-> out mapping
             (target.isPackage &&
-              isOneOf(target.packageStyle, [
-                'main-src-with-extension',
-                'exports-src-with-extension',
-              ]))
+              isOneOf(target.packageStyle, ['main-src-with-extension', 'exports-src-with-extension']))
           ? 'src'
           : 'out';
-        const assertHasExt =
-          assertIsSrcOrOut === 'src' ? target.srcExt : target.outExt;
+        const assertHasExt = assertIsSrcOrOut === 'src' ? target.srcExt : target.outExt;
 
         // If entrypoint is compiled as CJS, and *not* with TS's nodenext, then TS transforms `import` into `require`,
         // so we must hack around the compiler to get a true `import`.
         const entrypointMustUseDynamicImportHack =
-          !project.useTsNodeNext &&
-          entrypointIsCompiled &&
-          !entrypointIsMjs &&
-          !externalPackageSelfImport;
+          !project.useTsNodeNext && entrypointIsCompiled && !entrypointIsMjs && !externalPackageSelfImport;
         entrypointContent +=
           entrypointExt === 'cjs' && (externalPackageSelfImport || !targetIsMjs)
             ? `  mod = await require('${specifier}');\n`
@@ -757,27 +668,17 @@ async function execute(t: T, p: FsProject, entrypoints: Entrypoint[]) {
   for (const entrypoint of entrypoints) {
     t.log(`Importing ${join(p.cwd, entrypoint)}`);
     try {
-      const { result } = await dynamicImport(
-        pathToFileURL(join(p.cwd, entrypoint))
-      );
+      const { result } = await dynamicImport(pathToFileURL(join(p.cwd, entrypoint)));
       expect(result).toBeInstanceOf(Promise);
       expect(result.mark).toBe('marked');
       const testsRun = await result;
       t.log(`Entrypoint ran ${testsRun} tests.`);
     } catch (e) {
       try {
-        const launchJsonPath = Path.resolve(
-          __dirname,
-          '../../.vscode/launch.json'
-        );
+        const launchJsonPath = Path.resolve(__dirname, '../../.vscode/launch.json');
         const launchJson = JSON.parse(fs.readFileSync(launchJsonPath, 'utf8'));
-        const config = launchJson.configurations.find(
-          (c: any) => c.name === 'Debug resolver test'
-        );
-        config.cwd = Path.join(
-          '${workspaceFolder}',
-          Path.relative(Path.resolve(__dirname, '../..'), p.cwd)
-        );
+        const config = launchJson.configurations.find((c: any) => c.name === 'Debug resolver test');
+        config.cwd = Path.join('${workspaceFolder}', Path.relative(Path.resolve(__dirname, '../..'), p.cwd));
         config.program = `./${entrypoint}`;
         fs.writeFileSync(launchJsonPath, JSON.stringify(launchJson, null, 2));
       } catch {}
@@ -800,11 +701,7 @@ function fileInfo(filename: string, typeModule: boolean, allowJs: boolean) {
   // ['ts', 'tsx', 'cts', 'mts', 'js', 'jsx', 'cjs', 'mjs']
   return {
     ext,
-    isMjs: ['mts', 'mjs'].includes(ext)
-      ? true
-      : ['cts', 'cjs'].includes(ext)
-      ? false
-      : typeModule,
+    isMjs: ['mts', 'mjs'].includes(ext) ? true : ['cts', 'cjs'].includes(ext) ? false : typeModule,
     isCompiled: allowJs || ['ts', 'tsx', 'jsx', 'mts', 'cts'].includes(ext),
   };
 }
