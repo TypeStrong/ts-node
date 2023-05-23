@@ -71,6 +71,7 @@ export interface BootstrapState {
   parseArgvResult: ReturnType<typeof parseArgv>;
   phase2Result?: ReturnType<typeof phase2>;
   phase3Result?: ReturnType<typeof phase3>;
+  isLoaderThread?: boolean;
 }
 
 /** @internal */
@@ -441,7 +442,7 @@ function getEntryPointInfo(state: BootstrapState) {
 }
 
 function phase4(payload: BootstrapState) {
-  const { isInChildProcess, tsNodeScript } = payload;
+  const { isInChildProcess, tsNodeScript, isLoaderThread } = payload;
   const { version, showConfig, restArgs, code, print, argv } = payload.parseArgvResult;
   const { cwd } = payload.phase2Result!;
   const { preloadedConfig } = payload.phase3Result!;
@@ -522,8 +523,12 @@ function phase4(payload: BootstrapState) {
 
   if (replStuff) replStuff.state.path = join(cwd, REPL_FILENAME(service.ts.version));
 
-  if (isInChildProcess)
+  if (isInChildProcess) {
     (require('./child/child-loader') as typeof import('./child/child-loader')).lateBindHooks(createEsmHooks(service));
+    // we should not do anything else at this point in the loader thread,
+    // let the entrypoint run the actual program.
+    if (isLoaderThread) return;
+  }
 
   // Bind REPL service to ts-node compiler service (chicken-and-egg problem)
   replStuff?.repl.setService(service);

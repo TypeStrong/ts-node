@@ -43,6 +43,7 @@ export namespace NodeLoaderHooksAPI1 {
 export interface NodeLoaderHooksAPI2 {
   resolve: NodeLoaderHooksAPI2.ResolveHook;
   load: NodeLoaderHooksAPI2.LoadHook;
+  globalPreload?: NodeLoaderHooksAPI2.GlobalPreload;
 }
 export namespace NodeLoaderHooksAPI2 {
   export type ResolveHook = (
@@ -74,6 +75,7 @@ export namespace NodeLoaderHooksAPI2 {
   export interface NodeImportAssertions {
     type?: 'json';
   }
+  export type GlobalPreload = () => string;
 }
 
 export type NodeLoaderHooksFormat = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
@@ -111,13 +113,23 @@ export function createEsmHooks(tsNodeService: Service) {
   const nodeResolveImplementation = tsNodeService.getNodeEsmResolver();
   const nodeGetFormatImplementation = tsNodeService.getNodeEsmGetFormat();
   const extensions = tsNodeService.extensions;
+  const useLoaderThread = versionGteLt(process.versions.node, '20.0.0');
 
   const hooksAPI = filterHooksByAPIVersion({
     resolve,
     load,
     getFormat,
     transformSource,
+    globalPreload: useLoaderThread ? globalPreload : undefined,
   });
+
+  function globalPreload() {
+    return `
+      const { createRequire } = getBuiltin('module');
+      const require = createRequire(${JSON.stringify(__filename)});
+      require('./index').register();
+    `;
+  }
 
   function isFileUrlOrNodeStyleSpecifier(parsed: UrlWithStringQuery) {
     // We only understand file:// URLs, but in node, the specifier can be a node-style `./foo` or `foo`
