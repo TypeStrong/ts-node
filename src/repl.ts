@@ -1,7 +1,8 @@
 import type * as _diff from 'diff';
 import { homedir } from 'os';
 import { join } from 'path';
-import { Recoverable, ReplOptions, REPLServer, start as nodeReplStart } from 'repl';
+import type * as _nodeRepl from 'repl';
+import type { REPLServer, ReplOptions } from 'repl';
 import { Context, createContext, Script } from 'vm';
 import { Service, CreateOptions, TSError, env } from './index';
 import { readFileSync, statSync } from 'fs';
@@ -26,6 +27,17 @@ function getDiffLines() {
     diff = require('diff');
   }
   return diff.diffLines;
+}
+
+// Lazy-loaded to prevent repl's require('domain') from causing problems
+// https://github.com/TypeStrong/ts-node/issues/2024
+// https://github.com/nodejs/node/issues/48131
+let nodeRepl: typeof _nodeRepl;
+function getNodeRepl() {
+  if (nodeRepl === undefined) {
+    nodeRepl = require('repl');
+  }
+  return nodeRepl;
 }
 
 /** @internal */
@@ -140,7 +152,7 @@ interface StartReplInternalOptions extends ReplOptions {
  */
 export function createRepl(options: CreateReplOptions = {}) {
   const { ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl = true } = options;
-  let nodeReplServer: REPLServer;
+  let nodeReplServer: _nodeRepl.REPLServer;
   // If `useGlobal` is not true, then REPL creates a context when started.
   // This stores a reference to it or to `global`, whichever is used, after REPL has started.
   let context: Context | undefined;
@@ -271,6 +283,7 @@ export function createRepl(options: CreateReplOptions = {}) {
       const canLogTopLevelAwaitHint = service!.options.experimentalReplAwait !== false && !service!.shouldReplAwait;
       if (error instanceof TSError) {
         // Support recoverable compilations using >= node 6.
+        const { Recoverable } = getNodeRepl();
         if (Recoverable && isRecoverable(error)) {
           callback(new Recoverable(error));
           return;
@@ -335,7 +348,7 @@ export function createRepl(options: CreateReplOptions = {}) {
     // the REPL starts for a snappier user experience on startup.
     service?.compile('', state.path);
 
-    const repl = nodeReplStart({
+    const repl = getNodeRepl().start({
       prompt: '> ',
       input: replService.stdin,
       output: replService.stdout,
