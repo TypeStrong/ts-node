@@ -152,7 +152,7 @@ interface StartReplInternalOptions extends ReplOptions {
  */
 export function createRepl(options: CreateReplOptions = {}) {
   const { ignoreDiagnosticsThatAreAnnoyingInInteractiveRepl = true } = options;
-  let nodeReplServer: _nodeRepl.REPLServer;
+  let nodeReplServer: REPLServer;
   // If `useGlobal` is not true, then REPL creates a context when started.
   // This stores a reference to it or to `global`, whichever is used, after REPL has started.
   let context: Context | undefined;
