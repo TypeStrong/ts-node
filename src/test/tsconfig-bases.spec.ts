@@ -27,7 +27,7 @@ test.suite('should use implicit @tsconfig/bases config when one is not loaded fr
     lib = 'es2023';
   }
 
-  test('implicitly uses @tsconfig/node14, @tsconfig/node16, or @tsconfig/node18 compilerOptions when both TS and node versions support it', async (t) => {
+  test('implicitly uses @tsconfig/node14, @tsconfig/node16, @tsconfig/node18, or @tsconfig/node20 compilerOptions when both TS and node versions support it', async (t) => {
     const r1 = await exec(`${BIN_PATH} --showConfig`, {
       cwd: t.context.tmpDir,
     });
@@ -94,4 +94,5 @@ test.suite('should bundle @tsconfig/bases to be used in your own tsconfigs', (te
   test(`ts-node/node14/tsconfig.json`, macro, 'node14');
   test(`ts-node/node16/tsconfig.json`, macro, 'node16');
   test(`ts-node/node18/tsconfig.json`, macro, 'node18');
+  test(`ts-node/node20/tsconfig.json`, macro, 'node20');
 });
