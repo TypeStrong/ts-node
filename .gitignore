@@ -18,3 +18,9 @@ npm-debug.log
 /.yarn/install-state.gz
 /tests/.yarn/install-state.gz
 /tests/.yarn/cache
+
+#File Extensions
+*.mjs
+*.mts
+*.cts
+*.cjs
