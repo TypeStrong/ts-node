@@ -16,7 +16,7 @@ module.exports = {
     CONCURRENT_TESTS: '4'
   },
   require: ['./src/test/remove-env-var-force-color.js'],
-  nodeArguments: ['--loader', './src/test/test-loader.mjs', '--no-warnings'],
+  nodeArguments: ['--loader', './src/test/test-loader/loader.mjs', '--no-warnings'],
   timeout: '300s',
   concurrency: 4,
   // We do chdir -- maybe other things -- that you can't do in worker_threads.

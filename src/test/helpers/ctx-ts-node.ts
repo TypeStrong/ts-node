@@ -11,8 +11,10 @@ import { testsDirRequire, tsNodeTypes } from './misc';
 /** Pass to `test.context()` to get access to the ts-node API under test */
 export async function ctxTsNode() {
   await installTsNode();
+  const tsNodeSpecifier = testsDirRequire.resolve('ts-node');
   const tsNodeUnderTest: typeof tsNodeTypes = testsDirRequire('ts-node');
   return {
+    tsNodeSpecifier,
     tsNodeUnderTest,
   };
 }

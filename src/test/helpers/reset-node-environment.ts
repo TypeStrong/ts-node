@@ -1,4 +1,5 @@
 import { has, mapValues, sortBy } from 'lodash';
+import * as testLoader from '../test-loader/client';
 
 // Reset node environment
 // Useful because ts-node installation necessarily must mutate the node environment.
@@ -44,7 +45,7 @@ export function resetNodeEnvironment() {
   resetObject(global, defaultGlobal, ['__coverage__']);
 
   // Reset our ESM hooks
-  process.__test_setloader__?.(undefined);
+  testLoader.clearLoader();
 }
 
 function captureObjectState(object: any, avoidGetters: string[] = []) {

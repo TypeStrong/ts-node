@@ -13,9 +13,10 @@ import * as semver from 'semver';
 import { padStart } from 'lodash';
 import _ = require('lodash');
 import { pathToFileURL } from 'url';
-import type { RegisterOptions } from '..';
+import type { CreateOptions, RegisterOptions } from '..';
 import * as fs from 'fs';
 import * as Path from 'path';
+import * as testLoader from './test-loader/client';
 
 /*
  * Each test case is a separate TS project, with a different permutation of
@@ -660,10 +661,11 @@ async function execute(t: T, p: FsProject, entrypoints: Entrypoint[]) {
   // Install ts-node and try to import all the index-* files
   //
 
-  const service = t.context.tsNodeUnderTest.register({
+  const options: CreateOptions = {
     projectSearchDir: p.cwd,
-  });
-  process.__test_setloader__(t.context.tsNodeUnderTest.createEsmHooks(service));
+  };
+  t.context.tsNodeUnderTest.register(options);
+  await testLoader.setLoader(t.context.tsNodeSpecifier, options);
 
   for (const entrypoint of entrypoints) {
     t.log(`Importing ${join(p.cwd, entrypoint)}`);
