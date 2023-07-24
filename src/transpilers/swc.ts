@@ -217,7 +217,7 @@ export function createSwcOptions(
         parser: {
           syntax: 'typescript',
           tsx: isTsx,
-          decorators: experimentalDecorators,
+          decorators: !!experimentalDecorators,
           dynamicImport: true,
           importAssertions: true,
         } as swcWasm.TsParserConfig,
