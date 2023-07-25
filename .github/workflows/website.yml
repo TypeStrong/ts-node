@@ -8,6 +8,8 @@ jobs:
   build:
     name: Build & Deploy
     runs-on: ubuntu-20.04
+    permissions:
+      contents: write
     steps:
       # checkout code
       - uses: actions/checkout@v2
