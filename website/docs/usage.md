@@ -85,4 +85,6 @@ node --loader ts-node/esm --inspect ./index.ts
 
 You can require ts-node and register the loader for future requires by using `require('ts-node').register({ /* options */ })`.
 
+Note that this does not support ESM, node currently does not offer a way to programmatically add hooks when using ES modules. If you want to programmatically use ts-node with ESM support you need to write your own module loader which wraps ts-node and then invoke it in one of the ways described above.
+
 Check out our [API](./api.md) for more features.
