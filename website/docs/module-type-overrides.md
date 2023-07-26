@@ -45,6 +45,29 @@ When multiple patterns match the same file, the last pattern takes precedence.
 * `esm` overrides matches files to compile and execute as native ECMAScript modules.
 * `package` resets either of the above to default behavior, which obeys `package.json` `"type"` and `tsconfig.json` `"module"` options.
 
+**Note:** This does not mean that you have to write CommonJS in your source `webpack.config.ts` file
+- here you can continue writing imports and exports in ESM syntax.
+
+For example, this syntax with `import` and `export` in your `webpack.config.ts` source file is just fine:
+
+```ts
+import * as path from 'path';
+import * as webpack from 'webpack';
+// in case you run into any typescript error when configuring `devServer`
+import 'webpack-dev-server';
+
+const config: webpack.Configuration = {
+  mode: 'production',
+  entry: './foo.js',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'foo.bundle.js',
+  },
+};
+
+export default config;
+```
+
 ## Caveats
 
 Files with an overridden module type are transformed with the same limitations as [`isolatedModules`](https://www.typescriptlang.org/tsconfig#isolatedModules).  This will only affect rare cases such as using `const enum`s with [`preserveConstEnums`](https://www.typescriptlang.org/tsconfig#preserveConstEnums) disabled.
