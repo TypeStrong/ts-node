@@ -1,4 +1,4 @@
-import { register, RegisterOptions, Service } from './index';
+import { register, RegisterOptions, Service, type TSError } from './index';
 import { parse as parseUrl, format as formatUrl, UrlWithStringQuery, fileURLToPath, pathToFileURL } from 'url';
 import { extname, resolve as pathResolve } from 'path';
 import * as assert from 'assert';
@@ -223,7 +223,7 @@ export function createEsmHooks(tsNodeService: Service) {
     format: NodeLoaderHooksFormat;
     source: string | Buffer | undefined;
   }> {
-    return addShortCircuitFlag(async () => {
+    return await addShortCircuitFlag(async () => {
       // If we get a format hint from resolve() on the context then use it
       // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
       const format =
@@ -251,8 +251,23 @@ export function createEsmHooks(tsNodeService: Service) {
         });
 
         // Call the old hook
-        const { source: transformedSource } = await transformSource(rawSource, { url, format }, defaultTransformSource);
-        source = transformedSource;
+        try {
+          const { source: transformedSource } = await transformSource(
+            rawSource,
+            { url, format },
+            defaultTransformSource
+          );
+          source = transformedSource;
+        } catch (er) {
+          // throw an error that can make it through the loader thread
+          // comms channel intact.
+          const tsErr = er as TSError;
+          const err = new Error(tsErr.message.trimEnd());
+          const { diagnosticCodes } = tsErr;
+          Object.assign(err, { diagnosticCodes });
+          Error.captureStackTrace(err, load);
+          throw err;
+        }
       }
 
       return { format, source };
@@ -360,11 +375,12 @@ export function createEsmHooks(tsNodeService: Service) {
 }
 
 async function addShortCircuitFlag<T>(fn: () => Promise<T>) {
-  const ret = await fn();
-  // Not sure if this is necessary; being lazy.  Can revisit in the future.
-  if (ret == null) return ret;
-  return {
-    ...ret,
-    shortCircuit: true,
-  };
+  return fn().then((ret) => {
+    // Not sure if this is necessary; being lazy.  Can revisit in the future.
+    if (ret == null) return ret;
+    return {
+      ...ret,
+      shortCircuit: true,
+    };
+  });
 }
