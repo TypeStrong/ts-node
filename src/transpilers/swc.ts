@@ -134,6 +134,7 @@ export function createSwcOptions(
     importHelpers,
     experimentalDecorators,
     emitDecoratorMetadata,
+    useDefineForClassFields,
     target,
     module,
     jsx,
@@ -225,6 +226,7 @@ export function createSwcOptions(
         transform: {
           decoratorMetadata: emitDecoratorMetadata,
           legacyDecorator: true,
+          useDefineForClassFields,
           react: {
             throwIfNamespace: false,
             development: jsxDevelopment,
