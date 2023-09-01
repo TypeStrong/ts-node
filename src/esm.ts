@@ -43,7 +43,7 @@ export namespace NodeLoaderHooksAPI1 {
 export interface NodeLoaderHooksAPI2 {
   resolve: NodeLoaderHooksAPI2.ResolveHook;
   load: NodeLoaderHooksAPI2.LoadHook;
-  globalPreload?: NodeLoaderHooksAPI2.GlobalPreload;
+  globalPreload?: NodeLoaderHooksAPI2.GlobalPreloadHook;
 }
 export namespace NodeLoaderHooksAPI2 {
   export type ResolveHook = (
@@ -75,7 +75,7 @@ export namespace NodeLoaderHooksAPI2 {
   export interface NodeImportAssertions {
     type?: 'json';
   }
-  export type GlobalPreload = () => string;
+  export type GlobalPreloadHook = () => string;
 }
 
 export type NodeLoaderHooksFormat = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
@@ -92,10 +92,10 @@ const newHooksAPI = versionGteLt(process.versions.node, '16.12.0');
 export function filterHooksByAPIVersion(
   hooks: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2
 ): NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 {
-  const { getFormat, load, resolve, transformSource } = hooks;
+  const { getFormat, load, resolve, transformSource, globalPreload } = hooks;
   // Explicit return type to avoid TS's non-ideal inferred type
   const hooksAPI: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 = newHooksAPI
-    ? { resolve, load, getFormat: undefined, transformSource: undefined }
+    ? { resolve, load, globalPreload, getFormat: undefined, transformSource: undefined }
     : { resolve, getFormat, transformSource, load: undefined };
   return hooksAPI;
 }

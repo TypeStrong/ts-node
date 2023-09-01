@@ -241,16 +241,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cspotcode/ava-lib@https://github.com/cspotcode/ava-lib#bbbed83f393342b51dc6caf2ddf775a3e89371d8":
+"@cspotcode/ava-lib@https://github.com/cspotcode/ava-lib#805aab17b2b89c388596b6dc2b4eece403c5fb87":
   version: 0.0.1
-  resolution: "@cspotcode/ava-lib@https://github.com/cspotcode/ava-lib.git#commit=bbbed83f393342b51dc6caf2ddf775a3e89371d8"
+  resolution: "@cspotcode/ava-lib@https://github.com/cspotcode/ava-lib.git#commit=805aab17b2b89c388596b6dc2b4eece403c5fb87"
   dependencies:
     "@types/node": "*"
+    chalk: 4.1.2
     throat: ^6.0.1
   peerDependencies:
     ava: "*"
     expect: "*"
-  checksum: 3ca30bbfe81abb537e1e96addd272b34daf19ecba56f13a5785115bc3433dc5309e733ab8440384531b7a74b88f58eb11c9151e62b75c5c219eccc7dd8b058ec
+  checksum: 3b453c2f1dd64eeb531a8b6da4cd4d9b24364b31b6692aca5d646d40479e46db56acc4141d93871732f33ab86e91b4c6a08674d1bcf49fc8c8ff8dab9f005742
   languageName: node
   linkType: hard
 
@@ -1257,6 +1258,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"chalk@npm:4.1.2, chalk@npm:^4.0.0":
+  version: 4.1.2
+  resolution: "chalk@npm:4.1.2"
+  dependencies:
+    ansi-styles: ^4.1.0
+    supports-color: ^7.1.0
+  checksum: fe75c9d5c76a7a98d45495b91b2172fa3b7a09e0cc9370e5c8feb1c567b85c4288e2b3fded7cfdd7359ac28d6b3844feb8b82b8686842e93d23c827c417e83fc
+  languageName: node
+  linkType: hard
+
 "chalk@npm:^2.0.0":
   version: 2.4.2
   resolution: "chalk@npm:2.4.2"
@@ -1265,16 +1276,6 @@ __metadata:
     escape-string-regexp: ^1.0.5
     supports-color: ^5.3.0
   checksum: ec3661d38fe77f681200f878edbd9448821924e0f93a9cefc0e26a33b145f1027a2084bf19967160d11e1f03bfe4eaffcabf5493b89098b2782c3fe0b03d80c2
-  languageName: node
-  linkType: hard
-
-"chalk@npm:^4.0.0":
-  version: 4.1.2
-  resolution: "chalk@npm:4.1.2"
-  dependencies:
-    ansi-styles: ^4.1.0
-    supports-color: ^7.1.0
-  checksum: fe75c9d5c76a7a98d45495b91b2172fa3b7a09e0cc9370e5c8feb1c567b85c4288e2b3fded7cfdd7359ac28d6b3844feb8b82b8686842e93d23c827c417e83fc
   languageName: node
   linkType: hard
 
@@ -3810,7 +3811,7 @@ __metadata:
   resolution: "ts-node@workspace:."
   dependencies:
     "@TypeStrong/fs-fixture-builder": "https://github.com/Typestrong/fs-fixture-builder.git#3099e53621daf99db971af29c96145dc115693cd"
-    "@cspotcode/ava-lib": "https://github.com/cspotcode/ava-lib#bbbed83f393342b51dc6caf2ddf775a3e89371d8"
+    "@cspotcode/ava-lib": "https://github.com/cspotcode/ava-lib#805aab17b2b89c388596b6dc2b4eece403c5fb87"
     "@cspotcode/expect-stream": "https://github.com/cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f"
     "@cspotcode/source-map-support": ^0.8.0
     "@microsoft/api-extractor": ^7.19.4
