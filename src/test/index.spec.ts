@@ -182,12 +182,7 @@ test.suite('ts-node', (test) => {
       }
 
       expect(r.err.message).toMatch(
-        [
-          `${join(TEST_DIR, 'throw error.ts')}:100`,
-          "  bar() { throw new Error('this is a demo'); }",
-          '                ^',
-          'Error: this is a demo',
-        ].join('\n')
+        [`${join(TEST_DIR, 'throw error.ts')}:100`, "  bar() { throw new Error('this is a demo'); }"].join('\n')
       );
     });
 
@@ -198,12 +193,7 @@ test.suite('ts-node', (test) => {
       }
 
       expect(r.err.message).toMatch(
-        [
-          `${join(TEST_DIR, 'throw error.ts')}:100`,
-          "  bar() { throw new Error('this is a demo'); }",
-          '                ^',
-          'Error: this is a demo',
-        ].join('\n')
+        [`${join(TEST_DIR, 'throw error.ts')}:100`, "  bar() { throw new Error('this is a demo'); }"].join('\n')
       );
     });
 
@@ -214,11 +204,7 @@ test.suite('ts-node', (test) => {
       }
 
       expect(r.err.message).toMatch(
-        [
-          `${join(TEST_DIR, 'throw error.ts')}:100`,
-          "  bar() { throw new Error('this is a demo'); }",
-          '                ^',
-        ].join('\n')
+        [`${join(TEST_DIR, 'throw error.ts')}:100`, "  bar() { throw new Error('this is a demo'); }"].join('\n')
       );
     });
 
@@ -309,12 +295,9 @@ test.suite('ts-node', (test) => {
       const r = await exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} "throw error react tsx.tsx"`);
       expect(r.err).not.toBe(null);
       expect(r.err!.message).toMatch(
-        [
-          `${join(TEST_DIR, './throw error react tsx.tsx')}:100`,
-          "  bar() { throw new Error('this is a demo'); }",
-          '                ^',
-          'Error: this is a demo',
-        ].join('\n')
+        [`${join(TEST_DIR, './throw error react tsx.tsx')}:100`, "  bar() { throw new Error('this is a demo'); }"].join(
+          '\n'
+        )
       );
     });
 
@@ -322,12 +305,9 @@ test.suite('ts-node', (test) => {
       const r = await exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} --transpile-only "throw error react tsx.tsx"`);
       expect(r.err).not.toBe(null);
       expect(r.err!.message).toMatch(
-        [
-          `${join(TEST_DIR, './throw error react tsx.tsx')}:100`,
-          "  bar() { throw new Error('this is a demo'); }",
-          '                ^',
-          'Error: this is a demo',
-        ].join('\n')
+        [`${join(TEST_DIR, './throw error react tsx.tsx')}:100`, "  bar() { throw new Error('this is a demo'); }"].join(
+          '\n'
+        )
       );
     });
 

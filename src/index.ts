@@ -691,7 +691,13 @@ export function createFromPreloadedConfig(foundConfigResult: ReturnType<typeof f
   }
 
   // Install source map support and read from memory cache.
+  const useBuiltInSourceMaps = versionGteLt(process.versions.node, '20.0.0');
   function installSourceMapSupport() {
+    if (useBuiltInSourceMaps) {
+      //@ts-ignore added to node somewhat recently, not yet in DT.
+      process.setSourceMapsEnabled(true);
+      return;
+    }
     const sourceMapSupport = require('@cspotcode/source-map-support') as typeof _sourceMapSupport;
     sourceMapSupport.install({
       environment: 'node',
