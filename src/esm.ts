@@ -4,6 +4,7 @@ import { extname, resolve as pathResolve } from 'path';
 import * as assert from 'assert';
 import { normalizeSlashes, versionGteLt } from './util';
 import { createRequire } from 'module';
+import type { MessagePort } from 'worker_threads';
 
 // Note: On Windows, URLs look like this: file:///D:/dev/@TypeStrong/ts-node-examples/foo.ts
 
@@ -75,7 +76,7 @@ export namespace NodeLoaderHooksAPI2 {
   export interface NodeImportAssertions {
     type?: 'json';
   }
-  export type GlobalPreloadHook = () => string;
+  export type GlobalPreloadHook = (context?: { port: MessagePort }) => string;
 }
 
 export type NodeLoaderHooksFormat = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
@@ -123,10 +124,29 @@ export function createEsmHooks(tsNodeService: Service) {
     globalPreload: useLoaderThread ? globalPreload : undefined,
   });
 
-  function globalPreload() {
+  function globalPreload({ port }: { port?: MessagePort } = {}) {
+    // The loader thread doesn't get process.stderr.isTTY properly,
+    // so this signal lets us infer it based on the state of the main
+    // thread, but only relevant if options.pretty is unset.
+    let stderrTTYSignal: string;
+    if (tsNodeService.options.pretty === undefined) {
+      port?.on('message', (data) => {
+        if (data?.stderrIsTTY) {
+          tsNodeService.setPrettyErrors(true);
+        }
+      });
+      stderrTTYSignal = `
+        port.postMessage({
+          stderrIsTTY: !!process.stderr.isTTY
+        });
+      `;
+    } else {
+      stderrTTYSignal = '';
+    }
     return `
       const { createRequire } = getBuiltin('module');
       const require = createRequire(${JSON.stringify(__filename)});
+      ${stderrTTYSignal}
       require('./index').register();
     `;
   }

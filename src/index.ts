@@ -480,6 +480,7 @@ export interface Service {
   ignored(fileName: string): boolean;
   compile(code: string, fileName: string, lineOffset?: number): string;
   getTypeInfo(code: string, fileName: string, position: number): TypeInfo;
+  setPrettyErrors(pretty: boolean): void;
   /** @internal */
   configFilePath: string | undefined;
   /** @internal */
@@ -719,11 +720,16 @@ export function createFromPreloadedConfig(foundConfigResult: ReturnType<typeof f
     });
   }
 
-  const shouldHavePrettyErrors = options.pretty === undefined ? process.stdout.isTTY : options.pretty;
+  let shouldHavePrettyErrors!: boolean;
+  let formatDiagnostics: (diagnostics: readonly _ts.Diagnostic[], host: _ts.FormatDiagnosticsHost) => string;
 
-  const formatDiagnostics = shouldHavePrettyErrors
-    ? ts.formatDiagnosticsWithColorAndContext || ts.formatDiagnostics
-    : ts.formatDiagnostics;
+  function setPrettyErrors(pretty: boolean) {
+    shouldHavePrettyErrors = pretty;
+    formatDiagnostics = shouldHavePrettyErrors
+      ? ts.formatDiagnosticsWithColorAndContext || ts.formatDiagnostics
+      : ts.formatDiagnostics;
+  }
+  setPrettyErrors(options.pretty !== undefined ? options.pretty : !!process.stderr.isTTY);
 
   function createTSError(diagnostics: ReadonlyArray<_ts.Diagnostic>) {
     const diagnosticText = formatDiagnostics(diagnostics, diagnosticHost);
@@ -1282,6 +1288,7 @@ export function createFromPreloadedConfig(foundConfigResult: ReturnType<typeof f
     getNodeEsmGetFormat,
     getNodeCjsLoader,
     extensions,
+    setPrettyErrors,
   };
 }
 
