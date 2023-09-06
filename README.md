@@ -230,7 +230,7 @@ To test your version of `env` for compatibility with `-S`:
 
 ## node flags and other tools
 
-You can register ts-node without using our CLI: `node -r ts-node/register` and `node --loader ts-node/esm`
+You can register ts-node without using our CLI: `node -r ts-node/register`, `node --loader ts-node/esm`, or `node --import ts-node/import` in node 20.6 and above.
 
 In many cases, setting [`NODE_OPTIONS`](https://nodejs.org/api/cli.html#cli_node_options_options) will enable `ts-node` within other node tools, child processes, and worker threads.  This can be combined with other node flags.
 

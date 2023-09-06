@@ -79,6 +79,17 @@ export namespace NodeLoaderHooksAPI2 {
   export type GlobalPreloadHook = (context?: { port: MessagePort }) => string;
 }
 
+export interface NodeLoaderHooksAPI3 {
+  resolve: NodeLoaderHooksAPI2.ResolveHook;
+  load: NodeLoaderHooksAPI2.LoadHook;
+  initialize?: NodeLoaderHooksAPI3.InitializeHook;
+}
+export namespace NodeLoaderHooksAPI3 {
+  // technically this can be anything that can be passed through a postMessage channel,
+  // but defined here based on how ts-node uses it.
+  export type InitializeHook = (data: any) => void | Promise<void>;
+}
+
 export type NodeLoaderHooksFormat = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
 
 export type NodeImportConditions = unknown;
@@ -87,17 +98,24 @@ export interface NodeImportAssertions {
 }
 
 // The hooks API changed in node version X so we need to check for backwards compatibility.
-const newHooksAPI = versionGteLt(process.versions.node, '16.12.0');
+const hooksAPIVersion = versionGteLt(process.versions.node, '21.0.0')
+  ? 3
+  : versionGteLt(process.versions.node, '16.12.0')
+  ? 2
+  : 1;
 
 /** @internal */
 export function filterHooksByAPIVersion(
-  hooks: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2
-): NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 {
-  const { getFormat, load, resolve, transformSource, globalPreload } = hooks;
+  hooks: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2 & NodeLoaderHooksAPI3
+): NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 | NodeLoaderHooksAPI3 {
+  const { getFormat, load, resolve, transformSource, globalPreload, initialize } = hooks;
   // Explicit return type to avoid TS's non-ideal inferred type
-  const hooksAPI: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 = newHooksAPI
-    ? { resolve, load, globalPreload, getFormat: undefined, transformSource: undefined }
-    : { resolve, getFormat, transformSource, load: undefined };
+  const hooksAPI: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 | NodeLoaderHooksAPI3 =
+    hooksAPIVersion === 3
+      ? { resolve, load, initialize, globalPreload: undefined, transformSource: undefined, getFormat: undefined }
+      : hooksAPIVersion === 2
+      ? { resolve, load, globalPreload, initialize: undefined, getFormat: undefined, transformSource: undefined }
+      : { resolve, getFormat, transformSource, initialize: undefined, globalPreload: undefined, load: undefined };
   return hooksAPI;
 }
 
@@ -122,6 +140,7 @@ export function createEsmHooks(tsNodeService: Service) {
     getFormat,
     transformSource,
     globalPreload: useLoaderThread ? globalPreload : undefined,
+    initialize: undefined,
   });
 
   function globalPreload({ port }: { port?: MessagePort } = {}) {
@@ -129,9 +148,9 @@ export function createEsmHooks(tsNodeService: Service) {
     // so this signal lets us infer it based on the state of the main
     // thread, but only relevant if options.pretty is unset.
     let stderrTTYSignal: string;
-    if (tsNodeService.options.pretty === undefined) {
-      port?.on('message', (data) => {
-        if (data?.stderrIsTTY) {
+    if (port && tsNodeService.options.pretty === undefined) {
+      port.on('message', (data: { stderrIsTTY?: boolean }) => {
+        if (data.stderrIsTTY) {
           tsNodeService.setPrettyErrors(true);
         }
       });
