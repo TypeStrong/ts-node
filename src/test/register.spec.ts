@@ -109,7 +109,7 @@ test.suite('register(create(options))', (test) => {
     } catch (error: any) {
       // on windows in node 20, this is printed as a quasi-url, like
       // d:/path/to/throw%20error.ts
-      exp(error.stack).toMatch(/Error: this is a demo\n    at Foo\.bar \([^)]+[\\\/]throw( %20)error\.ts:100:17\)\n/);
+      exp(error.stack).toMatch(/Error: this is a demo\n    at Foo\.bar \([^)]+[\\\/]throw( |%20)error\.ts:100:17\)\n/);
     }
   });
 

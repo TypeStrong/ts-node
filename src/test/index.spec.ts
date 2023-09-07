@@ -181,7 +181,9 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect(r.err.message.replace(/\r\n/g, '\n')).toMatch(/throw( |%20)error\.ts:100\n  bar\(\) \{ throw new Error\('this is a demo'\); \}/);
+      expect(r.err.message.replace(/\r\n/g, '\n')).toMatch(
+        /throw( |%20)error\.ts:100\n  bar\(\) \{ throw new Error\('this is a demo'\); \}/
+      );
     });
 
     test('should work with source maps in --transpile-only mode', async () => {
@@ -190,7 +192,9 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect(r.err.message.replace(/\r\n/g, '\n')).toMatch(/throw( |%20)error\.ts:100\n  bar\(\) \{ throw new Error\('this is a demo'\); \}/);
+      expect(r.err.message.replace(/\r\n/g, '\n')).toMatch(
+        /throw( |%20)error\.ts:100\n  bar\(\) \{ throw new Error\('this is a demo'\); \}/
+      );
     });
 
     test('eval should work with source maps', async () => {
@@ -199,7 +203,9 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect(r.err.message.replace(/\r\n/g, '\n')).toMatch(/throw( |%20)error\.ts:100\n  bar\(\) \{ throw new Error\('this is a demo'\); \}/);
+      expect(r.err.message.replace(/\r\n/g, '\n')).toMatch(
+        /throw( |%20)error\.ts:100\n  bar\(\) \{ throw new Error\('this is a demo'\); \}/
+      );
     });
 
     for (const flavor of [

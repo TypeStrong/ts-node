@@ -51,14 +51,14 @@ test.suite('esm', (test) => {
     expect(r.err).not.toBe(null);
     // on node 20, this will be a path. prior versions, a file: url
     // on windows in node 20, it's a quasi-url like d:/path/to/throw%20error.ts
-    expect(r.err!.message).toMatch(
+    expect(r.err!.message.replace(/\r\n/g, '\n')).toMatch(
       /[\\\/]throw( |%20)error\.ts:100\n  bar\(\) \{ throw new Error\('this is a demo'\); \}/
     );
     // the ^ and number of line-breaks is platform-specific
     // also, node 20 puts the type in here when source mapping it, so it
     // shows as Foo.Foo.bar
-    expect(r.err!.message).toMatch(/^    at (Foo\.){1,2}bar \(/m);
-    expect(r.err!.message).toMatch(/^    at (Foo\.){1,2}bar ([^\n]+[\\\/]throw( |%20)error\.ts:100:17)`/m);
+    expect(r.err!.message.replace(/\r\n/g, '\n')).toMatch(/^    at (Foo\.){1,2}bar \(/m);
+    expect(r.err!.message.replace(/\r\n/g, '\n')).toMatch(/^    at (Foo\.){1,2}bar ([^\n\)]+[\\\/]throw( |%20)error\.ts:100:17)/m);
   });
 
   test.suite('supports experimental-specifier-resolution=node', (test) => {
@@ -96,7 +96,7 @@ test.suite('esm', (test) => {
     });
     expect(r.err).not.toBe(null);
     // expect error from node's default resolver, has a few different names in different node versions
-    expect(r.stderr).toMatch(
+    expect(r.stderr.replace(/\r\n/g, '\n')).toMatch(
       /Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,10}\n *at (default|next)(Load|Resolve)/
     );
   });
@@ -106,7 +106,7 @@ test.suite('esm', (test) => {
       cwd: join(TEST_DIR, './esm-import-cache'),
     });
     expect(r.err).toBe(null);
-    expect(r.stdout).toBe('log1\nlog2\nlog2\n');
+    expect(r.stdout.replace(/\r\n/g, '\n')).toBe('log1\nlog2\nlog2\n');
   });
 
   test('should support transpile only mode via dedicated loader entrypoint', async () => {
