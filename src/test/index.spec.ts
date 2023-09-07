@@ -181,9 +181,7 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect(r.err.message).toMatch(
-        [`${join(TEST_DIR, 'throw error.ts')}:100`, "  bar() { throw new Error('this is a demo'); }"].join('\n')
-      );
+      expect(r.err.message.replace(/\r\n/g, '\n')).toMatch(/throw( |%20)error\.ts:100\n  bar\(\) \{ throw new Error\('this is a demo'\); \}/);
     });
 
     test('should work with source maps in --transpile-only mode', async () => {
@@ -192,9 +190,7 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect(r.err.message).toMatch(
-        [`${join(TEST_DIR, 'throw error.ts')}:100`, "  bar() { throw new Error('this is a demo'); }"].join('\n')
-      );
+      expect(r.err.message.replace(/\r\n/g, '\n')).toMatch(/throw( |%20)error\.ts:100\n  bar\(\) \{ throw new Error\('this is a demo'\); \}/);
     });
 
     test('eval should work with source maps', async () => {
@@ -203,9 +199,7 @@ test.suite('ts-node', (test) => {
         throw new Error('Command was expected to fail, but it succeeded.');
       }
 
-      expect(r.err.message).toMatch(
-        [`${join(TEST_DIR, 'throw error.ts')}:100`, "  bar() { throw new Error('this is a demo'); }"].join('\n')
-      );
+      expect(r.err.message.replace(/\r\n/g, '\n')).toMatch(/throw( |%20)error\.ts:100\n  bar\(\) \{ throw new Error\('this is a demo'\); \}/);
     });
 
     for (const flavor of [
@@ -294,20 +288,16 @@ test.suite('ts-node', (test) => {
     test('should use source maps with react tsx', async () => {
       const r = await exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} "throw error react tsx.tsx"`);
       expect(r.err).not.toBe(null);
-      expect(r.err!.message).toMatch(
-        [`${join(TEST_DIR, './throw error react tsx.tsx')}:100`, "  bar() { throw new Error('this is a demo'); }"].join(
-          '\n'
-        )
+      expect(r.err!.message.replace(/\r\n/g, '\n')).toMatch(
+        /throw( |%20)error( |%20)react( |%20)tsx\.tsx:100\n  bar\(\) \{ throw new Error\('this is a demo'\); \}/
       );
     });
 
     test('should use source maps with react tsx in --transpile-only mode', async () => {
       const r = await exec(`${CMD_TS_NODE_WITH_PROJECT_FLAG} --transpile-only "throw error react tsx.tsx"`);
       expect(r.err).not.toBe(null);
-      expect(r.err!.message).toMatch(
-        [`${join(TEST_DIR, './throw error react tsx.tsx')}:100`, "  bar() { throw new Error('this is a demo'); }"].join(
-          '\n'
-        )
+      expect(r.err!.message.replace(/\r\n/g, '\n')).toMatch(
+        /throw( |%20)error( |%20)react( |%20)tsx\.tsx:100\n  bar\(\) \{ throw new Error\('this is a demo'\); \}/
       );
     });
 
@@ -420,8 +410,7 @@ test.suite('ts-node', (test) => {
         expect(r.err).not.toBe(null);
         expect(r.stderr.replace(/\r\n/g, '\n')).toMatch(
           'TSError: ⨯ Unable to compile TypeScript:\n' +
-            "maxnodemodulesjsdepth/other.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
-            '\n'
+            "maxnodemodulesjsdepth/other.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'."
         );
       });
 
@@ -430,8 +419,7 @@ test.suite('ts-node', (test) => {
         expect(r.err).not.toBe(null);
         expect(r.stderr.replace(/\r\n/g, '\n')).toMatch(
           'TSError: ⨯ Unable to compile TypeScript:\n' +
-            "maxnodemodulesjsdepth-scoped/other.ts(7,7): error TS2322: Type 'string' is not assignable to type 'boolean'.\n" +
-            '\n'
+            "maxnodemodulesjsdepth-scoped/other.ts(7,7): error TS2322: Type 'string' is not assignable to type 'boolean'."
         );
       });
     });

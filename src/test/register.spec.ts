@@ -107,9 +107,9 @@ test.suite('register(create(options))', (test) => {
     try {
       require('../../tests/throw error');
     } catch (error: any) {
-      exp(error.stack).toMatch(
-        ['Error: this is a demo', `    at Foo.bar (${join(TEST_DIR, './throw error.ts')}:100:17)`].join('\n')
-      );
+      // on windows in node 20, this is printed as a quasi-url, like
+      // d:/path/to/throw%20error.ts
+      exp(error.stack).toMatch(/Error: this is a demo\n    at Foo\.bar \([^)]+[\\\/]throw( %20)error\.ts:100:17\)\n/);
     }
   });
 
