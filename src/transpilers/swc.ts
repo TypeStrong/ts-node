@@ -235,9 +235,6 @@ export function createSwcOptions(
           },
         },
         keepClassNames,
-        experimental: {
-          keepImportAssertions: true,
-        },
       },
     };
 
