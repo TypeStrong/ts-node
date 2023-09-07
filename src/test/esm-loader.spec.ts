@@ -25,6 +25,7 @@ import { join, resolve } from 'path';
 import * as expect from 'expect';
 import type { NodeLoaderHooksAPI2 } from '../';
 import { pathToFileURL } from 'url';
+import { versionGteLt } from '../util';
 
 const test = context(ctxTsNode);
 
@@ -48,16 +49,16 @@ test.suite('esm', (test) => {
       cwd: join(TEST_DIR, './esm'),
     });
     expect(r.err).not.toBe(null);
-    const expectedModuleUrl = pathToFileURL(join(TEST_DIR, './esm/throw error.ts')).toString();
-    expect(r.err!.message).toMatch(
-      [
-        `${expectedModuleUrl}:100`,
-        "  bar() { throw new Error('this is a demo'); }",
-        '                ^',
-        'Error: this is a demo',
-        `    at Foo.bar (${expectedModuleUrl}:100:17)`,
-      ].join('\n')
+    // on node 20, this will be a path. prior versions, a file: url
+    // on windows in node 20, it's a quasi-url like d:/path/to/throw%20error.ts
+    expect(r.err!.message.replace(/\r\n/g, '\n')).toMatch(
+      /[\\\/]throw( |%20)error\.ts:100\n  bar\(\) \{ throw new Error\('this is a demo'\); \}/
     );
+    // the ^ and number of line-breaks is platform-specific
+    // also, node 20 puts the type in here when source mapping it, so it
+    // shows as Foo.Foo.bar
+    expect(r.err!.message.replace(/\r\n/g, '\n')).toMatch(/^    at (Foo\.){1,2}bar \(/m);
+    expect(r.err!.message.replace(/\r\n/g, '\n')).toMatch(/^    at (Foo\.){1,2}bar ([^\n\)]+[\\\/]throw( |%20)error\.ts:100:17)/m);
   });
 
   test.suite('supports experimental-specifier-resolution=node', (test) => {
@@ -94,8 +95,10 @@ test.suite('esm', (test) => {
       cwd: join(TEST_DIR, './esm-import-http-url'),
     });
     expect(r.err).not.toBe(null);
-    // expect error from node's default resolver
-    expect(r.stderr).toMatch(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,2}\n *at defaultResolve/);
+    // expect error from node's default resolver, has a few different names in different node versions
+    expect(r.stderr.replace(/\r\n/g, '\n')).toMatch(
+      /Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,10}\n *at (default|next)(Load|Resolve)/
+    );
   });
 
   test('should bypass import cache when changing search params', async () => {
@@ -103,7 +106,7 @@ test.suite('esm', (test) => {
       cwd: join(TEST_DIR, './esm-import-cache'),
     });
     expect(r.err).toBe(null);
-    expect(r.stdout).toBe('log1\nlog2\nlog2\n');
+    expect(r.stdout.replace(/\r\n/g, '\n')).toBe('log1\nlog2\nlog2\n');
   });
 
   test('should support transpile only mode via dedicated loader entrypoint', async () => {

@@ -1,5 +1,24 @@
 import type { NodeLoaderHooksAPI1, NodeLoaderHooksAPI2 } from '..';
 import { filterHooksByAPIVersion } from '../esm';
+import { URL } from 'url';
+import { bootstrap } from '../bin';
+import { versionGteLt } from '../util';
+import { argPrefix, decompress } from './argv-payload';
+
+// On node v20, we cannot lateBind the hooks from outside the loader thread
+// so it has to be done in the loader thread.
+export function bindFromLoaderThread(loaderURL: string) {
+  // If we aren't in a loader thread, then skip this step.
+  if (!versionGteLt(process.versions.node, '20.0.0')) return;
+
+  const url = new URL(loaderURL);
+  const base64Payload = url.searchParams.get(argPrefix);
+  if (!base64Payload) throw new Error('unexpected loader url');
+  const state = decompress(base64Payload);
+  state.isInChildProcess = true;
+  state.isLoaderThread = true;
+  bootstrap(state);
+}
 
 let hooks: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2;
 

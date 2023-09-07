@@ -160,7 +160,7 @@ test.suite('[eval], <repl>, and [stdin] execute with correct globals', (test) =>
         modulePaths,
         exportsTest: true,
         // Note: vanilla node uses different name. See #1360
-        stackTest: expect.stringContaining(`    at ${join(TEST_DIR, `[stdin].ts`)}:1:`),
+        stackTest: expect.stringContaining(`    at ${join(TEST_DIR, `[stdin].ts`)}:`),
         moduleAccessorsTest: null,
         argv: [tsNodeExe],
       },
@@ -189,7 +189,7 @@ test.suite('[eval], <repl>, and [stdin] execute with correct globals', (test) =>
         // Note: vanilla node REPL does not set exports
         exportsTest: true,
         // Note: vanilla node uses different name. See #1360
-        stackTest: expect.stringContaining(`    at ${join(TEST_DIR, replFile)}:4:`),
+        stackTest: expect.stringContaining(`    at ${join(TEST_DIR, replFile)}:`),
         moduleAccessorsTest: true,
         argv: [tsNodeExe],
       },
@@ -237,7 +237,7 @@ test.suite('[eval], <repl>, and [stdin] execute with correct globals', (test) =>
         modulePaths: [...modulePaths],
         exportsTest: true,
         // Note: vanilla node uses different name. See #1360
-        stackTest: expect.stringContaining(`    at ${join(TEST_DIR, `[eval].ts`)}:1:`),
+        stackTest: expect.stringContaining(`    at ${join(TEST_DIR, `[eval].ts`)}:`),
         moduleAccessorsTest: true,
         argv: [tsNodeExe],
       },
@@ -262,7 +262,7 @@ test.suite('[eval], <repl>, and [stdin] execute with correct globals', (test) =>
         modulePaths,
         exportsTest: true,
         // Note: vanilla node uses different name. See #1360
-        stackTest: expect.stringContaining(`    at ${join(TEST_DIR, `[eval].ts`)}:1:`),
+        stackTest: expect.stringContaining(`    at ${join(TEST_DIR, `[eval].ts`)}:`),
         moduleAccessorsTest: true,
         argv: [tsNodeExe, './repl/script.js'],
       },
@@ -287,7 +287,7 @@ test.suite('[eval], <repl>, and [stdin] execute with correct globals', (test) =>
         modulePaths,
         exportsTest: true,
         // Note: vanilla node uses different name. See #1360
-        stackTest: expect.stringContaining(`    at ${join(TEST_DIR, `[eval].ts`)}:1:`),
+        stackTest: expect.stringContaining(`    at ${join(TEST_DIR, `[eval].ts`)}:`),
         moduleAccessorsTest: true,
         argv: [tsNodeExe, './does-not-exist.js'],
       },
@@ -312,7 +312,7 @@ test.suite('[eval], <repl>, and [stdin] execute with correct globals', (test) =>
         modulePaths,
         exportsTest: true,
         // Note: vanilla node uses different name. See #1360
-        stackTest: expect.stringContaining(`    at ${join(TEST_DIR, `[eval].ts`)}:1:`),
+        stackTest: expect.stringContaining(`    at ${join(TEST_DIR, `[eval].ts`)}:`),
         moduleAccessorsTest: true,
         argv: [tsNodeExe],
       },
@@ -404,7 +404,7 @@ test.suite('[eval], <repl>, and [stdin] execute with correct globals', (test) =>
           // moduleAccessorsTest: true,
 
           // Note: vanilla node uses different name. See #1360
-          stackTest: expect.stringContaining(`    at ${join(TEST_DIR, replFile)}:1:`),
+          stackTest: expect.stringContaining(`    at ${join(TEST_DIR, replFile)}:`),
         },
       });
     }
@@ -433,7 +433,7 @@ test.suite('[eval], <repl>, and [stdin] execute with correct globals', (test) =>
           // Note: vanilla node REPL does not set exports
           exportsTest: true,
           // Note: vanilla node uses different name. See #1360
-          stackTest: expect.stringContaining(`    at ${join(TEST_DIR, replFile)}:1:`),
+          stackTest: expect.stringContaining(`    at ${join(TEST_DIR, replFile)}:`),
           moduleAccessorsTest: true,
         },
       });

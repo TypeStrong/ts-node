@@ -1,9 +1,10 @@
-import { register, RegisterOptions, Service } from './index';
+import { register, RegisterOptions, Service, type TSError } from './index';
 import { parse as parseUrl, format as formatUrl, UrlWithStringQuery, fileURLToPath, pathToFileURL } from 'url';
 import { extname, resolve as pathResolve } from 'path';
 import * as assert from 'assert';
 import { normalizeSlashes, versionGteLt } from './util';
 import { createRequire } from 'module';
+import type { MessagePort } from 'worker_threads';
 
 // Note: On Windows, URLs look like this: file:///D:/dev/@TypeStrong/ts-node-examples/foo.ts
 
@@ -43,6 +44,7 @@ export namespace NodeLoaderHooksAPI1 {
 export interface NodeLoaderHooksAPI2 {
   resolve: NodeLoaderHooksAPI2.ResolveHook;
   load: NodeLoaderHooksAPI2.LoadHook;
+  globalPreload?: NodeLoaderHooksAPI2.GlobalPreloadHook;
 }
 export namespace NodeLoaderHooksAPI2 {
   export type ResolveHook = (
@@ -74,6 +76,18 @@ export namespace NodeLoaderHooksAPI2 {
   export interface NodeImportAssertions {
     type?: 'json';
   }
+  export type GlobalPreloadHook = (context?: { port: MessagePort }) => string;
+}
+
+export interface NodeLoaderHooksAPI3 {
+  resolve: NodeLoaderHooksAPI2.ResolveHook;
+  load: NodeLoaderHooksAPI2.LoadHook;
+  initialize?: NodeLoaderHooksAPI3.InitializeHook;
+}
+export namespace NodeLoaderHooksAPI3 {
+  // technically this can be anything that can be passed through a postMessage channel,
+  // but defined here based on how ts-node uses it.
+  export type InitializeHook = (data: any) => void | Promise<void>;
 }
 
 export type NodeLoaderHooksFormat = 'builtin' | 'commonjs' | 'dynamic' | 'json' | 'module' | 'wasm';
@@ -84,17 +98,24 @@ export interface NodeImportAssertions {
 }
 
 // The hooks API changed in node version X so we need to check for backwards compatibility.
-const newHooksAPI = versionGteLt(process.versions.node, '16.12.0');
+const hooksAPIVersion = versionGteLt(process.versions.node, '21.0.0')
+  ? 3
+  : versionGteLt(process.versions.node, '16.12.0')
+  ? 2
+  : 1;
 
 /** @internal */
 export function filterHooksByAPIVersion(
-  hooks: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2
-): NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 {
-  const { getFormat, load, resolve, transformSource } = hooks;
+  hooks: NodeLoaderHooksAPI1 & NodeLoaderHooksAPI2 & NodeLoaderHooksAPI3
+): NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 | NodeLoaderHooksAPI3 {
+  const { getFormat, load, resolve, transformSource, globalPreload, initialize } = hooks;
   // Explicit return type to avoid TS's non-ideal inferred type
-  const hooksAPI: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 = newHooksAPI
-    ? { resolve, load, getFormat: undefined, transformSource: undefined }
-    : { resolve, getFormat, transformSource, load: undefined };
+  const hooksAPI: NodeLoaderHooksAPI1 | NodeLoaderHooksAPI2 | NodeLoaderHooksAPI3 =
+    hooksAPIVersion === 3
+      ? { resolve, load, initialize, globalPreload: undefined, transformSource: undefined, getFormat: undefined }
+      : hooksAPIVersion === 2
+      ? { resolve, load, globalPreload, initialize: undefined, getFormat: undefined, transformSource: undefined }
+      : { resolve, getFormat, transformSource, initialize: undefined, globalPreload: undefined, load: undefined };
   return hooksAPI;
 }
 
@@ -111,13 +132,43 @@ export function createEsmHooks(tsNodeService: Service) {
   const nodeResolveImplementation = tsNodeService.getNodeEsmResolver();
   const nodeGetFormatImplementation = tsNodeService.getNodeEsmGetFormat();
   const extensions = tsNodeService.extensions;
+  const useLoaderThread = versionGteLt(process.versions.node, '20.0.0');
 
   const hooksAPI = filterHooksByAPIVersion({
     resolve,
     load,
     getFormat,
     transformSource,
+    globalPreload: useLoaderThread ? globalPreload : undefined,
+    initialize: undefined,
   });
+
+  function globalPreload({ port }: { port?: MessagePort } = {}) {
+    // The loader thread doesn't get process.stderr.isTTY properly,
+    // so this signal lets us infer it based on the state of the main
+    // thread, but only relevant if options.pretty is unset.
+    let stderrTTYSignal: string;
+    if (port && tsNodeService.options.pretty === undefined) {
+      port.on('message', (data: { stderrIsTTY?: boolean }) => {
+        if (data.stderrIsTTY) {
+          tsNodeService.setPrettyErrors(true);
+        }
+      });
+      stderrTTYSignal = `
+        port.postMessage({
+          stderrIsTTY: !!process.stderr.isTTY
+        });
+      `;
+    } else {
+      stderrTTYSignal = '';
+    }
+    return `
+      const { createRequire } = getBuiltin('module');
+      const require = createRequire(${JSON.stringify(__filename)});
+      ${stderrTTYSignal}
+      require('./index').register();
+    `;
+  }
 
   function isFileUrlOrNodeStyleSpecifier(parsed: UrlWithStringQuery) {
     // We only understand file:// URLs, but in node, the specifier can be a node-style `./foo` or `foo`
@@ -211,7 +262,7 @@ export function createEsmHooks(tsNodeService: Service) {
     format: NodeLoaderHooksFormat;
     source: string | Buffer | undefined;
   }> {
-    return addShortCircuitFlag(async () => {
+    return await addShortCircuitFlag(async () => {
       // If we get a format hint from resolve() on the context then use it
       // otherwise call the old getFormat() hook using node's old built-in defaultGetFormat() that ships with ts-node
       const format =
@@ -239,8 +290,23 @@ export function createEsmHooks(tsNodeService: Service) {
         });
 
         // Call the old hook
-        const { source: transformedSource } = await transformSource(rawSource, { url, format }, defaultTransformSource);
-        source = transformedSource;
+        try {
+          const { source: transformedSource } = await transformSource(
+            rawSource,
+            { url, format },
+            defaultTransformSource
+          );
+          source = transformedSource;
+        } catch (er) {
+          // throw an error that can make it through the loader thread
+          // comms channel intact.
+          const tsErr = er as TSError;
+          const err = new Error(tsErr.message.trimEnd());
+          const { diagnosticCodes } = tsErr;
+          Object.assign(err, { diagnosticCodes });
+          Error.captureStackTrace(err, load);
+          throw err;
+        }
       }
 
       return { format, source };
@@ -348,11 +414,12 @@ export function createEsmHooks(tsNodeService: Service) {
 }
 
 async function addShortCircuitFlag<T>(fn: () => Promise<T>) {
-  const ret = await fn();
-  // Not sure if this is necessary; being lazy.  Can revisit in the future.
-  if (ret == null) return ret;
-  return {
-    ...ret,
-    shortCircuit: true,
-  };
+  return fn().then((ret) => {
+    // Not sure if this is necessary; being lazy.  Can revisit in the future.
+    if (ret == null) return ret;
+    return {
+      ...ret,
+      shortCircuit: true,
+    };
+  });
 }

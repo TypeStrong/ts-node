@@ -10,6 +10,10 @@ import { argPrefix, compress } from './argv-payload';
  *   the child process.
  */
 export function callInChild(state: BootstrapState) {
+  const loaderURL = pathToFileURL(require.resolve('../../child-loader.mjs'));
+  const compressedState = compress(state);
+  loaderURL.searchParams.set(argPrefix, compressedState);
+
   const child = spawn(
     process.execPath,
     [
@@ -17,9 +21,9 @@ export function callInChild(state: BootstrapState) {
       require.resolve('./child-require.js'),
       '--loader',
       // Node on Windows doesn't like `c:\` absolute paths here; must be `file:///c:/`
-      pathToFileURL(require.resolve('../../child-loader.mjs')).toString(),
+      loaderURL.toString(),
       require.resolve('./child-entrypoint.js'),
-      `${argPrefix}${compress(state)}`,
+      `${argPrefix}${compressedState}`,
       ...state.parseArgvResult.restArgs,
     ],
     {

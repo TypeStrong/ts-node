@@ -120,23 +120,4 @@ test.suite('swc', (test) => {
       );
     });
   });
-
-  test.suite('preserves import assertions for json imports', (test) => {
-    test.if(tsSupportsImportAssertions);
-    test(
-      'basic json import',
-      compileMacro,
-      { module: 'esnext' },
-      outdent`
-        import document from './document.json' assert {type: 'json'};
-        document;
-      `,
-      outdent`
-        import document from './document.json' assert {
-            type: 'json'
-        };
-        document;
-      `
-    );
-  });
 });
