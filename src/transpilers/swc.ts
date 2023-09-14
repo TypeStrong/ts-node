@@ -4,7 +4,7 @@ import type * as swcTypes from '@swc/core';
 import type { CreateTranspilerOptions, Transpiler } from './types';
 import type { NodeModuleEmitKind } from '..';
 
-type SwcInstance = typeof swcWasm;
+type SwcInstance = typeof swcTypes;
 export interface SwcTranspilerOptions extends CreateTranspilerOptions {
   /**
    * swc compiler to use for compilation
@@ -28,7 +28,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   let swcDepName: string = 'swc';
   if (typeof swc === 'string') {
     swcDepName = swc;
-    swcInstance = require(transpilerConfigLocalResolveHelper(swc, true)) as typeof swcWasm;
+    swcInstance = require(transpilerConfigLocalResolveHelper(swc, true)) as SwcInstance;
   } else if (swc == null) {
     let swcResolved;
     try {
@@ -44,9 +44,9 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
         );
       }
     }
-    swcInstance = require(swcResolved) as typeof swcWasm;
+    swcInstance = require(swcResolved) as SwcInstance;
   } else {
-    swcInstance = swc;
+    swcInstance = swc as any as SwcInstance;
   }
 
   // Prepare SWC options derived from typescript compiler options
