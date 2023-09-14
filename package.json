@@ -148,7 +148,7 @@
     "@swc/core": ">=1.2.50",
     "@swc/wasm": ">=1.2.50",
     "@types/node": "*",
-    "typescript": ">=4.2"
+    "typescript": ">=4.4"
   },
   "peerDependenciesMeta": {
     "@swc/core": {
