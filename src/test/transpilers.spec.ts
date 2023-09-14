@@ -262,6 +262,38 @@ test.suite('swc', (test) => {
     );
   });
 
+  test.suite('jsx and jsxImportSource', (test) => {
+    test(
+      'jsx=react-jsx',
+      compileMacro,
+      {
+        jsx: 'react-jsx',
+      },
+      outdent`
+      <div></div>
+    `,
+      outdent`
+      /*#__PURE__*/ import { jsx as _jsx } from "react/jsx-runtime";
+      _jsx("div", {});
+    `
+    );
+    test(
+      'jsx=react-jsx w/custom jsxImportSource',
+      compileMacro,
+      {
+        jsx: 'react-jsx',
+        jsxImportSource: 'foo',
+      },
+      outdent`
+      <div></div>
+    `,
+      outdent`
+      /*#__PURE__*/ import { jsx as _jsx } from "foo/jsx-runtime";
+      _jsx("div", {});
+    `
+    );
+  });
+
   test.suite(
     '#1996 regression: ts-node gracefully allows swc to not return a sourcemap for type-only files',
     (test) => {

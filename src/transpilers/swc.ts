@@ -143,6 +143,7 @@ export function createSwcOptions(
     strict,
     alwaysStrict,
     noImplicitUseStrict,
+    jsxImportSource,
   } = compilerOptions;
 
   let swcTarget = targetMapping.get(target!) ?? 'es3';
@@ -235,6 +236,7 @@ export function createSwcOptions(
             pragma: jsxFactory!,
             pragmaFrag: jsxFragmentFactory!,
             runtime: jsxRuntime,
+            importSource: jsxImportSource,
           },
           useDefineForClassFields,
         },
