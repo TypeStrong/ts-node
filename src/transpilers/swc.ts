@@ -3,6 +3,7 @@ import type * as swcWasm from '@swc/wasm';
 import type * as swcTypes from '@swc/core';
 import type { CreateTranspilerOptions, Transpiler } from './types';
 import type { NodeModuleEmitKind } from '..';
+import { getUseDefineForClassFields } from '../ts-internals';
 
 type SwcInstance = typeof swcTypes;
 export interface SwcTranspilerOptions extends CreateTranspilerOptions {
@@ -194,6 +195,8 @@ export function createSwcOptions(
     jsx === JsxEmit.ReactJSX || jsx === JsxEmit.ReactJSXDev ? 'automatic' : undefined;
   const jsxDevelopment: swcTypes.ReactConfig['development'] = jsx === JsxEmit.ReactJSXDev ? true : undefined;
 
+  const useDefineForClassFields = getUseDefineForClassFields(compilerOptions);
+
   const nonTsxOptions = createVariant(false);
   const tsxOptions = createVariant(true);
   return { nonTsxOptions, tsxOptions };
@@ -233,6 +236,7 @@ export function createSwcOptions(
             pragmaFrag: jsxFragmentFactory!,
             runtime: jsxRuntime,
           },
+          useDefineForClassFields,
         },
         keepClassNames,
         experimental: {

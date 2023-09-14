@@ -139,4 +139,117 @@ test.suite('swc', (test) => {
       `
     );
   });
+
+  test.suite('useDefineForClassFields', (test) => {
+    const input = outdent`
+      class Foo {
+        bar = 1;
+      }
+    `;
+    const outputNative = outdent`
+      let Foo = class Foo {
+          bar = 1;
+      };
+    `;
+    const outputCtorAssignment = outdent`
+      let Foo = class Foo {
+          constructor(){
+              this.bar = 1;
+          }
+      };
+    `;
+    const outputDefine = outdent`
+      function _define_property(obj, key, value) {
+          if (key in obj) {
+              Object.defineProperty(obj, key, {
+                  value: value,
+                  enumerable: true,
+                  configurable: true,
+                  writable: true
+              });
+          } else {
+              obj[key] = value;
+          }
+          return obj;
+      }
+      let Foo = class Foo {
+          constructor(){
+              _define_property(this, "bar", 1);
+          }
+      };
+    `;
+    test(
+      'useDefineForClassFields unset, should default to true and emit native property assignment b/c `next` target',
+      compileMacro,
+      {
+        target: 'ESNext',
+      },
+      input,
+      outputNative
+    );
+    test(
+      'useDefineForClassFields unset, should default to true and emit native property assignment b/c new target',
+      compileMacro,
+      {
+        target: 'ES2022',
+      },
+      input,
+      outputNative
+    );
+    test(
+      'useDefineForClassFields unset, should default to false b/c old target',
+      compileMacro,
+      {
+        target: 'ES2021',
+      },
+      input,
+      outputCtorAssignment
+    );
+    test(
+      'useDefineForClassFields unset, should default to false b/c no target',
+      compileMacro,
+      {},
+      input,
+      outputCtorAssignment
+    );
+    test(
+      'useDefineForClassFields=true, should emit native property assignment b/c new target',
+      compileMacro,
+      {
+        useDefineForClassFields: true,
+        target: 'ES2022',
+      },
+      input,
+      outputNative
+    );
+    test(
+      'useDefineForClassFields=true, should emit define b/c old target',
+      compileMacro,
+      {
+        useDefineForClassFields: true,
+        target: 'ES2021',
+      },
+      input,
+      outputDefine
+    );
+    test(
+      'useDefineForClassFields=false, new target, should still emit legacy property assignment in ctor',
+      compileMacro,
+      {
+        useDefineForClassFields: false,
+        target: 'ES2022',
+      },
+      input,
+      outputCtorAssignment
+    );
+    test(
+      'useDefineForClassFields=false, old target, should emit legacy property assignment in ctor',
+      compileMacro,
+      {
+        useDefineForClassFields: false,
+      },
+      input,
+      outputCtorAssignment
+    );
+  });
 });
