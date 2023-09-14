@@ -236,8 +236,9 @@ export function createSwcOptions(
         },
         keepClassNames,
         experimental: {
-          keepImportAssertions: true,
-        },
+          keepImportAttributes: true,
+          emitAssertForImportAttributes: true,
+        } as swcTypes.JscConfig['experimental'],
       },
     };
 
