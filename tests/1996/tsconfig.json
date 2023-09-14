@@ -1,0 +1,5 @@
+{
+  "ts-node": {
+    "swc": true
+  }
+}

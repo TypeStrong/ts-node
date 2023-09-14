@@ -1158,7 +1158,7 @@ export function createFromPreloadedConfig(foundConfigResult: ReturnType<typeof f
       const diagnosticList = filterDiagnostics(result.diagnostics || [], diagnosticFilters);
       if (diagnosticList.length) reportTSError(diagnosticList);
 
-      return [result.outputText, result.sourceMapText as string, false];
+      return [result.outputText, result.sourceMapText ?? '{}', false];
     };
   }
 

@@ -3,10 +3,19 @@
 // Should consolidate them here.
 
 import { context } from './testlib';
-import { ctxTsNode, testsDirRequire, tsSupportsImportAssertions, tsSupportsReact17JsxFactories } from './helpers';
+import {
+  CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
+  createExec,
+  ctxTsNode,
+  testsDirRequire,
+  TEST_DIR,
+  tsSupportsImportAssertions,
+  tsSupportsReact17JsxFactories,
+} from './helpers';
 import { createSwcOptions } from '../transpilers/swc';
 import * as expect from 'expect';
 import { outdent } from 'outdent';
+import { join } from 'path';
 
 const test = context(ctxTsNode);
 
@@ -252,4 +261,28 @@ test.suite('swc', (test) => {
       outputCtorAssignment
     );
   });
+
+  test.suite(
+    '#1996 regression: ts-node gracefully allows swc to not return a sourcemap for type-only files',
+    (test) => {
+      // https://github.com/TypeStrong/ts-node/issues/1996
+      // @swc/core 1.3.51 returned `undefined` instead of sourcemap if the file was empty or only exported types.
+      // Newer swc versions do not do this. But our typedefs technically allow it.
+      const exec = createExec({
+        cwd: join(TEST_DIR, '1996'),
+      });
+      test('import empty file w/swc', async (t) => {
+        const r = await exec(`${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} ./index.ts`);
+        expect(r.err).toBe(null);
+        expect(r.stdout).toMatch(/#1996 regression test./);
+      });
+      test('use custom transpiler which never returns a sourcemap', async (t) => {
+        const r = await exec(
+          `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --project tsconfig.custom-transpiler.json ./empty.ts`
+        );
+        expect(r.err).toBe(null);
+        expect(r.stdout).toMatch(/#1996 regression test with custom transpiler./);
+      });
+    }
+  );
 });
