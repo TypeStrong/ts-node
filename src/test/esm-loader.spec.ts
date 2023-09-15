@@ -95,7 +95,9 @@ test.suite('esm', (test) => {
     });
     expect(r.err).not.toBe(null);
     // expect error from node's default resolver
-    expect(r.stderr).toMatch(/Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,2}\n *at defaultResolve/);
+    expect(r.stderr).toMatch(
+      /Error \[ERR_UNSUPPORTED_ESM_URL_SCHEME\]:.*(?:\n.*){0,2}\n *at (defaultResolve|defaultLoad)/
+    );
   });
 
   test('should bypass import cache when changing search params', async () => {
