@@ -329,3 +329,28 @@ function replaceWildcardCharacter(match: string, singleAsteriskRegexFragment: st
 function isImplicitGlob(lastPathComponent: string): boolean {
   return !/[.*?]/.test(lastPathComponent);
 }
+
+const ts_ScriptTarget_ES5 = 1;
+const ts_ScriptTarget_ES2022 = 9;
+const ts_ScriptTarget_ESNext = 99;
+const ts_ModuleKind_Node16 = 100;
+const ts_ModuleKind_NodeNext = 199;
+// https://github.com/microsoft/TypeScript/blob/fc418a2e611c88cf9afa0115ff73490b2397d311/src/compiler/utilities.ts#L8761
+export function getUseDefineForClassFields(compilerOptions: _ts.CompilerOptions): boolean {
+  return compilerOptions.useDefineForClassFields === undefined
+    ? getEmitScriptTarget(compilerOptions) >= ts_ScriptTarget_ES2022
+    : compilerOptions.useDefineForClassFields;
+}
+
+// https://github.com/microsoft/TypeScript/blob/fc418a2e611c88cf9afa0115ff73490b2397d311/src/compiler/utilities.ts#L8556
+export function getEmitScriptTarget(compilerOptions: {
+  module?: _ts.CompilerOptions['module'];
+  target?: _ts.CompilerOptions['target'];
+}): _ts.ScriptTarget {
+  return (
+    compilerOptions.target ??
+    ((compilerOptions.module === ts_ModuleKind_Node16 && ts_ScriptTarget_ES2022) ||
+      (compilerOptions.module === ts_ModuleKind_NodeNext && ts_ScriptTarget_ESNext) ||
+      ts_ScriptTarget_ES5)
+  );
+}

@@ -3,8 +3,9 @@ import type * as swcWasm from '@swc/wasm';
 import type * as swcTypes from '@swc/core';
 import type { CreateTranspilerOptions, Transpiler } from './types';
 import type { NodeModuleEmitKind } from '..';
+import { getUseDefineForClassFields } from '../ts-internals';
 
-type SwcInstance = typeof swcWasm;
+type SwcInstance = typeof swcTypes;
 export interface SwcTranspilerOptions extends CreateTranspilerOptions {
   /**
    * swc compiler to use for compilation
@@ -28,7 +29,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   let swcDepName: string = 'swc';
   if (typeof swc === 'string') {
     swcDepName = swc;
-    swcInstance = require(transpilerConfigLocalResolveHelper(swc, true)) as typeof swcWasm;
+    swcInstance = require(transpilerConfigLocalResolveHelper(swc, true)) as SwcInstance;
   } else if (swc == null) {
     let swcResolved;
     try {
@@ -44,9 +45,9 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
         );
       }
     }
-    swcInstance = require(swcResolved) as typeof swcWasm;
+    swcInstance = require(swcResolved) as SwcInstance;
   } else {
-    swcInstance = swc;
+    swcInstance = swc as any as SwcInstance;
   }
 
   // Prepare SWC options derived from typescript compiler options
@@ -142,6 +143,7 @@ export function createSwcOptions(
     strict,
     alwaysStrict,
     noImplicitUseStrict,
+    jsxImportSource,
   } = compilerOptions;
 
   let swcTarget = targetMapping.get(target!) ?? 'es3';
@@ -194,6 +196,8 @@ export function createSwcOptions(
     jsx === JsxEmit.ReactJSX || jsx === JsxEmit.ReactJSXDev ? 'automatic' : undefined;
   const jsxDevelopment: swcTypes.ReactConfig['development'] = jsx === JsxEmit.ReactJSXDev ? true : undefined;
 
+  const useDefineForClassFields = getUseDefineForClassFields(compilerOptions);
+
   const nonTsxOptions = createVariant(false);
   const tsxOptions = createVariant(true);
   return { nonTsxOptions, tsxOptions };
@@ -204,11 +208,15 @@ export function createSwcOptions(
       // isModule: true,
       module: moduleType
         ? {
-            noInterop: !esModuleInterop,
             type: moduleType,
-            strictMode,
-            // For NodeNext and Node12, emit as CJS but do not transform dynamic imports
-            ignoreDynamic: nodeModuleEmitKind === 'nodecjs',
+            ...(moduleType === 'amd' || moduleType === 'commonjs' || moduleType === 'umd'
+              ? {
+                  noInterop: !esModuleInterop,
+                  strictMode,
+                  // For NodeNext and Node12, emit as CJS but do not transform dynamic imports
+                  ignoreDynamic: nodeModuleEmitKind === 'nodecjs',
+                }
+              : {}),
           }
         : undefined,
       swcrc: false,
@@ -232,12 +240,15 @@ export function createSwcOptions(
             pragma: jsxFactory!,
             pragmaFrag: jsxFragmentFactory!,
             runtime: jsxRuntime,
+            importSource: jsxImportSource,
           },
+          useDefineForClassFields,
         },
         keepClassNames,
         experimental: {
-          keepImportAssertions: true,
-        },
+          keepImportAttributes: true,
+          emitAssertForImportAttributes: true,
+        } as swcTypes.JscConfig['experimental'],
       },
     };
 

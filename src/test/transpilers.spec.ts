@@ -3,10 +3,19 @@
 // Should consolidate them here.
 
 import { context } from './testlib';
-import { ctxTsNode, testsDirRequire, tsSupportsImportAssertions, tsSupportsReact17JsxFactories } from './helpers';
+import {
+  CMD_TS_NODE_WITHOUT_PROJECT_FLAG,
+  createExec,
+  ctxTsNode,
+  testsDirRequire,
+  TEST_DIR,
+  tsSupportsImportAssertions,
+  tsSupportsReact17JsxFactories,
+} from './helpers';
 import { createSwcOptions } from '../transpilers/swc';
 import * as expect from 'expect';
 import { outdent } from 'outdent';
+import { join } from 'path';
 
 const test = context(ctxTsNode);
 
@@ -78,10 +87,7 @@ test.suite('swc', (test) => {
         .create({
           swc: true,
           skipProject: true,
-          compilerOptions: {
-            module: 'esnext',
-            ...compilerOptions,
-          },
+          compilerOptions,
         })
         .compile(input, 'input.tsx');
       expect(code.replace(/\/\/# sourceMappingURL.*/, '').trim()).toBe(expectedOutput);
@@ -93,12 +99,17 @@ test.suite('swc', (test) => {
       const div = <div></div>;
     `;
 
-    test(compileMacro, { jsx: 'react' }, input, `const div = /*#__PURE__*/ React.createElement("div", null);`);
+    test(
+      compileMacro,
+      { module: 'esnext', jsx: 'react' },
+      input,
+      `const div = /*#__PURE__*/ React.createElement("div", null);`
+    );
     test.suite('react 17 jsx factories', (test) => {
       test.if(tsSupportsReact17JsxFactories);
       test(
         compileMacro,
-        { jsx: 'react-jsx' },
+        { module: 'esnext', jsx: 'react-jsx' },
         input,
         outdent`
           import { jsx as _jsx } from "react/jsx-runtime";
@@ -107,7 +118,7 @@ test.suite('swc', (test) => {
       );
       test(
         compileMacro,
-        { jsx: 'react-jsxdev' },
+        { module: 'esnext', jsx: 'react-jsxdev' },
         input,
         outdent`
           import { jsxDEV as _jsxDEV } from "react/jsx-dev-runtime";
@@ -139,4 +150,166 @@ test.suite('swc', (test) => {
       `
     );
   });
+
+  test.suite('useDefineForClassFields', (test) => {
+    const input = outdent`
+      class Foo {
+        bar = 1;
+      }
+    `;
+    const outputNative = outdent`
+      let Foo = class Foo {
+          bar = 1;
+      };
+    `;
+    const outputCtorAssignment = outdent`
+      let Foo = class Foo {
+          constructor(){
+              this.bar = 1;
+          }
+      };
+    `;
+    const outputDefine = outdent`
+      function _define_property(obj, key, value) {
+          if (key in obj) {
+              Object.defineProperty(obj, key, {
+                  value: value,
+                  enumerable: true,
+                  configurable: true,
+                  writable: true
+              });
+          } else {
+              obj[key] = value;
+          }
+          return obj;
+      }
+      let Foo = class Foo {
+          constructor(){
+              _define_property(this, "bar", 1);
+          }
+      };
+    `;
+    test(
+      'useDefineForClassFields unset, should default to true and emit native property assignment b/c `next` target',
+      compileMacro,
+      { module: 'esnext', target: 'ESNext' },
+      input,
+      outputNative
+    );
+    test(
+      'useDefineForClassFields unset, should default to true and emit native property assignment b/c new target',
+      compileMacro,
+      { module: 'esnext', target: 'ES2022' },
+      input,
+      outputNative
+    );
+    test(
+      'useDefineForClassFields unset, should default to false b/c old target',
+      compileMacro,
+      { module: 'esnext', target: 'ES2021' },
+      input,
+      outputCtorAssignment
+    );
+    test(
+      'useDefineForClassFields=true, should emit native property assignment b/c new target',
+      compileMacro,
+      {
+        module: 'esnext',
+        useDefineForClassFields: true,
+        target: 'ES2022',
+      },
+      input,
+      outputNative
+    );
+    test(
+      'useDefineForClassFields=true, should emit define b/c old target',
+      compileMacro,
+      {
+        module: 'esnext',
+        useDefineForClassFields: true,
+        target: 'ES2021',
+      },
+      input,
+      outputDefine
+    );
+    test(
+      'useDefineForClassFields=false, new target, should still emit legacy property assignment in ctor',
+      compileMacro,
+      {
+        module: 'esnext',
+        useDefineForClassFields: false,
+        target: 'ES2022',
+      },
+      input,
+      outputCtorAssignment
+    );
+    test(
+      'useDefineForClassFields=false, old target, should emit legacy property assignment in ctor',
+      compileMacro,
+      {
+        module: 'esnext',
+        useDefineForClassFields: false,
+      },
+      input,
+      outputCtorAssignment
+    );
+  });
+
+  test.suite('jsx and jsxImportSource', (test) => {
+    test(
+      'jsx=react-jsx',
+      compileMacro,
+      {
+        module: 'esnext',
+        jsx: 'react-jsx',
+      },
+      outdent`
+      <div></div>
+    `,
+      outdent`
+      /*#__PURE__*/ import { jsx as _jsx } from "react/jsx-runtime";
+      _jsx("div", {});
+    `
+    );
+    test(
+      'jsx=react-jsx w/custom jsxImportSource',
+      compileMacro,
+      {
+        module: 'esnext',
+        jsx: 'react-jsx',
+        jsxImportSource: 'foo',
+      },
+      outdent`
+      <div></div>
+    `,
+      outdent`
+      /*#__PURE__*/ import { jsx as _jsx } from "foo/jsx-runtime";
+      _jsx("div", {});
+    `
+    );
+  });
+
+  test.suite(
+    '#1996 regression: ts-node gracefully allows swc to not return a sourcemap for type-only files',
+    (test) => {
+      // https://github.com/TypeStrong/ts-node/issues/1996
+      // @swc/core 1.3.51 returned `undefined` instead of sourcemap if the file was empty or only exported types.
+      // Newer swc versions do not do this. But our typedefs technically allow it.
+      const exec = createExec({
+        cwd: join(TEST_DIR, '1996'),
+      });
+      test('import empty file w/swc', async (t) => {
+        const r = await exec(`${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} ./index.ts`);
+        expect(r.err).toBe(null);
+        expect(r.stdout).toMatch(/#1996 regression test./);
+      });
+      test('use custom transpiler which never returns a sourcemap', async (t) => {
+        const r = await exec(
+          `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --project tsconfig.custom-transpiler.json ./empty.ts`
+        );
+        expect(r.err).toBe(null);
+        expect(r.stdout).toMatch(/#1996 regression test with custom transpiler./);
+      });
+    }
+  );
 });
