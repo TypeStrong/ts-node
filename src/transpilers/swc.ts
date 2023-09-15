@@ -208,11 +208,15 @@ export function createSwcOptions(
       // isModule: true,
       module: moduleType
         ? {
-            noInterop: !esModuleInterop,
             type: moduleType,
-            strictMode,
-            // For NodeNext and Node12, emit as CJS but do not transform dynamic imports
-            ignoreDynamic: nodeModuleEmitKind === 'nodecjs',
+            ...(moduleType === 'amd' || moduleType === 'commonjs' || moduleType === 'umd'
+              ? {
+                  noInterop: !esModuleInterop,
+                  strictMode,
+                  // For NodeNext and Node12, emit as CJS but do not transform dynamic imports
+                  ignoreDynamic: nodeModuleEmitKind === 'nodecjs',
+                }
+              : {}),
           }
         : undefined,
       swcrc: false,

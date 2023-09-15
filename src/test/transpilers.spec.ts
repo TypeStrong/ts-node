@@ -87,10 +87,7 @@ test.suite('swc', (test) => {
         .create({
           swc: true,
           skipProject: true,
-          compilerOptions: {
-            module: 'esnext',
-            ...compilerOptions,
-          },
+          compilerOptions,
         })
         .compile(input, 'input.tsx');
       expect(code.replace(/\/\/# sourceMappingURL.*/, '').trim()).toBe(expectedOutput);
@@ -102,12 +99,17 @@ test.suite('swc', (test) => {
       const div = <div></div>;
     `;
 
-    test(compileMacro, { jsx: 'react' }, input, `const div = /*#__PURE__*/ React.createElement("div", null);`);
+    test(
+      compileMacro,
+      { module: 'esnext', jsx: 'react' },
+      input,
+      `const div = /*#__PURE__*/ React.createElement("div", null);`
+    );
     test.suite('react 17 jsx factories', (test) => {
       test.if(tsSupportsReact17JsxFactories);
       test(
         compileMacro,
-        { jsx: 'react-jsx' },
+        { module: 'esnext', jsx: 'react-jsx' },
         input,
         outdent`
           import { jsx as _jsx } from "react/jsx-runtime";
@@ -116,7 +118,7 @@ test.suite('swc', (test) => {
       );
       test(
         compileMacro,
-        { jsx: 'react-jsxdev' },
+        { module: 'esnext', jsx: 'react-jsxdev' },
         input,
         outdent`
           import { jsxDEV as _jsxDEV } from "react/jsx-dev-runtime";
@@ -190,34 +192,21 @@ test.suite('swc', (test) => {
     test(
       'useDefineForClassFields unset, should default to true and emit native property assignment b/c `next` target',
       compileMacro,
-      {
-        target: 'ESNext',
-      },
+      { module: 'esnext', target: 'ESNext' },
       input,
       outputNative
     );
     test(
       'useDefineForClassFields unset, should default to true and emit native property assignment b/c new target',
       compileMacro,
-      {
-        target: 'ES2022',
-      },
+      { module: 'esnext', target: 'ES2022' },
       input,
       outputNative
     );
     test(
       'useDefineForClassFields unset, should default to false b/c old target',
       compileMacro,
-      {
-        target: 'ES2021',
-      },
-      input,
-      outputCtorAssignment
-    );
-    test(
-      'useDefineForClassFields unset, should default to false b/c no target',
-      compileMacro,
-      {},
+      { module: 'esnext', target: 'ES2021' },
       input,
       outputCtorAssignment
     );
@@ -225,6 +214,7 @@ test.suite('swc', (test) => {
       'useDefineForClassFields=true, should emit native property assignment b/c new target',
       compileMacro,
       {
+        module: 'esnext',
         useDefineForClassFields: true,
         target: 'ES2022',
       },
@@ -235,6 +225,7 @@ test.suite('swc', (test) => {
       'useDefineForClassFields=true, should emit define b/c old target',
       compileMacro,
       {
+        module: 'esnext',
         useDefineForClassFields: true,
         target: 'ES2021',
       },
@@ -245,6 +236,7 @@ test.suite('swc', (test) => {
       'useDefineForClassFields=false, new target, should still emit legacy property assignment in ctor',
       compileMacro,
       {
+        module: 'esnext',
         useDefineForClassFields: false,
         target: 'ES2022',
       },
@@ -255,6 +247,7 @@ test.suite('swc', (test) => {
       'useDefineForClassFields=false, old target, should emit legacy property assignment in ctor',
       compileMacro,
       {
+        module: 'esnext',
         useDefineForClassFields: false,
       },
       input,
@@ -267,6 +260,7 @@ test.suite('swc', (test) => {
       'jsx=react-jsx',
       compileMacro,
       {
+        module: 'esnext',
         jsx: 'react-jsx',
       },
       outdent`
@@ -281,6 +275,7 @@ test.suite('swc', (test) => {
       'jsx=react-jsx w/custom jsxImportSource',
       compileMacro,
       {
+        module: 'esnext',
         jsx: 'react-jsx',
         jsxImportSource: 'foo',
       },
