@@ -113,7 +113,7 @@
   "homepage": "https://typestrong.org/ts-node",
   "devDependencies": {
     "@TypeStrong/fs-fixture-builder": "https://github.com/Typestrong/fs-fixture-builder.git#3099e53621daf99db971af29c96145dc115693cd",
-    "@cspotcode/ava-lib": "https://github.com/cspotcode/ava-lib#bbbed83f393342b51dc6caf2ddf775a3e89371d8",
+    "@cspotcode/ava-lib": "https://github.com/cspotcode/ava-lib#805aab17b2b89c388596b6dc2b4eece403c5fb87",
     "@cspotcode/expect-stream": "https://github.com/cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f",
     "@microsoft/api-extractor": "^7.19.4",
     "@swc/core": "1.3.84",
@@ -148,7 +148,7 @@
     "@swc/core": ">=1.2.50",
     "@swc/wasm": ">=1.2.50",
     "@types/node": "*",
-    "typescript": ">=4.2"
+    "typescript": ">=4.4"
   },
   "peerDependenciesMeta": {
     "@swc/core": {
