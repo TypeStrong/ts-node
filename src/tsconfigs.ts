@@ -37,12 +37,33 @@ export function getDefaultTsconfigJsonForNodeVersion(ts: TSCommon): any {
       moduleResolution: string;
     };
   }) {
-    return (
-      typeof (ts.ScriptTarget as any)[config.compilerOptions.target.toUpperCase()] === 'number' &&
-      typeof (ts.ModuleKind as any)[config.compilerOptions.module.toUpperCase()] === 'number' &&
-      typeof (ts.ModuleResolutionKind as any)[config.compilerOptions.moduleResolution.toUpperCase()] === 'number' &&
-      tsInternal.libs &&
-      config.compilerOptions.lib.every((lib) => tsInternal.libs!.includes(lib))
+    const results = ts.parseJsonConfigFileContent(
+      {
+        compilerOptions: config.compilerOptions,
+        files: ['foo.ts'],
+      },
+      parseConfigHost,
+      ''
     );
+    return results.errors.length === 0;
   }
 }
+
+const parseConfigHost = {
+  useCaseSensitiveFileNames: false,
+  readDirectory(
+    rootDir: string,
+    extensions: readonly string[],
+    excludes: readonly string[] | undefined,
+    includes: readonly string[],
+    depth?: number
+  ) {
+    return [];
+  },
+  fileExists(path: string) {
+    return false;
+  },
+  readFile(path: string) {
+    return '';
+  },
+};
