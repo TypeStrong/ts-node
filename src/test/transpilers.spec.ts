@@ -11,6 +11,7 @@ import {
   TEST_DIR,
   tsSupportsImportAssertions,
   tsSupportsReact17JsxFactories,
+  tsSupportsEs2022,
 } from './helpers';
 import { createSwcOptions } from '../transpilers/swc';
 import * as expect from 'expect';
@@ -169,6 +170,18 @@ test.suite('swc', (test) => {
           }
       };
     `;
+    const outputCtorAssignmentInEs5Class = outdent`
+      function _class_call_check(instance, Constructor) {
+          if (!(instance instanceof Constructor)) {
+              throw new TypeError("Cannot call a class as a function");
+          }
+      }
+      var Foo = function Foo() {
+          "use strict";
+          _class_call_check(this, Foo);
+          this.bar = 1;
+      };
+    `;
     const outputDefine = outdent`
       function _define_property(obj, key, value) {
           if (key in obj) {
@@ -189,19 +202,44 @@ test.suite('swc', (test) => {
           }
       };
     `;
+    const outputDefineInEs5Class = outdent`
+      function _class_call_check(instance, Constructor) {
+          if (!(instance instanceof Constructor)) {
+              throw new TypeError("Cannot call a class as a function");
+          }
+      }
+      function _define_property(obj, key, value) {
+          if (key in obj) {
+              Object.defineProperty(obj, key, {
+                  value: value,
+                  enumerable: true,
+                  configurable: true,
+                  writable: true
+              });
+          } else {
+              obj[key] = value;
+          }
+          return obj;
+      }
+      var Foo = function Foo() {
+          "use strict";
+          _class_call_check(this, Foo);
+          _define_property(this, "bar", 1);
+      };
+    `;
     test(
-      'useDefineForClassFields unset, should default to true and emit native property assignment b/c `next` target',
+      'useDefineForClassFields unset, `next` target, should default to true and emit native property assignment',
       compileMacro,
       { module: 'esnext', target: 'ESNext' },
       input,
       outputNative
     );
-    test(
-      'useDefineForClassFields unset, should default to true and emit native property assignment b/c new target',
-      compileMacro,
-      { module: 'esnext', target: 'ES2022' },
-      input,
-      outputNative
+    test.suite(
+      'useDefineForClassFields unset, new target, should default to true and emit native property assignment',
+      (test) => {
+        test.if(tsSupportsEs2022);
+        test(compileMacro, { module: 'esnext', target: 'ES2022' }, input, outputNative);
+      }
     );
     test(
       'useDefineForClassFields unset, should default to false b/c old target',
@@ -210,48 +248,78 @@ test.suite('swc', (test) => {
       input,
       outputCtorAssignment
     );
+    test.suite('useDefineForClassFields=true, new target, should emit native property assignment', (test) => {
+      test.if(tsSupportsEs2022);
+      test(
+        compileMacro,
+        {
+          module: 'esnext',
+          target: 'ES2022',
+          useDefineForClassFields: true,
+        },
+        input,
+        outputNative
+      );
+    });
     test(
-      'useDefineForClassFields=true, should emit native property assignment b/c new target',
+      'useDefineForClassFields=true, old target, should emit define',
       compileMacro,
       {
         module: 'esnext',
-        useDefineForClassFields: true,
-        target: 'ES2022',
-      },
-      input,
-      outputNative
-    );
-    test(
-      'useDefineForClassFields=true, should emit define b/c old target',
-      compileMacro,
-      {
-        module: 'esnext',
-        useDefineForClassFields: true,
         target: 'ES2021',
+        useDefineForClassFields: true,
       },
       input,
       outputDefine
     );
-    test(
+    test.suite(
       'useDefineForClassFields=false, new target, should still emit legacy property assignment in ctor',
-      compileMacro,
-      {
-        module: 'esnext',
-        useDefineForClassFields: false,
-        target: 'ES2022',
-      },
-      input,
-      outputCtorAssignment
+      (test) => {
+        test.if(tsSupportsEs2022);
+        test(
+          compileMacro,
+          {
+            module: 'esnext',
+            target: 'ES2022',
+            useDefineForClassFields: false,
+          },
+          input,
+          outputCtorAssignment
+        );
+      }
     );
     test(
       'useDefineForClassFields=false, old target, should emit legacy property assignment in ctor',
       compileMacro,
       {
         module: 'esnext',
+        target: 'ES2021',
         useDefineForClassFields: false,
       },
       input,
       outputCtorAssignment
+    );
+    test(
+      'useDefineForClassFields=false, ancient target, should emit legacy property assignment in legacy function-based class',
+      compileMacro,
+      {
+        module: 'esnext',
+        target: 'es5',
+        useDefineForClassFields: false,
+      },
+      input,
+      outputCtorAssignmentInEs5Class
+    );
+    test(
+      'useDefineForClassFields=true, ancient target, should emit define in legacy function-based class',
+      compileMacro,
+      {
+        module: 'esnext',
+        target: 'es5',
+        useDefineForClassFields: true,
+      },
+      input,
+      outputDefineInEs5Class
     );
   });
 
