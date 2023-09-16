@@ -27,8 +27,8 @@ test.suite('should use implicit @tsconfig/bases config when one is not loaded fr
   let lib: Array<string> | undefined = undefined;
   let target: string = 'es5';
   if (tsSupportsStableNodeNextNode16) {
-    let lib = ['es2020'];
-    let target = 'es2020';
+    lib = ['es2020'];
+    target = 'es2020';
     if (semver.gte(process.versions.node, '16.0.0') && tsSupportsEs2021) {
       lib = ['es2021'];
       target = 'es2021';
