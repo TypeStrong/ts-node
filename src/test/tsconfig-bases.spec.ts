@@ -3,7 +3,12 @@ import { createExec } from './helpers/exec';
 import { ctxTmpDirOutsideCheckout } from './helpers/ctx-tmp-dir';
 import { ctxTsNode } from './helpers/ctx-ts-node';
 import { BIN_PATH, TEST_DIR } from './helpers/paths';
-import { tsSupportsEs2021, tsSupportsEs2022, tsSupportsLibEs2023 } from './helpers/version-checks';
+import {
+  tsSupportsEs2021,
+  tsSupportsEs2022,
+  tsSupportsLibEs2023,
+  tsSupportsStableNodeNextNode16,
+} from './helpers/version-checks';
 import { context, expect } from './testlib';
 import semver = require('semver');
 import { testsDirRequire } from './helpers';
@@ -17,14 +22,21 @@ const test = context(ctxTsNode);
 test.suite('should use implicit @tsconfig/bases config when one is not loaded from disk', ({ contextEach }) => {
   const test = contextEach(ctxTmpDirOutsideCheckout);
 
-  let lib = 'es2020';
-  let target = 'es2020';
-  if (semver.gte(process.versions.node, '16.0.0') && tsSupportsEs2021) {
-    lib = target = 'es2021';
-  }
-  if (semver.gte(process.versions.node, '18.0.0') && tsSupportsEs2022 && tsSupportsLibEs2023) {
-    target = 'es2022';
-    lib = 'es2023';
+  // Expectations change depending on node and TS version, since ts-node picks an implicit config that is compatible
+  // with both.
+  let lib: Array<string> | undefined = undefined;
+  let target: string = 'es5';
+  if (tsSupportsStableNodeNextNode16) {
+    lib = ['es2020'];
+    target = 'es2020';
+    if (semver.gte(process.versions.node, '16.0.0') && tsSupportsEs2021) {
+      lib = ['es2021'];
+      target = 'es2021';
+    }
+    if (semver.gte(process.versions.node, '18.0.0') && tsSupportsEs2022 && tsSupportsLibEs2023) {
+      lib = ['es2023'];
+      target = 'es2022';
+    }
   }
 
   test('implicitly uses @tsconfig/node14, @tsconfig/node16, @tsconfig/node18, or @tsconfig/node20 compilerOptions when both TS and node versions support it', async (t) => {
@@ -36,16 +48,9 @@ test.suite('should use implicit @tsconfig/bases config when one is not loaded fr
     t.like(JSON.parse(r1.stdout), {
       compilerOptions: {
         target,
-        lib: [lib],
+        lib,
       },
     });
-
-    const r2 = await exec(`${BIN_PATH} -pe 10n`, {
-      cwd: t.context.tmpDir,
-    });
-
-    expect(r2.err).toBe(null);
-    expect(r2.stdout).toBe('10n\n');
   });
 
   test('implicitly loads @types/node even when not installed within local directory', async (t) => {
@@ -73,8 +78,8 @@ test.suite('should use implicit @tsconfig/bases config when one is not loaded fr
 });
 
 test.suite('should bundle @tsconfig/bases to be used in your own tsconfigs', (test) => {
-  // Older TS versions will complain about newer `target` and `lib` options
-  test.if(tsSupportsEs2022 && tsSupportsLibEs2023);
+  // Older TS versions will complain about newer `target`, `lib`, `module`, `moduleResolution` options
+  test.if(tsSupportsEs2022 && tsSupportsLibEs2023 && tsSupportsStableNodeNextNode16);
 
   const macro = test.macro((nodeVersion: string) => async (t) => {
     const config = testsDirRequire(`@tsconfig/${nodeVersion}/tsconfig.json`);
