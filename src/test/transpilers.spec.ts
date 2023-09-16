@@ -102,7 +102,7 @@ test.suite('swc', (test) => {
 
     test(
       compileMacro,
-      { module: 'esnext', jsx: 'react' },
+      { module: 'esnext', target: 'es2020', jsx: 'react' },
       input,
       `const div = /*#__PURE__*/ React.createElement("div", null);`
     );
@@ -110,7 +110,7 @@ test.suite('swc', (test) => {
       test.if(tsSupportsReact17JsxFactories);
       test(
         compileMacro,
-        { module: 'esnext', jsx: 'react-jsx' },
+        { module: 'esnext', target: 'es2020', jsx: 'react-jsx' },
         input,
         outdent`
           import { jsx as _jsx } from "react/jsx-runtime";
@@ -119,7 +119,7 @@ test.suite('swc', (test) => {
       );
       test(
         compileMacro,
-        { module: 'esnext', jsx: 'react-jsxdev' },
+        { module: 'esnext', target: 'es2020', jsx: 'react-jsxdev' },
         input,
         outdent`
           import { jsxDEV as _jsxDEV } from "react/jsx-dev-runtime";
