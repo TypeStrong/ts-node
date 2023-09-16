@@ -144,8 +144,8 @@ test.suite('swc', (test) => {
         document;
       `,
       outdent`
-        import document from './document.json' assert {
-            type: 'json'
+        import document from "./document.json" assert {
+            type: "json"
         };
         document;
       `
