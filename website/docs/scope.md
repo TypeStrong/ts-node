@@ -13,9 +13,11 @@ options to configure scoping, so that ts-node transforms only the files in your 
 
 ## File extensions
 
-`.js` and `.jsx` are only transformed when [`allowJs`](https://www.typescriptlang.org/docs/handbook/compiler-options.html#compiler-options) is enabled.
+`.js`, `.jsx`, `.mjs`, and `.cjs` are only transformed when [`allowJs`](https://www.typescriptlang.org/docs/handbook/compiler-options.html#compiler-options) is enabled.
 
 `.tsx` and `.jsx` are only transformed when [`jsx`](https://www.typescriptlang.org/docs/handbook/jsx.html) is enabled.
+
+`.mts`, `.cts`, `.mjs`, and `.cjs` are only transformed for TypeScript versions >= 4.5.0.
 
 > **Warning:**
 >
