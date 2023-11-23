@@ -14,6 +14,17 @@ const exec = createExecTester({
   }),
 });
 
+test('#2076 regression test', async () => {
+  const r = await exec({
+    exec: createExec({
+      cwd: join(TEST_DIR, '2076'),
+    }),
+    cmd: `${CMD_TS_NODE_WITHOUT_PROJECT_FLAG} --showConfig`,
+  });
+
+  exp(r.err).toBeNull();
+});
+
 test('#1488 regression test', async () => {
   // Scenario that caused the bug:
   // `allowJs` turned on

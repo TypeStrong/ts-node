@@ -90,7 +90,8 @@ export interface TSInternal {
     host: _ts.ModuleResolutionHost,
     cache?: _ts.ModuleResolutionCache,
     redirectedReference?: _ts.ResolvedProjectReference,
-    lookupConfig?: boolean
+    conditionsOrIsConfigLookup?: string[] | boolean, // `conditions` parameter added in TS 5.3
+    isConfigLookup?: boolean
   ): _ts.ResolvedModuleWithFailedLookupLocations;
   // Added in TS 4.7
   getModeForFileReference?: (
