@@ -3,8 +3,9 @@ import type * as swcWasm from '@swc/wasm';
 import type * as swcTypes from '@swc/core';
 import type { CreateTranspilerOptions, Transpiler } from './types';
 import type { NodeModuleEmitKind } from '..';
+import { getUseDefineForClassFields } from '../ts-internals';
 
-type SwcInstance = typeof swcWasm;
+type SwcInstance = typeof swcTypes;
 export interface SwcTranspilerOptions extends CreateTranspilerOptions {
   /**
    * swc compiler to use for compilation
@@ -28,10 +29,7 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
   let swcDepName: string = 'swc';
   if (typeof swc === 'string') {
     swcDepName = swc;
-    swcInstance = require(transpilerConfigLocalResolveHelper(
-      swc,
-      true
-    )) as typeof swcWasm;
+    swcInstance = require(transpilerConfigLocalResolveHelper(swc, true)) as SwcInstance;
   } else if (swc == null) {
     let swcResolved;
     try {
@@ -47,25 +45,17 @@ export function create(createOptions: SwcTranspilerOptions): Transpiler {
         );
       }
     }
-    swcInstance = require(swcResolved) as typeof swcWasm;
+    swcInstance = require(swcResolved) as SwcInstance;
   } else {
-    swcInstance = swc;
+    swcInstance = swc as any as SwcInstance;
   }
 
   // Prepare SWC options derived from typescript compiler options
-  const { nonTsxOptions, tsxOptions } = createSwcOptions(
-    config.options,
-    nodeModuleEmitKind,
-    swcInstance,
-    swcDepName
-  );
+  const { nonTsxOptions, tsxOptions } = createSwcOptions(config.options, nodeModuleEmitKind, swcInstance, swcDepName);
 
   const transpile: Transpiler['transpile'] = (input, transpileOptions) => {
     const { fileName } = transpileOptions;
-    const swcOptions =
-      fileName.endsWith('.tsx') || fileName.endsWith('.jsx')
-        ? tsxOptions
-        : nonTsxOptions;
+    const swcOptions = fileName.endsWith('.tsx') || fileName.endsWith('.jsx') ? tsxOptions : nonTsxOptions;
     const { code, map } = swcInstance.transformSync(input, {
       ...swcOptions,
       filename: fileName,
@@ -90,7 +80,7 @@ targetMapping.set(/* ts.ScriptTarget.ES2019 */ 6, 'es2019');
 targetMapping.set(/* ts.ScriptTarget.ES2020 */ 7, 'es2020');
 targetMapping.set(/* ts.ScriptTarget.ES2021 */ 8, 'es2021');
 targetMapping.set(/* ts.ScriptTarget.ES2022 */ 9, 'es2022');
-targetMapping.set(/* ts.ScriptTarget.ESNext */ 99, 'es2022');
+targetMapping.set(/* ts.ScriptTarget.ESNext */ 99, 'esnext');
 
 type SwcTarget = typeof swcTargets[number];
 /**
@@ -108,6 +98,7 @@ const swcTargets = [
   'es2020',
   'es2021',
   'es2022',
+  'esnext',
 ] as const;
 
 const ModuleKind = {
@@ -152,6 +143,7 @@ export function createSwcOptions(
     strict,
     alwaysStrict,
     noImplicitUseStrict,
+    jsxImportSource,
   } = compilerOptions;
 
   let swcTarget = targetMapping.get(target!) ?? 'es3';
@@ -162,15 +154,14 @@ export function createSwcOptions(
   for (; swcTargetIndex >= 0; swcTargetIndex--) {
     try {
       swcInstance.transformSync('', {
-        jsc: { target: swcTargets[swcTargetIndex] },
+        jsc: { target: swcTargets[swcTargetIndex] as swcWasm.JscTarget },
       });
       break;
     } catch (e) {}
   }
   swcTarget = swcTargets[swcTargetIndex];
   const keepClassNames = target! >= /* ts.ScriptTarget.ES2016 */ 3;
-  const isNodeModuleKind =
-    module === ModuleKind.Node16 || module === ModuleKind.NodeNext;
+  const isNodeModuleKind = module === ModuleKind.Node16 || module === ModuleKind.NodeNext;
   // swc only supports these 4x module options [MUST_UPDATE_FOR_NEW_MODULEKIND]
   const moduleType =
     module === ModuleKind.CommonJS
@@ -202,11 +193,10 @@ export function createSwcOptions(
       : true;
 
   const jsxRuntime: swcTypes.ReactConfig['runtime'] =
-    jsx === JsxEmit.ReactJSX || jsx === JsxEmit.ReactJSXDev
-      ? 'automatic'
-      : undefined;
-  const jsxDevelopment: swcTypes.ReactConfig['development'] =
-    jsx === JsxEmit.ReactJSXDev ? true : undefined;
+    jsx === JsxEmit.ReactJSX || jsx === JsxEmit.ReactJSXDev ? 'automatic' : undefined;
+  const jsxDevelopment: swcTypes.ReactConfig['development'] = jsx === JsxEmit.ReactJSXDev ? true : undefined;
+
+  const useDefineForClassFields = getUseDefineForClassFields(compilerOptions);
 
   const nonTsxOptions = createVariant(false);
   const tsxOptions = createVariant(true);
@@ -217,13 +207,17 @@ export function createSwcOptions(
       sourceMaps: sourceMap,
       // isModule: true,
       module: moduleType
-        ? ({
-            noInterop: !esModuleInterop,
+        ? {
             type: moduleType,
-            strictMode,
-            // For NodeNext and Node12, emit as CJS but do not transform dynamic imports
-            ignoreDynamic: nodeModuleEmitKind === 'nodecjs',
-          } as swcTypes.ModuleConfig)
+            ...(moduleType === 'amd' || moduleType === 'commonjs' || moduleType === 'umd'
+              ? {
+                  noInterop: !esModuleInterop,
+                  strictMode,
+                  // For NodeNext and Node12, emit as CJS but do not transform dynamic imports
+                  ignoreDynamic: nodeModuleEmitKind === 'nodecjs',
+                }
+              : {}),
+          }
         : undefined,
       swcrc: false,
       jsc: {
@@ -234,8 +228,8 @@ export function createSwcOptions(
           decorators: experimentalDecorators,
           dynamicImport: true,
           importAssertions: true,
-        },
-        target: swcTarget,
+        } as swcWasm.TsParserConfig,
+        target: swcTarget as swcWasm.JscTarget,
         transform: {
           decoratorMetadata: emitDecoratorMetadata,
           legacyDecorator: true,
@@ -246,13 +240,16 @@ export function createSwcOptions(
             pragma: jsxFactory!,
             pragmaFrag: jsxFragmentFactory!,
             runtime: jsxRuntime,
-          } as swcTypes.ReactConfig,
+            importSource: jsxImportSource,
+          },
+          useDefineForClassFields,
         },
         keepClassNames,
         experimental: {
-          keepImportAssertions: true,
-        },
-      } as swcTypes.JscConfig,
+          keepImportAttributes: true,
+          emitAssertForImportAttributes: true,
+        } as swcTypes.JscConfig['experimental'],
+      },
     };
 
     // Throw a helpful error if swc version is old, for example, if it rejects `ignoreDynamic`
