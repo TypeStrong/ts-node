@@ -1,5 +1,5 @@
 import { isAbsolute, resolve } from 'path';
-import { cachedLookup, normalizeSlashes } from './util';
+import { cachedLookup, normalizeSlashes, versionGteLt } from './util';
 import type * as _ts from 'typescript';
 import type { TSCommon, TSInternal } from './ts-compiler-types';
 
@@ -40,6 +40,7 @@ function createTsInternalsUncached(_ts: TSCommon) {
       return extendedConfigPath;
     }
     // If the path isn't a rooted or relative path, resolve like a module
+    const tsGte5_3_0 = versionGteLt(ts.version, '5.3.0');
     const resolved = ts.nodeModuleNameResolver(
       extendedConfig,
       combinePaths(basePath, 'tsconfig.json'),
@@ -47,7 +48,8 @@ function createTsInternalsUncached(_ts: TSCommon) {
       host,
       /*cache*/ undefined,
       /*projectRefs*/ undefined,
-      /*lookupConfig*/ true
+      /*conditionsOrIsConfigLookup*/ tsGte5_3_0 ? undefined : true,
+      /*isConfigLookup*/ tsGte5_3_0 ? true : undefined
     );
     if (resolved.resolvedModule) {
       return resolved.resolvedModule.resolvedFileName;
