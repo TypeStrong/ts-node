@@ -1,10 +1,11 @@
 /** types from ts-node under test */
 import type * as tsNodeTypes from '../../index';
+import type * as tsNodeBinTypes from '../../bin';
 import { TEST_DIR } from './paths';
 import { join } from 'path';
 import { promisify } from 'util';
 import { createRequire } from 'module';
-export { tsNodeTypes };
+export { tsNodeTypes, tsNodeBinTypes };
 
 export const testsDirRequire = createRequire(join(TEST_DIR, 'index.js'));
 

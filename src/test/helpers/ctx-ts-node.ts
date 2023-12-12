@@ -6,14 +6,16 @@ import { join } from 'path';
 import type { ExecutionContext } from '../testlib';
 import { sync as rimrafSync } from 'rimraf';
 import { TEST_DIR } from './paths';
-import { testsDirRequire, tsNodeTypes } from './misc';
+import { testsDirRequire, tsNodeBinTypes, tsNodeTypes } from './misc';
 
 /** Pass to `test.context()` to get access to the ts-node API under test */
 export async function ctxTsNode() {
   await installTsNode();
   const tsNodeUnderTest: typeof tsNodeTypes = testsDirRequire('ts-node');
+  const tsNodeBin: typeof tsNodeBinTypes = testsDirRequire('ts-node/dist/bin');
   return {
     tsNodeUnderTest,
+    tsNodeBin,
   };
 }
 export namespace ctxTsNode {
