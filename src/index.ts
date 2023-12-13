@@ -371,6 +371,8 @@ export interface RegisterOptions extends CreateOptions {
    * For details, see https://github.com/TypeStrong/ts-node/issues/1514
    */
   experimentalResolver?: boolean;
+
+  installSourceMapSupport?: boolean;
 }
 
 export type ExperimentalSpecifierResolution = 'node' | 'explicit';
@@ -553,7 +555,9 @@ export function register(serviceOrOpts: Service | RegisterOptions | undefined): 
 
   installCommonjsResolveHooksIfNecessary(service);
 
-  service.installSourceMapSupport();
+  if (service.options.installSourceMapSupport ?? true) {
+    service.installSourceMapSupport();
+  }
 
   // Require specified modules before start-up.
   (Module as ModuleConstructorWithInternals)._preloadModules(service.options.require);
