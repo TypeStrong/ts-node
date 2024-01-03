@@ -3,7 +3,7 @@
 ---
 
 <!--
-  I don't make a discussion thread for every release.  Github has a button to make a discussion thread for a release.
+  I don't make a discussion thread for every release.  GitHub has a button to make a discussion thread for a release.
   Then I update the discussion thread to remove the release notes and instead link to the release.
 -->
 Questions about this release? Ask in the official discussion thread: #TODO

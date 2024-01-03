@@ -9,7 +9,7 @@
    * standard settings to be shared across multiple projects.
    *
    * If the path starts with "./" or "../", the path is resolved relative to the folder of the file that contains
-   * the "extends" field.  Otherwise, the first path segment is interpreted as an NPM package name, and will be
+   * the "extends" field.  Otherwise, the first path segment is interpreted as an npm package name, and will be
    * resolved using NodeJS require().
    *
    * SUPPORTED TOKENS: none
@@ -48,10 +48,10 @@
   "mainEntryPointFilePath": "<projectFolder>/dist/index.d.ts",
 
   /**
-   * A list of NPM package names whose exports should be treated as part of this package.
+   * A list of npm package names whose exports should be treated as part of this package.
    *
    * For example, suppose that Webpack is used to generate a distributed bundle for the project "library1",
-   * and another NPM package "library2" is embedded in this bundle.  Some types from library2 may become part
+   * and another npm package "library2" is embedded in this bundle.  Some types from library2 may become part
    * of the exported API for library1, but by default API Extractor would generate a .d.ts rollup that explicitly
    * imports library2.  To avoid this, we can specify:
    *
