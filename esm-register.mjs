@@ -1,4 +1,3 @@
-import { register } from 'node:module'
-import { pathToFileURL } from 'node:url'
+import { register } from 'node:module';
 
-register(pathToFileURL('./esm.mjs'), pathToFileURL('./'))
+register('./esm.mjs', import.meta.url);
