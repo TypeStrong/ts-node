@@ -51,6 +51,7 @@
     "/register/",
     "/esm/",
     "/esm.mjs",
+    "/esm-register.mjs",
     "/child-loader.mjs",
     "/LICENSE",
     "/tsconfig.schema.json",
