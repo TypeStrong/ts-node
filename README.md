@@ -256,6 +256,8 @@ node --loader ts-node/esm --inspect ./index.ts
 
 You can require ts-node and register the loader for future requires by using `require('ts-node').register({ /* options */ })`.
 
+You can also use `require('ts-node/register')` to register the loader with default options.
+
 Check out our [API](#api) for more features.
 
 # Configuration
