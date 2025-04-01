@@ -384,8 +384,8 @@ export function createRepl(options: CreateReplOptions = {}) {
       if (!service?.transpileOnly) {
         state.input += `// @ts-ignore\n${builtinModules
           .filter(
-            (name) => (!name.startsWith('_') && !name.includes('/') && !name.includes(':')
-                       && !['console', 'module', 'process'].includes(name))
+            (name) => !(name.startsWith('_') || name.includes('/') || name.includes(':')
+                        || ['console', 'module', 'process'].includes(name))
           )
           .map((name) => `declare import ${name} = require('${name}')`)
           .join(';')}\n`;
