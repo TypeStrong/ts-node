@@ -80,6 +80,8 @@ targetMapping.set(/* ts.ScriptTarget.ES2019 */ 6, 'es2019');
 targetMapping.set(/* ts.ScriptTarget.ES2020 */ 7, 'es2020');
 targetMapping.set(/* ts.ScriptTarget.ES2021 */ 8, 'es2021');
 targetMapping.set(/* ts.ScriptTarget.ES2022 */ 9, 'es2022');
+targetMapping.set(/* ts.ScriptTarget.ES2023 */ 10, 'es2023');
+targetMapping.set(/* ts.ScriptTarget.ES2024 */ 11, 'es2024');
 targetMapping.set(/* ts.ScriptTarget.ESNext */ 99, 'esnext');
 
 type SwcTarget = typeof swcTargets[number];
@@ -98,6 +100,8 @@ const swcTargets = [
   'es2020',
   'es2021',
   'es2022',
+  'es2023',
+  'es2024',
   'esnext',
 ] as const;
 
