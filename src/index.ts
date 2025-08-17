@@ -1306,6 +1306,22 @@ function registerExtensions(
   service: Service,
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
+  if (Module.registerHooks) {
+    Module.registerHooks({
+      load(url, context, nextLoad) {
+        if (url.endsWith('.ts') && context.format === null) {
+          require(fileURLToPath(url));
+          return {
+            format: 'commonjs',
+            source: '',
+            shortCircuit: true,
+          };
+        }
+        return nextLoad(url, context);
+      },
+    });
+  }
+
   const exts = new Set(extensions);
   // Can't add these extensions cuz would allow omitting file extension; node requires ext for .cjs and .mjs
   // Unless they're already registered by something else (nyc does this):
