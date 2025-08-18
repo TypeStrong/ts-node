@@ -1307,15 +1307,22 @@ function registerExtensions(
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
   if (Module.registerHooks) {
+    const urls = {};
+
     Module.registerHooks({
       load(url, context, nextLoad) {
-        if (url.endsWith('.ts') && context.format === null) {
+        if (((url.endsWith('.ts') && context.format === null) || context.format === 'commonjs-typescript') && !urls[url]) {
+          urls[url] = true;
+
           require(fileURLToPath(url));
           return {
             format: 'commonjs',
             source: '',
             shortCircuit: true,
           };
+        }
+        if (context.format === 'module-typescript') {
+          throw new TypeError(`context.format is "module-typescript" for ${fileURLToPath(url)}`);
         }
         return nextLoad(url, context);
       },
