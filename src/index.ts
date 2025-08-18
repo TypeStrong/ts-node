@@ -547,15 +547,11 @@ export function register(serviceOrOpts: Service | RegisterOptions | undefined): 
 
       Module.registerHooks({
         load(url, context, nextLoad) {
-          if (url.endsWith('.ts') && context.format === null) {
-            require(fileURLToPath(url));
-            return {
-              format: 'commonjs',
-              source: '',
-              shortCircuit: true,
-            };
-          }
-          if (context.format === 'commonjs-typescript' && !urls[url]) {
+          const isTypeScript = 
+            (url.endsWith('.ts') && context.format === null) ||
+            (context.format === 'commonjs-typescript');
+
+          if (isTypeScript && !urls[url]) {
             urls[url] = true;
 
             require(fileURLToPath(url));
