@@ -556,7 +556,7 @@ export function register(serviceOrOpts: Service | RegisterOptions | undefined): 
             };
           }
           if (context.format === 'commonjs-typescript' && !urls[url]) {
-            urls[url] = true
+            urls[url] = true;
 
             require(fileURLToPath(url));
             return {
