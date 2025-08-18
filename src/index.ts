@@ -541,6 +541,34 @@ export function register(serviceOrOpts: Service | RegisterOptions | undefined): 
   if (!(serviceOrOpts as Service)?.[TS_NODE_SERVICE_BRAND]) {
     // Not a service; is options
     service = create((serviceOrOpts ?? {}) as RegisterOptions);
+
+    if (require.main && Module.registerHooks) {
+      const urls = {};
+
+      Module.registerHooks({
+        load(url, context, nextLoad) {
+          if (url.endsWith('.ts') && context.format === null) {
+            require(fileURLToPath(url));
+            return {
+              format: 'commonjs',
+              source: '',
+              shortCircuit: true,
+            };
+          }
+          if (context.format === 'commonjs-typescript' && !urls[url]) {
+            urls[url] = true
+
+            require(fileURLToPath(url));
+            return {
+              format: 'commonjs',
+              source: '',
+              shortCircuit: true,
+            };
+          }
+          return nextLoad(url, context);
+        },
+      });
+    }
   }
 
   const originalJsHandler = require.extensions['.js'];
@@ -1306,25 +1334,6 @@ function registerExtensions(
   service: Service,
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
-  if (Module.registerHooks) {
-    Module.registerHooks({
-      load(url, context, nextLoad) {
-        if (url.endsWith('.ts') && context.format === null) {
-          require(fileURLToPath(url));
-          return {
-            format: 'commonjs',
-            source: '',
-            shortCircuit: true,
-          };
-        }
-        if (context.format === 'module-typescript') {
-          throw new TypeError(`context.format is "module-typescript" for ${fileURLToPath(url)}`);
-        }
-        return nextLoad(url, context);
-      },
-    });
-  }
-
   const exts = new Set(extensions);
   // Can't add these extensions cuz would allow omitting file extension; node requires ext for .cjs and .mjs
   // Unless they're already registered by something else (nyc does this):
