@@ -1307,13 +1307,9 @@ function registerExtensions(
   originalJsHandler: (m: NodeModule, filename: string) => any
 ) {
   if (Module.registerHooks) {
-    const urls = {};
-
     Module.registerHooks({
       load(url, context, nextLoad) {
-        if (((url.endsWith('.ts') && context.format === null) || context.format === 'commonjs-typescript') && !urls[url]) {
-          urls[url] = true;
-
+        if (url.endsWith('.ts') && context.format === null) {
           require(fileURLToPath(url));
           return {
             format: 'commonjs',
