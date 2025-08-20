@@ -550,11 +550,12 @@ export function register(serviceOrOpts: Service | RegisterOptions | undefined): 
       Module.registerHooks({
         //@ts-expect-error
         load(url, context, nextLoad) {
-          //@ts-expect-error
           const isTypeScript =
             (url.endsWith('.ts') && context.format === null) || context.format === 'commonjs-typescript';
 
+          //@ts-expect-error
           if (isTypeScript && !urls[url]) {
+            //@ts-expect-error
             urls[url] = true;
 
             require(fileURLToPath(url));
