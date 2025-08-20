@@ -542,11 +542,15 @@ export function register(serviceOrOpts: Service | RegisterOptions | undefined): 
     // Not a service; is options
     service = create((serviceOrOpts ?? {}) as RegisterOptions);
 
+    //@ts-expect-error
     if (require.main && Module.registerHooks) {
       const urls = {};
 
+      //@ts-expect-error
       Module.registerHooks({
+        //@ts-expect-error
         load(url, context, nextLoad) {
+          //@ts-expect-error
           const isTypeScript =
             (url.endsWith('.ts') && context.format === null) || context.format === 'commonjs-typescript';
 
