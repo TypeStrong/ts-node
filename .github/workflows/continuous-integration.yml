@@ -46,7 +46,7 @@ jobs:
       - name: Build
         run: yarn build
       - name: Upload package artifact
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: ts-node-packed.tgz
           path: tests/ts-node-packed.tgz
