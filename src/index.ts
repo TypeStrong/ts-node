@@ -548,7 +548,7 @@ export function register(serviceOrOpts: Service | RegisterOptions | undefined): 
       Module.registerHooks({
         load(url, context, nextLoad) {
           const isTypeScript =
-            (url.endsWith('.ts') && context.format === null) || (context.format === 'commonjs-typescript');
+            (url.endsWith('.ts') && context.format === null) || context.format === 'commonjs-typescript';
 
           if (isTypeScript && !urls[url]) {
             urls[url] = true;
