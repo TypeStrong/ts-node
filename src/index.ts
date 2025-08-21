@@ -541,6 +541,34 @@ export function register(serviceOrOpts: Service | RegisterOptions | undefined): 
   if (!(serviceOrOpts as Service)?.[TS_NODE_SERVICE_BRAND]) {
     // Not a service; is options
     service = create((serviceOrOpts ?? {}) as RegisterOptions);
+
+    //@ts-expect-error
+    if (require.main && Module.registerHooks) {
+      const urls = {};
+
+      //@ts-expect-error
+      Module.registerHooks({
+        //@ts-expect-error
+        load(url, context, nextLoad) {
+          const isTypeScript =
+            (url.endsWith('.ts') && context.format === null) || context.format === 'commonjs-typescript';
+
+          //@ts-expect-error
+          if (isTypeScript && !urls[url]) {
+            //@ts-expect-error
+            urls[url] = true;
+
+            require(fileURLToPath(url));
+            return {
+              format: 'commonjs',
+              source: '',
+              shortCircuit: true,
+            };
+          }
+          return nextLoad(url, context);
+        },
+      });
+    }
   }
 
   const originalJsHandler = require.extensions['.js'];

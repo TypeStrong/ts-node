@@ -46,7 +46,7 @@ jobs:
       - name: Build
         run: yarn build
       - name: Upload package artifact
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: ts-node-packed.tgz
           path: tests/ts-node-packed.tgz
@@ -131,7 +131,7 @@ jobs:
       - name: Build tests
         run: yarn build-tsc
       - name: Download package artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4
         with:
           name: ts-node-packed.tgz
           path: tests/
@@ -147,7 +147,7 @@ jobs:
           files: yarn-error.log
       - name: Upload yarn logs
         if: ${{ failure() && steps.check-yarn-logs-exist.outputs.files_exists == 'true' }}
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: yarn-logs-${{ matrix.os }}-node-${{ matrix.nodeFlag }}-typescript-${{ matrix.typescriptFlag }}
           path: yarn-error.log
