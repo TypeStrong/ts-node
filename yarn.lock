@@ -703,13 +703,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/diff@npm:^4.0.2":
-  version: 4.0.2
-  resolution: "@types/diff@npm:4.0.2"
-  checksum: 80986254f881e29a146c7258654b0c1ddecbb487dc2eca9ad424dab7a17f54d57f91271526661f4c3bf0bb77903d90bc627b63e389a30711adc622865bc30d94
-  languageName: node
-  linkType: hard
-
 "@types/glob@npm:*":
   version: 7.2.0
   resolution: "@types/glob@npm:7.2.0"
@@ -1669,6 +1662,13 @@ __metadata:
   version: 4.0.2
   resolution: "diff@npm:4.0.2"
   checksum: f2c09b0ce4e6b301c221addd83bf3f454c0bc00caa3dd837cf6c127d6edf7223aa2bbe3b688feea110b7f262adbfc845b757c44c8a9f8c0c5b15d8fa9ce9d20d
+  languageName: node
+  linkType: hard
+
+"diff@npm:^8.0.3":
+  version: 8.0.3
+  resolution: "diff@npm:8.0.3"
+  checksum: 397f6f7a93d8622e8748805ebaad35dfbbdd0a5fe03722b0905aee2662b1ccf82728f90e9f975a20e8406b1df46c28bd1958b42fc5cb03fb202d4cb93251e15d
   languageName: node
   linkType: hard
 
@@ -3900,7 +3900,6 @@ __metadata:
     "@tsconfig/node16": "*"
     "@tsconfig/node18": "*"
     "@tsconfig/node20": "*"
-    "@types/diff": ^4.0.2
     "@types/lodash": ^4.14.151
     "@types/node": 13.13.5
     "@types/proper-lockfile": ^4.1.2
@@ -3914,7 +3913,7 @@ __metadata:
     ava: ^5.1.1
     axios: ^0.21.1
     cross-spawn: ^7.0.3
-    diff: ^4.0.1
+    diff: ^8.0.3
     dprint: ^0.25.0
     expect: 27.0.2
     lodash: ^4.17.15
