@@ -1,0 +1,161 @@
+name: Continuous Integration
+on:
+  # branches pushed by collaborators
+  push:
+    branches:
+      - main
+  # pull request from non-collaborators
+  pull_request: {}
+  # nightly
+  schedule:
+    - cron:  '0 0 * * *'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+permissions:
+  contents: read # to fetch code (actions/checkout)
+jobs:
+  lint-build:
+    name: "Lint & Build"
+    runs-on: ubuntu-latest
+    steps:
+      # checkout code
+      - name: Checkout
+        uses: actions/checkout@v3
+      # install node
+      - name: Use Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Get cache directory
+        id: get-cache-directory
+        run: |
+          yarn config get cacheFolder
+          echo "path=$( yarn config get cacheFolder )" >> $GITHUB_OUTPUT
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.get-cache-directory.outputs.path }}
+          key: yarn-cache-packaging-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-cache-packaging-
+      # lint, build, test
+      - name: Install dependencies
+        run: yarn install --immutable
+      - name: Lint
+        run: yarn lint
+      - name: Build
+        run: yarn build
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: ts-node-packed.tgz
+          path: tests/ts-node-packed.tgz
+
+  test:
+    needs: lint-build
+    name: "Test: ${{ matrix.os }}, node ${{ matrix.node }}, TS ${{ matrix.typescript }}"
+    runs-on: ${{ matrix.os }}-latest
+    env:
+      TEST_MATRIX_NODE_VERSION: ${{ matrix.node }}
+      TEST_MATRIX_TYPESCRIPT_VERSION: ${{ matrix.typescript }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, windows]
+        # Don't forget to add all new flavors to this list!
+        flavor: [1, 2, 3, 4, 5, 6, 7]
+        include:
+          # Node 16
+          - flavor: 1
+            node: 16
+            nodeFlag: 16
+            typescript: latest
+            typescriptFlag: latest
+          - flavor: 2
+            node: 16
+            nodeFlag: 16
+            typescript: 4.4
+            typescriptFlag: 4_4
+          - flavor: 3
+            node: 16
+            nodeFlag: 16
+            typescript: 4.7
+            typescriptFlag: 4_7
+          # Node 18
+          - flavor: 4
+            node: 18
+            nodeFlag: 18
+            typescript: latest
+            typescriptFlag: latest
+          - flavor: 5
+            node: 18
+            nodeFlag: 18
+            typescript: next
+            typescriptFlag: next
+          # Node 20
+          - flavor: 6
+            node: 20
+            nodeFlag: 20
+            typescript: latest
+            typescriptFlag: latest
+          # Node nightly
+          - flavor: 7
+            node: 21-nightly
+            nodeFlag: 21_nightly
+            typescript: latest
+            typescriptFlag: latest
+    steps:
+      # checkout code
+      - name: Checkout
+        uses: actions/checkout@v3
+      # install node
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+      # lint, build, test
+      - name: Get cache directory
+        id: get-cache-directory
+        run: |
+          yarn config get cacheFolder
+          echo "path=$( yarn config get cacheFolder )" >> $GITHUB_OUTPUT
+      - name: Cache dependencies
+        if: ${{ matrix.os != 'windows' }}
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.get-cache-directory.outputs.path }}
+          key: yarn-cache-${{ matrix.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-cache-${{matrix.os }}-
+      - name: Install dependencies
+        run: yarn install --immutable --mode=skip-build
+      - name: Build tests
+        run: yarn build-tsc
+      - name: Download package artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: ts-node-packed.tgz
+          path: tests/
+      - name: Install typescript version to test against
+        run: yarn add -D typescript@${{ matrix.typescript }}
+      - name: Test
+        run: yarn test-cov
+      - name: Check for yarn logs
+        id: check-yarn-logs-exist
+        if: ${{ failure() }}
+        uses: andstor/file-existence-action@v2
+        with:
+          files: yarn-error.log
+      - name: Upload yarn logs
+        if: ${{ failure() && steps.check-yarn-logs-exist.outputs.files_exists == 'true' }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: yarn-logs-${{ matrix.os }}-node-${{ matrix.nodeFlag }}-typescript-${{ matrix.typescriptFlag }}
+          path: yarn-error.log
+      - name: Coverage Report
+        run: yarn coverage-report
+        if: ${{ always() }}
+      - name: Codecov
+        if: ${{ always() }}
+        uses: codecov/codecov-action@v3
+        with:
+          flags: ${{ matrix.os }},node_${{ matrix.nodeFlag }},typescript_${{ matrix.typescriptFlag }}

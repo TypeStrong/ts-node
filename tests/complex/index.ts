@@ -1,5 +1,5 @@
-declare function require (module: string): any
+declare function require(module: string): any;
 
-export function example () {
-  return require('./example')
+export function example() {
+  return require('./example');
 }

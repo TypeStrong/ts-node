@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "exports": {
+    ".": {
+      "require": "./cjs/index.js",
+      "default": "./esm/index.js"
+    }
+  }
+}

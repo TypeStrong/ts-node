@@ -1,0 +1,8 @@
+{
+  "ts-node": {
+    "transpileOnly": true
+  },
+  "compilerOptions": {
+    "jsx": "react"
+  }
+}

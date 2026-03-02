@@ -1,1 +1,1 @@
-module.exports = require('./foo').text
+module.exports = require('./foo').text;

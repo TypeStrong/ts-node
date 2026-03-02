@@ -1,0 +1,18 @@
+// This tsconfig.json is referenced by tsconfig.build-dist.json, a little trick to keep tsc happy.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "allowJs": true,
+    "checkJs": false,
+    "noResolve": true,
+    "declaration": true,
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "rootDir": "dist-raw",
+    "outDir": "temp/dist-raw"
+  },
+  "include": [
+    "dist-raw/**/*"
+  ]
+}

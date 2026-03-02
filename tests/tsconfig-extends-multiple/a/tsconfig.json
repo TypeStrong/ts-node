@@ -1,0 +1,10 @@
+{
+  "extends": "../b/tsconfig.json",
+  "ts-node": {
+    "require": ["./require-hook-from-a"],
+    "scopeDir": "./scopedir-from-a"
+  },
+  "compilerOptions": {
+    "target": "ES2015"
+  }
+}

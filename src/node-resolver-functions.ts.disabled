@@ -1,0 +1,389 @@
+import { cachedLookup, normalizeSlashes } from './util';
+import type * as _ts from 'typescript';
+import { dirname, resolve } from 'path';
+import { getPatternFromSpec } from './ts-internals';
+import type { TSInternal } from './ts-compiler-types';
+import { getDefaultTsconfigJsonForNodeVersion } from './tsconfigs';
+import {
+  getTsConfigDefaults,
+  ComputeAsCommonRootOfFiles,
+} from './configuration';
+
+interface SrcOutPair {
+  preferSrc: boolean;
+  root: string;
+  out: string;
+}
+// interface RootDirsSet {
+//   rootDirs: string[];
+// }
+
+function contains(parentDirWithTrailingSlash: string, childDir: string) {
+  return childDir.startsWith(parentDirWithTrailingSlash);
+}
+
+class SolutionResolver {}
+
+class ProjectResolver {
+  files: string[];
+  includeRe: RegExp;
+  excludeRe: Regexp;
+
+  constuctor(
+    ts: TSInternal,
+    tsconfig: _ts.ParsedCommandLine,
+    configFilePathOrCwd: string,
+    basePath: string,
+    files: string[] | undefined,
+    include: string[] | undefined,
+    exclude: string[] | undefined
+  ) {
+    // const configBaseDir = normalizeSlashes(dirname(configFilePathOrCwd));
+    const {
+      rootDir,
+      include: includeSpecs,
+      files: filesArray,
+      exclude: excludeSpecs,
+    } = getTsConfigDefaults(tsconfig, basePath, files, include, exclude);
+    if (rootDir === ComputeAsCommonRootOfFiles) {
+      throw new Error(
+        'Cannot determine rootDir if composite is not set.  Either enable composite or set explicit rootDir'
+      );
+    }
+
+    this.files = filesArray.map((f) => normalizeSlashes(resolve(basePath, f)));
+    const reString = ts.getRegularExpressionForWildcard(
+      includeSpecs,
+      basePath,
+      'files'
+    );
+    this.includeRe = new RegExp(reString ?? '$^');
+    const reString2 = ts.getRegularExpressionForWildcard(
+      excludeSpecs as string[],
+      basePath,
+      'exclude'
+    );
+    this.excludeRe = new RegExp(reString2 ?? '$^');
+  }
+}
+
+function createNodeResolverFunctions(opts: {
+  allowJs: boolean;
+  jsx: boolean;
+  cjsMjs: boolean;
+}) {
+  const { allowJs, cjsMjs, jsx } = opts;
+
+  const rootOutPairs: SrcOutPair[] = [];
+  // const rootDirsSets: RootDirsSet[] = [];
+
+  /**
+   * Must be passed normalized slashes!
+   * Assumes root and out are different!
+   */
+  function addRootOutPair(root: string, out: string, preferSrc = true) {
+    root = ensureTrailingSlash(root);
+    out = ensureTrailingSlash(out);
+    rootOutPairs.push({ root, out, preferSrc });
+  }
+
+  function ensureTrailingSlash(str: string) {
+    if (str.includes('\\'))
+      throw new Error('String must have normalized slashes');
+    if (!str.endsWith('/')) str += '/';
+    return str;
+  }
+
+  // function mapFromOutToRoot(directory: string) {
+  //   directory = ensureTrailingSlash(directory);
+  //   for(const {out, root} of rootOutPairs) {
+  //     if(directory.startsWith(out)) {
+  //       return root + directory.slice(out.length);
+  //     }
+  //   }
+  //   return directory;
+  // }
+  function mapFromRootToOut(directory: string) {
+    directory = ensureTrailingSlash(directory);
+    for (const { out, root } of rootOutPairs) {
+      if (directory.startsWith(root)) {
+        // TODO how to exclude node_modules from this mapping??
+        // Check regexp patterns to see if this file is included?
+        return out + directory.slice(root.length);
+      }
+    }
+    return directory;
+  }
+
+  // /** Must be passed normalized slashes! */
+  // function addRootDirs(rootDirs: string[]) {
+  //   rootDirsSets.push({
+  //     rootDirs: rootDirs.map(rootDir => rootDir.endsWith('/') ? rootDir : rootDir + '/')
+  //   });
+  // }
+
+  const getAlternativeDirectoriesCached = cachedLookup(
+    getAlternativeDirectories
+  );
+
+  /** Get array of alternative directories to check because they're overlaid over each other */
+  function* getAlternativeDirectories(directory: string) {
+    directory = ensureTrailingSlash(directory);
+    for (const { out, preferSrc, root } of rootOutPairs) {
+      if (contains(root, directory)) {
+        if (preferSrc) {
+          yield directory; // directory is in src; preferred
+          yield out + directory.slice(root.length);
+        } else {
+          yield out + directory.slice(root.length);
+          yield directory;
+        }
+      } else if (contains(out, directory)) {
+        if (preferSrc) {
+          yield root + directory.slice(out.length);
+          yield directory; // directory is in out
+        } else {
+          yield directory;
+          yield root + directory.slice(out.length);
+        }
+      } else {
+        yield directory;
+      }
+    }
+    // for(const rootDirsSet of rootDirsSets) {
+    //   const alternatives2: string[] = [];
+    //   for(const alternative of alternatives!) {
+    //     ForRootDirsInSingleSet:
+    //     for(const rootDir of rootDirsSet.rootDirs) {
+    //       if(contains(rootDir, alternative)) {
+    //         // alternative matches; replace it with each rootDir in the set
+    //         for(const rootDir2 of rootDirsSet.rootDirs) {
+    //           alternatives2.push(rootDir2 + alternative.slice(rootDir.length));
+    //         }
+    //         break ForRootDirsInSingleSet;
+    //       }
+    //     }
+    //     // alternative does not match; passthrough
+    //     alternatives2.push(alternative);
+    //   }
+    //   alternatives = alternatives2;
+    // }
+  }
+
+  // If extension is omitted and we are expected to add one, try these
+  const extensionlessExtensions = [
+    'js',
+    'cjs',
+    'mjs',
+    jsx && 'jsx',
+    'ts',
+    'cts',
+    'mts',
+    jsx && 'tsx',
+  ];
+  // If extension already specified, and is recognized, attempt these replacements
+  const jsExtensions = ['js', jsx && 'jsx', 'ts', jsx && 'tsx'].filter(
+    (v) => v
+  ) as string[];
+  const cjsExtensions = ['cjs', 'cts'];
+  const mjsExtensions = ['mjs', 'mts'];
+
+  /**
+   * Get alternative filenames to check because they're equivalent.
+   *
+   * Alternatives should only be attempted in:
+   * -- rootDir, if was able to map root<==>out
+   * -- otherwise attempt in dir, whatever it is.
+   */
+  function* getAlternativeFilenames(
+    filename: string,
+    allowOmitFileExtension: boolean
+  ) {
+    // TODO be sure to avoid .d.ts, .d.mts, and .d.cts
+    const lastDotIndex = filename.lastIndexOf('.');
+    let emittedReplacements = false;
+    if (lastDotIndex > 0) {
+      const endsInDts =
+        filename.endsWith('.d.ts') ||
+        filename.endsWith('.d.cts') ||
+        filename.endsWith('.d.mts');
+      if (!endsInDts) {
+        const name = filename.slice(0, lastDotIndex);
+        const extension = filename.slice(lastDotIndex + 1);
+        const replacements =
+          extension === 'js'
+            ? jsExtensions
+            : extension === 'cjs'
+            ? cjsExtensions
+            : extension === 'mjs'
+            ? mjsExtensions
+            : undefined;
+        if (replacements) {
+          emittedReplacements = true;
+          for (const replacement of replacements) {
+            yield name + '.' + replacement;
+          }
+        }
+      }
+    }
+    if (!emittedReplacements) yield filename;
+    if (allowOmitFileExtension) {
+      for (const replacement of extensionlessExtensions) {
+        yield filename + '.' + replacement;
+      }
+    }
+  }
+
+  return {
+    addRootOutPair,
+    getAlternativeDirectories,
+    getAlternativeDirectoriesCached,
+    getAlternativeFilenames,
+  };
+}
+
+/*
+.
+dist
+
+If rootDir matches any rootDirs entry:
+- generate list of alternative rootDir
+- map each to outDir
+
+foo
+bar
+baz
+
+For path foo/hello:
+
+foo/hello
+bar/hello
+baz/hello
+dist/foo/hello
+dist/bar/hello
+dist/baz/hello
+
+For path node_modules/lodash
+node_modules/lodash
+dist/node_modules/lodash
+
+If directory is outside of common root of all mappings, skip
+
+If parent mappings were computed, how can they be augmented?
+For each directory, a given mapping is either APPLIED, IRRELEVANT, or NOTYET
+- src <-> out
+- if any rootDirs are child of src or dist
+*/
+
+/*
+
+src/foo
+dist/foo
+
+src/foo
+src/bar
+src/baz
+dist/foo
+dist/bar
+dist/baz
+
+foo/src/lib
+dist
+
+foo/src/lib
+bar/src/lib
+baz/src/lib
+dist/lib
+
+outDir mapping: src/foo->dist
+rootDirs mappings: ./foo, ./bar, ./baz
+src/foo
+src/bar
+src/baz
+dist
+
+outDir mapping: src->dist
+rootDirs mappings: ./foo, ./bar, ./baz
+src/foo
+src/bar
+src/baz
+dist/foo
+dist/bar
+dist/baz
+
+expand src by rootDirs
+then expand each by root->out mappings
+*/
+
+/*
+For now, think about *only* rootDir<->outDir mappings
+Sort all rootDir by length descending
+Sort all outDir by length descending
+Attempt mapping for each.
+As soon as mapping succeeds for *any single entry*, stop attempting others.
+*/
+
+/*
+rootDirs
+src/foo
+src/bar
+src/baz
+
+preprocess to include rootDir<->outDir
+src/foo
+src/bar
+src/baz
+dist/foo
+dist/bar
+dist/baz
+*/
+
+/*
+First must map importer from src to dist if possible.
+
+Then attempt import relative to the dist location,
+checking dist<-src whenever possible.
+
+*/
+
+// const ts: typeof _ts;
+
+// ts.createLanguageServiceSourceFile
+// ts.createSourceFile
+// ts.createUnparsedSourceFile
+// ts.create
+
+/*
+To use experimentalResolver:
+- must set explicit rootDir, imply it with composite, or imply it with references
+
+When resolving an import
+
+##Step one: convert importer path to outDir if appropriate
+
+If importer is within rootDir & matched by include/files/exclude, map it to outDir
+- Abandon mapping if `outDir` and `rootDir` identical
+- Abandon mapping if import already within outDir
+- sort by rootDir specificity so that workspaces are matched prior to ancestors
+- mapping logic can be cached per __dirname&tsconfig pair, but must still consider if filename matches regexps
+  - allows supporting multiple tsconfigs with same rootDir
+- allows respecting `path` mappings when we know which tsconfig governs the importer, because we have a single tsconfig to use for mappings
+
+##Step two: convert (many) target paths to rootDir if appropriate
+
+While resolving, we check many directories.
+If resolution target is within `outDir`, attempt mapping to `rootDir`
+  - Abandon mapping if `outDir` and `rootDir` identical
+  - Abandon mapping if target already within `rootDir`
+  - Abandon mapping if is not matched by include/files/exclude
+  - HOW TO CHECK THIS BEFORE WE HAVE A FILE EXTENSION?  For each include/files/exclude, generate a version that ignores file extensions?  Test the directory with it?
+    - `TsconfigFilesMatcher.directoryChildMightMatch(dirname)`
+    - `TsconfigFilesMatcher.directoryAncestorMightMatch(dirname)`
+
+      - OPTIMIZATION
+      - If none of the include / files patterns contain `node_modules`, and if target directory after basedir contains `node_modules`, then we *know* the entire
+        directory tree is excluded
+      - This optimization should apply to almost all projects
+
+      - OPTIMIZATION detect when all file extensions are treated identically??
+*/

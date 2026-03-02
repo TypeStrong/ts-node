@@ -1,0 +1,13 @@
+{
+  "ts-node": {
+    "transpileOnly": true
+  },
+  "compilerOptions": {
+    "target": "es2015",
+    "jsx": "react",
+    "noEmit": true,
+    "strict": true,
+    // Global type definitions.
+    "typeRoots": ["./typings", "../node_modules/@types"]
+  }
+}

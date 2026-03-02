@@ -1,0 +1,6 @@
+{
+  "extends": "./other/tsconfig.json",
+  "ts-node": {
+    "preferTsExts": true
+  }
+}

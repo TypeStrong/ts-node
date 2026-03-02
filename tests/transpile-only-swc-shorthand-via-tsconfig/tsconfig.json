@@ -1,0 +1,12 @@
+{
+  "ts-node": {
+    "swc": true
+  },
+  "compilerOptions": {
+    "target": "ES2018",
+    "module": "CommonJS",
+    "allowJs": true,
+    "jsx": "react",
+    "experimentalDecorators": true
+  }
+}

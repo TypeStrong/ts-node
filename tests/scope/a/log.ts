@@ -1,3 +1,3 @@
-import { ext } from './index'
+import { ext } from './index';
 
-console.log(ext)
+console.log(ext);

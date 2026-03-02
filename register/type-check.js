@@ -1,3 +1,3 @@
 require('../').register({
-  typeCheck: true
-})
+  typeCheck: true,
+});

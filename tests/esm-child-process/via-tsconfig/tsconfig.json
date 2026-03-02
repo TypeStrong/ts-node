@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "esModuleInterop": true
+  },
+  "ts-node": {
+    "esm": true,
+    "swc": true
+  }
+}

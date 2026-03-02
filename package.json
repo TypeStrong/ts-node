@@ -1,28 +1,86 @@
 {
   "name": "ts-node",
-  "version": "8.5.4",
+  "version": "11.0.0-beta.1",
   "description": "TypeScript execution environment and REPL for node.js, with source map support",
   "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./package": "./package.json",
+    "./package.json": "./package.json",
+    "./dist/bin": "./dist/bin.js",
+    "./dist/bin.js": "./dist/bin.js",
+    "./dist/bin-transpile": "./dist/bin-transpile.js",
+    "./dist/bin-transpile.js": "./dist/bin-transpile.js",
+    "./dist/bin-script": "./dist/bin-script.js",
+    "./dist/bin-script.js": "./dist/bin-script.js",
+    "./dist/bin-cwd": "./dist/bin-cwd.js",
+    "./dist/bin-cwd.js": "./dist/bin-cwd.js",
+    "./dist/bin-esm": "./dist/bin-esm.js",
+    "./dist/bin-esm.js": "./dist/bin-esm.js",
+    "./register": "./register/index.js",
+    "./register/files": "./register/files.js",
+    "./register/transpile-only": "./register/transpile-only.js",
+    "./register/type-check": "./register/type-check.js",
+    "./esm": "./esm.mjs",
+    "./esm.mjs": "./esm.mjs",
+    "./esm/transpile-only": "./esm/transpile-only.mjs",
+    "./esm/transpile-only.mjs": "./esm/transpile-only.mjs",
+    "./child-loader.mjs": "./child-loader.mjs",
+    "./transpilers/swc": "./transpilers/swc.js",
+    "./transpilers/swc-experimental": "./transpilers/swc-experimental.js",
+    "./node14/tsconfig.json": "./node14/tsconfig.json",
+    "./node16/tsconfig.json": "./node16/tsconfig.json",
+    "./node18/tsconfig.json": "./node18/tsconfig.json",
+    "./node20/tsconfig.json": "./node20/tsconfig.json"
+  },
   "types": "dist/index.d.ts",
   "bin": {
     "ts-node": "dist/bin.js",
-    "ts-script": "dist/script.js"
+    "ts-node-cwd": "dist/bin-cwd.js",
+    "ts-node-esm": "dist/bin-esm.js",
+    "ts-node-script": "dist/bin-script.js",
+    "ts-node-transpile-only": "dist/bin-transpile.js"
   },
   "files": [
-    "dist/",
-    "register/",
-    "LICENSE"
+    "/transpilers/",
+    "/dist/",
+    "!/dist/test",
+    "/dist-raw/NODE-LICENSE.md",
+    "/dist-raw/**.js",
+    "/register/",
+    "/esm/",
+    "/esm.mjs",
+    "/child-loader.mjs",
+    "/LICENSE",
+    "/tsconfig.schema.json",
+    "/tsconfig.schemastore-schema.json",
+    "/node14/",
+    "/node16/",
+    "/node18/",
+    "/node20/"
   ],
   "scripts": {
-    "lint": "tslint \"src/**/*.ts\" --project tsconfig.json",
-    "build": "rimraf dist && tsc",
-    "test-spec": "mocha dist/**/*.spec.js -R spec --bail",
-    "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- \"dist/**/*.spec.js\" -R spec --bail",
-    "test": "npm run build && npm run lint && npm run test-cov",
-    "prepare": "npm run build"
-  },
-  "engines": {
-    "node": ">=4.2.0"
+    "lint": "dprint check",
+    "fmt": "dprint fmt",
+    "clean": "rimraf temp dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz tests/node_modules tests/tmp",
+    "rebuild": "yarn clean && yarn build",
+    "build": "yarn build-nopack && yarn build-pack && yarn build-manifest",
+    "build-nopack": "yarn build-tsc && yarn build-configSchema",
+    "build-tsc": "tsc -b ./tsconfig.build-dist.json",
+    "build-configSchema": "typescript-json-schema --topRef --refs --validationKeywords allOf --out tsconfig.schema.json tsconfig.build-schema.json TsConfigSchema && node --require ./register ./scripts/create-merged-schema",
+    "build-pack": "node ./scripts/build-pack.js",
+    "build-manifest": "node ./scripts/build-manifest.mjs",
+    "test-spec": "ava",
+    "test-cov": "nyc ava",
+    "test": "yarn fmt && yarn build-tsc && yarn build-pack && yarn test-spec",
+    "test-full": "yarn build && yarn lint && yarn test-cov",
+    "pre-debug": "yarn build-tsc && yarn build-pack",
+    "coverage-report": "nyc report --reporter=lcov",
+    "__prepack_template__": "yarn clean && yarn build-nopack",
+    "prepack": "node ./scripts/prepack.mjs",
+    "prepack-worker": "rimraf temp dist tsconfig.schema.json tsconfig.schemastore-schema.json tsconfig.tsbuildinfo tests/ts-node-packed.tgz tests/node_modules tests/tmp && tsc -b ./tsconfig.build-dist.json && typescript-json-schema --topRef --refs --validationKeywords allOf --out tsconfig.schema.json tsconfig.build-schema.json TsConfigSchema && node --require ./register ./scripts/create-merged-schema",
+    "prepare": "workaround-broken-npm-prepack-behavior prepack",
+    "api-extractor": "api-extractor run --local --verbose"
   },
   "repository": {
     "type": "git",
@@ -41,40 +99,85 @@
     "email": "hello@blakeembrey.com",
     "url": "http://blakeembrey.me"
   },
+  "contributors": [
+    {
+      "name": "Andrew Bradley",
+      "email": "cspotcode@gmail.com",
+      "url": "https://github.com/cspotcode"
+    }
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/TypeStrong/ts-node/issues"
   },
-  "homepage": "https://github.com/TypeStrong/ts-node",
+  "homepage": "https://typestrong.org/ts-node",
   "devDependencies": {
-    "@types/chai": "^4.0.4",
+    "@TypeStrong/fs-fixture-builder": "https://github.com/Typestrong/fs-fixture-builder.git#3099e53621daf99db971af29c96145dc115693cd",
+    "@cspotcode/ava-lib": "https://github.com/cspotcode/ava-lib#805aab17b2b89c388596b6dc2b4eece403c5fb87",
+    "@cspotcode/expect-stream": "https://github.com/cspotcode/node-expect-stream#4e425ff1eef240003af8716291e80fbaf3e3ae8f",
+    "@microsoft/api-extractor": "^7.19.4",
+    "@swc/core": "1.3.85",
+    "@swc/wasm": "1.3.85",
     "@types/diff": "^4.0.2",
-    "@types/mocha": "^5.0.0",
-    "@types/node": "^12.0.2",
+    "@types/lodash": "^4.14.151",
+    "@types/node": "13.13.5",
+    "@types/proper-lockfile": "^4.1.2",
     "@types/proxyquire": "^1.3.28",
-    "@types/react": "^16.0.2",
-    "@types/semver": "^6.0.0",
-    "@types/source-map-support": "^0.5.0",
-    "chai": "^4.0.1",
-    "istanbul": "^0.4.0",
-    "mocha": "^6.1.4",
-    "ntypescript": "^1.201507091536.1",
+    "@types/react": "^16.14.19",
+    "@types/rimraf": "^3.0.0",
+    "@types/semver": "^7.1.0",
+    "ava": "^5.1.1",
+    "axios": "^0.21.1",
+    "cross-spawn": "^7.0.3",
+    "dprint": "^0.25.0",
+    "expect": "27.0.2",
+    "lodash": "^4.17.15",
+    "nyc": "^15.0.1",
+    "outdent": "^0.8.0",
+    "proper-lockfile": "^4.1.2",
     "proxyquire": "^2.0.0",
-    "react": "^16.0.0",
     "rimraf": "^3.0.0",
-    "semver": "^6.1.0",
-    "tslint": "^5.11.0",
-    "tslint-config-standard": "^8.0.1",
-    "typescript": "^3.6.3"
+    "semver": "^7.1.3",
+    "throat": "^6.0.1",
+    "typedoc": "^0.22.10",
+    "typescript": "4.7.4",
+    "typescript-json-schema": "^0.54.0",
+    "workaround-broken-npm-prepack-behavior": "https://github.com/cspotcode/workaround-broken-npm-prepack-behavior#1a7adbbb8a527784daf97edad6ba42d6e96611f6"
   },
   "peerDependencies": {
-    "typescript": ">=2.0"
+    "@swc/core": ">=1.3.85",
+    "@swc/wasm": ">=1.3.85",
+    "@types/node": "*",
+    "typescript": ">=4.4"
+  },
+  "peerDependenciesMeta": {
+    "@swc/core": {
+      "optional": true
+    },
+    "@swc/wasm": {
+      "optional": true
+    }
   },
   "dependencies": {
+    "@cspotcode/source-map-support": "^0.8.0",
+    "@tsconfig/node14": "*",
+    "@tsconfig/node16": "*",
+    "@tsconfig/node18": "*",
+    "@tsconfig/node20": "*",
+    "acorn": "^8.4.1",
+    "acorn-walk": "^8.1.1",
     "arg": "^4.1.0",
     "diff": "^4.0.1",
     "make-error": "^1.1.1",
-    "source-map-support": "^0.5.6",
-    "yn": "^3.0.0"
-  }
+    "v8-compile-cache-lib": "^3.0.1"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "printWidth": 120
+  },
+  "volta": {
+    "node": "18.14.0",
+    "npm": "6.14.15"
+  },
+  "packageManager": "yarn@3.4.1"
 }

@@ -1,0 +1,51 @@
+{
+  "name": "@ts-node/website",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "docusaurus": "docusaurus",
+    "start": "docusaurus start",
+    "build": "docusaurus build",
+    "swizzle": "docusaurus swizzle",
+    "deploy": "docusaurus deploy",
+    "serve": "docusaurus serve",
+    "clear": "docusaurus clear",
+    "build-readme": "./scripts/build-readme.mjs"
+  },
+  "dependencies": {
+    "@docusaurus/core": "2.0.0-beta.17",
+    "@docusaurus/preset-classic": "2.0.0-beta.17",
+    "@mdx-js/react": "^1.6.22",
+    "@types/js-yaml": "^4.0.0",
+    "clsx": "^1.1.1",
+    "docusaurus-preset-shiki-twoslash": "^1.1.36",
+    "js-yaml": "^4.0.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "remark": "^13.0.0",
+    "remark-behead": "^2.3.3",
+    "remark-frontmatter": "^3.0.0",
+    "remark-preset-lint-recommended": "^5.0.0",
+    "remark-toc": "^7.2.0",
+    "remark-validate-links": "^10.0.4",
+    "vfile": "^4.2.1",
+    "vfile-reporter": "^6.0.2"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "packageManager": "yarn@1.22.17",
+  "volta": {
+    "extends": "../package.json",
+    "yarn": "1.22.17"
+  }
+}

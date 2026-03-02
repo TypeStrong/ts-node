@@ -1,0 +1,6 @@
+{
+  "ts-node": {
+    "transpileOnly": true,
+    "transpiler": "./transpiler.js"
+  }
+}

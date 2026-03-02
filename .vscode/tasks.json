@@ -1,0 +1,13 @@
+{
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "pre-debug",
+      "problemMatcher": [
+        "$tsc"
+      ],
+      "label": "npm: pre-debug",
+      "detail": "npm run build-tsc && npm run build-pack"
+    }
+  ]
+}

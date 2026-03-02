@@ -1,0 +1,37 @@
+{
+  "incremental": true,
+  "lineWidth": 120,
+  "prettier": {
+    "associations": [
+      "**/*.{ts,tsx,js,mjs,cjs,jsx,json,md}"
+    ],
+    "singleQuote": true
+  },
+  // Run `dprint output-file-paths` to see which files are being matched
+  "includes": [
+    "/*.{js,mjs}",
+    "/esm/**",
+    "/register/**",
+    "/scripts/**",
+    "/src/**",
+    "/tests/**",
+    "/website/**"
+  ],
+  "excludes": [
+    "/website/.docusaurus",
+    "/website/build",
+    "/website/docs",
+    "/website/readme-sources",
+    "/website/static",
+    "tests/main-realpath/symlink/tsconfig.json",
+    "tests/throw error.ts",
+    "tests/throw error react tsx.tsx",
+    "tests/esm/throw error.ts",
+    "tests/legacy-source-map-support-interop/index.ts",
+    "tests/main-realpath/symlink/symlink.tsx",
+    "tests/tmp"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/prettier-0.6.2.exe-plugin@36dd4f8b9710ab323c471017ecd00a20cf1dca2728c12242c7dabb8dfacad0e2"
+  ]
+}

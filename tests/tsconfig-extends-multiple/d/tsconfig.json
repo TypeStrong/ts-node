@@ -1,0 +1,8 @@
+{
+  "ts-node": {
+    "ignore": ["ignore-pattern-from-d"]
+  },
+  "compilerOptions": {
+    "target": "ES2018"
+  }
+}

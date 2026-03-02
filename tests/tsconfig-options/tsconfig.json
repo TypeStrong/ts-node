@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "ts-node": {
+    "compilerOptions": {
+      "types": ["tsconfig-tsnode-types"]
+    },
+    "transpileOnly": true,
+    "require": ["./required1"],
+    "skipIgnore": false
+  },
+  "compilerOptions": {
+    "typeRoots": ["tsconfig-typeroots"],
+    "types": ["tsconfig-types"]
+  }
+}

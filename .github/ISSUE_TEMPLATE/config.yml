@@ -1,0 +1,18 @@
+---
+contact_links:
+  -
+    name: Question
+    about: "Please ask and answer usage questions in our Discussion forum."
+    url: "https://github.com/TypeStrong/ts-node/discussions"
+  -
+    name: Chat
+    about: "Alternatively, ask on the TypeScript Community Discord."
+    url: "https://discord.gg/3rBctmf3dP"
+  -
+    name: "Help! My Types Are Missing!"
+    about: "This is likely a configuration problem.  Check our README"
+    url: "https://typestrong.org/ts-node/docs/troubleshooting#missing-types"
+  -
+    name: "TSError or SyntaxError"
+    about: "These errors come from TypeScript and node, respectively.  Use Discussions or Discord for usage and configuration help."
+    url: "https://typestrong.org/ts-node/docs/troubleshooting"
