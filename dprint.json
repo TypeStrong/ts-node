@@ -24,6 +24,7 @@
     "/website/readme-sources",
     "/website/static",
     "tests/main-realpath/symlink/tsconfig.json",
+    "tests/esm-invalid-tsconfig/tsconfig.json",
     "tests/throw error.ts",
     "tests/throw error react tsx.tsx",
     "tests/esm/throw error.ts",

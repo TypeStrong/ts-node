@@ -1,4 +1,4 @@
-import { register, RegisterOptions, Service } from './index';
+import { register, RegisterOptions, Service, TSError } from './index';
 import { parse as parseUrl, format as formatUrl, UrlWithStringQuery, fileURLToPath, pathToFileURL } from 'url';
 import { extname, resolve as pathResolve } from 'path';
 import * as assert from 'assert';
@@ -101,7 +101,12 @@ export function filterHooksByAPIVersion(
 /** @internal */
 export function registerAndCreateEsmHooks(opts?: RegisterOptions) {
   // Automatically performs registration just like `-r ts-node/register`
-  const tsNodeInstance = register(opts);
+  let tsNodeInstance: Service;
+  try {
+    tsNodeInstance = register(opts);
+  } catch (error) {
+    throw makeSerializableLoaderError(error);
+  }
 
   return createEsmHooks(tsNodeInstance);
 }
@@ -113,10 +118,10 @@ export function createEsmHooks(tsNodeService: Service) {
   const extensions = tsNodeService.extensions;
 
   const hooksAPI = filterHooksByAPIVersion({
-    resolve,
-    load,
-    getFormat,
-    transformSource,
+    resolve: wrapHook(resolve),
+    load: wrapHook(load),
+    getFormat: wrapHook(getFormat),
+    transformSource: wrapHook(transformSource),
   });
 
   function isFileUrlOrNodeStyleSpecifier(parsed: UrlWithStringQuery) {
@@ -355,4 +360,49 @@ async function addShortCircuitFlag<T>(fn: () => Promise<T>) {
     ...ret,
     shortCircuit: true,
   };
+}
+
+function wrapHook<T extends (...args: any[]) => Promise<any>>(hook: T): T {
+  return (async (...args: Parameters<T>) => {
+    try {
+      return await hook(...args);
+    } catch (error) {
+      throw makeSerializableLoaderError(error);
+    }
+  }) as T;
+}
+
+function makeSerializableLoaderError(error: unknown) {
+  if (error instanceof TSError || isTSError(error)) {
+    const serializable = new Error(error.message);
+    serializable.name = error.name;
+    if (typeof error.stack === 'string') {
+      serializable.stack = error.stack;
+    }
+    Object.defineProperty(serializable, 'diagnosticText', {
+      configurable: true,
+      enumerable: true,
+      writable: true,
+      value: error.diagnosticText,
+    });
+    Object.defineProperty(serializable, 'diagnosticCodes', {
+      configurable: true,
+      enumerable: true,
+      writable: true,
+      value: error.diagnosticCodes,
+    });
+    return serializable;
+  }
+  return error;
+}
+
+function isTSError(error: unknown): error is TSError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as TSError).name === 'TSError' &&
+    typeof (error as TSError).message === 'string' &&
+    typeof (error as TSError).diagnosticText === 'string' &&
+    Array.isArray((error as TSError).diagnosticCodes)
+  );
 }

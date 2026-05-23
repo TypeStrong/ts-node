@@ -115,6 +115,16 @@ test.suite('esm', (test) => {
     expect(r.err).toBe(null);
     expect(r.stdout).toBe('');
   });
+  test('reports invalid tsconfig diagnostics from the ESM loader', async () => {
+    const r = await exec(`${CMD_ESM_LOADER_WITHOUT_PROJECT} -e "console.log(1)"`, {
+      cwd: join(TEST_DIR, './esm-invalid-tsconfig'),
+    });
+
+    expect(r.err).not.toBe(null);
+    expect(r.stderr).toMatch('Unable to compile TypeScript');
+    expect(r.stderr).toMatch("tsconfig.json(1,5): error TS1005: ':' expected.");
+    expect(r.stderr).not.toMatch('[Object: null prototype]');
+  });
   test('should throw type errors without transpile-only enabled', async () => {
     const r = await exec(`${CMD_ESM_LOADER_WITHOUT_PROJECT} index.ts`, {
       cwd: join(TEST_DIR, './esm-transpile-only'),
